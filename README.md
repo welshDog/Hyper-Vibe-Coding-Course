@@ -1,100 +1,143 @@
-# 🚀 Hyper Vibe Coding Course Platform
+# Hyper Vibe Coding Course
 
-> Built the Hyper Way. For neurodivergent coders. By a neurodivergent coder.
+Course content + launch kit for **Vibe Coding Foundations (Course 1)**, including curriculum, email sequences, gamification, marketing assets, and a deployable landing page.
 
----
+## Repository Structure
 
-## ⚡ Quick Start (Copy-Paste These)
+- `assets/` Static assets (images, logos, screenshots)
+- `config/` Tooling configuration (CI lint configs, etc.)
+- `docs/` Documentation & Course Content
+  - `course/` Proprietary Curriculum
+  - `guides/` Public Resources
+- `frontend/` Static Marketing Site (HTML/CSS/JS)
+- `tests/` Automated Test Suite
 
-```bash
-git clone https://github.com/welshDog/Hyper-Vibe-Coding-Course.git
-cd Hyper-Vibe-Coding-Course
-cp .env.example .env
-docker-compose up
-```
+Key docs:
 
-Then open:
-- 🌐 Frontend → http://localhost:3000
-- 🔌 API → http://localhost:4000
-- 🗄️ Database GUI → http://localhost:5555
+- `docs/ARCHITECTURE.md` System Design (Option A)
+- `docs/course/CURRICULUM.md` Full Course 1 curriculum
+- `docs/guides/` Launch, marketing, email sequences, sprint plans
+- `frontend/public/index.html` Live landing page
 
-**Demo Login:** `demo@example.com` / `password`
+## Quick Start
 
----
+### View the landing page locally
 
-## 🧠 What Is This?
+Open `frontend/public/index.html` in your browser.
 
-A full-stack course platform with:
-- ✅ JWT Auth (login, register, protected routes)
-- ✅ Course browsing → enroll → track progress → complete
-- ✅ Gamification (XP, levels, streaks, badges, BROski$ coins)
-- ✅ Accessibility controls (dyslexia font, reduced motion, high contrast)
-- ✅ One-command Docker setup
-- ✅ Vitest + Playwright testing
+### Publish the landing page (GitHub Pages)
 
----
+This repo includes a GitHub Pages deployment workflow. To enable it:
 
-## 📁 File Structure
+1. In GitHub, go to **Settings → Pages**
+2. Under **Build and deployment**, select **GitHub Actions**
+3. Push to `main` and the workflow will deploy
 
-```
-hyper-vibe-coding-course/
-├── apps/
-│   ├── web/                    # React frontend
-│   │   └── src/
-│   │       ├── components/     # UI components
-│   │       ├── routes/         # Page components
-│   │       ├── store/          # Zustand state
-│   │       └── main.tsx        # Entry point
-│   └── api/                    # Node.js backend
-│       └── src/
-│           ├── routes/         # Express routes
-│           ├── controllers/    # Business logic
-│           └── index.ts        # Server entry
-├── packages/
-│   └── database/
-│       └── prisma/schema.prisma # DB schema
-├── tests/e2e/                  # Playwright tests
-├── docs/                       # Architecture docs
-├── docker-compose.yml
-└── .env.example
-```
+## Usage Examples
 
----
-
-## 🏆 Gamification Levels
-
-| Level | Name | XP Required |
-|-------|------|-------------|
-| 1 | Vibe Newbie | 0 |
-| 2 | Prompt Padawan | 100 |
-| 3 | Code Curious | 300 |
-| 4 | Builder BRO | 600 |
-| 5 | Vibe Master | 1000 |
-| 6 | Hyper Coder | 1500 |
-| 7 | AI Whisperer | 2200 |
-| 8 | Vibe Legend | 3000 |
-
----
-
-## 🎨 Customise YOUR Brand
-
-Change these files to make it yours:
-1. `tailwind.config.js` → Brand colours
-2. `apps/api/src/seed.ts` → Course content + pricing
-3. `apps/web/src/store/gamificationStore.ts` → XP curve
-4. `apps/api/src/controllers/authController.ts` → Email copy
-
----
-
-## 🧪 Tests
+### Create a feature branch (Git-flow style)
 
 ```bash
-npm run test          # Unit tests
-npm run test:e2e      # E2E tests (opens browser)
-npm run lint          # ESLint
-npm run typecheck     # TypeScript check
+git checkout develop
+git pull
+git checkout -b feature/landing-page-cta
 ```
 
----
+### Open a PR
 
-*Code is temporary. Vibes are forever.* 🌈
+- Target branch: `develop`
+- Ensure required checks pass (CI / markdownlint)
+
+### Validate workflows and templates locally (PowerShell)
+
+```powershell
+$ErrorActionPreference = "Stop"
+
+$code = @'
+from pathlib import Path
+import sys
+import yaml
+
+yaml_files = [
+  ".github/workflows/ci.yml",
+  ".github/workflows/pages.yml",
+  ".github/ISSUE_TEMPLATE/bug_report.yml",
+  ".github/ISSUE_TEMPLATE/feature_request.yml",
+  ".github/ISSUE_TEMPLATE/config.yml",
+]
+
+missing = [p for p in yaml_files if not Path(p).exists()]
+if missing:
+  print("Missing required files:", *missing, sep="\\n- ")
+  sys.exit(1)
+
+for p in yaml_files:
+  yaml.safe_load(Path(p).read_text(encoding="utf-8"))
+
+print("YAML validated OK.")
+'@
+
+$code | python -
+```
+
+## Troubleshooting
+
+### Push fails with 403 (HTTPS)
+
+If you see `Permission denied ... (403)`, Git is authenticating as a GitHub account without write access. Update your credentials or grant the account write permissions to the repo.
+
+### Push fails with `Permission denied (publickey)` (SSH)
+
+This means your SSH key is not added to the GitHub account (or the account does not have repo write access). Add your public key under **GitHub → Settings → SSH and GPG keys**, then retry the push.
+
+## Contribution Guidelines
+
+### Branching (Git-flow style)
+
+- `main`: always deployable (protected)
+- `develop`: integration branch for upcoming release
+- Feature branches: `feature/<short-name>`
+- Fix branches: `fix/<short-name>`
+- Release branches (optional): `release/<yyyy-mm-dd>` or `release/<version>`
+
+### PR Rules (expected)
+
+- Open all changes as PRs into `develop` (or `main` for urgent hotfixes)
+- Keep PRs small and scoped
+- Use descriptive titles and include screenshots for landing page changes
+- CI must pass before merge
+
+### Commit Messages
+
+Use Conventional Commits:
+
+- `feat: ...`
+- `fix: ...`
+- `docs: ...`
+- `chore: ...`
+
+### Local Checks
+
+CI currently runs Markdown linting and Pages deploy. If you later add a frontend (`package.json`) or backend (`pyproject.toml`), extend the workflows to run the appropriate tests and typechecks.
+
+## Repository Settings (Branch Protection)
+
+Recommended branch protection for `main`:
+
+- Require pull request reviews before merging (1+)
+- Require status checks to pass before merging
+  - `CI / markdownlint`
+- Require linear history
+- Require signed commits (optional, recommended)
+- Block force pushes
+- Do not allow deletions
+
+Recommended branch protection for `develop`:
+
+- Require status checks to pass before merging
+  - `CI / markdownlint`
+- Block force pushes
+
+## License
+
+Code is licensed under MIT (see `LICENSE`). Course content licensing is described in `docs/LICENSE_CONTENT.md`.

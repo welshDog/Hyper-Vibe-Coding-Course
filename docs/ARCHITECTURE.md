@@ -1,55 +1,50 @@
-# 🏗️ Hyper Vibe Architecture
+# 🏗️ System Architecture: Option A (Lean Launch)
 
-## System Overview
+## Overview
+This repository implements the **"Lean Launch"** architecture for the Hyper Vibe Coding Course. The goal is to minimize technical debt and maximize speed to market by leveraging proven external platforms for complex backend functionality (Payments, Auth, Content Delivery) while maintaining a custom, high-performance frontend for marketing.
 
-```
-Browser (React)
-    |
-    | HTTP / REST
-    ↓
-Node.js API (Express)
-    |
-    | Prisma ORM
-    ↓
-PostgreSQL Database
-```
+## 🧩 Components
 
-## Frontend Stack
-- **React 18** + TypeScript
-- **React Router v6** - client-side routing
-- **TanStack Query** - data fetching + caching
-- **Zustand** - lightweight state management
-- **Tailwind CSS** - utility-first styling
-- **Vite** - fast dev server
+### 1. Frontend (Static Site)
+- **Technology**: HTML5, CSS3, Vanilla JavaScript
+- **Hosting**: GitHub Pages
+- **Location**: `/frontend/public`
+- **Responsibility**: 
+  - Landing Page (Conversion)
+  - Course Catalog (Discovery)
+  - Brand Identity (The "Vibe")
+- **Key Files**: `index.html`, `styles.css` (inline for now)
 
-## Backend Stack
-- **Node.js** + Express + TypeScript
-- **Prisma** - type-safe ORM
-- **PostgreSQL** - main database
-- **JWT** - stateless authentication
-- **bcrypt** - password hashing
+### 2. Backend (External Services)
+Instead of a custom API, we use specialized SaaS tools:
 
-## Key Design Decisions
+| Feature | Provider | Integration Method |
+|---------|----------|-------------------|
+| **Payments** | Gumroad / Stripe Payment Links | Direct URL redirects |
+| **Course Content** | Gumroad / Teachable | Hosted externally |
+| **Gamification** | Airtable + Zapier | Webhooks (Future) |
+| **Community** | Discord | Invite Links |
 
-### Why Zustand over Redux?
-Simpler API, less boilerplate. ADHD-friendly: less to remember.
+### 3. CI/CD Pipeline
+- **Provider**: GitHub Actions
+- **Triggers**: Push to `main`
+- **Jobs**:
+  - `lint`: Checks Markdown syntax
+  - `test`: Validates HTML structure and links
+  - `deploy`: Pushes `frontend/public` to GitHub Pages
 
-### Why Prisma?
-Type-safe queries catch bugs at compile time. Schema is human-readable.
+## 🔄 Data Flow
+1. **User Visits**: `https://w3lshdog.github.io/Hyper-Vibe-Coding-Course/`
+2. **User Clicks "Buy"**: Redirects to `gumroad.com/...`
+3. **User Pays**: Receives email with Course Content access + Discord Invite
+4. **User Joins Discord**: Verifies purchase via bot (optional)
 
-### Why JWT?
-Stateless = simpler to scale. Stored in Zustand + localStorage.
+## 🛡️ Security & Scalability
+- **Security**: No database to hack. No servers to patch. HTTPS provided by GitHub.
+- **Scalability**: GitHub Pages handles global traffic via CDN. Gumroad handles payment spikes.
 
-### Why Docker Compose?
-One command = entire dev environment. No "works on my machine" issues.
-
-## Gamification Architecture
-
-XP events are stored in the `XpEvent` table for full history.
-Level is computed from total XP, not stored separately.
-Streaks checked on every lesson completion.
-
-## Accessibility Strategy
-
-User preferences stored in the DB, not just localStorage.
-This means preferences follow the user across devices.
+## 🚀 Future Roadmap (Phase 2)
+Once we hit $10k MRR, we migrate to **Option B**:
+- **Frontend**: Next.js (SEO, Dynamic Content)
+- **Backend**: Supabase (Auth, Database)
+- **Hosting**: Vercel
