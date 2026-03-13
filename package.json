@@ -1,0 +1,18 @@
+{
+  "name": "hyper-vibe-coding-course",
+  "version": "1.0.0",
+  "description": "Vibe Coding Course Platform - Built the Hyper Way",
+  "scripts": {
+    "dev": "docker-compose up",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "db:seed": "ts-node apps/api/src/seed.ts",
+    "db:studio": "cd packages/database && npx prisma studio"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
