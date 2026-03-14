@@ -23,12 +23,11 @@ test.describe.skip('Enrollment & Learning', () => {
     { id: 'l2', title: 'Lesson 2', duration_seconds: 1200, is_free: false, order_index: 2, video_url: 'http://example.com/video2', content: 'Lesson 2 Content' },
   ];
 
-  // Shared state for enrollment status across the test duration
   let isEnrolled = false;
 
   test.beforeEach(async ({ page }) => {
     isEnrolled = false;
-    
+
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
 
@@ -70,9 +69,7 @@ test.describe.skip('Enrollment & Learning', () => {
         await route.fulfill({ status: 204, body: '' })
         return
       }
-<<<<<<< Updated upstream
-=======
-      
+
       if (url.pathname.startsWith('/auth/v1/user')) {
         await fulfillJson(route, {
           id: user.id,
@@ -83,7 +80,6 @@ test.describe.skip('Enrollment & Learning', () => {
         })
         return
       }
->>>>>>> Stashed changes
 
       if (url.pathname.startsWith('/rest/v1/users')) {
         const payload = {
@@ -151,14 +147,9 @@ test.describe.skip('Enrollment & Learning', () => {
         return
       }
 
-<<<<<<< Updated upstream
-      await route.fulfill({ status: 404, body: '' })
-=======
       await route.continue()
->>>>>>> Stashed changes
     })
 
-    // Perform login
     await page.goto('/login');
     await page.fill('input[name="email"]', user.email);
     await page.fill('input[name="password"]', 'password');
@@ -168,50 +159,32 @@ test.describe.skip('Enrollment & Learning', () => {
   });
 
   test('should enroll in a course and complete a lesson', async ({ page }) => {
-    // Navigate to catalog
     await page.goto('/courses');
-<<<<<<< Updated upstream
-    await expect(page.getByText(course.title)).toBeVisible();
-=======
-    
-    // Wait for courses to be visible before querying - relax selector to just wait for loading to finish or card to appear
-    await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15000 });
->>>>>>> Stashed changes
 
-    // Click first course "View Course" button
+    await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15000 });
+
     await page.getByRole('button', { name: 'View Course' }).first().click();
     await expect(page).toHaveURL(/\/courses\/1/);
-    
-    // Wait for detail page
+
     await expect(page.locator('h1')).toBeVisible();
     await expect(page.locator('h1')).toHaveText(course.title);
-    
-    // Handle confirm dialog for payment mock
+
     page.once('dialog', async (dialog) => dialog.accept());
 
-    // Verify "Enroll" button is present (since isEnrolled is false initially)
     const enrollButton = page.locator('button:has-text("Enroll")');
     await expect(enrollButton).toBeVisible();
 
-    // Click Enroll
-    // This triggers POST /enrollments (handled by mock, sets isEnrolled=true)
-    // Then navigates to /learn/:id
     await enrollButton.click();
-    
-    // Should navigate to learning page
+
     await expect(page).toHaveURL(/\/learn\//);
-    
-    // Verify lesson player loaded using stable testid
+
     await expect(page.getByTestId('video-player')).toBeVisible();
     await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 1');
 
-    // Click "Mark as Complete"
     await page.getByTestId('mark-complete-btn').click();
-    
-    // Verify checkmark appears in sidebar
+
     await expect(page.getByTestId('lesson-completed-icon-0')).toBeVisible();
-    
-    // Verify progress bar updated (visual check logic might be complex, just check existence)
+
     await expect(page.getByTestId('progress-text')).toHaveText('1 / 2 completed');
   });
 });
