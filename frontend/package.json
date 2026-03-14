@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:e2e": "playwright test"
+
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": "eslint --fix",
