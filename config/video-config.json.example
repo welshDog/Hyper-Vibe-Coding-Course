@@ -1,0 +1,16 @@
+{
+  "heygen": {
+    "api_key": "YOUR_HEYGEN_API_KEY_HERE",
+    "avatar_id": "YOUR_AVATAR_ID_HERE",
+    "voice_id": "YOUR_VOICE_ID_HERE"
+  },
+  "youtube": {
+    "client_secrets_path": "config/youtube-client-secrets.json",
+    "token_path": "config/youtube-token.pickle"
+  },
+  "course": {
+    "title": "Hyper Vibe Coding Course",
+    "channel": "BROski Hyper Vibe",
+    "default_privacy": "unlisted"
+  }
+}
