@@ -9,6 +9,9 @@ import LessonPlayer from './pages/LessonPlayer';
 import Dashboard from './pages/Dashboard';
 import PaymentSuccess from './pages/PaymentSuccess';
 import ScriptGenerator from './pages/ScriptGenerator';
+import HyperfocusHtmlCss from './pages/courses/HyperfocusHtmlCss';
+import ComponentChaosLab from './pages/courses/ComponentChaosLab';
+import ShipFullStackThing from './pages/courses/ShipFullStackThing';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
 
@@ -46,6 +49,9 @@ function App() {
             } 
           />
           <Route path="payment-success" element={<PaymentSuccess />} />
+          <Route path="courses/html-css" element={<HyperfocusHtmlCss />} />
+          <Route path="courses/component-chaos" element={<ComponentChaosLab />} />
+          <Route path="courses/full-stack" element={<ShipFullStackThing />} />
           <Route
             path="scripts"
             element={

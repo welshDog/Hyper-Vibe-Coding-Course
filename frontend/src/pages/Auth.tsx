@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 export function Login() {
   const navigate = useNavigate();
@@ -10,19 +11,27 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const { identifyUser } = useAnalytics();
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) throw error;
+      // Identify the user in PostHog so all subsequent events are linked to them
+      if (data.user) {
+        identifyUser(data.user.id, {
+          email: data.user.email,
+          name: data.user.user_metadata?.full_name as string | undefined,
+        });
+      }
       navigate('/dashboard');
     } catch (err: unknown) {
       if (err instanceof Error) {
