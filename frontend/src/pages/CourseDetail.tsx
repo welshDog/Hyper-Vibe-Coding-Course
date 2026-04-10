@@ -5,6 +5,7 @@ import type { Course, Lesson } from '../types/database';
 import { useAuthStore } from '../context/auth';
 import { Button } from '../components/ui/Button';
 import { PlayCircle, Lock } from 'lucide-react';
+import { getCoursePaymentLinkUrl } from '../lib/payments';
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -65,32 +66,50 @@ export default function CourseDetail() {
       return;
     }
 
-    if (enrolling) return;
+    if (enrolling || !course) return;
     setEnrolling(true);
 
-    // Mock payment process
-    const confirm = window.confirm(`Confirm purchase for $${course?.price}?`);
-    if (!confirm) {
+    // Free courses: enroll directly
+    if (course.price === 0) {
+      const { error } = await supabase
+        .from('enrollments')
+        .upsert(
+          { user_id: user.id, course_id: id, progress_percentage: 0 },
+          { onConflict: 'user_id,course_id' }
+        );
+
+      if (error) {
+        console.error('Enrollment error:', error);
+        setEnrolling(false);
+        return;
+      }
+      setIsEnrolled(true);
+      navigate(`/learn/${id}`);
+      return;
+    }
+
+    // Paid courses: redirect to Stripe Payment Link
+    const paymentUrl = getCoursePaymentLinkUrl(course.id, user.id, user.email);
+
+    if (!paymentUrl) {
+      // Stripe not configured — fall back to direct enrollment (dev/demo only)
+      console.warn('No Stripe payment link configured for this course — enrolling directly (dev mode)');
+      const { error } = await supabase
+        .from('enrollments')
+        .upsert(
+          { user_id: user.id, course_id: id, progress_percentage: 0 },
+          { onConflict: 'user_id,course_id' }
+        );
+      if (!error) {
+        setIsEnrolled(true);
+        navigate(`/learn/${id}`);
+      }
       setEnrolling(false);
       return;
     }
 
-    const { error } = await supabase
-      .from('enrollments')
-      .upsert({
-        user_id: user.id,
-        course_id: id,
-        progress_percentage: 0
-      }, { onConflict: 'user_id,course_id' });
-
-    if (error) {
-      alert('Error enrolling: ' + error.message);
-      setEnrolling(false);
-    } else {
-      setIsEnrolled(true);
-      navigate(`/learn/${id}`);
-      setEnrolling(false);
-    }
+    // Redirect to Stripe — enrollment happens via webhook after payment
+    window.location.href = paymentUrl;
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -130,7 +149,11 @@ export default function CourseDetail() {
                 </Link>
               ) : (
                 <Button size="lg" onClick={handleEnroll} className="w-full sm:w-auto" disabled={enrolling}>
-                  {enrolling ? 'Enrolling...' : `Enroll for $${course.price}`}
+                  {enrolling
+                    ? (course.price === 0 ? 'Enrolling...' : 'Redirecting to checkout…')
+                    : course.price === 0
+                      ? 'Enroll for free'
+                      : `Enroll — $${course.price}`}
                 </Button>
               )}
             </div>
