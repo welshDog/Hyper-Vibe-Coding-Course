@@ -45,20 +45,34 @@ The `user_id` is passed via `client_reference_id` in the URL (built by `getCours
 VITE_STRIPE_PAYMENT_LINK_URL=https://buy.stripe.com/your-link
 ```
 
+## Security model
+
+`userId` is **never** passed from the frontend. The webhook resolves the buyer's
+identity from `session.customer_details.email` — a value Stripe verifies during
+checkout. This prevents an attacker from modifying the URL to enroll a different
+user's account.
+
+`courseId` is passed via `client_reference_id` (a plain UUID). Knowing a course
+UUID grants nothing — the webhook validates it exists in the DB before proceeding.
+
 ## How it works
 
 ```
 Student clicks "Enroll — $29"
-  → CourseDetail.tsx calls getCoursePaymentLinkUrl()
-  → URL includes client_reference_id={userId, courseId}
+  → CourseDetail.tsx calls getCoursePaymentLinkUrl(courseId, userEmail)
+  → URL includes client_reference_id=<courseId> + prefilled_email=<email>
   → Redirect to Stripe
-  → Student pays
+  → Student pays (Stripe collects + verifies their email)
   → Stripe fires checkout.session.completed to our webhook
-  → Edge Function decodes client_reference_id
+  → Edge Function verifies Stripe signature (trust boundary)
+  → courseId  ← session.client_reference_id
+  → buyerEmail ← session.customer_details.email  (Stripe-owned, unforgeable)
+  → userId    ← SELECT id FROM users WHERE email = buyerEmail
+  → Validates course exists in DB
   → Upserts row in public.enrollments
   → Student lands on /payment-success?course_id=...
   → PaymentSuccess.tsx polls enrollments table (max 10s)
-  → Shows "You're enrolled!" with link to start learning
+  → Shows "You're enrolled! 🎉" with link to start learning
 ```
 
 ## Testing with Stripe CLI
@@ -69,6 +83,6 @@ stripe listen --forward-to https://<ref>.supabase.co/functions/v1/stripe-webhook
 
 # Trigger a test event:
 stripe trigger checkout.session.completed \
-  --add checkout_session:metadata.course_id=<uuid> \
-  --add checkout_session:client_reference_id='{"userId":"<uuid>","courseId":"<uuid>"}'
+  --add checkout_session:client_reference_id=<course-uuid> \
+  --add checkout_session:customer_details.email=student@example.com
 ```

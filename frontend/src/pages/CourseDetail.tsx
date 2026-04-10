@@ -89,7 +89,7 @@ export default function CourseDetail() {
     }
 
     // Paid courses: redirect to Stripe Payment Link
-    const paymentUrl = getCoursePaymentLinkUrl(course.id, user.id, user.email);
+    const paymentUrl = getCoursePaymentLinkUrl(course.id, user.email);
 
     if (!paymentUrl) {
       // Stripe not configured — fall back to direct enrollment (dev/demo only)

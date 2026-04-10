@@ -2,20 +2,20 @@
 // Supabase Edge Function — runs on Deno
 // Handles Stripe checkout.session.completed events to auto-enroll students.
 //
+// Security model:
+//   - courseId comes from session.client_reference_id (set by the frontend URL param).
+//   - userId is NEVER trusted from the frontend. We look it up server-side from
+//     session.customer_details.email, which Stripe owns and verifies at payment time.
+//   - This prevents an attacker from tampering with the URL to enroll a different user.
+//
 // Setup:
-//   1. supabase functions deploy stripe-webhook
+//   1. supabase functions deploy stripe-webhook --no-verify-jwt
 //   2. In Stripe Dashboard → Webhooks → Add endpoint:
 //        URL: https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 //        Events: checkout.session.completed
-//   3. Copy the webhook signing secret and add to Supabase secrets:
-//        supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
-//
-// In your Stripe Payment Links, add metadata:
-//   course_id: <uuid of the course>
-//   user_id:   <uuid of the user>  (pass via prefilled_email is fine — see payments.ts)
-//
-// IMPORTANT: For user_id in metadata, pass it from the frontend before redirecting.
-// See frontend/src/lib/payments.ts for how to build the URL with metadata.
+//   3. supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+//      supabase secrets set STRIPE_SECRET_KEY=sk_live_...
+//   (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically)
 
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&no-check';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
@@ -36,7 +36,9 @@ Deno.serve(async (req: Request) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // ── Signature verification ────────────────────────────────────────────────
+  // ── Stripe signature verification ─────────────────────────────────────────
+  // This is the trust boundary. Everything after this point came from Stripe,
+  // not from a user's browser.
   const signature = req.headers.get('stripe-signature');
   const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
@@ -58,20 +60,64 @@ Deno.serve(async (req: Request) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const courseId = session.metadata?.course_id;
-    const userId = session.metadata?.user_id;
+    // courseId: from client_reference_id set in the frontend payment URL.
+    // This is a public course UUID — knowing it grants nothing by itself.
+    const courseId = session.client_reference_id;
 
-    if (!courseId || !userId) {
-      // Missing metadata — log for investigation but don't 500
-      // (Stripe would retry, causing duplicate attempts)
-      console.warn('checkout.session.completed missing metadata', {
+    // buyerEmail: from Stripe's verified customer details.
+    // Stripe requires email collection at checkout, so this is always present
+    // on completed sessions. It cannot be forged by the frontend.
+    const buyerEmail = session.customer_details?.email;
+
+    if (!courseId || !buyerEmail) {
+      console.warn('checkout.session.completed missing required fields', {
         sessionId: session.id,
-        metadata: session.metadata,
+        hasCourseId: !!courseId,
+        hasBuyerEmail: !!buyerEmail,
       });
-      return new Response('OK — missing metadata', { status: 200 });
+      // Return 200 — don't let Stripe retry an unfixable event
+      return new Response('OK — missing required fields', { status: 200 });
     }
 
-    // Upsert enrollment — idempotent; safe if webhook fires twice
+    // ── Resolve userId from Stripe-verified email ─────────────────────────
+    // We look up the buyer in our users table by their email.
+    // This is safe because the email came from Stripe, not the browser.
+    const { data: userRecord, error: userLookupError } = await supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', buyerEmail)
+      .maybeSingle();
+
+    if (userLookupError) {
+      console.error('User lookup failed:', userLookupError);
+      return new Response('User lookup failed', { status: 500 });
+    }
+
+    if (!userRecord) {
+      // Buyer paid but doesn't have a platform account yet.
+      // Log it — a support workflow can handle this edge case.
+      console.warn(`Payment from unregistered email: ${buyerEmail} for course ${courseId}`);
+      // Return 200 so Stripe doesn't retry endlessly — this needs human follow-up
+      return new Response('OK — unregistered buyer', { status: 200 });
+    }
+
+    const userId = userRecord.id;
+
+    // ── Validate course exists ────────────────────────────────────────────
+    const { data: course, error: courseLookupError } = await supabaseAdmin
+      .from('courses')
+      .select('id')
+      .eq('id', courseId)
+      .maybeSingle();
+
+    if (courseLookupError || !course) {
+      console.error('Course not found or lookup failed:', { courseId, courseLookupError });
+      // Return 200 — retrying won't fix a bad courseId
+      return new Response('OK — course not found', { status: 200 });
+    }
+
+    // ── Create enrollment ─────────────────────────────────────────────────
+    // Upsert is idempotent — safe if Stripe fires the event twice
     const { error: enrollmentError } = await supabaseAdmin
       .from('enrollments')
       .upsert(
@@ -90,11 +136,7 @@ Deno.serve(async (req: Request) => {
       return new Response('Enrollment failed', { status: 500 });
     }
 
-    // Log purchase for audit trail
-    console.log(`✅ Enrollment created: user=${userId} course=${courseId} session=${session.id}`);
-
-    // Optional: trigger welcome email via Supabase Realtime / pg_net / Resend
-    // await sendEnrollmentEmail(userId, courseId);
+    console.log(`✅ Enrolled: user=${userId} email=${buyerEmail} course=${courseId} session=${session.id}`);
   }
 
   return new Response('OK', { status: 200 });
