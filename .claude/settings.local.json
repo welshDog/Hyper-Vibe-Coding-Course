@@ -11,7 +11,12 @@
       "Bash(grep -n \"currency\\\\|price\\\\|\\\\$[0-9]\" \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/supabase/migrations/20240312000000_init_schema.sql\")",
       "Bash(grep -n '\\\\$\\\\|USD\\\\|usd\\\\|currency\\\\|price\\\\|£\\\\|GBP' \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/frontend/src/pages/LandingPage.tsx\")",
       "Bash(grep:*)",
-      "Bash(gh pr create --base main --head develop --title 'feat: achievement system, GBP pricing, landing page v2, free preview + waitlist' --body ':*)"
+      "Bash(gh pr create --base main --head develop --title 'feat: achievement system, GBP pricing, landing page v2, free preview + waitlist' --body ':*)",
+      "Bash(gh api:*)",
+      "Bash(gh repo:*)",
+      "Bash(python3 -c \" import sys, json data = sys.stdin.read\\(\\) lines = data.strip\\(\\).split\\('\\\\n'\\) for line in lines[-5:]: try: obj = json.loads\\(line\\) role = obj.get\\('role', ''\\) content = obj.get\\('content', ''\\) if isinstance\\(content, list\\): for c in content: if isinstance\\(c, dict\\) and c.get\\('type'\\) == 'text': print\\(f'[{role}]: {c[\\\\\"text\\\\\"][:300]}'\\) elif isinstance\\(content, str\\): print\\(f'[{role}]: {content[:300]}'\\) except: pass \")",
+      "Bash(python3 -c \" import sys, json for line in sys.stdin: line = line.strip\\(\\) if not line: continue try: obj = json.loads\\(line\\) role = obj.get\\('role', 'unknown'\\) content = obj.get\\('content', ''\\) if isinstance\\(content, list\\): for c in content: if isinstance\\(c, dict\\) and c.get\\('type'\\) == 'text': print\\(f'[{role}]: {c[\\\\\"text\\\\\"][:400]}'\\) print\\('---'\\) elif isinstance\\(content, str\\) and content: print\\(f'[{role}]: {content[:400]}'\\) print\\('---'\\) except Exception as e: print\\(f'parse error: {e}'\\) \")",
+      "Bash(python3:*)"
     ]
   }
 }
