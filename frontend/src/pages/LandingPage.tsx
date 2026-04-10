@@ -179,7 +179,7 @@ export default function LandingPage() {
           {/* Welsh badge */}
           <div className="mb-8">
             <span className="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 px-4 py-1 text-sm font-medium">
-              🏴󠁧󠁢󠁷󠁬󠁳󠁠 Built in Wales · For builders everywhere
+              🏴󠁧󠁢󠁷󠁬󠁳󠁠 Built in Wales for ADHD builders — not CS students
             </span>
           </div>
 
@@ -195,8 +195,9 @@ export default function LandingPage() {
 
           {/* Subheading */}
           <p className="mt-6 text-gray-400 text-xl max-w-2xl leading-relaxed">
-            Stop staring at blank files. Learn to ship real apps with AI as your co-pilot.
-            No CS degree needed — just a laptop and a vibe.
+            If you've got ADHD, dyslexia, or a brain that won't sit still in a classroom —
+            this was built for you. Ship real apps with AI. No CS degree. No gatekeeping.
+            Just you, Claude, and a laptop.
           </p>
 
           {/* Waitlist form */}
@@ -263,11 +264,12 @@ export default function LandingPage() {
       <section className="bg-gray-900 py-6 border-y border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ul className="flex flex-wrap justify-center gap-8 text-gray-400 text-sm">
-            <li>🏴󠁧󠁢󠁷󠁬󠁳󠁠 UK-first community</li>
+            <li>🧠 Neurodivergent-first design</li>
             <li>⭐ BROski XP gamification</li>
             <li>🚀 Ship real apps from week 1</li>
             <li>⚡ AI-powered learning</li>
             <li>💰 Start free · from £29</li>
+            <li>🏴󠁧󠁢󠁷󠁬󠁳󠁠 Built by a builder, not a corporation</li>
           </ul>
         </div>
       </section>
