@@ -9,6 +9,12 @@ export type PaymentLinkOptions = {
 /**
  * Builds a Stripe Payment Link URL.
  *
+ * Currency note:
+ *   Stripe Payment Link currency is set at link-creation time in the Stripe Dashboard
+ *   — it cannot be overridden via URL parameters. Ensure all Payment Links are created
+ *   with GBP as the currency (not USD). This code passes no currency parameter because
+ *   none exists for Payment Links (only for Payment Intents / Checkout Sessions).
+ *
  * Security model:
  *   - Only courseId is embedded in the URL (a public value — knowing it grants nothing).
  *   - userId is never sent from the frontend. The webhook identifies the buyer

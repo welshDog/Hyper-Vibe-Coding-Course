@@ -34,7 +34,7 @@ const FEATURED_COURSES = [
     level: 'Intermediate',
     levelColor: 'bg-purple-100 text-purple-800',
     duration: '5 hours',
-    price: '$29',
+    price: '£29',
     priceColor: 'text-gray-900',
     tags: ['Prompt Engineering', 'Debugging', 'Refactors'],
     href: '/courses',
@@ -45,7 +45,7 @@ const FEATURED_COURSES = [
     level: 'Intermediate',
     levelColor: 'bg-purple-100 text-purple-800',
     duration: '14 hours',
-    price: '$49.99',
+    price: '£49.99',
     priceColor: 'text-gray-900',
     tags: ['Full Stack', 'Auth', 'Payments'],
     href: '/courses',
@@ -391,7 +391,7 @@ export default function LandingPage() {
               <h3 className="text-xl font-bold text-gray-900">Free Forever</h3>
               <p className="mt-1 text-sm text-gray-500">The full Course 1 — no card needed.</p>
               <p className="mt-4 text-4xl font-extrabold text-gray-900">
-                $0
+                £0
               </p>
               <ul className="mt-6 space-y-3">
                 {[
@@ -424,15 +424,15 @@ export default function LandingPage() {
               <h3 className="text-xl font-bold text-gray-900">Individual Courses</h3>
               <p className="mt-1 text-sm text-gray-500">Pick the skills you need, when you need them.</p>
               <p className="mt-4 text-4xl font-extrabold text-gray-900">
-                $19–$49
+                £19–£49
                 <span className="text-lg font-normal text-gray-500 ml-1">/ course</span>
               </p>
               <ul className="mt-6 space-y-3">
                 {[
-                  'Hyper Prompt Master ($29)',
-                  'Component Chaos Lab ($39.99)',
-                  'Ship Your First Full Stack Thing ($49.99)',
-                  'Hyperfocus HTML & CSS Quick Wins ($19.99)',
+                  'Hyper Prompt Master (£29)',
+                  'Component Chaos Lab (£39.99)',
+                  'Ship Your First Full Stack Thing (£49.99)',
+                  'Hyperfocus HTML & CSS Quick Wins (£19.99)',
                   'Lifetime access, no expiry',
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-gray-600">

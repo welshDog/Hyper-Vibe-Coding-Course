@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
     stripe_payment_intent_id VARCHAR(255) UNIQUE,
     amount DECIMAL(10,2) NOT NULL,
-    currency VARCHAR(3) DEFAULT 'USD',
+    currency VARCHAR(3) DEFAULT 'GBP',
     status VARCHAR(20) DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

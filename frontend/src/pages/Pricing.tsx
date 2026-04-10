@@ -18,7 +18,7 @@ const PRICING_TIERS: PricingTier[] = [
   {
     name: 'Free',
     description: 'Try the platform with limited previews.',
-    priceMonthly: '$0',
+    priceMonthly: '£0',
     features: [
       'Browse course catalog',
       'Free lesson previews',
@@ -29,7 +29,7 @@ const PRICING_TIERS: PricingTier[] = [
   {
     name: 'Pro',
     description: 'Full access to all courses and premium features.',
-    priceMonthly: '$29',
+    priceMonthly: '£29',
     features: [
       'All courses included',
       'Certificates',

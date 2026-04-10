@@ -89,7 +89,7 @@ export default function CourseCatalog() {
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-2xl font-bold text-gray-900">
-                      {course.price === 0 ? 'Free' : `$${course.price}`}
+                      {course.price === 0 ? 'Free' : `£${course.price}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

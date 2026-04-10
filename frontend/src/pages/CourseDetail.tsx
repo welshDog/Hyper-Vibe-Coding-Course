@@ -153,7 +153,7 @@ export default function CourseDetail() {
                     ? (course.price === 0 ? 'Enrolling...' : 'Redirecting to checkout…')
                     : course.price === 0
                       ? 'Enroll for free'
-                      : `Enroll — $${course.price}`}
+                      : `Enroll — £${course.price}`}
                 </Button>
               )}
             </div>
