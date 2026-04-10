@@ -89,12 +89,19 @@ export default function CourseCatalog() {
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-2xl font-bold text-gray-900">
-                      ${course.price}
+                      {course.price === 0 ? 'Free' : `$${course.price}`}
                     </span>
                   </div>
-                  <Link to={`/courses/${course.id}`}>
-                    <Button>View Course</Button>
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link to={`/learn/${course.id}?preview=true`}>
+                      <Button variant="ghost" size="sm" className="text-primary text-xs px-2">
+                        ▶ Free preview
+                      </Button>
+                    </Link>
+                    <Link to={`/courses/${course.id}`}>
+                      <Button>View Course</Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

@@ -3,6 +3,40 @@ import { ChevronDown, ChevronRight, Copy, Check, Clock, BookOpen, Wrench, Trophy
 import { cn } from '../lib/utils';
 import { VIBE_CODING_FOUNDATIONS, type Module, type ScriptSection, type ModuleType } from '../lib/curriculum-data';
 
+// ─── localStorage hook ────────────────────────────────────────────────────────
+
+const LS_KEY = 'hyper-vibe-recorded-modules';
+
+function useRecordedModules() {
+  const [recorded, setRecorded] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(LS_KEY);
+      return new Set(stored ? (JSON.parse(stored) as string[]) : []);
+    } catch {
+      return new Set<string>();
+    }
+  });
+
+  function toggle(moduleId: string) {
+    setRecorded((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) {
+        next.delete(moduleId);
+      } else {
+        next.add(moduleId);
+      }
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify([...next]));
+      } catch {
+        // localStorage unavailable — state still updates in memory
+      }
+      return next;
+    });
+  }
+
+  return { recorded, toggle };
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function moduleTypeIcon(type: ModuleType) {
@@ -108,10 +142,16 @@ function CopyFullScript({ module }: { module: Module }) {
 
 // ─── Module panel ─────────────────────────────────────────────────────────────
 
-function ModulePanel({ module }: { module: Module }) {
+function ModulePanel({
+  module,
+  recorded,
+  onToggle,
+}: {
+  module: Module;
+  recorded: boolean;
+  onToggle: () => void;
+}) {
   const [open, setOpen] = useState(false);
-  const [recorded, setRecorded] = useState(false);
-
   const hasScript = Boolean(module.script);
 
   return (
@@ -141,9 +181,7 @@ function ModulePanel({ module }: { module: Module }) {
             </span>
             {moduleTypeBadge(module.type)}
             {module.badgesAwarded?.length ? (
-              <span className="text-xs text-amber-600 font-medium">
-                🏅 Awards badge
-              </span>
+              <span className="text-xs text-amber-600 font-medium">🏅 Awards badge</span>
             ) : null}
           </div>
           <p className="text-xs text-gray-500 mt-0.5 truncate">{module.keyConceptSummary}</p>
@@ -165,10 +203,10 @@ function ModulePanel({ module }: { module: Module }) {
               <input
                 type="checkbox"
                 checked={recorded}
-                onChange={(e) => setRecorded(e.target.checked)}
+                onChange={onToggle}
                 className="w-4 h-4 accent-green-600"
               />
-              <span className="text-xs text-gray-500">Recorded</span>
+              <span className="text-xs text-gray-500">{recorded ? 'Recorded ✓' : 'Recorded'}</span>
             </label>
           )}
         </div>
@@ -177,7 +215,6 @@ function ModulePanel({ module }: { module: Module }) {
       {/* Expanded script */}
       {open && module.script && (
         <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
-          {/* Script meta */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
@@ -232,10 +269,20 @@ function ModulePanel({ module }: { module: Module }) {
 
 // ─── Week section ─────────────────────────────────────────────────────────────
 
-function WeekSection({ week, defaultOpen }: { week: (typeof VIBE_CODING_FOUNDATIONS.weeks)[0]; defaultOpen: boolean }) {
+function WeekSection({
+  week,
+  defaultOpen,
+  recordedSet,
+  onToggle,
+}: {
+  week: (typeof VIBE_CODING_FOUNDATIONS.weeks)[0];
+  defaultOpen: boolean;
+  recordedSet: Set<string>;
+  onToggle: (id: string) => void;
+}) {
   const [open, setOpen] = useState(defaultOpen);
 
-  const scriptCount = week.modules.filter((m) => m.script).length;
+  const scriptModules = week.modules.filter((m) => m.script);
   const totalMinutes = week.modules.reduce((sum, m) => sum + m.durationMinutes, 0);
 
   return (
@@ -252,7 +299,7 @@ function WeekSection({ week, defaultOpen }: { week: (typeof VIBE_CODING_FOUNDATI
           </div>
         </div>
         <div className="flex items-center gap-4 text-xs text-gray-400">
-          <span>{scriptCount} script{scriptCount !== 1 ? 's' : ''}</span>
+          <span>{scriptModules.length} script{scriptModules.length !== 1 ? 's' : ''}</span>
           <span>{totalMinutes} min content</span>
           <span className="text-purple-400 font-medium">+{week.xpAvailable} XP available</span>
         </div>
@@ -261,7 +308,12 @@ function WeekSection({ week, defaultOpen }: { week: (typeof VIBE_CODING_FOUNDATI
       {open && (
         <div className="mt-3 space-y-2 pl-2">
           {week.modules.map((module) => (
-            <ModulePanel key={module.id} module={module} />
+            <ModulePanel
+              key={module.id}
+              module={module}
+              recorded={recordedSet.has(module.id)}
+              onToggle={() => onToggle(module.id)}
+            />
           ))}
         </div>
       )}
@@ -273,9 +325,11 @@ function WeekSection({ week, defaultOpen }: { week: (typeof VIBE_CODING_FOUNDATI
 
 export default function ScriptGenerator() {
   const course = VIBE_CODING_FOUNDATIONS;
+  const { recorded: recordedSet, toggle: toggleRecorded } = useRecordedModules();
 
-  const totalScripts = course.weeks.flatMap((w) => w.modules).filter((m) => m.script).length;
-  const totalModules = course.weeks.flatMap((w) => w.modules).length;
+  const allModules = course.weeks.flatMap((w) => w.modules);
+  const scriptModules = allModules.filter((m) => m.script);
+  const recordedCount = scriptModules.filter((m) => recordedSet.has(m.id)).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -293,7 +347,7 @@ export default function ScriptGenerator() {
             <div className="text-right text-sm text-gray-400 space-y-1">
               <div>{course.durationWeeks} weeks · {course.hoursPerWeek}/week</div>
               <div>{course.level} · {course.tool}</div>
-              <div className="text-purple-400">{totalScripts} of {totalModules} modules have scripts</div>
+              <div className="text-purple-400">{scriptModules.length} of {allModules.length} modules have scripts</div>
             </div>
           </div>
         </div>
@@ -301,30 +355,53 @@ export default function ScriptGenerator() {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        {/* Stats — now shows recorded progress */}
+        <div className="grid grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total modules', value: totalModules },
-            { label: 'Video scripts ready', value: totalScripts },
-            { label: 'Scripts to write', value: totalModules - totalScripts },
-          ].map(({ label, value }) => (
+            { label: 'Total modules', value: allModules.length, color: 'text-gray-900' },
+            { label: 'Scripts ready', value: scriptModules.length, color: 'text-purple-600' },
+            { label: 'Recorded', value: recordedCount, color: 'text-green-600' },
+            { label: 'Still to record', value: scriptModules.length - recordedCount, color: 'text-amber-600' },
+          ].map(({ label, value, color }) => (
             <div key={label} className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-              <div className="text-3xl font-bold text-gray-900">{value}</div>
+              <div className={`text-3xl font-bold ${color}`}>{value}</div>
               <div className="text-xs text-gray-500 mt-1">{label}</div>
             </div>
           ))}
         </div>
 
+        {/* Recording progress bar */}
+        {scriptModules.length > 0 && (
+          <div className="mb-6">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Recording progress</span>
+              <span className="font-medium">{recordedCount} / {scriptModules.length} scripts recorded</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${scriptModules.length > 0 ? (recordedCount / scriptModules.length) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Usage note */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 text-sm text-amber-800">
-          <strong>How to use:</strong> Click a lesson week to expand. Click a module to see the recording script.
-          Use "Copy full script" to paste into your teleprompter or notes. Check "Recorded" when done.
-          Lab and project modules don't have video scripts — they use step-by-step guides instead.
+          <strong>How to use:</strong> Click a week to expand. Click a module to see the recording script.
+          Use "Copy full script" to paste into your teleprompter or notes. Check "Recorded" when done —
+          progress saves automatically and survives page refresh.
         </div>
 
         {/* Weeks */}
         {course.weeks.map((week, i) => (
-          <WeekSection key={week.id} week={week} defaultOpen={i === 0} />
+          <WeekSection
+            key={week.id}
+            week={week}
+            defaultOpen={i === 0}
+            recordedSet={recordedSet}
+            onToggle={toggleRecorded}
+          />
         ))}
       </div>
     </div>
