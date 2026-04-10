@@ -12,6 +12,8 @@ import ScriptGenerator from './pages/ScriptGenerator';
 import HyperfocusHtmlCss from './pages/courses/HyperfocusHtmlCss';
 import ComponentChaosLab from './pages/courses/ComponentChaosLab';
 import ShipFullStackThing from './pages/courses/ShipFullStackThing';
+import PlaytestFeedback from './pages/PlaytestFeedback';
+import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
 
@@ -60,6 +62,8 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route path="feedback" element={<PlaytestFeedback />} />
+          <Route path="admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         {/* Lesson Player has its own layout */}

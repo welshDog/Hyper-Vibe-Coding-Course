@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -rn '\\\\$[0-9]\\\\|USD\\\\|usd\\\\|currency.*usd\\\\|usd.*currency\\\\|\"\\\\$\"\\\\|£\\\\|GBP\\\\|gbp' --include=\"*.ts\" --include=\"*.tsx\" --include=\"*.html\" --include=\"*.json\" --include=\"*.env*\" --include=\"*.md\" .)",
+      "Bash(grep -rn '\\\\$[0-9]\\\\|USD\\\\|usd\\\\|currency\\\\|\"\\\\$\"\\\\|£\\\\|GBP\\\\|gbp' --include=\"*.ts\" --include=\"*.tsx\" frontend/src/ supabase/)",
+      "Bash(grep -rn '\\\\$[0-9]\\\\|USD\\\\|usd\\\\|currency\\\\|GBP\\\\|gbp\\\\|price\\\\b' --include=\"*.ts\" --include=\"*.tsx\" frontend/src/lib/payments.ts frontend/src/lib/supabase.ts supabase/migrations/ supabase/seed-courses.sql)",
+      "Bash(grep -rn '\\\\$[0-9]\\\\|USD\\\\|usd\\\\|currency\\\\|GBP\\\\|gbp\\\\|price\\\\b' \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/frontend/src/lib/payments.ts\" \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/supabase/seed-courses.sql\")",
+      "Bash(grep -rn '\\\\$[0-9]\\\\|USD\\\\|usd\\\\|currency\\\\|price\\\\b' \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/supabase/migrations/\")",
+      "Bash(grep -n \"currency\\\\|price\\\\|\\\\$[0-9]\" \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/supabase/migrations/20240312000000_init_schema.sql\")",
+      "Bash(grep -n '\\\\$\\\\|USD\\\\|usd\\\\|currency\\\\|price\\\\|£\\\\|GBP' \"H:/the hyper vibe coding hub/Hyper-Vibe-Coding-Course/frontend/src/pages/LandingPage.tsx\")",
+      "Bash(grep:*)",
+      "Bash(gh pr create --base main --head develop --title 'feat: achievement system, GBP pricing, landing page v2, free preview + waitlist' --body ':*)"
+    ]
+  }
+}
