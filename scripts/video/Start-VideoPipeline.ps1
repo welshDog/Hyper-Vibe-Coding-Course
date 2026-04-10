@@ -3,7 +3,10 @@
 .SYNOPSIS
     Hyper Vibe Coding Course — Full AI Video Generation Pipeline
     Stage 1: Parse curriculum  |  Stage 2: Generate script
-    Stage 3: Render via HeyGen |  Stage 4: Upload to YouTube
+    Stage 3: Render (HeyGem local OR HeyGen cloud) | Stage 4: Upload to YouTube
+
+    HeyGem (local, free): requires ComfyUI + Docker. Record yourself once, reuse forever.
+    HeyGen (cloud, paid): fallback when local GPU not available.
 
 .PARAMETER LessonNumber
     The lesson number to generate (e.g. 1, 2, 3)
@@ -11,16 +14,27 @@
 .PARAMETER CurriculumPath
     Path to CURRICULUM.md (default: docs\course\CURRICULUM.md)
 
+.PARAMETER UseLocalHeyGem
+    Use local HeyGem via ComfyUI (free). Requires Docker + ComfyUI running.
+    If not set, falls back to HeyGen cloud API.
+
+.PARAMETER AvatarVideoPath
+    Path to your avatar reference video (only needed with -UseLocalHeyGem).
+    Record a 10-30s video of yourself speaking. Reused for all lessons.
+
 .PARAMETER TestMode
-    If set, renders a watermarked test video (free). Default: true
+    Cloud HeyGen only: renders watermarked test video (free). Default: true.
+    Ignored when -UseLocalHeyGem is set.
 
 .PARAMETER SkipUpload
     If set, skips Stage 4 upload. Useful for local review first.
 
 .EXAMPLE
-    .\Start-VideoPipeline.ps1 -LessonNumber 1
-    .\Start-VideoPipeline.ps1 -LessonNumber 3 -TestMode:$false
-    .\Start-VideoPipeline.ps1 -LessonNumber 2 -SkipUpload
+    # Free local render (recommended)
+    .\Start-VideoPipeline.ps1 -LessonNumber 1 -UseLocalHeyGem -AvatarVideoPath ".\avatar.mp4"
+
+    # Cloud render (paid HeyGen API)
+    .\Start-VideoPipeline.ps1 -LessonNumber 1 -TestMode:$false
 #>
 
 param(
@@ -28,6 +42,10 @@ param(
     [int]$LessonNumber,
 
     [string]$CurriculumPath = "docs\course\CURRICULUM.md",
+
+    [switch]$UseLocalHeyGem,
+
+    [string]$AvatarVideoPath = "",
 
     [bool]$TestMode = $true,
 
@@ -90,20 +108,35 @@ Write-Host "  Script saved: $ScriptFilePath" -ForegroundColor Green
 Write-Host "  Lesson: $LessonTitle" -ForegroundColor Green
 
 # ─────────────────────────────────────────────
-# STAGE 3 — AI video render via HeyGen
+# STAGE 3 — AI video render (local HeyGem or cloud HeyGen)
 # ─────────────────────────────────────────────
-Write-Step "STAGE 3" "Submitting to HeyGen for AI video render..."
+if ($UseLocalHeyGem) {
+    Write-Step "STAGE 3" "Rendering locally via HeyGem (ComfyUI) — FREE 🎉"
 
-$HeyGenKey = Require-Env $Config.heygen.api_key_env
+    if (-not $AvatarVideoPath -or -not (Test-Path $AvatarVideoPath)) {
+        throw "AvatarVideoPath required for local HeyGem. Record a 10-30s video of yourself speaking and pass it with -AvatarVideoPath."
+    }
 
-$VideoFile = & "$ScriptDir\Invoke-HeyGen.ps1" `
-    -ApiKey     $HeyGenKey `
-    -ScriptText $ScriptText `
-    -AvatarId   $Config.heygen.avatar_id `
-    -VoiceId    $Config.heygen.voice_id `
-    -OutputDir  $OutputDir `
-    -Slug       $LessonSlug `
-    -TestMode   ($TestMode -or $Config.heygen.test_mode)
+    $VideoFile = & "$ScriptDir\Invoke-HeyGem.ps1" `
+        -ScriptText      $ScriptText `
+        -AvatarVideoPath $AvatarVideoPath `
+        -OutputDir       $OutputDir `
+        -Slug            $LessonSlug
+
+} else {
+    Write-Step "STAGE 3" "Submitting to HeyGen cloud API (paid)..."
+
+    $HeyGenKey = Require-Env $Config.heygen.api_key_env
+
+    $VideoFile = & "$ScriptDir\Invoke-HeyGen.ps1" `
+        -ApiKey     $HeyGenKey `
+        -ScriptText $ScriptText `
+        -AvatarId   $Config.heygen.avatar_id `
+        -VoiceId    $Config.heygen.voice_id `
+        -OutputDir  $OutputDir `
+        -Slug       $LessonSlug `
+        -TestMode   ($TestMode -or $Config.heygen.test_mode)
+}
 
 if (-not (Test-Path $VideoFile)) {
     throw "Video render failed — file not found: $VideoFile"
