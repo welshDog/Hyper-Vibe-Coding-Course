@@ -8,6 +8,7 @@ import Pricing from './pages/Pricing';
 import LessonPlayer from './pages/LessonPlayer';
 import Dashboard from './pages/Dashboard';
 import PaymentSuccess from './pages/PaymentSuccess';
+import ScriptGenerator from './pages/ScriptGenerator';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
 
@@ -45,6 +46,14 @@ function App() {
             } 
           />
           <Route path="payment-success" element={<PaymentSuccess />} />
+          <Route
+            path="scripts"
+            element={
+              <PrivateRoute>
+                <ScriptGenerator />
+              </PrivateRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Route>
         {/* Lesson Player has its own layout */}
