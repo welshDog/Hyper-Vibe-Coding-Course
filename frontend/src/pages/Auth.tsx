@@ -108,6 +108,16 @@ export function Login() {
   );
 }
 
+// BUG-013: password validation rules
+const PASSWORD_MIN_LENGTH = 8;
+
+function validatePassword(pw: string): string | null {
+  if (pw.length < PASSWORD_MIN_LENGTH) return `At least ${PASSWORD_MIN_LENGTH} characters required`;
+  if (!/[A-Z]/.test(pw)) return 'Include at least one uppercase letter';
+  if (!/[0-9]/.test(pw)) return 'Include at least one number';
+  return null;
+}
+
 export function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -115,27 +125,37 @@ export function Register() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // BUG-014: show success state instead of silent redirect
+  const [success, setSuccess] = useState(false);
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    setPasswordError(e.target.value ? validatePassword(e.target.value) : null);
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+      setPasswordError(pwErr);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+        options: { data: { full_name: fullName } },
       });
-      
+
       if (error) throw error;
-      // Depending on email confirmation settings, user might need to verify email
-      // For now, assume they can login or show a message
-      navigate('/login'); // Redirect to login or dashboard
+      // BUG-014: show confirmation message — don't silently redirect
+      setSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -146,6 +166,32 @@ export function Register() {
       setLoading(false);
     }
   };
+
+  // ── Success state ──────────────────────────────────────────────────────
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
+            <div className="text-4xl mb-4">🚀</div>
+            <h2 className="text-2xl font-bold text-gray-900">Account created!</h2>
+            <p className="mt-3 text-gray-600">
+              Check your inbox at <strong>{email}</strong> and confirm your email before logging in.
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              (No email? Check your spam folder — it sometimes ends up there.)
+            </p>
+            <button
+              onClick={() => navigate('/login')}
+              className="mt-6 text-primary font-medium hover:underline text-sm"
+            >
+              Go to login →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -219,14 +265,24 @@ export function Register() {
                   type="password"
                   autoComplete="new-password"
                   required
+                  minLength={PASSWORD_MIN_LENGTH}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
+                  className={passwordError ? 'border-red-400 focus:ring-red-400' : ''}
                 />
               </div>
+              {passwordError && (
+                <p className="mt-1 text-xs text-red-600">{passwordError}</p>
+              )}
+              {!passwordError && !password && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Min 8 chars, one uppercase, one number
+                </p>
+              )}
             </div>
 
             <div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || !!passwordError}>
                 {loading ? 'Creating account...' : 'Create account'}
               </Button>
             </div>

@@ -1,17 +1,34 @@
 import { test, expect, type Route } from '@playwright/test';
 
-test.describe.skip('Enrollment & Learning', () => {
+// ── helpers ──────────────────────────────────────────────────────────────────
+const SUPABASE_ORIGIN = '**://dehhqwwsitvzgjrupapy.supabase.co/**';
+
+const fulfillJson = async (route: Route, payload: unknown, status = 200) => {
+  await route.fulfill({
+    status,
+    contentType: 'application/json',
+    body: JSON.stringify(payload),
+  });
+};
+
+const wantsObject = (route: Route) =>
+  Boolean(route.request().headers()['accept']?.includes('application/vnd.pgrst.object+json'));
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Enrollment & Learning', () => {
   const user = {
     id: 'test-user-id',
     email: 'test@example.com',
     fullName: 'Test User',
   };
 
+  // Price MUST be 0 — non-zero courses redirect to Stripe (tested separately)
   const course = {
     id: '1',
     title: 'Intro to Programming',
     description: 'Learn the basics of coding.',
-    price: 29.99,
+    price: 0,
     duration_minutes: 120,
     difficulty: 'beginner',
     thumbnail_url: 'https://via.placeholder.com/150',
@@ -19,10 +36,29 @@ test.describe.skip('Enrollment & Learning', () => {
   };
 
   const lessons = [
-    { id: 'l1', title: 'Lesson 1', duration_seconds: 600, is_free: true, order_index: 1, video_url: 'http://example.com/video1', content: 'Lesson 1 Content' },
-    { id: 'l2', title: 'Lesson 2', duration_seconds: 1200, is_free: false, order_index: 2, video_url: 'http://example.com/video2', content: 'Lesson 2 Content' },
+    {
+      id: 'l1',
+      title: 'Lesson 1',
+      duration_seconds: 600,
+      is_free: true,
+      order_index: 1,
+      video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      content: 'Lesson 1 Content',
+      course_id: '1',
+    },
+    {
+      id: 'l2',
+      title: 'Lesson 2',
+      duration_seconds: 1200,
+      is_free: false,
+      order_index: 2,
+      video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      content: 'Lesson 2 Content',
+      course_id: '1',
+    },
   ];
 
+  // Tracks server-side enrollment state across the test
   let isEnrolled = false;
 
   test.beforeEach(async ({ page }) => {
@@ -31,23 +67,14 @@ test.describe.skip('Enrollment & Learning', () => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
 
-    const fulfillJson = async (route: Route, payload: unknown, status = 200) => {
-      await route.fulfill({
-        status,
-        contentType: 'application/json',
-        body: JSON.stringify(payload),
-      })
-    }
+    // ── Route all Supabase traffic through our mock ───────────────────────
+    // Domain-scoped — does NOT intercept Supabase realtime/websocket
+    await page.route(SUPABASE_ORIGIN, async (route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const asObject = wantsObject(route);
 
-    const shouldReturnObject = (acceptHeader: string | undefined) =>
-      Boolean(acceptHeader?.includes('application/vnd.pgrst.object+json'))
-
-    await page.route('**://dehhqwwsitvzgjrupapy.supabase.co/**', async (route) => {
-      const request = route.request()
-      const url = new URL(request.url())
-      const accept = request.headers()['accept']
-      const asObject = shouldReturnObject(accept)
-
+      // Auth: token exchange (login)
       if (url.pathname.startsWith('/auth/v1/token')) {
         await fulfillJson(route, {
           access_token: 'fake-jwt-token',
@@ -61,15 +88,17 @@ test.describe.skip('Enrollment & Learning', () => {
             email: user.email,
             user_metadata: { full_name: user.fullName },
           },
-        })
-        return
+        });
+        return;
       }
 
+      // Auth: logout
       if (url.pathname.startsWith('/auth/v1/logout')) {
-        await route.fulfill({ status: 204, body: '' })
-        return
+        await route.fulfill({ status: 204, body: '' });
+        return;
       }
 
+      // Auth: get user
       if (url.pathname.startsWith('/auth/v1/user')) {
         await fulfillJson(route, {
           id: user.id,
@@ -77,10 +106,11 @@ test.describe.skip('Enrollment & Learning', () => {
           role: 'authenticated',
           email: user.email,
           user_metadata: { full_name: user.fullName },
-        })
-        return
+        });
+        return;
       }
 
+      // DB: users profile
       if (url.pathname.startsWith('/rest/v1/users')) {
         const payload = {
           id: user.id,
@@ -88,103 +118,162 @@ test.describe.skip('Enrollment & Learning', () => {
           full_name: user.fullName,
           role: 'student',
           created_at: new Date().toISOString(),
-        }
-        await fulfillJson(route, asObject ? payload : [payload])
-        return
+        };
+        await fulfillJson(route, asObject ? payload : [payload]);
+        return;
       }
 
+      // DB: courses
       if (url.pathname.startsWith('/rest/v1/courses')) {
-        const isSingle = url.searchParams.get('id')?.startsWith('eq.') ?? false
-        await fulfillJson(route, asObject || isSingle ? course : [course])
-        return
+        await fulfillJson(route, asObject ? course : [course]);
+        return;
       }
 
+      // DB: lessons
       if (url.pathname.startsWith('/rest/v1/lessons')) {
-        await fulfillJson(route, asObject ? lessons[0] : lessons)
-        return
+        await fulfillJson(route, asObject ? lessons[0] : lessons);
+        return;
       }
 
+      // DB: enrollments
       if (url.pathname.startsWith('/rest/v1/enrollments')) {
-        const method = request.method()
+        const method = request.method();
 
+        // Enrollment upsert (POST with on-conflict header)
         if (method === 'POST') {
-          isEnrolled = true
-          const payload = { id: 'enrollment-1', user_id: user.id, course_id: course.id, progress_percentage: 0 }
-          await fulfillJson(route, asObject ? payload : [payload], 201)
-          return
+          isEnrolled = true;
+          const payload = {
+            id: 'enrollment-1',
+            user_id: user.id,
+            course_id: course.id,
+            progress_percentage: 0,
+          };
+          await fulfillJson(route, asObject ? payload : [payload], 201);
+          return;
         }
 
+        // Progress percentage update (PATCH)
         if (method === 'PATCH') {
-          const payload = { id: 'enrollment-1', progress_percentage: 50 }
-          await fulfillJson(route, asObject ? payload : [payload])
-          return
+          const payload = { id: 'enrollment-1', progress_percentage: 50 };
+          await fulfillJson(route, asObject ? payload : [payload]);
+          return;
         }
 
-        if (url.searchParams.get('course_id')?.startsWith('eq.') ?? false) {
-          if (!isEnrolled) {
-            await fulfillJson(route, asObject ? null : [])
-            return
-          }
-
-          const payload = { id: 'enrollment-1', user_id: user.id, course_id: course.id, progress_percentage: 0 }
-          await fulfillJson(route, asObject ? payload : [payload])
-          return
+        // Enrollment check (GET with filters)
+        const enrolled = isEnrolled;
+        if (!enrolled) {
+          await fulfillJson(route, asObject ? null : []);
+          return;
         }
-
-        await fulfillJson(route, [])
-        return
+        const payload = {
+          id: 'enrollment-1',
+          user_id: user.id,
+          course_id: course.id,
+          progress_percentage: 0,
+        };
+        await fulfillJson(route, asObject ? payload : [payload]);
+        return;
       }
 
+      // DB: progress
       if (url.pathname.startsWith('/rest/v1/progress')) {
-        const method = request.method()
-        if (method === 'POST' || method === 'PATCH') {
-          const payload = { id: 'progress-1', lesson_id: lessons[0].id, completed: true }
-          await fulfillJson(route, asObject ? payload : [payload], 201)
-          return
+        const method = request.method();
+        if (method === 'POST') {
+          await fulfillJson(
+            route,
+            asObject
+              ? { id: 'progress-1', lesson_id: lessons[0].id, completed: true }
+              : [{ id: 'progress-1', lesson_id: lessons[0].id, completed: true }],
+            201,
+          );
+          return;
         }
-
-        await fulfillJson(route, [])
-        return
+        // GET progress: return empty (nothing completed yet)
+        await fulfillJson(route, asObject ? null : []);
+        return;
       }
 
-      await route.continue()
-    })
+      // Anything else: pass through (realtime, storage, etc.)
+      await route.continue();
+    });
 
+    // ── Log in before each test ───────────────────────────────────────────
     await page.goto('/login');
     await page.fill('input[name="email"]', user.email);
     await page.fill('input[name="password"]', 'password');
     await page.click('button[type="submit"]');
-    await expect(page).toHaveURL('/dashboard');
+    await expect(page).toHaveURL('/dashboard', { timeout: 10_000 });
     await expect(page.getByRole('heading', { name: 'My Learning' })).toBeVisible();
   });
 
-  test('should enroll in a course and complete a lesson', async ({ page }) => {
+  test('should enroll in a free course and navigate to lesson player', async ({ page }) => {
     await page.goto('/courses');
 
-    await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15000 });
+    // Wait for course card to appear
+    await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15_000 });
 
+    // Navigate to course detail
     await page.getByRole('button', { name: 'View Course' }).first().click();
-    await expect(page).toHaveURL(/\/courses\/1/);
-
-    await expect(page.locator('h1')).toBeVisible();
+    await expect(page).toHaveURL(/\/courses\/1/, { timeout: 10_000 });
     await expect(page.locator('h1')).toHaveText(course.title);
 
-    page.once('dialog', async (dialog) => dialog.accept());
-
-    const enrollButton = page.locator('button:has-text("Enroll")');
+    // Enroll (free course → direct enrollment, no Stripe redirect)
+    const enrollButton = page.locator('button', { hasText: /Enroll/ });
     await expect(enrollButton).toBeVisible();
-
     await enrollButton.click();
 
-    await expect(page).toHaveURL(/\/learn\//);
+    // Should navigate to lesson player
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10_000 });
+  });
 
-    await expect(page.getByTestId('video-player')).toBeVisible();
+  test('should display lesson player with correct content', async ({ page }) => {
+    // Go directly to lesson player (simulate already-enrolled state)
+    isEnrolled = true;
+    await page.goto('/learn/1');
+
+    await expect(page.getByTestId('lesson-player-container')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('course-title')).toHaveText(course.title);
     await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 1');
+    await expect(page.getByTestId('lesson-list')).toBeVisible();
+  });
 
+  test('should mark a lesson complete and update progress', async ({ page }) => {
+    isEnrolled = true;
+    await page.goto('/learn/1');
+
+    await expect(page.getByTestId('mark-complete-btn')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('mark-complete-btn').click();
 
-    await expect(page.getByTestId('lesson-completed-icon-0')).toBeVisible();
+    // Completed icon appears for lesson 0
+    await expect(page.getByTestId('lesson-completed-icon-0')).toBeVisible({ timeout: 5_000 });
 
+    // Progress text updates
     await expect(page.getByTestId('progress-text')).toHaveText('1 / 2 completed');
+  });
+
+  test('should navigate between lessons', async ({ page }) => {
+    isEnrolled = true;
+    await page.goto('/learn/1');
+
+    await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 1', { timeout: 15_000 });
+
+    // Previous button disabled on first lesson
+    await expect(page.getByTestId('prev-lesson-btn')).toBeDisabled();
+
+    // Go to next lesson
+    await page.getByTestId('next-lesson-btn').click();
+    await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 2');
+
+    // Now Previous is enabled, Next is disabled
+    await expect(page.getByTestId('prev-lesson-btn')).not.toBeDisabled();
+    await expect(page.getByTestId('next-lesson-btn')).toBeDisabled();
+  });
+
+  test('should redirect unenrolled user away from lesson player', async ({ page }) => {
+    // isEnrolled stays false — enrollment check returns empty
+    await page.goto('/learn/1');
+
+    // LessonPlayer should redirect to course detail when not enrolled
+    await expect(page).toHaveURL(/\/courses\/1/, { timeout: 10_000 });
   });
 });
