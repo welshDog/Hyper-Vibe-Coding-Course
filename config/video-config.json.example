@@ -1,16 +1,25 @@
 {
+  "_comment": "Copy this to config/video-config.json and fill in your values. Never commit real keys.",
   "heygen": {
-    "api_key": "YOUR_HEYGEN_API_KEY_HERE",
-    "avatar_id": "YOUR_AVATAR_ID_HERE",
-    "voice_id": "YOUR_VOICE_ID_HERE"
+    "api_key_env": "HEYGEN_API_KEY",
+    "avatar_id": "YOUR_HEYGEN_AVATAR_ID",
+    "voice_id": "YOUR_HEYGEN_VOICE_ID",
+    "test_mode": true
+  },
+  "synthesia": {
+    "api_key_env": "SYNTHESIA_API_KEY",
+    "template_id": "YOUR_SYNTHESIA_TEMPLATE_ID"
   },
   "youtube": {
-    "client_secrets_path": "config/youtube-client-secrets.json",
-    "token_path": "config/youtube-token.pickle"
+    "client_secrets_env": "YOUTUBE_CLIENT_SECRETS_PATH",
+    "default_privacy": "unlisted",
+    "playlist_id": "YOUR_PLAYLIST_ID"
   },
-  "course": {
-    "title": "Hyper Vibe Coding Course",
-    "channel": "BROski Hyper Vibe",
-    "default_privacy": "unlisted"
+  "defaults": {
+    "resolution": "1080p",
+    "captions": true,
+    "font": "JetBrains Mono",
+    "lesson_max_minutes": 10,
+    "background_color": "#0d0d1a"
   }
 }

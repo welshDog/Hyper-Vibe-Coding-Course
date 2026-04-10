@@ -57,3 +57,15 @@ supabase/.temp/
 
 # Trae IDE (local AI editor artifacts)
 .trae/
+
+# Video pipeline — real keys and large files never committed
+config/video-config.json
+assets/videos/*.mp4
+assets/videos/*.mov
+assets/videos/scripts/*.txt
+!assets/videos/.gitkeep
+!assets/videos/scripts/.gitkeep
+
+# Skill extraction artifacts
+Claude/skills/extracted/
+Claude/skills/*.zip

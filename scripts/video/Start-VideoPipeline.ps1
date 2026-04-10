@@ -1,53 +1,182 @@
-# ============================================================
-# Start-VideoPipeline.ps1 — Master runner for Hyper Vibe Course
-# Usage: .\Start-VideoPipeline.ps1 -LessonNumber 1
-#        .\Start-VideoPipeline.ps1 -LessonNumber 1 -TestMode:$false
-# ============================================================
+#Requires -Version 7.0
+<#
+.SYNOPSIS
+    Hyper Vibe Coding Course — Full AI Video Generation Pipeline
+    Stage 1: Parse curriculum  |  Stage 2: Generate script
+    Stage 3: Render (HeyGem local OR HeyGen cloud) | Stage 4: Upload to YouTube
+
+    HeyGem (local, free): requires ComfyUI + Docker. Record yourself once, reuse forever.
+    HeyGen (cloud, paid): fallback when local GPU not available.
+
+.PARAMETER LessonNumber
+    The lesson number to generate (e.g. 1, 2, 3)
+
+.PARAMETER CurriculumPath
+    Path to CURRICULUM.md (default: docs\course\CURRICULUM.md)
+
+.PARAMETER UseLocalHeyGem
+    Use local HeyGem via ComfyUI (free). Requires Docker + ComfyUI running.
+    If not set, falls back to HeyGen cloud API.
+
+.PARAMETER AvatarVideoPath
+    Path to your avatar reference video (only needed with -UseLocalHeyGem).
+    Record a 10-30s video of yourself speaking. Reused for all lessons.
+
+.PARAMETER TestMode
+    Cloud HeyGen only: renders watermarked test video (free). Default: true.
+    Ignored when -UseLocalHeyGem is set.
+
+.PARAMETER SkipUpload
+    If set, skips Stage 4 upload. Useful for local review first.
+
+.EXAMPLE
+    # Free local render (recommended)
+    .\Start-VideoPipeline.ps1 -LessonNumber 1 -UseLocalHeyGem -AvatarVideoPath ".\avatar.mp4"
+
+    # Cloud render (paid HeyGen API)
+    .\Start-VideoPipeline.ps1 -LessonNumber 1 -TestMode:$false
+#>
+
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory)]
     [int]$LessonNumber,
-    [bool]$TestMode = $true
+
+    [string]$CurriculumPath = "docs\course\CURRICULUM.md",
+
+    [switch]$UseLocalHeyGem,
+
+    [string]$AvatarVideoPath = "",
+
+    [bool]$TestMode = $true,
+
+    [switch]$SkipUpload
 )
 
-$ErrorActionPreference = 'Stop'
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RootDir   = Resolve-Path (Join-Path $ScriptDir '../..')
+$ErrorActionPreference = "Stop"
+$ScriptDir = $PSScriptRoot
+$RepoRoot  = Resolve-Path (Join-Path $ScriptDir "..\..")
+$ConfigPath = Join-Path $RepoRoot "config\video-config.json"
+$OutputDir  = Join-Path $RepoRoot "assets\videos"
 
-Write-Host "`n🚀 HYPER VIBE VIDEO PIPELINE" -ForegroundColor Cyan
-Write-Host   "============================" -ForegroundColor Cyan
-Write-Host   "Lesson : $LessonNumber" -ForegroundColor Yellow
-Write-Host   "Mode   : $(if ($TestMode) { 'TEST (watermarked)' } else { 'FINAL RENDER' })" -ForegroundColor Yellow
-Write-Host ""
+# ─────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────
+function Write-Step([string]$Stage, [string]$Msg) {
+    Write-Host ""
+    Write-Host "[$Stage] $Msg" -ForegroundColor Cyan
+}
 
-# ── Step 1: Load config ──────────────────────────────────────
-$ConfigPath = Join-Path $RootDir 'config/video-config.json'
+function Require-Env([string]$Name) {
+    $val = [System.Environment]::GetEnvironmentVariable($Name)
+    if (-not $val) {
+        throw "Missing required environment variable: $Name`nSet it with: `$env:$Name = 'your-key'"
+    }
+    return $val
+}
+
+# ─────────────────────────────────────────────
+# Load config
+# ─────────────────────────────────────────────
 if (-not (Test-Path $ConfigPath)) {
-    Write-Error "❌ Config not found at $ConfigPath — copy video-config.json.example and fill in your keys!"
-    exit 1
+    throw "Config not found: $ConfigPath`nCopy config\video-config.json.example and fill in your values."
 }
 $Config = Get-Content $ConfigPath | ConvertFrom-Json
-Write-Host "✅ Config loaded" -ForegroundColor Green
 
-# ── Step 2: Get lesson script ────────────────────────────────
-Write-Host "`n📝 Step 1/3 — Generating lesson script..." -ForegroundColor Cyan
-$Script = & (Join-Path $ScriptDir 'Get-LessonScript.ps1') -LessonNumber $LessonNumber -RootDir $RootDir
-Write-Host "✅ Script ready ($($Script.Length) chars)" -ForegroundColor Green
+# ─────────────────────────────────────────────
+# STAGE 1+2 — Parse curriculum + generate script
+# ─────────────────────────────────────────────
+Write-Step "STAGE 1/2" "Parsing curriculum and generating video script..."
 
-# ── Step 3: Submit to HeyGen ────────────────────────────────
-Write-Host "`n🎬 Step 2/3 — Submitting to HeyGen..." -ForegroundColor Cyan
-$OutputPath = Join-Path $RootDir "assets/videos/course1-lesson$('{0:D2}' -f $LessonNumber)-$(Get-Date -Format 'yyyyMMdd-HHmm').mp4"
-& (Join-Path $ScriptDir 'Invoke-HeyGen.ps1') `
-    -ScriptText $Script `
-    -OutputPath $OutputPath `
-    -Config $Config `
-    -TestMode $TestMode
-Write-Host "✅ Video rendered: $OutputPath" -ForegroundColor Green
-
-# ── Step 4: Publish to YouTube ──────────────────────────────
-Write-Host "`n📤 Step 3/3 — Publishing to YouTube..." -ForegroundColor Cyan
-& (Join-Path $ScriptDir 'Publish-CourseVideo.ps1') `
-    -VideoPath $OutputPath `
+$ScriptOutput = & "$ScriptDir\Get-LessonScript.ps1" `
     -LessonNumber $LessonNumber `
-    -Config $Config
+    -CurriculumPath (Join-Path $RepoRoot $CurriculumPath)
 
-Write-Host "`n🏆 PIPELINE COMPLETE! BROski♾" -ForegroundColor Magenta
+if (-not $ScriptOutput.ScriptText) {
+    throw "Script generation failed. Check Get-LessonScript.ps1 output."
+}
+
+$LessonSlug  = $ScriptOutput.Slug
+$ScriptText  = $ScriptOutput.ScriptText
+$LessonTitle = $ScriptOutput.Title
+
+# Save script to disk for review
+$ScriptFilePath = Join-Path $OutputDir "scripts\$LessonSlug.txt"
+New-Item -ItemType Directory -Force -Path (Split-Path $ScriptFilePath) | Out-Null
+$ScriptText | Set-Content $ScriptFilePath -Encoding UTF8
+
+Write-Host "  Script saved: $ScriptFilePath" -ForegroundColor Green
+Write-Host "  Lesson: $LessonTitle" -ForegroundColor Green
+
+# ─────────────────────────────────────────────
+# STAGE 3 — AI video render (local HeyGem or cloud HeyGen)
+# ─────────────────────────────────────────────
+if ($UseLocalHeyGem) {
+    Write-Step "STAGE 3" "Rendering locally via HeyGem (ComfyUI) — FREE 🎉"
+
+    if (-not $AvatarVideoPath -or -not (Test-Path $AvatarVideoPath)) {
+        throw "AvatarVideoPath required for local HeyGem. Record a 10-30s video of yourself speaking and pass it with -AvatarVideoPath."
+    }
+
+    $VideoFile = & "$ScriptDir\Invoke-HeyGem.ps1" `
+        -ScriptText      $ScriptText `
+        -AvatarVideoPath $AvatarVideoPath `
+        -OutputDir       $OutputDir `
+        -Slug            $LessonSlug
+
+} else {
+    Write-Step "STAGE 3" "Submitting to HeyGen cloud API (paid)..."
+
+    $HeyGenKey = Require-Env $Config.heygen.api_key_env
+
+    $VideoFile = & "$ScriptDir\Invoke-HeyGen.ps1" `
+        -ApiKey     $HeyGenKey `
+        -ScriptText $ScriptText `
+        -AvatarId   $Config.heygen.avatar_id `
+        -VoiceId    $Config.heygen.voice_id `
+        -OutputDir  $OutputDir `
+        -Slug       $LessonSlug `
+        -TestMode   ($TestMode -or $Config.heygen.test_mode)
+}
+
+if (-not (Test-Path $VideoFile)) {
+    throw "Video render failed — file not found: $VideoFile"
+}
+
+Write-Host "  Video rendered: $VideoFile" -ForegroundColor Green
+
+# ─────────────────────────────────────────────
+# STAGE 4 — Upload
+# ─────────────────────────────────────────────
+if ($SkipUpload) {
+    Write-Step "STAGE 4" "Upload skipped (-SkipUpload flag set)."
+} else {
+    Write-Step "STAGE 4" "Uploading to YouTube (unlisted)..."
+
+    $YoutubeSecretsPath = Require-Env $Config.youtube.client_secrets_env
+
+    & "$ScriptDir\Publish-CourseVideo.ps1" `
+        -VideoPath   $VideoFile `
+        -Title       "Lesson $LessonNumber`: $LessonTitle | Hyper Vibe Coding Course" `
+        -Description $ScriptOutput.Description `
+        -Tags        @("coding","vibe coding","AI dev","neurodivergent","lesson $LessonNumber") `
+        -Privacy     $Config.youtube.default_privacy `
+        -PlaylistId  $Config.youtube.playlist_id `
+        -SecretsPath $YoutubeSecretsPath
+}
+
+# ─────────────────────────────────────────────
+# Done
+# ─────────────────────────────────────────────
+Write-Host ""
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host " PIPELINE COMPLETE — Lesson $LessonNumber" -ForegroundColor Magenta
+Write-Host "========================================" -ForegroundColor Magenta
+Write-Host " Script : $ScriptFilePath"
+Write-Host " Video  : $VideoFile"
+if (-not $SkipUpload) {
+    Write-Host " Uploaded to YouTube (unlisted)"
+}
+Write-Host ""
+if ($TestMode) {
+    Write-Host "[TEST MODE] Video is watermarked. Re-run with -TestMode:`$false for final render." -ForegroundColor Yellow
+}

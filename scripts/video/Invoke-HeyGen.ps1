@@ -1,75 +1,136 @@
-# ============================================================
-# Invoke-HeyGen.ps1 — Submits script to HeyGen, polls, downloads
-# ============================================================
+#Requires -Version 7.0
+<#
+.SYNOPSIS
+    Stage 3: Submit video script to HeyGen API, poll until complete, download MP4.
+    Returns the local file path of the downloaded video.
+
+.PARAMETER ApiKey      HeyGen API key
+.PARAMETER ScriptText  Full video script text
+.PARAMETER AvatarId    HeyGen avatar ID (from config)
+.PARAMETER VoiceId     HeyGen voice ID (from config)
+.PARAMETER OutputDir   Where to save the downloaded MP4
+.PARAMETER Slug        File name slug (e.g. course1-lesson01-intro)
+.PARAMETER TestMode    If true, renders watermarked test video (free)
+#>
+
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$ScriptText,
-    [Parameter(Mandatory=$true)]
-    [string]$OutputPath,
-    [Parameter(Mandatory=$true)]
-    [object]$Config,
+    [Parameter(Mandatory)] [string]$ApiKey,
+    [Parameter(Mandatory)] [string]$ScriptText,
+    [Parameter(Mandatory)] [string]$AvatarId,
+    [Parameter(Mandatory)] [string]$VoiceId,
+    [Parameter(Mandatory)] [string]$OutputDir,
+    [Parameter(Mandatory)] [string]$Slug,
     [bool]$TestMode = $true
 )
 
-$ApiKey   = $env:HEYGEN_API_KEY ?? $Config.heygen.api_key
-$AvatarId = $Config.heygen.avatar_id
-$VoiceId  = $Config.heygen.voice_id
-$BaseUrl  = 'https://api.heygen.com'
+$ErrorActionPreference = "Stop"
 
-if (-not $ApiKey) {
-    Write-Error "❌ No HeyGen API key! Set env:HEYGEN_API_KEY or add to config/video-config.json"
-    exit 1
-}
-
+$BaseUrl = "https://api.heygen.com"
 $Headers = @{
-    'X-Api-Key'    = $ApiKey
-    'Content-Type' = 'application/json'
+    "X-Api-Key"    = $ApiKey
+    "Content-Type" = "application/json"
 }
 
-# ── Submit video generation job ──────────────────────────────
-$Body = @{
-    video_inputs = @(@{
-        character = @{ type = 'avatar'; avatar_id = $AvatarId; avatar_style = 'normal' }
-        voice     = @{ type = 'text'; input_text = $ScriptText; voice_id = $VoiceId }
-    })
-    dimension    = @{ width = 1920; height = 1080 }
-    test         = $TestMode
+# ─────────────────────────────────────────────
+# Strip script template markers — send clean narration only
+# HeyGen receives the narration text; visual cues are for human review
+# ─────────────────────────────────────────────
+$narrationLines = @()
+$scriptLines = $ScriptText -split "`n"
+foreach ($line in $scriptLines) {
+    # Skip metadata headers, VISUAL lines, and section markers
+    if ($line -match "^(LESSON:|DURATION:|AVATAR:|VOICE:|VISUAL:|^\[)" ) { continue }
+    if ($line.Trim() -eq "" -or $line.Trim() -eq "[PAUSE]") { continue }
+    $narrationLines += $line.Trim()
+}
+$narration = $narrationLines -join " "
+
+# ─────────────────────────────────────────────
+# Submit video generation request
+# ─────────────────────────────────────────────
+$body = @{
+    video_inputs = @(
+        @{
+            character = @{
+                type       = "avatar"
+                avatar_id  = $AvatarId
+                avatar_style = "normal"
+            }
+            voice = @{
+                type     = "text"
+                input_text = $narration
+                voice_id = $VoiceId
+            }
+            background = @{
+                type  = "color"
+                value = "#0d0d1a"   # Hyper Vibe dark brand background
+            }
+        }
+    )
+    dimension = @{ width = 1920; height = 1080 }
+    caption   = $true
+    test      = $TestMode
 } | ConvertTo-Json -Depth 10
 
-Write-Host "  Submitting to HeyGen API..." -ForegroundColor Gray
-$Response = Invoke-RestMethod -Uri "$BaseUrl/v2/video/generate" `
-    -Method POST -Headers $Headers -Body $Body
+Write-Host "  Submitting to HeyGen (test_mode=$TestMode)..." -ForegroundColor DarkCyan
 
-$VideoId = $Response.data.video_id
-Write-Host "  Job ID: $VideoId" -ForegroundColor Gray
+$response = Invoke-RestMethod `
+    -Uri     "$BaseUrl/v2/video/generate" `
+    -Method  POST `
+    -Headers $Headers `
+    -Body    $body
 
-# ── Poll until complete ──────────────────────────────────────
-$MaxWait  = 600  # 10 min timeout
-$Elapsed  = 0
-$Interval = 15
-
-Write-Host "  Waiting for render" -NoNewline -ForegroundColor Gray
-do {
-    Start-Sleep -Seconds $Interval
-    $Elapsed += $Interval
-    Write-Host "." -NoNewline -ForegroundColor Cyan
-    $Status = Invoke-RestMethod -Uri "$BaseUrl/v1/video_status.get?video_id=$VideoId" `
-        -Method GET -Headers $Headers
-} while ($Status.data.status -notin @('completed','failed') -and $Elapsed -lt $MaxWait)
-
-Write-Host " Done!" -ForegroundColor Green
-
-if ($Status.data.status -eq 'failed') {
-    Write-Error "❌ HeyGen render failed: $($Status.data.error)"
-    exit 1
+$videoId = $response.data.video_id
+if (-not $videoId) {
+    throw "HeyGen did not return a video_id. Response: $($response | ConvertTo-Json)"
 }
 
-# ── Download MP4 ─────────────────────────────────────────────
-$VideoUrl = $Status.data.video_url
-Write-Host "  Downloading MP4..." -ForegroundColor Gray
+Write-Host "  Video ID: $videoId — polling for completion..." -ForegroundColor DarkCyan
 
-$Dir = Split-Path -Parent $OutputPath
-if (-not (Test-Path $Dir)) { New-Item -ItemType Directory -Path $Dir | Out-Null }
+# ─────────────────────────────────────────────
+# Poll until complete (max 20 min)
+# ─────────────────────────────────────────────
+$maxAttempts  = 40   # 40 × 30s = 20 min
+$pollInterval = 30   # seconds
+$attempt      = 0
+$videoUrl     = $null
 
-Invoke-WebRequest -Uri $VideoUrl -OutFile $OutputPath
-Write-Host "  ✅ Saved to: $OutputPath" -ForegroundColor Green
+do {
+    Start-Sleep -Seconds $pollInterval
+    $attempt++
+
+    $status = Invoke-RestMethod `
+        -Uri     "$BaseUrl/v1/video_status.get?video_id=$videoId" `
+        -Method  GET `
+        -Headers $Headers
+
+    $st = $status.data.status
+    Write-Host "  Attempt $attempt/$maxAttempts — status: $st" -ForegroundColor DarkGray
+
+    if ($st -eq "completed") {
+        $videoUrl = $status.data.video_url
+        break
+    }
+    if ($st -eq "failed") {
+        throw "HeyGen render failed. Error: $($status.data.error)"
+    }
+
+} while ($attempt -lt $maxAttempts)
+
+if (-not $videoUrl) {
+    throw "Timed out waiting for HeyGen render after $($maxAttempts * $pollInterval / 60) minutes."
+}
+
+# ─────────────────────────────────────────────
+# Download MP4
+# ─────────────────────────────────────────────
+New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+$outFile = Join-Path $OutputDir "$Slug.mp4"
+
+Write-Host "  Downloading video to: $outFile" -ForegroundColor DarkCyan
+Invoke-WebRequest -Uri $videoUrl -OutFile $outFile
+
+Write-Host "  Download complete." -ForegroundColor Green
+
+# Return the local path (caller uses this)
+return $outFile
