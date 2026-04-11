@@ -29,7 +29,10 @@
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" checkout main)",
       "Bash(git -C 'H:\\\\the hyper vibe coding hub' merge develop --no-ff -m ':*)",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add .claude/settings.local.json)",
-      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" commit -m \"chore: save local settings before branch switch\")"
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" commit -m \"chore: save local settings before branch switch\")",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" push origin main)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" push origin develop)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" commit -m \"chore: update local permission allowlist\")"
     ]
   }
 }
