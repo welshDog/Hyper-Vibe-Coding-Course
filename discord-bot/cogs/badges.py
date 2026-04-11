@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from utils.safe_command import safe_interaction
 
 BADGE_META = {
     "first_vibe":    {"emoji": "🚀", "title": "First Vibe",     "desc": "Completed your first lesson"},
@@ -42,6 +43,7 @@ class BadgesCog(commands.Cog):
         self.bot = bot
 
     @discord.app_commands.command(name="badges", description="See all available Hyper Vibe badges")
+    @safe_interaction
     async def badges(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="🏅 Hyper Vibe Badge Catalogue",

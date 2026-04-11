@@ -42,6 +42,28 @@ class HyperVibeBot(commands.Bot):
             )
         )
 
+    async def on_app_command_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+    ) -> None:
+        """Global fallback — catches any slash command error not handled by @safe_interaction."""
+        log.error(
+            "Unhandled app_command error in '%s' called by %s: %s",
+            interaction.command.name if interaction.command else "unknown",
+            interaction.user,
+            error,
+            exc_info=error,
+        )
+        msg = "⚡ Something went wrong. Try again shortly."
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(msg, ephemeral=True)
+            else:
+                await interaction.followup.send(msg, ephemeral=True)
+        except Exception:
+            pass  # nothing more we can do
+
 
 async def main():
     bot = HyperVibeBot()

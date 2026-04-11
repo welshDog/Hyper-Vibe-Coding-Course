@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands, tasks
+from utils.safe_command import safe_interaction
 from datetime import datetime, time, timezone
 import db
 
@@ -91,6 +92,7 @@ class QuestsCog(commands.Cog):
 
     # ── /quest — show this week's quest on demand ──────────────────────────────
     @discord.app_commands.command(name="quest", description="See this week's active quest")
+    @safe_interaction
     async def quest(self, interaction: discord.Interaction):
         quest = self._current_quest()
         now   = datetime.now(timezone.utc)
