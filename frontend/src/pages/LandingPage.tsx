@@ -107,6 +107,13 @@ const VIBE_VS_TRADITIONAL = [
   { old: 'Quit when ADHD hits', vibe: 'Short loops designed for your brain' },
 ]
 
+// ─── Email validation ─────────────────────────────────────────────────────────
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
+
+function isValidEmail(value: string): boolean {
+  return value.length <= 254 && EMAIL_REGEX.test(value.trim())
+}
+
 // ─── Shared waitlist submit ────────────────────────────────────────────────────
 async function submitWaitlist(
   email: string,
@@ -146,16 +153,16 @@ export default function LandingPage() {
 
   async function submitHeroWaitlist(e: React.FormEvent) {
     e.preventDefault()
-    if (!heroEmail || !heroEmail.includes('@')) return
+    if (!isValidEmail(heroEmail)) return
     setHeroStatus('loading')
-    setHeroStatus(await submitWaitlist(heroEmail, 'hero'))
+    setHeroStatus(await submitWaitlist(heroEmail.trim().toLowerCase(), 'hero'))
   }
 
   async function submitFooterWaitlist(e: React.FormEvent) {
     e.preventDefault()
-    if (!footerEmail || !footerEmail.includes('@')) return
+    if (!isValidEmail(footerEmail)) return
     setFooterStatus('loading')
-    setFooterStatus(await submitWaitlist(footerEmail, 'footer'))
+    setFooterStatus(await submitWaitlist(footerEmail.trim().toLowerCase(), 'footer'))
   }
 
   return (

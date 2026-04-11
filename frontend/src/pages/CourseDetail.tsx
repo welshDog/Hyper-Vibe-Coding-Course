@@ -92,18 +92,8 @@ export default function CourseDetail() {
     const paymentUrl = getCoursePaymentLinkUrl(course.id, user.email);
 
     if (!paymentUrl) {
-      // Stripe not configured — fall back to direct enrollment (dev/demo only)
-      console.warn('No Stripe payment link configured for this course — enrolling directly (dev mode)');
-      const { error } = await supabase
-        .from('enrollments')
-        .upsert(
-          { user_id: user.id, course_id: id, progress_percentage: 0 },
-          { onConflict: 'user_id,course_id' }
-        );
-      if (!error) {
-        setIsEnrolled(true);
-        navigate(`/learn/${id}`);
-      }
+      console.error('[CourseDetail] No Stripe payment link configured — blocking enrollment to prevent bypass');
+      alert('Payment system is temporarily unavailable. Please try again later.');
       setEnrolling(false);
       return;
     }
