@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import db
+from utils.safe_command import safe_interaction
 
 BADGE_EMOJI = {
     "first_vibe":   "🚀",
@@ -38,6 +39,7 @@ class XPCog(commands.Cog):
     # ── /link — connect Discord account to platform email ─────────────────────
     @app_commands.command(name="link", description="Link your Discord to your Hyper Vibe account")
     @app_commands.describe(email="The email you registered with on the platform")
+    @safe_interaction
     async def link(self, interaction: discord.Interaction, email: str):
         await interaction.response.defer(ephemeral=True)
         success = db.link_discord(str(interaction.user.id), email.lower().strip())
@@ -54,6 +56,7 @@ class XPCog(commands.Cog):
 
     # ── /xp — show your own stats ─────────────────────────────────────────────
     @app_commands.command(name="xp", description="Check your Hyper Vibe XP and badges")
+    @safe_interaction
     async def xp(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
@@ -96,6 +99,7 @@ class XPCog(commands.Cog):
 
     # ── /leaderboard — top 10 ─────────────────────────────────────────────────
     @app_commands.command(name="leaderboard", description="Top 10 Hyper Vibe builders this week")
+    @safe_interaction
     async def leaderboard(self, interaction: discord.Interaction):
         await interaction.response.defer()
 

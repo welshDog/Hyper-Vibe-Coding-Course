@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import random
 import db
+from utils.safe_command import safe_interaction
 
 # ── Rank labels (mirrors xp.py) ───────────────────────────────────────────────
 RANK_LABELS = [
@@ -56,6 +57,7 @@ class CommandsCog(commands.Cog):
 
     # ── /vibecheck ─────────────────────────────────────────────────────────────
     @app_commands.command(name="vibecheck", description="Get a random Hyper Vibe motivation hit 🔥")
+    @safe_interaction
     async def vibecheck(self, interaction: discord.Interaction):
         quote = random.choice(VIBE_QUOTES)
         embed = discord.Embed(
@@ -68,6 +70,7 @@ class CommandsCog(commands.Cog):
 
     # ── /course ────────────────────────────────────────────────────────────────
     @app_commands.command(name="course", description="See all Hyper Vibe course modules 📚")
+    @safe_interaction
     async def course(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="📚 Hyper Vibe Course — Module Map",
@@ -85,6 +88,7 @@ class CommandsCog(commands.Cog):
 
     # ── /rank ──────────────────────────────────────────────────────────────────
     @app_commands.command(name="rank", description="Check your current BROski rank 🏆")
+    @safe_interaction
     async def rank(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
@@ -141,6 +145,7 @@ class CommandsCog(commands.Cog):
 
     # ── /coins ─────────────────────────────────────────────────────────────────
     @app_commands.command(name="coins", description="Check your BROski$ coin balance 💰")
+    @safe_interaction
     async def coins(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
@@ -172,6 +177,7 @@ class CommandsCog(commands.Cog):
 
     # ── /help ──────────────────────────────────────────────────────────────────
     @app_commands.command(name="help", description="All Hyper Vibe bot commands 📖")
+    @safe_interaction
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="🤖 Hyper Vibe Bot — Command Guide",
