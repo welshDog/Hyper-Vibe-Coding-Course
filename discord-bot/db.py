@@ -42,12 +42,37 @@ def get_user_xp(email: str) -> dict | None:
 
 
 def get_leaderboard(limit: int = 10) -> list[dict]:
-    """Top N users by total XP, aggregated from achievements table."""
-    res = (
-        _client.rpc("leaderboard_top", {"row_limit": limit})
+    """Top N users by achievement count via leaderboard_top RPC.
+
+    leaderboard_top now returns (user_id, badge_count) only — email was
+    removed for GDPR compliance. We enrich with discord_id so the bot
+    can resolve display names from the guild member list.
+
+    Returns list of { user_id, badge_count, total_xp, discord_id | None }
+    """
+    res = _client.rpc("leaderboard_top", {"row_limit": limit}).execute()
+    rows = res.data or []
+    if not rows:
+        return []
+
+    user_ids = [r["user_id"] for r in rows]
+    links_res = (
+        _client.table("discord_links")
+        .select("user_id, discord_id")
+        .in_("user_id", user_ids)
         .execute()
     )
-    return res.data or []
+    discord_map = {l["user_id"]: l["discord_id"] for l in (links_res.data or [])}
+
+    return [
+        {
+            "user_id":     r["user_id"],
+            "badge_count": r["badge_count"],
+            "total_xp":    r["badge_count"] * 100,
+            "discord_id":  discord_map.get(r["user_id"]),
+        }
+        for r in rows
+    ]
 
 
 def get_user_by_discord_id(discord_id: str) -> dict | None:

@@ -32,7 +32,7 @@
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" commit -m \"chore: save local settings before branch switch\")",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" push origin main)",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" push origin develop)",
-      "Bash(git:*)"
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" commit -m \"chore: update local permission allowlist\")"
     ]
   }
 }
