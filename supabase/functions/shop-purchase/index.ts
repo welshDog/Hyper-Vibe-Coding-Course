@@ -17,7 +17,10 @@
 //   4. Spend tokens via spend_tokens() RPC (also service_role)
 //   5. Record in shop_purchases (INSERT)
 //   6. Unlock content if category = 'bonus_content'
-//   7. Return { success, item_name, spent_tokens, new_balance }
+//   7. Fulfil agent_access items → queue V2.4 provisioning
+//      (Phase 3 stub — sets fulfillment_metadata.status = 'pending_provisioning'
+//       until V2.4 provision-access endpoint is live)
+//   8. Return { success, item_name, spent_tokens, new_balance, agent_access_pending? }
 //
 // Setup:
 //   supabase functions deploy shop-purchase
@@ -62,12 +65,19 @@ function jsonHttpError(message: string, status: number): Response {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+type ShopItemMetadata = {
+  type?: string;       // 'agent_access' triggers V2.4 provisioning
+  v24_tier?: string;   // 'sandbox' | 'level4'
+  content_url?: string;
+};
+
 type ShopItem = {
   id: string;
   name: string;
   price_tokens: number;
   category: string;
   is_available: boolean;
+  metadata: ShopItemMetadata;
 };
 
 type SpendTokensResult = {
@@ -119,7 +129,7 @@ Deno.serve(async (req: Request) => {
   // ── 3. Fetch item (admin bypasses RLS) ────────────────────────────────────
   const { data: item, error: itemError } = await supabaseAdmin
     .from('shop_items')
-    .select('id, name, price_tokens, category, is_available')
+    .select('id, name, price_tokens, category, is_available, metadata')
     .eq('id', itemId)
     .maybeSingle();
 
@@ -216,6 +226,39 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // ── 7b. Queue V2.4 provisioning for agent_access items ───────────────────
+  // Phase 3 stub: the V2.4 provision-access endpoint does not exist yet.
+  // We record a pending state in fulfillment_metadata so the graduate script
+  // can check it, and return agent_access_pending:true so the frontend can
+  // show the right message ("check Discord for your setup link").
+  // When V2.4 provision-access is live, replace this block with a real fetch().
+  let agentAccessPending = false;
+
+  if (shopItem.metadata?.type === 'agent_access') {
+    agentAccessPending = true;
+    const { error: fulfillError } = await supabaseAdmin
+      .from('shop_purchases')
+      .update({
+        fulfillment_metadata: {
+          status:    'pending_provisioning',
+          v24_tier:  shopItem.metadata.v24_tier ?? 'sandbox',
+          queued_at: new Date().toISOString(),
+        },
+      })
+      .eq('user_id', userId)
+      .eq('item_id', itemId);
+
+    if (fulfillError) {
+      // Non-fatal — purchase already succeeded. Log and continue.
+      console.warn('fulfillment_metadata update failed (non-fatal):', fulfillError.message);
+    }
+
+    console.log(
+      `⏳ Agent access queued: user=${userId} tier=${shopItem.metadata.v24_tier ?? 'sandbox'} ` +
+      `(V2.4 provision-access endpoint pending — Phase 3)`,
+    );
+  }
+
   // ── 8. Fetch the current balance for the response ─────────────────────────
   // Prefer the value from spend_tokens result; fall back to a DB read.
   let newBalance: number;
@@ -236,9 +279,10 @@ Deno.serve(async (req: Request) => {
   );
 
   return jsonOk({
-    success:      true,
-    item_name:    shopItem.name,
-    spent_tokens: shopItem.price_tokens,
-    new_balance:  newBalance,
+    success:              true,
+    item_name:            shopItem.name,
+    spent_tokens:         shopItem.price_tokens,
+    new_balance:          newBalance,
+    ...(agentAccessPending && { agent_access_pending: true }),
   });
 });

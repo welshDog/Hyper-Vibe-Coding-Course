@@ -35,19 +35,21 @@ type PurchaseResult = {
   spent_tokens: number;
   new_balance: number;
   error?: string;
+  agent_access_pending?: boolean;
 };
 
 // ── Category config ───────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<string, { heading: string; badgeClasses: string }> = {
-  prompt_pack:   { heading: '🧠 Prompt Packs',       badgeClasses: 'bg-blue-100 text-blue-700'    },
-  bonus_content: { heading: '🎬 Bonus Content',       badgeClasses: 'bg-purple-100 text-purple-700' },
-  coaching:      { heading: '🎯 Coaching & Feedback', badgeClasses: 'bg-orange-100 text-orange-700' },
-  cosmetic:      { heading: '✨ Cosmetic Upgrades',   badgeClasses: 'bg-pink-100 text-pink-700'    },
+  agent_access:  { heading: '🤖 Agent Access',        badgeClasses: 'bg-indigo-100 text-indigo-700' },
+  prompt_pack:   { heading: '🧠 Prompt Packs',        badgeClasses: 'bg-blue-100 text-blue-700'    },
+  bonus_content: { heading: '🎬 Bonus Content',        badgeClasses: 'bg-purple-100 text-purple-700' },
+  coaching:      { heading: '🎯 Coaching & Feedback',  badgeClasses: 'bg-orange-100 text-orange-700' },
+  cosmetic:      { heading: '✨ Cosmetic Upgrades',    badgeClasses: 'bg-pink-100 text-pink-700'    },
 };
 
-// Deterministic display order
-const CATEGORY_ORDER = ['prompt_pack', 'bonus_content', 'coaching', 'cosmetic'];
+// Deterministic display order — agent_access first (premium integration item)
+const CATEGORY_ORDER = ['agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic'];
 
 // ── Skeleton card ─────────────────────────────────────────────────────────────
 
@@ -239,10 +241,11 @@ export default function ShopPage() {
       setUser({ ...user, broski_tokens: data.new_balance });
 
       const itemName = items.find((i) => i.id === itemId)?.name ?? data.item_name;
-      setNotification({
-        type: 'success',
-        text: `🪙 Unlocked ${itemName}! -${data.spent_tokens.toLocaleString()} BROski$`,
-      });
+      const notificationText = data.agent_access_pending
+        ? `🤖 Agent access queued! Check Discord for your Mission Control link.`
+        : `🪙 Unlocked ${itemName}! -${data.spent_tokens.toLocaleString()} BROski$`;
+
+      setNotification({ type: 'success', text: notificationText });
     } catch (err) {
       console.error('shop-purchase invoke failed:', err);
       setNotification({ type: 'error', text: 'Something went wrong — try again.' });

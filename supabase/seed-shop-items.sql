@@ -2,12 +2,18 @@
 -- Idempotent seed for shop_items.
 -- Uses explicit UUIDs so ON CONFLICT (id) DO NOTHING is safe on re-runs.
 --
+-- Requires: migration 000014 (shop_items table) for the first 5 items.
+--           migration 000021 (metadata JSONB column) for the agent_access item.
+--           Run migrations first, then this seed.
+--
 -- Run against your Supabase DB:
 --   supabase db reset                                          (dev)
 --   psql $DATABASE_URL -f supabase/seed-shop-items.sql        (targeted)
 --
 -- To update a description or price after initial seed, use UPDATE manually —
 -- re-seeding a row with the same id is a no-op by design.
+
+-- ── Original 5 items (no metadata needed — defaults to '{}') ─────────────────
 
 INSERT INTO public.shop_items (id, name, description, price_tokens, price_gbp, category, is_available)
 VALUES
@@ -56,4 +62,21 @@ VALUES
     'prompt_pack',
     TRUE
   )
+ON CONFLICT (id) DO NOTHING;
+
+-- ── Agent access item (requires migration 000021 — metadata column) ───────────
+-- Also seeded inside migration 000021 itself (ON CONFLICT DO UPDATE).
+-- This entry is here so db reset re-seeds it cleanly alongside the others.
+
+INSERT INTO public.shop_items (id, name, description, price_tokens, price_gbp, category, is_available, metadata)
+VALUES (
+  '22222222-0001-0000-0000-000000000001',
+  'Agent Sandbox Access',
+  'Unlock your personal HyperCode V2.4 sandbox. Deploy the agents you build in this course to a real AI dev stack. Comes with your own Mission Control dashboard and API key.',
+  300,
+  NULL,
+  'agent_access',
+  TRUE,
+  '{"type":"agent_access","v24_tier":"sandbox"}'::jsonb
+)
 ON CONFLICT (id) DO NOTHING;
