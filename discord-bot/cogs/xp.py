@@ -113,9 +113,14 @@ class XPCog(commands.Cog):
         medals = ["🥇", "🥈", "🥉"] + ["⚡"] * 7
         lines = []
         for i, row in enumerate(rows):
-            name  = row.get("email", "Anonymous")
-            xp    = row.get("total_xp", 0)
-            rank  = get_rank(xp)
+            discord_id = row.get("discord_id")
+            if discord_id and interaction.guild:
+                member = interaction.guild.get_member(int(discord_id))
+                name = member.display_name if member else f"Builder #{i + 1}"
+            else:
+                name = f"Builder #{i + 1}"
+            xp   = row.get("total_xp", 0)
+            rank = get_rank(xp)
             lines.append(f"{medals[i]} **{name}** — {xp} XP · {rank}")
 
         embed.description = "\n".join(lines)
