@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import type { Course, Lesson } from '../types/database';
 import { useAuthStore } from '../context/auth';
 import { Button } from '../components/ui/Button';
-import { CheckCircle, PlayCircle, ChevronLeft, ChevronRight, X, Zap, Award } from 'lucide-react';
+import { CheckCircle, ChevronLeft, ChevronRight, X, Zap, Award } from 'lucide-react';
+import { VideoPlayer } from '../components/VideoPlayer';
 import { cn } from '../lib/utils';
 import { useAchievements, BADGES } from '../hooks/useAchievements';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -145,7 +146,7 @@ export default function LessonPlayer() {
       if (!isPreview && resolvedLessons.length > 0) {
         const lessonIds = resolvedLessons.map((l) => l.id);
         const { data: progressData, error: progressError } = await supabase
-          .from('progress')
+          .from('lesson_progress')
           .select('lesson_id')
           .eq('user_id', user!.id)
           .eq('completed', true)
@@ -202,12 +203,13 @@ export default function LessonPlayer() {
     }
 
     // Persist progress to DB
-    const { error: progressError } = await supabase.from('progress').upsert({
+    const { error: progressError } = await supabase.from('lesson_progress').upsert({
       user_id: user.id,
+      course_id: courseId,
       lesson_id: currentLesson.id,
       completed: true,
       completed_at: new Date().toISOString(),
-    });
+    }, { onConflict: 'user_id,lesson_id' });
     if (progressError) {
       setCompletedLessons(completedLessons);
       return;
@@ -259,7 +261,7 @@ export default function LessonPlayer() {
         'One more down. You\'re building real skills.',
       ];
       const msg = broskiMessages[Math.floor(Math.random() * broskiMessages.length)];
-      addToast({ emoji: '⚡', title: 'Lesson complete!', subtitle: msg });
+      addToast({ emoji: '⚡', title: 'Lesson complete! +10 BROski$', subtitle: msg });
     }
   };
 
@@ -394,19 +396,10 @@ export default function LessonPlayer() {
           <div className="flex-1 overflow-y-auto p-8">
             <div className="max-w-4xl mx-auto">
               {/* Video player */}
-              <div
-                className="bg-black rounded-lg shadow-lg overflow-hidden mb-8 relative"
-                style={{ paddingBottom: '56.25%' }}
-                data-testid="video-player"
-              >
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white">
-                  <div className="text-center">
-                    <PlayCircle className="h-20 w-20 mx-auto opacity-80" />
-                    <p className="mt-4 text-lg">Video Player Placeholder</p>
-                    <p className="text-sm text-gray-400">Video URL: {currentLesson.video_url}</p>
-                  </div>
-                </div>
-              </div>
+              <VideoPlayer
+                url={currentLesson.video_url}
+                title={currentLesson.title}
+              />
 
               {/* Controls */}
               <div className="flex items-center justify-between mb-8">

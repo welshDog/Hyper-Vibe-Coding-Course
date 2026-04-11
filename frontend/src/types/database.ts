@@ -1,9 +1,20 @@
 export type User = {
   id: string
   email: string
-  full_name: string
-  avatar_url?: string
+  full_name?: string | null
+  avatar_url?: string | null
   role: 'student' | 'instructor' | 'admin'
+  broski_tokens: number
+  created_at: string
+}
+
+export type TokenTransaction = {
+  id: string
+  user_id: string
+  amount: number
+  reason: string
+  stripe_payment_intent_id?: string
+  source_id?: string
   created_at: string
 }
 

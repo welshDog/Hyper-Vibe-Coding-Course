@@ -1,13 +1,41 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../context/auth';
+import { supabase } from '../lib/supabase';
 import { Button } from './ui/Button';
+import { LoyaltyTierBadge } from './LoyaltyTierBadge';
 import { Menu, X, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+function BroskiBalance({ tokens }: { tokens: number }) {
+  return (
+    <Link
+      to="/tokens"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 transition-colors text-sm font-bold text-yellow-700"
+      title="BROski$ — click to buy more or view history"
+    >
+      <span>💰</span>
+      <span>{tokens.toLocaleString()} BROski$</span>
+    </Link>
+  );
+}
 
 export function Navbar() {
   const { user, signOut } = useAuthStore();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [tier, setTier] = useState<'bronze' | 'silver' | 'gold' | 'hyper' | null>(null);
+
+  useEffect(() => {
+    if (!user) { setTier(null); return; }
+    supabase
+      .from('user_loyalty_tier')
+      .select('tier')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.tier) setTier(data.tier as 'bronze' | 'silver' | 'gold' | 'hyper');
+      });
+  }, [user?.id]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -47,8 +75,21 @@ export function Navbar() {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {user ? (
-              <div className="ml-3 relative flex items-center gap-4">
-                <span className="text-sm text-gray-700">Hi, {user.full_name}</span>
+              <div className="ml-3 relative flex items-center gap-3">
+                <BroskiBalance tokens={user.broski_tokens ?? 0} />
+                {tier && <LoyaltyTierBadge tier={tier} size="sm" />}
+                <Link
+                  to="/shop"
+                  className="text-sm text-gray-700 hover:text-primary transition-colors font-medium"
+                >
+                  🛒 Shop
+                </Link>
+                <Link
+                  to="/profile"
+                  className="text-sm text-gray-700 hover:text-primary transition-colors font-medium"
+                >
+                  {(user.full_name ?? user.email)?.split(' ')[0] ?? 'Profile'}
+                </Link>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign out
@@ -104,17 +145,25 @@ export function Navbar() {
                 Dashboard
               </Link>
             )}
+            {user && (
+              <Link
+                to="/shop"
+                className="border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+              >
+                🛒 Shop
+              </Link>
+            )}
           </div>
           <div className="pt-4 pb-4 border-t border-gray-200">
             {user ? (
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {user.full_name?.charAt(0) || 'U'}
+                    {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800">{user.full_name}</div>
+                  <div className="text-base font-medium text-gray-800">{user.full_name ?? user.email}</div>
                   <div className="text-sm font-medium text-gray-500">{user.email}</div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto">

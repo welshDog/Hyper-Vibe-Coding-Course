@@ -14,6 +14,9 @@ import ComponentChaosLab from './pages/courses/ComponentChaosLab';
 import ShipFullStackThing from './pages/courses/ShipFullStackThing';
 import PlaytestFeedback from './pages/PlaytestFeedback';
 import Admin from './pages/Admin';
+import TokensPage from './pages/TokensPage';
+import ShopPage from './pages/ShopPage';
+import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
@@ -64,6 +67,30 @@ function App() {
             }
           />
           <Route path="feedback" element={<PlaytestFeedback />} />
+          <Route
+            path="tokens"
+            element={
+              <PrivateRoute>
+                <TokensPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="shop"
+            element={
+              <PrivateRoute>
+                <ShopPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <PrivateRoute>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
           <Route element={<AdminRoute role="admin" />}>
             <Route path="admin" element={<Admin />} />
           </Route>

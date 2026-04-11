@@ -48,6 +48,7 @@ type AdminData = {
   playtest: PlaytestRow[];
   enrollments: EnrollmentRow[];
   payments: PaymentRow[];
+  totalTokensInCirculation: number;
 };
 
 type LoadState = 'loading' | 'ready' | 'not-admin' | 'error';
@@ -96,7 +97,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 export default function Admin() {
   const { user, loading: authLoading } = useAuthStore();
   const [loadState, setLoadState] = useState<LoadState>('loading');
-  const [data, setData] = useState<AdminData>({ waitlist: [], playtest: [], enrollments: [], payments: [] });
+  const [data, setData] = useState<AdminData>({ waitlist: [], playtest: [], enrollments: [], payments: [], totalTokensInCirculation: 0 });
 
   useEffect(() => {
     if (authLoading) return;
@@ -116,7 +117,7 @@ export default function Admin() {
       }
 
       // 2. Parallel fetch all cockpit data
-      const [waitlistRes, playtestRes, enrollmentsRes, paymentsRes] = await Promise.all([
+      const [waitlistRes, playtestRes, enrollmentsRes, paymentsRes, tokenCirculationRes] = await Promise.all([
         supabase
           .from('waitlist')
           .select('id, email, source, created_at')
@@ -134,13 +135,21 @@ export default function Admin() {
           .select('id, amount, currency, status, created_at')
           .eq('status', 'succeeded')
           .order('created_at', { ascending: false }),
+        // Sum all BROski$ held across every user — engagement proxy
+        supabase
+          .from('users')
+          .select('broski_tokens'),
       ]);
 
+      const totalTokens = (tokenCirculationRes.data ?? [])
+        .reduce((sum, row) => sum + (row.broski_tokens ?? 0), 0);
+
       setData({
-        waitlist:    (waitlistRes.data    as WaitlistRow[])    ?? [],
-        playtest:    (playtestRes.data    as PlaytestRow[])    ?? [],
-        enrollments: (enrollmentsRes.data as EnrollmentRow[])  ?? [],
-        payments:    (paymentsRes.data    as PaymentRow[])     ?? [],
+        waitlist:                 (waitlistRes.data    as WaitlistRow[])    ?? [],
+        playtest:                 (playtestRes.data    as PlaytestRow[])    ?? [],
+        enrollments:              (enrollmentsRes.data as EnrollmentRow[])  ?? [],
+        payments:                 (paymentsRes.data    as PaymentRow[])     ?? [],
+        totalTokensInCirculation: totalTokens,
       });
       setLoadState('ready');
     }
@@ -191,14 +200,21 @@ export default function Admin() {
         </div>
 
         {/* ── Top stats ─────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
           <StatCard label="Waitlist" value={data.waitlist.length} sub="emails collected" />
           <StatCard label="Playtest responses" value={data.playtest.length} sub={`avg ${avgRating}★`} />
           <StatCard label="Enrollments" value={data.enrollments.length} sub="paying students" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-12">
           <StatCard
             label="Revenue"
             value={`£${totalRevenue.toFixed(2)}`}
             sub={`${data.payments.length} payment${data.payments.length !== 1 ? 's' : ''}`}
+          />
+          <StatCard
+            label="BROski$ in circulation"
+            value={data.totalTokensInCirculation.toLocaleString()}
+            sub="total held across all students — engagement proxy"
           />
         </div>
 

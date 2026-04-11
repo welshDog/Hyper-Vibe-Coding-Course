@@ -37,7 +37,20 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" checkout develop)",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add frontend/src/components/PrivateRoute.tsx frontend/src/App.tsx frontend/src/pages/CourseDetail.tsx frontend/src/pages/LandingPage.tsx)",
-      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add frontend/src/components/ErrorBoundary.tsx frontend/src/main.tsx discord-bot/utils/__init__.py discord-bot/utils/safe_command.py discord-bot/bot.py discord-bot/cogs/xp.py discord-bot/cogs/badges.py discord-bot/cogs/quests.py discord-bot/cogs/commands.py)"
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add frontend/src/components/ErrorBoundary.tsx frontend/src/main.tsx discord-bot/utils/__init__.py discord-bot/utils/safe_command.py discord-bot/bot.py discord-bot/cogs/xp.py discord-bot/cogs/badges.py discord-bot/cogs/quests.py discord-bot/cogs/commands.py)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc.cmd --noEmit)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(supabase migration:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(xargs ls:*)",
+      "Bash(cd /tmp)",
+      "Bash(curl -s \"https://api.github.com/repos/welshDog/HyperCode-V2.4/contents\")",
+      "Bash(dir \"H:\\\\the hyper vibe coding hub\")",
+      "Read(//c/Users/Lyndz/**)",
+      "Read(//mnt/c/Users/**)"
     ]
   }
 }
