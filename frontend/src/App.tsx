@@ -16,6 +16,7 @@ import PlaytestFeedback from './pages/PlaytestFeedback';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
+import AdminRoute from './components/PrivateRoute';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuthStore();
@@ -63,7 +64,9 @@ function App() {
             }
           />
           <Route path="feedback" element={<PlaytestFeedback />} />
-          <Route path="admin" element={<Admin />} />
+          <Route element={<AdminRoute role="admin" />}>
+            <Route path="admin" element={<Admin />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Route>
         {/* Lesson Player has its own layout */}
