@@ -113,7 +113,7 @@ class XPCog(commands.Cog):
         medals = ["🥇", "🥈", "🥉"] + ["⚡"] * 7
         lines = []
         for i, row in enumerate(rows):
-            name  = row.get("full_name") or row.get("email", "Anonymous")
+            name  = row.get("email", "Anonymous")
             xp    = row.get("total_xp", 0)
             rank  = get_rank(xp)
             lines.append(f"{medals[i]} **{name}** — {xp} XP · {rank}")
