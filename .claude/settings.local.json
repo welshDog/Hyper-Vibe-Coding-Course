@@ -19,7 +19,17 @@
       "Bash(python3:*)",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\" submodule status)",
       "Bash(git -C \"H:\\\\the hyper vibe coding hub\\\\Hyper-Vibe-Coding-Course\" remote -v)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" log --oneline -5)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add discord-bot/bot.py discord-bot/cogs/commands.py discord-bot/db.py discord-bot/cogs/xp.py)",
+      "Bash(git -C 'H:\\\\the hyper vibe coding hub' commit -m ':*)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add CHANGELOG.md CLAUDE.md docs/DEVLOG.md)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" branch -a)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" log --oneline --graph --all -15)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" checkout main)",
+      "Bash(git -C 'H:\\\\the hyper vibe coding hub' merge develop --no-ff -m ':*)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" add .claude/settings.local.json)",
+      "Bash(git -C \"H:\\\\the hyper vibe coding hub\" commit -m \"chore: save local settings before branch switch\")"
     ]
   }
 }
