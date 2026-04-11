@@ -168,13 +168,23 @@ Service role keys and DB passwords belong server-side only — never in `fronten
 
 ---
 
-## Current Sprint Focus (2026-04-10)
+## Current Sprint Focus (2026-04-11)
 
-1. Seed courses to Supabase (`supabase/seed-courses.sql`)
-2. Add real video player (YouTube embed via `lesson.video_url`)
-3. Add `/profile` route + basic profile edit page
-4. Fix BUG-013 (password validation) + BUG-014 (post-signup message)
-5. Un-skip `learning.spec.ts` (fix catch-all route interceptor)
+**Shipped this session:**
+- ✅ BROski Course Bot live on Discord (10 slash commands)
+- ✅ Supabase: `discord_links` table + `leaderboard_top()` RPC
+- ✅ Video pipeline built + all module scripts written
+- ✅ Fixed `db.py` schema bugs (`achievements` has no `xp_awarded`/`badge_id`)
+
+**Next up (in order):**
+1. Record Module 1.1 (script at `assets/videos/scripts/MODULE-1-1-vibe-coding-mindset.md`)
+2. Seed courses to Supabase (`supabase/seed-courses.sql`)
+3. Add real video player (YouTube embed via `lesson.video_url`)
+4. Add `/profile` route + basic profile edit page
+5. Fix BUG-013 (password validation) + BUG-014 (post-signup message)
+6. Un-skip `learning.spec.ts` (fix catch-all route interceptor)
+
+**Discord bot — do NOT touch HyperCode-V2.4's separate bot.**
 
 ---
 

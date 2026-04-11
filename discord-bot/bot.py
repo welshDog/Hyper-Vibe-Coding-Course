@@ -11,6 +11,7 @@ COGS = [
     "cogs.xp",
     "cogs.badges",
     "cogs.quests",
+    "cogs.commands",
 ]
 
 
