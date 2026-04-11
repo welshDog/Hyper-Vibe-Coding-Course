@@ -69,3 +69,4 @@ assets/videos/scripts/*.txt
 # Skill extraction artifacts
 Claude/skills/extracted/
 Claude/skills/*.zip
+v2-deployment/
