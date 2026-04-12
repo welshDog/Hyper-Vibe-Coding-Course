@@ -1,5 +1,7 @@
 # Hyper Vibe Coding Course
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 Course content + launch kit for **Vibe Coding Foundations (Course 1)**, including curriculum, email sequences, gamification, marketing assets, and a deployable landing page.
 
 ## Repository Structure
@@ -140,4 +142,4 @@ Recommended branch protection for `develop`:
 
 ## License
 
-Code is licensed under MIT (see `LICENSE`). Course content licensing is described in `docs/LICENSE_CONTENT.md`.
+Code is licensed under [AGPL-3.0](LICENSE). Course content licensing is described in `docs/LICENSE_CONTENT.md`.
