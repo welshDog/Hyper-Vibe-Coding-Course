@@ -98,7 +98,7 @@ class XPCog(commands.Cog):
         await interaction.followup.send(embed=embed)
 
     # ── /leaderboard — top 10 ─────────────────────────────────────────────────
-    @app_commands.command(name="leaderboard", description="Top 10 Hyper Vibe builders this week")
+    @app_commands.command(name="xp-leaderboard", description="Top 10 Hyper Vibe builders this week")
     @safe_interaction
     async def leaderboard(self, interaction: discord.Interaction):
         await interaction.response.defer()
