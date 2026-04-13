@@ -1,143 +1,169 @@
-# Hyper Vibe Coding Course
+# 🎓 Hyper-Vibe-Coding-Course
+### Learn to Vibe Code. The Hyper Way. 🚀
 
-Course content + launch kit for **Vibe Coding Foundations (Course 1)**, including curriculum, email sequences, gamification, marketing assets, and a deployable landing page.
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://hyper-vibe-coding-course.vercel.app)
+[![Made by WelshDog](https://img.shields.io/badge/Made_by-WelshDog_🦅-orange)](https://github.com/welshDog)
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤️_WelshDog-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/welshDog)
+[![Part of Hyperfocus Zone](https://img.shields.io/badge/Hyperfocus_Zone-♾️_Ecosystem-purple)](https://github.com/welshDog)
 
-## Repository Structure
+> **"Natural language → AI code → shipped product. No gatekeeping. No fluff."**
 
-- `assets/` Static assets (images, logos, screenshots)
-- `config/` Tooling configuration (CI lint configs, etc.)
-- `docs/` Documentation & Course Content
-  - `course/` Proprietary Curriculum
-  - `guides/` Public Resources
-- `frontend/` Static Marketing Site (HTML/CSS/JS)
-- `tests/` Automated Test Suite
+A full-stack gamified coding course platform built for neurodivergent learners.
+Stripe-powered token packs. Supabase backend. HyperCode AI engine. Vercel frontend. 🔥
 
-Key docs:
+---
 
-- `docs/ARCHITECTURE.md` System Design (Option A)
-- `docs/course/CURRICULUM.md` Full Course 1 curriculum
-- `docs/guides/` Launch, marketing, email sequences, sprint plans
-- `frontend/public/index.html` Live landing page
+## 🌐 Live Platform
+[https://hyper-vibe-coding-course.vercel.app](https://hyper-vibe-coding-course.vercel.app)
 
-## Quick Start
+---
 
-### View the landing page locally
+## 🔌 Powered By
 
-Open `frontend/public/index.html` in your browser.
+| Service | Purpose |
+|---------|----------|
+| ⚡ [Vercel](https://vercel.com) | Next.js frontend hosting |
+| 🗄️ [Supabase](https://supabase.com) | Database + Auth + Edge Functions |
+| 💳 [Stripe](https://stripe.com) | Token pack payments |
+| 🧠 [HyperCode V2.4](https://github.com/welshDog/HyperCode-V2.4) | AI backend engine |
+| 🤖 [HyperAgent-SDK](https://github.com/welshDog/HyperAgent-SDK) | AI tutor agents |
 
-### Publish the landing page (GitHub Pages)
+---
 
-This repo includes a GitHub Pages deployment workflow. To enable it:
+## 🎮 Platform Features
 
-1. In GitHub, go to **Settings → Pages**
-2. Under **Build and deployment**, select **GitHub Actions**
-3. Push to `main` and the workflow will deploy
+- ✅ 6 courses with 11+ lessons seeded
+- ✅ Gamified XP + BROski token economy
+- ✅ Stripe-powered Starter / Builder / Hyper token packs
+- ✅ Profile + shop pages
+- ✅ Video player with lesson tracker
+- ✅ Auth with password validation
 
-## Usage Examples
+---
 
-### Create a feature branch (Git-flow style)
+## ⚡ Local Setup
 
 ```bash
-git checkout develop
-git pull
-git checkout -b feature/landing-page-cta
+git clone https://github.com/welshDog/Hyper-Vibe-Coding-Course
+cd Hyper-Vibe-Coding-Course
+cp .env.local.example .env.local
+npm install
+npm run dev
 ```
 
-### Open a PR
+### Required `.env.local` Variables
 
-- Target branch: `develop`
-- Ensure required checks pass (CI / markdownlint)
-
-### Validate workflows and templates locally (PowerShell)
-
-```powershell
-$ErrorActionPreference = "Stop"
-
-$code = @'
-from pathlib import Path
-import sys
-import yaml
-
-yaml_files = [
-  ".github/workflows/ci.yml",
-  ".github/workflows/pages.yml",
-  ".github/ISSUE_TEMPLATE/bug_report.yml",
-  ".github/ISSUE_TEMPLATE/feature_request.yml",
-  ".github/ISSUE_TEMPLATE/config.yml",
-]
-
-missing = [p for p in yaml_files if not Path(p).exists()]
-if missing:
-  print("Missing required files:", *missing, sep="\\n- ")
-  sys.exit(1)
-
-for p in yaml_files:
-  yaml.safe_load(Path(p).read_text(encoding="utf-8"))
-
-print("YAML validated OK.")
-'@
-
-$code | python -
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+HYPERCODE_V24_URL=https://hypercode-v24-production.up.railway.app
 ```
 
-## Troubleshooting
+---
 
-### Push fails with 403 (HTTPS)
+## 🏗️ Full Stack Architecture
 
-If you see `Permission denied ... (403)`, Git is authenticating as a GitHub account without write access. Update your credentials or grant the account write permissions to the repo.
+```
+User visits → Vercel (Next.js)
+↓ auth
+Supabase (Auth + DB)
+↓ payment
+Stripe → Supabase Webhook → DB INSERT
+↓ triggers
+HyperCode V2.4 → Token sync + Access provisioned ✅
+```
 
-### Push fails with `Permission denied (publickey)` (SSH)
+---
 
-This means your SSH key is not added to the GitHub account (or the account does not have repo write access). Add your public key under **GitHub → Settings → SSH and GPG keys**, then retry the push.
+## 📚 Courses Available
 
-## Contribution Guidelines
+| # | Course | Level |
+|---|--------|---------| 
+| 1 | 🌱 Your First Vibe | Beginner |
+| 2 | 🎤 Prompt Like a Pro | Beginner |
+| 3 | 🏗️ Build Your First App | Beginner → Mid |
+| 4 | 🧠 Full Stack Vibe | Intermediate |
+| 5 | 🔥 HyperCode The Hyper Way | Advanced |
+| 6 | 🚀 Ship & Scale | Hyper-Pro |
 
-### Branching (Git-flow style)
+---
 
-- `main`: always deployable (protected)
-- `develop`: integration branch for upcoming release
-- Feature branches: `feature/<short-name>`
-- Fix branches: `fix/<short-name>`
-- Release branches (optional): `release/<yyyy-mm-dd>` or `release/<version>`
+## 🌐 Part of the Hyperfocus Zone Ecosystem
 
-### PR Rules (expected)
+This course platform is one piece of a bigger neurodivergent-first builder ecosystem:
 
-- Open all changes as PRs into `develop` (or `main` for urgent hotfixes)
-- Keep PRs small and scoped
-- Use descriptive titles and include screenshots for landing page changes
-- CI must pass before merge
+| Repo | What it Does |
+|------|--------------|
+| 🧠 [HyperCode V2.4](https://github.com/welshDog/HyperCode-V2.4) | Self-evolving AI agent swarm — the engine behind everything |
+| 🤖 [HyperAgent-SDK](https://github.com/welshDog/HyperAgent-SDK) | Write agents once, deploy anywhere — the SDK powering AI tutors |
+| 🎓 **This Repo** | The course platform — learn, build, ship, earn BROski$ |
 
-### Commit Messages
+> All three repos work together. Learn here → build with HyperAgent-SDK → deploy on HyperCode V2.4. ♾️
 
-Use Conventional Commits:
+---
 
-- `feat: ...`
-- `fix: ...`
-- `docs: ...`
-- `chore: ...`
+## 🤝 Contributing
 
-### Local Checks
+We welcome contributions from **everyone** — especially neurodivergent developers! 🧠⚡
 
-CI currently runs Markdown linting and Pages deploy. If you later add a frontend (`package.json`) or backend (`pyproject.toml`), extend the workflows to run the appropriate tests and typechecks.
+Whether it's fixing a typo, adding a lesson, improving the UI, or building a new feature —
+every contribution counts and earns you **BROski$ XP** in the ecosystem! 🎮
 
-## Repository Settings (Branch Protection)
+- 🐛 **Bugs & ideas** → [GitHub Issues](https://github.com/welshDog/Hyper-Vibe-Coding-Course/issues)
+- 💬 **Discussions** → [GitHub Discussions](https://github.com/welshDog/Hyper-Vibe-Coding-Course/discussions)
+- 📖 **How to contribute** → Fork → Branch → PR → Review → Merge 🔥
 
-Recommended branch protection for `main`:
+```bash
+# Fork the repo, then:
+git checkout -b feature/your-lush-idea
+git commit -m "✨ Add: your lush idea here"
+git push origin feature/your-lush-idea
+# Open a Pull Request 🚀
+```
 
-- Require pull request reviews before merging (1+)
-- Require status checks to pass before merging
-  - `CI / markdownlint`
-- Require linear history
-- Require signed commits (optional, recommended)
-- Block force pushes
-- Do not allow deletions
+---
 
-Recommended branch protection for `develop`:
+## 💰 Support the Mission
 
-- Require status checks to pass before merging
-  - `CI / markdownlint`
-- Block force pushes
+This project is **free and open source** — built by a neurodivergent developer in Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿 for neurodivergent creators worldwide.
 
-## License
+If this helps you, please consider sponsoring — it keeps the lights on and the agents evolving! ⚡
 
-Code is licensed under MIT (see `LICENSE`). Course content licensing is described in `docs/LICENSE_CONTENT.md`.
+[![Sponsor WelshDog](https://img.shields.io/badge/Sponsor_WelshDog-❤️-ea4aaa?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/welshDog)
+
+Every sponsor gets:
+- 🦅 **BROski Sponsor** badge in the ecosystem
+- ⭐ Listed in the project Hall of Fame
+- ♾️ Warm fuzzy feeling knowing you're funding neurodivergent-first tech
+
+---
+
+## 💬 Community & Support
+
+| Channel | Link |
+|---------|------|
+| 🐦 Twitter/X | [@welshDog](https://twitter.com/welshDog) |
+| 💰 GitHub Sponsors | [github.com/sponsors/welshDog](https://github.com/sponsors/welshDog) |
+| 📧 Email | lyndz@hyperfocus.zone |
+| 🐛 Issues | [GitHub Issues](https://github.com/welshDog/Hyper-Vibe-Coding-Course/issues) |
+
+---
+
+## 🛡️ License
+[AGPL-3.0](LICENSE) — Open source forever. Built with ❤️ in Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+
+---
+
+<div align="center">
+
+**Built for ADHD brains. Fast feedback. Real tools. No fluff.** 🧠⚡
+
+*by [@welshDog](https://github.com/welshDog) — Lyndz Williams*
+
+**A BROski is ride or die. We build this together. 🐶♾️🔥**
+
+⭐ **Star this repo if you believe neurodivergent minds deserve better tools.** ⭐
+
+</div>
