@@ -4,6 +4,8 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://hyper-vibe-coding-course.vercel.app)
 [![Made by WelshDog](https://img.shields.io/badge/Made_by-WelshDog_🦅-orange)](https://github.com/welshDog)
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤️_WelshDog-ea4aaa?logo=github-sponsors)](https://github.com/sponsors/welshDog)
+[![Part of Hyperfocus Zone](https://img.shields.io/badge/Hyperfocus_Zone-♾️_Ecosystem-purple)](https://github.com/welshDog)
 
 > **"Natural language → AI code → shipped product. No gatekeeping. No fluff."**
 
@@ -78,7 +80,7 @@ HyperCode V2.4 → Token sync + Access provisioned ✅
 ## 📚 Courses Available
 
 | # | Course | Level |
-|---|--------|---------|
+|---|--------|---------| 
 | 1 | 🌱 Your First Vibe | Beginner |
 | 2 | 🎤 Prompt Like a Pro | Beginner |
 | 3 | 🏗️ Build Your First App | Beginner → Mid |
@@ -88,5 +90,80 @@ HyperCode V2.4 → Token sync + Access provisioned ✅
 
 ---
 
+## 🌐 Part of the Hyperfocus Zone Ecosystem
+
+This course platform is one piece of a bigger neurodivergent-first builder ecosystem:
+
+| Repo | What it Does |
+|------|--------------|
+| 🧠 [HyperCode V2.4](https://github.com/welshDog/HyperCode-V2.4) | Self-evolving AI agent swarm — the engine behind everything |
+| 🤖 [HyperAgent-SDK](https://github.com/welshDog/HyperAgent-SDK) | Write agents once, deploy anywhere — the SDK powering AI tutors |
+| 🎓 **This Repo** | The course platform — learn, build, ship, earn BROski$ |
+
+> All three repos work together. Learn here → build with HyperAgent-SDK → deploy on HyperCode V2.4. ♾️
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions from **everyone** — especially neurodivergent developers! 🧠⚡
+
+Whether it's fixing a typo, adding a lesson, improving the UI, or building a new feature —
+every contribution counts and earns you **BROski$ XP** in the ecosystem! 🎮
+
+- 🐛 **Bugs & ideas** → [GitHub Issues](https://github.com/welshDog/Hyper-Vibe-Coding-Course/issues)
+- 💬 **Discussions** → [GitHub Discussions](https://github.com/welshDog/Hyper-Vibe-Coding-Course/discussions)
+- 📖 **How to contribute** → Fork → Branch → PR → Review → Merge 🔥
+
+```bash
+# Fork the repo, then:
+git checkout -b feature/your-lush-idea
+git commit -m "✨ Add: your lush idea here"
+git push origin feature/your-lush-idea
+# Open a Pull Request 🚀
+```
+
+---
+
+## 💰 Support the Mission
+
+This project is **free and open source** — built by a neurodivergent developer in Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿 for neurodivergent creators worldwide.
+
+If this helps you, please consider sponsoring — it keeps the lights on and the agents evolving! ⚡
+
+[![Sponsor WelshDog](https://img.shields.io/badge/Sponsor_WelshDog-❤️-ea4aaa?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/welshDog)
+
+Every sponsor gets:
+- 🦅 **BROski Sponsor** badge in the ecosystem
+- ⭐ Listed in the project Hall of Fame
+- ♾️ Warm fuzzy feeling knowing you're funding neurodivergent-first tech
+
+---
+
+## 💬 Community & Support
+
+| Channel | Link |
+|---------|------|
+| 🐦 Twitter/X | [@welshDog](https://twitter.com/welshDog) |
+| 💰 GitHub Sponsors | [github.com/sponsors/welshDog](https://github.com/sponsors/welshDog) |
+| 📧 Email | lyndz@hyperfocus.zone |
+| 🐛 Issues | [GitHub Issues](https://github.com/welshDog/Hyper-Vibe-Coding-Course/issues) |
+
+---
+
 ## 🛡️ License
 [AGPL-3.0](LICENSE) — Open source forever. Built with ❤️ in Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+
+---
+
+<div align="center">
+
+**Built for ADHD brains. Fast feedback. Real tools. No fluff.** 🧠⚡
+
+*by [@welshDog](https://github.com/welshDog) — Lyndz Williams*
+
+**A BROski is ride or die. We build this together. 🐶♾️🔥**
+
+⭐ **Star this repo if you believe neurodivergent minds deserve better tools.** ⭐
+
+</div>
