@@ -34,9 +34,9 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 |---|---|---|
 | 0 | Hard Conflict Fixes | ✅ DONE |
 | 1 | Identity Bridge | ✅ DONE + VERIFIED LIVE |
-| **2** | **Token Sync** | **👈 CURRENT MISSION** |
-| 3 | Agent Access + Shop Bridge | 🔜 |
-| 4 | npm run graduate 🔥 | 🔜 |
+| 2 | Token Sync | ✅ DONE + VERIFIED LIVE |
+| 3 | Agent Access + Shop Bridge | ✅ DONE + VERIFIED LIVE |
+| **4** | **npm run graduate 🔥** | **👈 CURRENT MISSION** |
 | 5 | Observability | 🔜 |
 | 6 | Terminal Tools Integration | 🔜 |
 
@@ -68,68 +68,60 @@ Files built:
 7. `bot.py` + `settings.py` — wired cog + course_profile_edge_url
 
 **Verified:** `/coursestats` in Discord shows the dual-system embed ✅
-(Shows "not linked" correctly for unlinked accounts — system working as designed)
+
+### Phase 2 ✅ DONE + VERIFIED
+1. `backend/alembic/versions/004_add_course_sync_events.py`
+2. `backend/app/models/broski.py` — CourseSyncEvent ORM model
+3. `backend/app/core/config.py` — COURSE_SYNC_SECRET
+4. `backend/app/api/v1/endpoints/economy.py` — POST /api/v1/economy/award-from-course
+5. `backend/app/api/api.py` — economy router wired
+6. `supabase/functions/sync-tokens-to-v24/index.ts`
+**Dedup:** App-level 409 check + DB UNIQUE constraint on source_id ✅
+
+### Phase 3 ✅ DONE + VERIFIED
+1. `backend/alembic/versions/005_add_access_provisions.py`
+2. `backend/app/models/models.py` — AccessProvision ORM model added
+3. `backend/app/api/v1/endpoints/access.py` — POST /api/v1/access/provision
+4. `backend/app/core/config.py` — SHOP_SYNC_SECRET, DISCORD_BOT_TOKEN, MISSION_CONTROL_URL
+5. `supabase/functions/provision-access/index.ts` — fires on shop_purchases INSERT
+6. Router wired in `backend/app/api/api.py`
+**Verified:** Buy "Agent Sandbox Access" in course shop → Discord DM with api_key + mission_control_url ✅
 
 ### Bot Consolidation ✅ DONE
-- Old course bot was running on **Replit** (not Docker) with a separate token
-- **Action needed**: Stop Replit bot + reset its token in Discord Developer Portal
-- `broski-bot` (HyperCode V2.4, Docker) is now THE ONE BOT
-- Old bot had: xp.py, quests.py, badges.py, commands.py — all superseded by broski-bot's 15 cogs
+- Old Replit bot stopped + token reset
+- `broski-bot` (HyperCode V2.4, Docker) is the ONE BOT
 
 ---
 
-## 🚨 IMMEDIATE TODO — Before Phase 2
+## 🎯 CURRENT MISSION — Phase 4: npm run graduate 🔥
 
-These two things are not done yet:
-
-### 1. Retire the old Replit bot
-- Go to replit.com → find old course bot → **Stop** the Repl
-- Go to discord.com/developers/applications → old course bot app → Bot → **Reset Token**
-- Verify broski-bot still shows 🟢 online after
-
-### 2. Link Discord account in Course portal
-- Log into Hyper-Vibe-Coding-Course app → profile → connect Discord
-- This writes discord_id into Supabase
-- Then run /coursestats → should show actual stats instead of "not linked"
-- This fully closes Phase 1 ✅
-
----
-
-## 🎯 CURRENT MISSION — Phase 2: Token Sync
-
-**Goal:** BROski$ earned in Course shows up in V2.4. One-way, <30 seconds, idempotent.
+**Goal:** Full graduation flow — student completes course → automatic real-world rewards + portfolio unlock.
 
 **Architecture:**
 ```
-Course: token_transactions INSERT trigger
+Course: student hits graduation threshold (all modules complete)
         ↓
-Course: sync-tokens-to-v24 edge function
+Course: graduation_events INSERT → graduate-student edge function fires
         ↓
-V2.4: POST /api/v1/economy/award-from-course
-      (deduped via source_id — zero double counting)
-```
-
-**New table needed in V2.4:**
-```sql
-CREATE TABLE course_sync_events (
-  id SERIAL PRIMARY KEY,
-  source_id TEXT UNIQUE NOT NULL,
-  discord_id VARCHAR(32),
-  tokens_awarded INTEGER,
-  created_at TIMESTAMP DEFAULT NOW()
-);
+V2.4: POST /api/v1/graduate/trigger
+      awards graduation badge + BROski$ bonus
+      unlocks portfolio access
+      sends Discord DM + channel announcement
+        ↓
+Student receives: badge, bonus tokens, portfolio URL, Discord Graduate role
 ```
 
 **Files to build:**
-1. V2.4 Alembic migration — `course_sync_events` table
-2. V2.4 `backend/app/api/v1/endpoints/economy.py` — POST /api/v1/economy/award-from-course
-3. Course `supabase/functions/sync-tokens-to-v24/index.ts` — edge function
-4. Course Supabase webhook — fires on `token_transactions` INSERT
+1. V2.4 migration — `006_add_graduation_events.py`
+2. V2.4 `GraduationEvent` ORM model
+3. V2.4 `backend/app/api/v1/endpoints/graduate.py` — POST /api/v1/graduate/trigger
+4. Course `supabase/functions/graduate-student/index.ts` — fires on completion
+5. Discord role assignment via bot on graduation
+6. Wire router in `backend/app/api/api.py`
 
-**Done when:** earn tokens in Course → V2.4 balance updates within 30 seconds ✅
+**Done when:** Complete all course modules → Discord Graduate role assigned + bonus tokens + portfolio unlocked ✅
 
-**Critical:** `source_id` dedup logic must be bulletproof.
-Same `source_id` twice = 409, never double the coins.
+**Critical:** Same source_id dedup pattern as Phases 2 & 3. Same X-Sync-Secret auth.
 
 ---
 
@@ -143,6 +135,8 @@ Same `source_id` twice = 409, never double the coins.
 - Windows PowerShell first, bash second — always
 - Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
 - One bot: broski-bot. Old Replit bot = dead.
+- Discord DM delivery: V2.4 endpoint calls Discord HTTP API directly (bot token in settings, no extra pub/sub)
+- API keys: `hc_` prefix + `secrets.token_urlsafe(32)` — 43 chars, URL-safe
 
 ---
 
@@ -187,4 +181,5 @@ npm publish --access public --tag alpha
 - `token_transactions` — append-only ledger with idempotency guards
 - `award_tokens()` + `spend_tokens()` — SECURITY DEFINER, server-side only
 - `shop_items` + `shop_purchases` — JSONB metadata fields
+- `shop_purchases.item_slug` — used to filter for "agent-sandbox-access"
 - Stripe integration for token packs (Starter/Builder/Hyper)
