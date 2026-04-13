@@ -1,145 +1,92 @@
-# Hyper Vibe Coding Course
+# 🎓 Hyper-Vibe-Coding-Course
+### Learn to Vibe Code. The Hyper Way. 🚀
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://hyper-vibe-coding-course.vercel.app)
+[![Made by WelshDog](https://img.shields.io/badge/Made_by-WelshDog_🦅-orange)](https://github.com/welshDog)
 
-Course content + launch kit for **Vibe Coding Foundations (Course 1)**, including curriculum, email sequences, gamification, marketing assets, and a deployable landing page.
+> **"Natural language → AI code → shipped product. No gatekeeping. No fluff."**
 
-## Repository Structure
+A full-stack gamified coding course platform built for neurodivergent learners.
+Stripe-powered token packs. Supabase backend. HyperCode AI engine. Vercel frontend. 🔥
 
-- `assets/` Static assets (images, logos, screenshots)
-- `config/` Tooling configuration (CI lint configs, etc.)
-- `docs/` Documentation & Course Content
-  - `course/` Proprietary Curriculum
-  - `guides/` Public Resources
-- `frontend/` Static Marketing Site (HTML/CSS/JS)
-- `tests/` Automated Test Suite
+---
 
-Key docs:
+## 🌐 Live Platform
+[https://hyper-vibe-coding-course.vercel.app](https://hyper-vibe-coding-course.vercel.app)
 
-- `docs/ARCHITECTURE.md` System Design (Option A)
-- `docs/course/CURRICULUM.md` Full Course 1 curriculum
-- `docs/guides/` Launch, marketing, email sequences, sprint plans
-- `frontend/public/index.html` Live landing page
+---
 
-## Quick Start
+## 🔌 Powered By
 
-### View the landing page locally
+| Service | Purpose |
+|---------|----------|
+| ⚡ [Vercel](https://vercel.com) | Next.js frontend hosting |
+| 🗄️ [Supabase](https://supabase.com) | Database + Auth + Edge Functions |
+| 💳 [Stripe](https://stripe.com) | Token pack payments |
+| 🧠 [HyperCode V2.4](https://github.com/welshDog/HyperCode-V2.4) | AI backend engine |
+| 🤖 [HyperAgent-SDK](https://github.com/welshDog/HyperAgent-SDK) | AI tutor agents |
 
-Open `frontend/public/index.html` in your browser.
+---
 
-### Publish the landing page (GitHub Pages)
+## 🎮 Platform Features
 
-This repo includes a GitHub Pages deployment workflow. To enable it:
+- ✅ 6 courses with 11+ lessons seeded
+- ✅ Gamified XP + BROski token economy
+- ✅ Stripe-powered Starter / Builder / Hyper token packs
+- ✅ Profile + shop pages
+- ✅ Video player with lesson tracker
+- ✅ Auth with password validation
 
-1. In GitHub, go to **Settings → Pages**
-2. Under **Build and deployment**, select **GitHub Actions**
-3. Push to `main` and the workflow will deploy
+---
 
-## Usage Examples
-
-### Create a feature branch (Git-flow style)
+## ⚡ Local Setup
 
 ```bash
-git checkout develop
-git pull
-git checkout -b feature/landing-page-cta
+git clone https://github.com/welshDog/Hyper-Vibe-Coding-Course
+cd Hyper-Vibe-Coding-Course
+cp .env.local.example .env.local
+npm install
+npm run dev
 ```
 
-### Open a PR
+### Required `.env.local` Variables
 
-- Target branch: `develop`
-- Ensure required checks pass (CI / markdownlint)
-
-### Validate workflows and templates locally (PowerShell)
-
-```powershell
-$ErrorActionPreference = "Stop"
-
-$code = @'
-from pathlib import Path
-import sys
-import yaml
-
-yaml_files = [
-  ".github/workflows/ci.yml",
-  ".github/workflows/pages.yml",
-  ".github/ISSUE_TEMPLATE/bug_report.yml",
-  ".github/ISSUE_TEMPLATE/feature_request.yml",
-  ".github/ISSUE_TEMPLATE/config.yml",
-]
-
-missing = [p for p in yaml_files if not Path(p).exists()]
-if missing:
-  print("Missing required files:", *missing, sep="\\n- ")
-  sys.exit(1)
-
-for p in yaml_files:
-  yaml.safe_load(Path(p).read_text(encoding="utf-8"))
-
-print("YAML validated OK.")
-'@
-
-$code | python -
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+HYPERCODE_V24_URL=https://hypercode-v24-production.up.railway.app
 ```
 
-## Troubleshooting
+---
 
-### Push fails with 403 (HTTPS)
+## 🏗️ Full Stack Architecture
 
-If you see `Permission denied ... (403)`, Git is authenticating as a GitHub account without write access. Update your credentials or grant the account write permissions to the repo.
+```
+User visits → Vercel (Next.js)
+↓ auth
+Supabase (Auth + DB)
+↓ payment
+Stripe → Supabase Webhook → DB INSERT
+↓ triggers
+HyperCode V2.4 → Token sync + Access provisioned ✅
+```
 
-### Push fails with `Permission denied (publickey)` (SSH)
+---
 
-This means your SSH key is not added to the GitHub account (or the account does not have repo write access). Add your public key under **GitHub → Settings → SSH and GPG keys**, then retry the push.
+## 📚 Courses Available
 
-## Contribution Guidelines
+| # | Course | Level |
+|---|--------|---------|
+| 1 | 🌱 Your First Vibe | Beginner |
+| 2 | 🎤 Prompt Like a Pro | Beginner |
+| 3 | 🏗️ Build Your First App | Beginner → Mid |
+| 4 | 🧠 Full Stack Vibe | Intermediate |
+| 5 | 🔥 HyperCode The Hyper Way | Advanced |
+| 6 | 🚀 Ship & Scale | Hyper-Pro |
 
-### Branching (Git-flow style)
+---
 
-- `main`: always deployable (protected)
-- `develop`: integration branch for upcoming release
-- Feature branches: `feature/<short-name>`
-- Fix branches: `fix/<short-name>`
-- Release branches (optional): `release/<yyyy-mm-dd>` or `release/<version>`
-
-### PR Rules (expected)
-
-- Open all changes as PRs into `develop` (or `main` for urgent hotfixes)
-- Keep PRs small and scoped
-- Use descriptive titles and include screenshots for landing page changes
-- CI must pass before merge
-
-### Commit Messages
-
-Use Conventional Commits:
-
-- `feat: ...`
-- `fix: ...`
-- `docs: ...`
-- `chore: ...`
-
-### Local Checks
-
-CI currently runs Markdown linting and Pages deploy. If you later add a frontend (`package.json`) or backend (`pyproject.toml`), extend the workflows to run the appropriate tests and typechecks.
-
-## Repository Settings (Branch Protection)
-
-Recommended branch protection for `main`:
-
-- Require pull request reviews before merging (1+)
-- Require status checks to pass before merging
-  - `CI / markdownlint`
-- Require linear history
-- Require signed commits (optional, recommended)
-- Block force pushes
-- Do not allow deletions
-
-Recommended branch protection for `develop`:
-
-- Require status checks to pass before merging
-  - `CI / markdownlint`
-- Block force pushes
-
-## License
-
-Code is licensed under [AGPL-3.0](LICENSE). Course content licensing is described in `docs/LICENSE_CONTENT.md`.
+## 🛡️ License
+[AGPL-3.0](LICENSE) — Open source forever. Built with ❤️ in Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿
