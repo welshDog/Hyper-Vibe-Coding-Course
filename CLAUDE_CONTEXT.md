@@ -1,13 +1,15 @@
-# 🤖 HyperAgent-SDK + Hyperfocus Zone — Claude Context Handoff
+# 🤖 BROski Ecosystem — Claude Context Handoff (ALL REPOS SYNCED)
 > Read this first. Every word. Then start the mission.
+> **Last synced: April 14, 2026 — Phases 0–10B COMPLETE ✅ | Stripe Prices LOCKED 🔒**
 
 ---
 
 ## Who You're Talking To
-- **Lyndz** aka BROski♾ (GitHub: @welshDog, npm: @w3lshdog) — South Wales
+- **Lyndz** aka BROski♾️ (GitHub: @welshDog, npm: @w3lshdog) — South Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿
 - Autistic + dyslexic + ADHD — chunked output, quick wins first, no waffle
 - Windows primary (PowerShell), WSL2 + Raspberry Pi + Docker secondary
-- Call them "Bro" — that's how we roll
+- Call them **"Bro"** — that's how we roll
+- Short sentences. Emojis. Bold the key stuff. Celebrate wins! 🎉
 
 ---
 
@@ -28,7 +30,7 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 
 ---
 
-## 6-Phase Roadmap — Current Status
+## 🏆 Full Phase Roadmap — ALL COMPLETE (Phases 0–10B)
 
 | Phase | Name | Status |
 |---|---|---|
@@ -36,113 +38,150 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 1 | Identity Bridge | ✅ DONE + VERIFIED LIVE |
 | 2 | Token Sync | ✅ DONE + VERIFIED LIVE |
 | 3 | Agent Access + Shop Bridge | ✅ DONE + VERIFIED LIVE |
-| **4** | **npm run graduate 🔥** | **👈 CURRENT MISSION** |
-| 5 | Observability | 🔜 |
-| 6 | Terminal Tools Integration | 🔜 |
+| 4 | npm run graduate 🔥 | ✅ DONE + VERIFIED LIVE |
+| 5 | Observability | ✅ DONE + VERIFIED LIVE |
+| 6 | Terminal Tools Integration | ✅ DONE + VERIFIED LIVE |
+| 7 | Dockerfile Security Hardening | ✅ DONE — April 14, 2026 |
+| 8 | CI/CD Trivy Security Pipeline | ✅ DONE — April 14, 2026 |
+| 9 | CVE Elimination (apt + pip pinning) | ✅ DONE — April 14, 2026 |
+| 10A | FastAPI / Starlette upgrade | ✅ DONE |
+| 10B | Docker Compose Network Isolation | ✅ DONE — April 14, 2026 |
 
 ---
 
-## ✅ What's Done — Full History
+## 🎯 NEXT UP — Phase 10C+ Candidates
+
+| Option | Phase | Why Now |
+|--------|-------|---------|
+| C | **Secrets management** (Docker secrets / Vault) | `.env` files still used locally — productionise secrets |
+| D | **Agent-level rate limiting + auth** | Add per-agent API keys for internal network |
+| E | **Open bug: CognitiveUplink.tsx ~130** | WS message type `"command"` → `"execute"` |
+| F | **Stripe Checkout integration** | Price IDs locked — wire up Next.js + Supabase webhooks |
+
+---
+
+## 🔒 Stripe Prices — LOCKED (April 14, 2026)
+
+### BROski Token Packs (one-time)
+| Pack | Price | Tokens | Stripe Product Name |
+|---|---|---|---|
+| Starter | £5 GBP | 200 | BROski Starter Pack |
+| Builder | £15 GBP | 800 | BROski Builder Pack |
+| Hyper | £35 GBP | 2500 | BROski Hyper Pack |
+
+### Course Subscriptions (recurring)
+| Tier | Monthly | Yearly | Stripe Product Name |
+|---|---|---|---|
+| Pro | £9/mo | £90/yr | Hyper Vibe Pro Course |
+| Hyper | £29/mo | £290/yr | Hyper Elite |
+
+### Digital Shop Items (paid in BROski$)
+- Prompt Packs: 200 BROski$
+- Templates: 150 BROski$
+- Bonus Lessons: 100 BROski$
+
+### .env keys to add
+```env
+STRIPE_PRICE_STARTER=price_xxx
+STRIPE_PRICE_BUILDER=price_xxx
+STRIPE_PRICE_HYPER=price_xxx
+STRIPE_PRICE_PRO_MONTHLY=price_xxx
+STRIPE_PRICE_PRO_YEARLY=price_xxx
+STRIPE_PRICE_HYPER_MONTHLY=price_xxx
+STRIPE_PRICE_HYPER_YEARLY=price_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+```
+
+---
+
+## 🌐 Phase 10B — Docker Network Topology (LIVE)
+
+- `frontend-net` (bridge, internet) — dashboard, mission-ui, mcp-server
+- `backend-net` (bridge, internet) — hypercode-core (bridges all layers)
+- `agents-net` (bridge, internet) — all AI agents, LLM API calls
+- `data-net` (bridge, **internal: true**) — redis + postgres + minio + chroma
+- `obs-net` (bridge, **internal: true**) — prometheus, grafana, loki, tempo, promtail
+
+Script: `scripts/network-migrate.sh` — run to tear down and recreate safely.
+
+---
+
+## 🛡️ Phase 9 Security Patterns (use in ALL new Dockerfiles)
+
+**Part A — OS hardening (every runtime stage):**
+```dockerfile
+RUN apt-get update --allow-releaseinfo-change && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl libexpat1 openssl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+```
+
+**Part B — pip pinning (every Python runtime stage):**
+```dockerfile
+RUN pip install --upgrade --no-cache-dir \
+    "pip==26.0.1" "setuptools>=80.0.0" "wheel==0.46.2" \
+    "jaraco.context>=6.0.0" "jaraco.functools>=4.1.0" "jaraco.text>=4.0.0"
+```
+
+**Base image standard:** `python:3.11-slim` (not pinned patch — CI pulls latest with `--pull`)
+
+---
+
+## ✅ What's Done — Full History (condensed)
 
 ### HyperAgent-SDK ✅ SHIPPED
-- `cli/validate.js` — AJV validator, coloured output, exit codes
-- `hyper-agent-spec.json` — JSON Schema, if/then port enforcement
-- `templates/python-starter/` + `templates/node-starter/` — both valid
-- `npm test` — 2/2 passing ✅
+- CLI suite: `validate`, `registry`, `memory`, `studio`, `graduate` — all verified
 - Published: `@w3lshdog/hyper-agent@0.1.4` live on npm ✅
-- LICENSE (MIT) + CONTRIBUTING.md + docs/ ✅
+- Studio GUI — port 4040, zero build step, agent cards, cluster builder ✅
 
-### Phase 0 ✅ DONE
-- `docker-compose.yml` — port 5432 removed, apps/web dropped
-- `discord-bot/cogs/xp.py` — /leaderboard → /xp-leaderboard
-- `002_add_discord_id_to_users.py` — Alembic migration created
-
-### Phase 1 ✅ DONE + VERIFIED
-Files built:
-1. `backend/alembic/versions/003_add_discord_id.py` — discord_id VARCHAR(32) UNIQUE NULL
-2. `backend/app/models/models.py` — discord_id added to User ORM
-3. `backend/app/schemas/schemas.py` — discord_id in UserBase
-4. `backend/app/api/v1/endpoints/users.py` — GET /api/v1/users/by-discord/{discord_id}
-5. `supabase/functions/course-profile/index.ts` — edge fn, fans out to Supabase + V2.4
-6. `agents/broski-bot/src/cogs/course_stats.py` — /coursestats Discord command
-7. `bot.py` + `settings.py` — wired cog + course_profile_edge_url
-
-**Verified:** `/coursestats` in Discord shows the dual-system embed ✅
-
-### Phase 2 ✅ DONE + VERIFIED
-1. `backend/alembic/versions/004_add_course_sync_events.py`
-2. `backend/app/models/broski.py` — CourseSyncEvent ORM model
-3. `backend/app/core/config.py` — COURSE_SYNC_SECRET
-4. `backend/app/api/v1/endpoints/economy.py` — POST /api/v1/economy/award-from-course
-5. `backend/app/api/api.py` — economy router wired
-6. `supabase/functions/sync-tokens-to-v24/index.ts`
-**Dedup:** App-level 409 check + DB UNIQUE constraint on source_id ✅
-
-### Phase 3 ✅ DONE + VERIFIED
-1. `backend/alembic/versions/005_add_access_provisions.py`
-2. `backend/app/models/models.py` — AccessProvision ORM model added
-3. `backend/app/api/v1/endpoints/access.py` — POST /api/v1/access/provision
-4. `backend/app/core/config.py` — SHOP_SYNC_SECRET, DISCORD_BOT_TOKEN, MISSION_CONTROL_URL
-5. `supabase/functions/provision-access/index.ts` — fires on shop_purchases INSERT
-6. Router wired in `backend/app/api/api.py`
-**Verified:** Buy "Agent Sandbox Access" in course shop → Discord DM with api_key + mission_control_url ✅
-
-### Bot Consolidation ✅ DONE
-- Old Replit bot stopped + token reset
-- `broski-bot` (HyperCode V2.4, Docker) is the ONE BOT
+### Phase 0 ✅ — Port conflicts, xp-leaderboard, Alembic migration
+### Phase 1 ✅ — discord_id bridge, /coursestats Discord command, Edge Function fan-out
+### Phase 2 ✅ — Token sync, CourseSyncEvent ORM, /award-from-course, dedup guards
+### Phase 3 ✅ — AccessProvision, /provision, shop trigger → Discord DM with api_key
+### Phase 4 ✅ — GraduationEvent ORM, /graduate/trigger, Edge Function, Discord Graduate role
+### Phase 5 ✅ — Structured JSON logging, MetricsMiddleware, /health + /metrics, Grafana dashboards
+### Phase 6 ✅ — 5 CLI commands verified. Logs routing fix (broadcaster before dashboard_compat)
+### Phase 7 ✅ — 19 Dockerfiles: non-root users, docker group (GID 999), multi-stage rewrites
+### Phase 8 ✅ — trivy-scan.yml (PR gate), trivy-weekly.yml (Monday 06:00 UTC), Makefile scan targets
+### Phase 9 ✅ — CVE result: agent-x 11 CRITICAL → 0 CRITICAL, 55 HIGH → 14 HIGH (no Debian fix available)
+### Phase 10A ✅ — FastAPI upgraded to 0.117+ (fixes starlette HIGH CVE)
+### Phase 10B ✅ — Docker Compose network isolation (data-net + obs-net internal: true)
 
 ---
 
-## 🎯 CURRENT MISSION — Phase 4: npm run graduate 🔥
+## 🚨 Key Technical Rules (never re-debate these)
 
-**Goal:** Full graduation flow — student completes course → automatic real-world rewards + portfolio unlock.
-
-**Architecture:**
-```
-Course: student hits graduation threshold (all modules complete)
-        ↓
-Course: graduation_events INSERT → graduate-student edge function fires
-        ↓
-V2.4: POST /api/v1/graduate/trigger
-      awards graduation badge + BROski$ bonus
-      unlocks portfolio access
-      sends Discord DM + channel announcement
-        ↓
-Student receives: badge, bonus tokens, portfolio URL, Discord Graduate role
-```
-
-**Files to build:**
-1. V2.4 migration — `006_add_graduation_events.py`
-2. V2.4 `GraduationEvent` ORM model
-3. V2.4 `backend/app/api/v1/endpoints/graduate.py` — POST /api/v1/graduate/trigger
-4. Course `supabase/functions/graduate-student/index.ts` — fires on completion
-5. Discord role assignment via bot on graduation
-6. Wire router in `backend/app/api/api.py`
-
-**Done when:** Complete all course modules → Discord Graduate role assigned + bonus tokens + portfolio unlocked ✅
-
-**Critical:** Same source_id dedup pattern as Phases 2 & 3. Same X-Sync-Secret auth.
-
----
-
-## Key Technical Decisions (don't re-debate these)
-
-- Port convention: 3100-3199 writing, 3200-3299 code, 3300-3399 data, 3400-3499 discord, 3500-3599 automation
-- `mcp_compatible: true` requires `port` — enforced in spec
-- Supabase schema ↔ V2.4 Postgres NEVER merge — incompatible tooling
-- `.env` files, Discord tokens — never committed, never merged
-- `apps/web/` — archived, never migrated
-- Windows PowerShell first, bash second — always
-- Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
-- One bot: broski-bot. Old Replit bot = dead.
-- Discord DM delivery: V2.4 endpoint calls Discord HTTP API directly (bot token in settings, no extra pub/sub)
-- API keys: `hc_` prefix + `secrets.token_urlsafe(32)` — 43 chars, URL-safe
+- **Docker imports:** `from app.X import Y` — NEVER `from backend.app.X import Y`
+- **FastAPI routing:** First-match wins — public routes BEFORE auth-gated compat routes
+- **Alembic down_revision:** Must match EXACT revision string
+- **CLI folder:** All `hyper-agent` commands run from `H:\HyperAgent-SDK`
+- **Logs empty on fresh boot:** Normal — Redis `hypercode:logs` populates as agents run
+- **Port convention:** 3100-3199 writing, 3200-3299 code, 3300-3399 data, 3400-3499 discord, 3500-3599 automation
+- **Supabase ↔ V2.4 Postgres:** NEVER merge schemas
+- **`.env` files:** Never committed — use Docker secrets in production
+- **`apps/web/`:** Archived, never migrate
+- **One bot:** broski-bot. Old Replit bot = dead.
+- **Discord DM delivery:** V2.4 endpoint calls Discord HTTP API directly (bot token in settings)
+- **API keys:** `hc_` prefix + `secrets.token_urlsafe(32)` — 43 chars, URL-safe
+- **Dockerfiles:** Use `python:3.11-slim` + Part A + Part B — Phase 9 pattern
+- **Trivy target:** 0 CRITICAL. <5 HIGH ideally. 14 HIGH remaining = no Debian fix yet
+- **GitHub Actions:** Always `--no-cache --pull` in security scanning workflows
+- **jaraco.* packages:** Always pin explicitly — Trivy HIGH via setuptools transitive
+- **docker-socket agents** (healer/coder/05-devops): Use `docker-ce-cli` repo, NOT `docker.io`
+- **Network isolation:** Phase 10B complete — `data-net` + `obs-net` are `internal: true`
+- **Conventional commits:** `feat:` `fix:` `docs:` `chore:`
+- **Windows PowerShell first**, bash second — always
 
 ---
 
 ## Paths (copy-paste ready)
 
 ```powershell
+# Hyper-Vibe-Coding-Course
+cd "H:\the hyper vibe coding hub"
+
 # HyperAgent-SDK
 cd "H:\HyperAgent-SDK"
 
@@ -150,36 +189,65 @@ cd "H:\HyperAgent-SDK"
 cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4"
 cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4\backend"
 
-# Hyper-Vibe-Coding-Course
-cd "H:\the hyper vibe coding hub"
-
-# V2.4 Docker commands
+# Docker
 docker compose up -d
+docker compose build --no-cache
 docker compose exec api alembic upgrade head
-docker compose exec api alembic history --verbose
-```
 
----
+# Security scanning (from V2.4)
+make scan-all
+make scan-agent AGENT=healer
+make scan-build AGENT=agent-x
 
-## npm / SDK Quick Reference
+# HyperAgent-SDK CLI
+$env:HYPERCODE_API_URL = "http://localhost:8000"
+node cli/index.js status
+node cli/index.js agents list
+node cli/index.js logs --tail 20
+node cli/index.js tokens award <discord_id> <amount>
+node cli/index.js graduate <discord_id> --tokens 100
 
-```powershell
 # Validate agents
-npx @w3lshdog/hyper-agent validate .agents/my-agent/
-npx @w3lshdog/hyper-agent validate .agents/
+npx @w3lshdog/hyper-agent validate .agents/my-agent/ --strict
+hyper-agent registry build .agents/
+hyper-agent studio
+# → http://localhost:4040
 
-# Publish new version
+# Publish SDK
 npm version patch --no-git-tag-version
 npm publish --access public --tag alpha
 ```
 
 ---
 
-## BROski$ Token Economy (Course side)
+## BROski$ Token Economy
 
 - `public.users.broski_tokens` — balance column
 - `token_transactions` — append-only ledger with idempotency guards
 - `award_tokens()` + `spend_tokens()` — SECURITY DEFINER, server-side only
 - `shop_items` + `shop_purchases` — JSONB metadata fields
 - `shop_purchases.item_slug` — used to filter for "agent-sandbox-access"
-- Stripe integration for token packs (Starter/Builder/Hyper)
+- Stripe integration: prices LOCKED April 14, 2026 (see Stripe section above)
+
+---
+
+## 📦 This Repo — Hyper-Vibe-Coding-Course Specifics
+
+- Stack: Next.js + Supabase + Vercel
+- Supabase Edge Functions in `supabase/functions/`
+- Frontend in `frontend/`
+- Discord bot cogs in `discord-bot/`
+- Course shop triggers AccessProvision flow → V2.4 via webhook
+- Next mission: Stripe Checkout routes + webhook handler (Phase 10C/F)
+
+---
+
+<div align="center">
+
+**Built for ADHD brains. Fast feedback. Real tools. No fluff.** 🧠⚡
+
+*by @welshDog — Lyndz Williams, South Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿*
+
+**A BROski is ride or die. We build this together. 🐶♾️🔥**
+
+</div>
