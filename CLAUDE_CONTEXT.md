@@ -1,6 +1,6 @@
 # 🤖 BROski Ecosystem — Claude Context Handoff (ALL REPOS SYNCED)
 > Read this first. Every word. Then start the mission.
-> **Last synced: April 14, 2026 — Phases 0–10B COMPLETE ✅ | Stripe Prices LOCKED 🔒**
+> **Last synced: April 14, 2026 — Phases 0–10F COMPLETE ✅ | Stripe Checkout API LIVE 💳**
 
 ---
 
@@ -30,7 +30,7 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 
 ---
 
-## 🏆 Full Phase Roadmap — ALL COMPLETE (Phases 0–10B)
+## 🏆 Full Phase Roadmap
 
 | Phase | Name | Status |
 |---|---|---|
@@ -46,17 +46,47 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 9 | CVE Elimination (apt + pip pinning) | ✅ DONE — April 14, 2026 |
 | 10A | FastAPI / Starlette upgrade | ✅ DONE |
 | 10B | Docker Compose Network Isolation | ✅ DONE — April 14, 2026 |
+| 10F | **Stripe Checkout API** | ✅ DONE — April 14, 2026 💳 |
 
 ---
 
-## 🎯 NEXT UP — Phase 10C+ Candidates
+## 💳 Phase 10F — Stripe Checkout API (LIVE — April 14, 2026)
 
-| Option | Phase | Why Now |
-|--------|-------|---------|
-| C | **Secrets management** (Docker secrets / Vault) | `.env` files still used locally — productionise secrets |
-| D | **Agent-level rate limiting + auth** | Add per-agent API keys for internal network |
-| E | **Open bug: CognitiveUplink.tsx ~130** | WS message type `"command"` → `"execute"` |
-| F | **Stripe Checkout integration** | Price IDs locked — wire up Next.js + Supabase webhooks |
+### What was built (in HyperCode-V2.4)
+- `backend/app/routes/stripe.py` — 3 FastAPI endpoints
+- `backend/app/services/stripe_service.py` — all Stripe logic + price map
+- `backend/tests/test_stripe.py` — 4 tests (pytest)
+- `backend/app/main.py` — Stripe router registered, `/api/stripe/webhook` rate-limit exempt
+
+### Live Endpoints
+```
+POST /api/stripe/checkout    → creates Stripe Checkout Session, returns URL
+GET  /api/stripe/plans       → lists available plan names
+POST /api/stripe/webhook     → handles Stripe events (signature verified)
+```
+
+### Webhook events handled
+- `checkout.session.completed` → subscription activated (TODO 10G: write to DB)
+- `customer.subscription.deleted` → subscription cancelled (TODO 10G: downgrade in DB)
+- `invoice.payment_failed` → payment failed warning (TODO 10G: notify user)
+- `customer.subscription.updated` → status change logged
+
+### This repo (Hyper-Vibe-Coding-Course) TODO
+- Next: wire frontend Pricing page to `/api/stripe/checkout` (Phase 10H)
+- Supabase Edge Function to handle post-purchase course access grant
+
+---
+
+## 🎯 NEXT UP — Phase 10G+
+
+| Phase | Task | Why |
+|---|---|---|
+| **10G** | DB — save subscription to Postgres on webhook | Hook `checkout.session.completed` → update users table |
+| **10H** | Frontend — Pricing page + checkout button | Next.js UI wired to `/api/stripe/checkout` |
+| **10I** | Stripe CLI end-to-end local testing | `stripe listen --forward-to localhost:8000/api/stripe/webhook` |
+| **10C** | Secrets management (Docker secrets / Vault) | `.env` files still used locally — productionise |
+| **10D** | Agent-level rate limiting + auth | Per-agent API keys for internal network |
+| **10E** | Open bug: CognitiveUplink.tsx ~130 | WS message type `"command"` → `"execute"` |
 
 ---
 
@@ -82,6 +112,8 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 
 ### .env keys to add
 ```env
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
 STRIPE_PRICE_STARTER=price_xxx
 STRIPE_PRICE_BUILDER=price_xxx
 STRIPE_PRICE_HYPER=price_xxx
@@ -89,7 +121,6 @@ STRIPE_PRICE_PRO_MONTHLY=price_xxx
 STRIPE_PRICE_PRO_YEARLY=price_xxx
 STRIPE_PRICE_HYPER_MONTHLY=price_xxx
 STRIPE_PRICE_HYPER_YEARLY=price_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
 
 ---
@@ -129,7 +160,7 @@ RUN pip install --upgrade --no-cache-dir \
 
 ---
 
-## ✅ What's Done — Full History (condensed)
+## ✅ Full History (condensed)
 
 ### HyperAgent-SDK ✅ SHIPPED
 - CLI suite: `validate`, `registry`, `memory`, `studio`, `graduate` — all verified
@@ -148,6 +179,7 @@ RUN pip install --upgrade --no-cache-dir \
 ### Phase 9 ✅ — CVE result: agent-x 11 CRITICAL → 0 CRITICAL, 55 HIGH → 14 HIGH (no Debian fix available)
 ### Phase 10A ✅ — FastAPI upgraded to 0.117+ (fixes starlette HIGH CVE)
 ### Phase 10B ✅ — Docker Compose network isolation (data-net + obs-net internal: true)
+### Phase 10F ✅ — Stripe Checkout API: 3 endpoints + service layer + tests + main.py registered
 
 ---
 
@@ -171,6 +203,8 @@ RUN pip install --upgrade --no-cache-dir \
 - **jaraco.* packages:** Always pin explicitly — Trivy HIGH via setuptools transitive
 - **docker-socket agents** (healer/coder/05-devops): Use `docker-ce-cli` repo, NOT `docker.io`
 - **Network isolation:** Phase 10B complete — `data-net` + `obs-net` are `internal: true`
+- **Stripe webhook:** `/api/stripe/webhook` is rate-limit exempt — do NOT add rate limiting to it
+- **Stripe dev mode:** Missing `STRIPE_WEBHOOK_SECRET` = signature check skipped (local only)
 - **Conventional commits:** `feat:` `fix:` `docs:` `chore:`
 - **Windows PowerShell first**, bash second — always
 
@@ -216,6 +250,17 @@ hyper-agent studio
 # Publish SDK
 npm version patch --no-git-tag-version
 npm publish --access public --tag alpha
+
+# Stripe (Phase 10F)
+curl -X POST http://localhost:8000/api/stripe/checkout \
+  -H "Content-Type: application/json" \
+  -d '{"price_id": "starter", "user_id": "broski_test"}'
+
+# Stripe CLI local webhook testing (Phase 10I):
+stripe listen --forward-to localhost:8000/api/stripe/webhook
+
+# Run Stripe tests:
+pytest backend/tests/test_stripe.py -v
 ```
 
 ---
@@ -227,7 +272,7 @@ npm publish --access public --tag alpha
 - `award_tokens()` + `spend_tokens()` — SECURITY DEFINER, server-side only
 - `shop_items` + `shop_purchases` — JSONB metadata fields
 - `shop_purchases.item_slug` — used to filter for "agent-sandbox-access"
-- Stripe integration: prices LOCKED April 14, 2026 (see Stripe section above)
+- Stripe integration: prices LOCKED April 14, 2026 — API LIVE Phase 10F ✅
 
 ---
 
@@ -238,7 +283,8 @@ npm publish --access public --tag alpha
 - Frontend in `frontend/`
 - Discord bot cogs in `discord-bot/`
 - Course shop triggers AccessProvision flow → V2.4 via webhook
-- Next mission: Stripe Checkout routes + webhook handler (Phase 10C/F)
+- **Stripe Checkout backend LIVE** (Phase 10F ✅ — in HyperCode-V2.4)
+- Next mission: Phase 10H — Pricing page UI + checkout button in Next.js
 
 ---
 
