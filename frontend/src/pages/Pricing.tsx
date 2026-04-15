@@ -1,14 +1,15 @@
-import { Check } from 'lucide-react'
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Check, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { useAuthStore } from '../context/auth'
-import { buildStripePaymentLinkUrl } from '../lib/payments'
+import { createCheckoutSession } from '../lib/payments'
 
 type PricingTier = {
   name: string
   description: string
   priceMonthly: string
+  priceKey: string
   features: string[]
   cta: string
   mostPopular?: boolean
@@ -19,6 +20,7 @@ const PRICING_TIERS: PricingTier[] = [
     name: 'Free',
     description: 'Try the platform with limited previews.',
     priceMonthly: '£0',
+    priceKey: '',
     features: [
       'Browse course catalog',
       'Free lesson previews',
@@ -28,26 +30,56 @@ const PRICING_TIERS: PricingTier[] = [
   },
   {
     name: 'Pro',
-    description: 'Full access to all courses and premium features.',
-    priceMonthly: '£29',
+    description: 'Full access to all courses and tools.',
+    priceMonthly: '£9',
+    priceKey: 'pro_monthly',
     features: [
       'All courses included',
-      'Certificates',
+      'BROski$ token rewards',
       'Priority support',
-      'Offline downloads',
-      'Premium community channels',
+      'Community channels',
+      'Certificate on completion',
     ],
     cta: 'Upgrade to Pro',
     mostPopular: true,
+  },
+  {
+    name: 'Hyper',
+    description: 'The full BROski experience — go elite.',
+    priceMonthly: '£29',
+    priceKey: 'hyper_monthly',
+    features: [
+      'Everything in Pro',
+      'Agent sandbox access',
+      'Monthly 1:1 code review',
+      'Hyper bonus lessons',
+      'Early access to new courses',
+    ],
+    cta: 'Go Hyper',
   },
 ]
 
 export default function Pricing() {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const [loadingTier, setLoadingTier] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const stripePaymentLinkUrl = useMemo(() => {
-    return buildStripePaymentLinkUrl({ prefilledEmail: user?.email })
-  }, [user?.email])
+  async function handleCheckout(tier: PricingTier) {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    setError(null)
+    setLoadingTier(tier.name)
+    try {
+      const url = await createCheckoutSession(tier.priceKey, user.id)
+      window.location.href = url
+    } catch {
+      setError('Checkout failed — try again or contact support.')
+      setLoadingTier(null)
+    }
+  }
 
   return (
     <div className="bg-white py-24 sm:py-32">
@@ -55,17 +87,22 @@ export default function Pricing() {
         <div className="mx-auto max-w-4xl text-center">
           <h1 className="text-base font-semibold leading-7 text-primary">Pricing</h1>
           <p className="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Start free, upgrade when you’re ready
+            Start free, upgrade when you're ready
           </p>
           <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">
             Simple, transparent pricing. Cancel anytime.
           </p>
         </div>
 
-        <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-2 lg:gap-x-8 xl:gap-x-12">
+        {error && (
+          <p className="mt-8 text-center text-sm text-red-600">{error}</p>
+        )}
+
+        <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 xl:gap-x-12">
           {PRICING_TIERS.map((tier) => {
-            const isPro = tier.name === 'Pro'
-            const ctaDisabled = isPro && !stripePaymentLinkUrl
+            const isFree = tier.priceKey === ''
+            const isLoading = loadingTier === tier.name
+            const anyLoading = loadingTier !== null
 
             return (
               <div
@@ -100,25 +137,28 @@ export default function Pricing() {
                   <span className="text-sm font-semibold leading-6 text-gray-600">/month</span>
                 </p>
 
-                {isPro ? (
-                  <a href={stripePaymentLinkUrl ?? '#'} target="_blank" rel="noreferrer">
-                    <Button className="mt-6 w-full" disabled={ctaDisabled}>
-                      {tier.cta}
-                    </Button>
-                  </a>
-                ) : (
-                  <Link to="/register">
+                {isFree ? (
+                  <Link to={user ? '/courses' : '/register'}>
                     <Button variant="outline" className="mt-6 w-full">
                       {tier.cta}
                     </Button>
                   </Link>
+                ) : (
+                  <Button
+                    className="mt-6 w-full"
+                    disabled={anyLoading}
+                    onClick={() => handleCheckout(tier)}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Redirecting…
+                      </>
+                    ) : (
+                      tier.cta
+                    )}
+                  </Button>
                 )}
-
-                {ctaDisabled ? (
-                  <p className="mt-3 text-xs text-gray-500">
-                    Add VITE_STRIPE_PAYMENT_LINK_URL to enable checkout.
-                  </p>
-                ) : null}
 
                 <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
                   {tier.features.map((feature) => (
@@ -136,4 +176,3 @@ export default function Pricing() {
     </div>
   )
 }
-

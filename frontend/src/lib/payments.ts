@@ -47,6 +47,30 @@ export function buildStripePaymentLinkUrl(options: PaymentLinkOptions = {}) {
   return url.toString()
 }
 
+/**
+ * Calls the HyperCode V2.4 Stripe Checkout API.
+ * Returns the Stripe-hosted checkout URL to redirect the user to.
+ *
+ * priceKey — one of: "pro_monthly" | "pro_yearly" | "hyper_monthly" | "hyper_yearly"
+ *                    | "starter" | "builder" | "hyper"
+ * userId   — Supabase user UUID (used by the webhook to link payment to account)
+ */
+export async function createCheckoutSession(priceKey: string, userId: string): Promise<string> {
+  const apiUrl = (import.meta.env.VITE_HYPERCODE_API_URL as string | undefined) ?? 'http://localhost:8000'
+  const res = await fetch(`${apiUrl}/api/stripe/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ price_id: priceKey, user_id: userId }),
+  })
+  if (!res.ok) {
+    throw new Error(`Checkout request failed (${res.status})`)
+  }
+  const data = await res.json() as { checkout_url?: string; url?: string }
+  const url = data.checkout_url ?? data.url
+  if (!url) throw new Error('No checkout URL returned from API')
+  return url
+}
+
 /** Per-course payment links — add individual course payment link env vars here */
 export function getCoursePaymentLinkUrl(courseId: string, userEmail?: string): string | null {
   const coursePaymentLinks: Record<string, string | undefined> = {

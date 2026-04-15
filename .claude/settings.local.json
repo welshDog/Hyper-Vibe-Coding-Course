@@ -50,7 +50,8 @@
       "Bash(curl -s \"https://api.github.com/repos/welshDog/HyperCode-V2.4/contents\")",
       "Bash(dir \"H:\\\\the hyper vibe coding hub\")",
       "Read(//c/Users/Lyndz/**)",
-      "Read(//mnt/c/Users/**)"
+      "Read(//mnt/c/Users/**)",
+      "Bash(npm.cmd run *)"
     ]
   }
 }
