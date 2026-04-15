@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../context/auth';
 import { supabase } from '../lib/supabase';
+import { createCheckoutSession } from '../lib/payments';
 import type { TokenTransaction } from '../types/database';
 
 // ── Milestone definitions ─────────────────────────────────────────────────────
@@ -51,42 +52,37 @@ function MilestoneBanner({ balance }: { balance: number }) {
 }
 
 // ── Token pack definitions ────────────────────────────────────────────────────
-// Add Stripe payment link URLs to .env.local as you create them in the dashboard:
-//   VITE_STRIPE_TOKEN_STARTER=https://buy.stripe.com/...
-//   VITE_STRIPE_TOKEN_BUILDER=https://buy.stripe.com/...
-//   VITE_STRIPE_TOKEN_HYPER=https://buy.stripe.com/...
+// price_id values map to STRIPE_PRICE_STARTER / BUILDER / HYPER in HyperCode V2.4 .env
+// Prices locked April 14, 2026 — do not change without updating Stripe products too.
 
 const TOKEN_PACKS = [
   {
     id: 'starter',
     name: 'Starter Pack',
-    tokens: 100,
-    price: '£2.99',
+    tokens: 200,
+    price: '£5',
     emoji: '⚡',
     colour: 'border-blue-200 bg-blue-50',
     btnColour: 'bg-blue-600 hover:bg-blue-700',
-    envKey: 'VITE_STRIPE_TOKEN_STARTER',
   },
   {
     id: 'builder',
     name: 'Builder Pack',
-    tokens: 500,
-    price: '£9.99',
+    tokens: 800,
+    price: '£15',
     emoji: '🔥',
     colour: 'border-purple-200 bg-purple-50',
     btnColour: 'bg-purple-600 hover:bg-purple-700',
-    envKey: 'VITE_STRIPE_TOKEN_BUILDER',
     badge: 'Most Popular',
   },
   {
     id: 'hyper',
     name: 'Hyper Pack',
-    tokens: 1500,
-    price: '£19.99',
+    tokens: 2500,
+    price: '£35',
     emoji: '🚀',
     colour: 'border-yellow-200 bg-yellow-50',
     btnColour: 'bg-yellow-500 hover:bg-yellow-600',
-    envKey: 'VITE_STRIPE_TOKEN_HYPER',
   },
 ] as const;
 
@@ -132,6 +128,8 @@ export default function TokensPage() {
   const { user } = useAuthStore();
   const [transactions, setTransactions] = useState<TokenTransaction[]>([]);
   const [loadingTx, setLoadingTx] = useState(true);
+  const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
+  const [packError, setPackError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -150,16 +148,17 @@ export default function TokensPage() {
 
   const balance = user?.broski_tokens ?? 0;
 
-  function handleBuyPack(envKey: string) {
-    const url = (import.meta.env as Record<string, string>)[envKey];
-    if (!url) {
-      alert('Payment link not set up yet — check back soon!');
-      return;
+  async function handleBuyPack(packId: string) {
+    if (!user || buyingPackId) return;
+    setPackError(null);
+    setBuyingPackId(packId);
+    try {
+      const url = await createCheckoutSession(packId, user.id);
+      window.location.href = url;
+    } catch {
+      setPackError('Checkout failed — try again or contact support.');
+      setBuyingPackId(null);
     }
-    const fullUrl = user?.email
-      ? `${url}?prefilled_email=${encodeURIComponent(user.email)}`
-      : url;
-    window.open(fullUrl, '_blank', 'noopener,noreferrer');
   }
 
   return (
@@ -182,32 +181,40 @@ export default function TokensPage() {
       {/* ── Buy packs ────────────────────────────────────────────────────── */}
       <section>
         <h2 className="text-xl font-bold text-gray-900 mb-4">Buy token packs</h2>
+        {packError && (
+          <p className="text-sm text-red-600 mb-2">{packError}</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {TOKEN_PACKS.map((pack) => (
-            <div
-              key={pack.id}
-              className={`relative rounded-xl border-2 p-5 flex flex-col gap-3 ${pack.colour}`}
-            >
-              {'badge' in pack && pack.badge && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs font-bold px-3 py-0.5 rounded-full">
-                  {pack.badge}
-                </span>
-              )}
-              <div className="text-3xl">{pack.emoji}</div>
-              <div>
-                <p className="font-bold text-gray-900">{pack.name}</p>
-                <p className="text-2xl font-black text-gray-900">
-                  {pack.tokens.toLocaleString()} <span className="text-base font-semibold">BROski$</span>
-                </p>
-              </div>
-              <button
-                onClick={() => handleBuyPack(pack.envKey)}
-                className={`w-full py-2 rounded-lg text-white font-bold text-sm transition-colors ${pack.btnColour}`}
+          {TOKEN_PACKS.map((pack) => {
+            const isLoading = buyingPackId === pack.id;
+            const anyLoading = buyingPackId !== null;
+            return (
+              <div
+                key={pack.id}
+                className={`relative rounded-xl border-2 p-5 flex flex-col gap-3 ${pack.colour}`}
               >
-                Buy for {pack.price}
-              </button>
-            </div>
-          ))}
+                {'badge' in pack && pack.badge && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs font-bold px-3 py-0.5 rounded-full">
+                    {pack.badge}
+                  </span>
+                )}
+                <div className="text-3xl">{pack.emoji}</div>
+                <div>
+                  <p className="font-bold text-gray-900">{pack.name}</p>
+                  <p className="text-2xl font-black text-gray-900">
+                    {pack.tokens.toLocaleString()} <span className="text-base font-semibold">BROski$</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleBuyPack(pack.id)}
+                  disabled={anyLoading}
+                  className={`w-full py-2 rounded-lg text-white font-bold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${pack.btnColour}`}
+                >
+                  {isLoading ? 'Redirecting…' : `Buy for ${pack.price}`}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </section>
 

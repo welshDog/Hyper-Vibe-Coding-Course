@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import type { Enrollment, Course } from '../types/database';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { PlayCircle } from 'lucide-react';
+import { PlayCircle, Coins } from 'lucide-react';
 
 type EnrolledCourse = Enrollment & {
   courses: Course;
@@ -58,6 +58,22 @@ export default function Dashboard() {
           </h2>
         </div>
       </div>
+
+      {/* ── BROski$ balance card ───────────────────────────────────────────── */}
+      <Link to="/tokens" className="block mb-8">
+        <div className="flex items-center gap-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl px-6 py-4 hover:border-yellow-400 transition-colors">
+          <Coins className="h-8 w-8 text-yellow-500 flex-shrink-0" />
+          <div>
+            <p className="text-2xl font-black text-yellow-600">
+              {(user.broski_tokens ?? 0).toLocaleString()} BROski$
+            </p>
+            <p className="text-sm text-gray-500">Your token balance — earn by learning, spend in the Shop</p>
+          </div>
+          <span className="ml-auto text-sm font-semibold text-yellow-600 hidden sm:block">
+            View &amp; top up →
+          </span>
+        </div>
+      </Link>
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
         <div className="px-4 py-5 sm:px-6">
