@@ -14,7 +14,7 @@ export default function CourseCatalog() {
       const { data, error } = await supabase
         .from('courses')
         .select('*')
-        .eq('is_published', true)
+        .eq('is_active', true)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -65,17 +65,25 @@ export default function CourseCatalog() {
               <div className="flex-1 p-6 flex flex-col justify-between">
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      course.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-                      course.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1)}
-                    </span>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
-                      {Math.round(course.duration_minutes / 60)}h {course.duration_minutes % 60}m
-                    </div>
+                    {course.difficulty ? (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        course.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
+                        course.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1)}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        Vibe Coding
+                      </span>
+                    )}
+                    {course.duration_minutes != null ? (
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-400" />
+                        {Math.round(course.duration_minutes / 60)}h {course.duration_minutes % 60}m
+                      </div>
+                    ) : null}
                   </div>
                   <Link to={`/courses/${course.id}`} className="block mt-2">
                     <p className="text-xl font-semibold text-gray-900 hover:text-primary transition-colors">
@@ -89,7 +97,7 @@ export default function CourseCatalog() {
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="text-2xl font-bold text-gray-900">
-                      {course.price === 0 ? 'Free' : `£${course.price}`}
+                      {course.price_pence === 0 ? 'Free' : `£${(course.price_pence / 100).toFixed(2).replace(/\.00$/, '')}`}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

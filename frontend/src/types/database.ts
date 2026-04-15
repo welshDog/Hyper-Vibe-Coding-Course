@@ -21,13 +21,16 @@ export type TokenTransaction = {
 export type Course = {
   id: string
   title: string
+  slug?: string | null
   description: string
-  price: number
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  duration_minutes: number
-  instructor_id: string
-  thumbnail_url: string
-  is_published: boolean
+  /** Price in GBP pence (e.g. 4900 = £49). 0 = free. */
+  price_pence: number
+  currency: string
+  is_active: boolean
+  /** Optional display fields — nullable until populated */
+  difficulty?: 'beginner' | 'intermediate' | 'advanced' | null
+  duration_minutes?: number | null
+  thumbnail_url?: string | null
   created_at: string
 }
 

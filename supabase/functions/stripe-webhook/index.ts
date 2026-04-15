@@ -33,6 +33,98 @@ const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 );
 
+// ── Email helper ─────────────────────────────────────────────────────────────
+// Sends confirmation email via Resend. No-op if RESEND_API_KEY is not set
+// (safe in dev / staging without Resend configured).
+
+async function sendEnrollmentEmail({
+  to,
+  courseTitle,
+  isPending,
+}: {
+  to: string;
+  courseTitle: string;
+  isPending: boolean;
+}): Promise<void> {
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendKey) return; // Resend not configured — skip silently
+
+  const fromEmail = Deno.env.get('EMAIL_FROM') ?? 'noreply@hypervibecourses.com';
+  const appUrl = Deno.env.get('APP_URL') ?? 'https://hypervibecourses.com';
+
+  const subject = isPending
+    ? `You're almost in! Finish setting up to access ${courseTitle}`
+    : `You're enrolled! ${courseTitle} is ready 🎉`;
+
+  const html = isPending
+    ? `
+      <h2>Payment confirmed — one step left! 🔑</h2>
+      <p>Hey BROski! Your payment for <strong>${courseTitle}</strong> went through.</p>
+      <p>Create your free account to unlock your course:</p>
+      <p><a href="${appUrl}/register" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Create account &amp; start learning →</a></p>
+      <p style="color:#888;font-size:12px;">Use the same email address (${to}) when registering and your course will unlock automatically.</p>
+    `
+    : `
+      <h2>You're in! ${courseTitle} is unlocked 🚀</h2>
+      <p>Hey BROski! Your payment went through and your course is ready.</p>
+      <p><a href="${appUrl}/dashboard" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">Start learning now →</a></p>
+      <p style="color:#888;font-size:12px;">Questions? Reply to this email — we sort things fast.</p>
+    `;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from: fromEmail, to, subject, html }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error('Resend email failed:', res.status, body);
+    }
+  } catch (err) {
+    console.error('Resend fetch error:', err);
+  }
+}
+
+async function sendTokenPurchaseEmail({
+  to,
+  tokenAmount,
+}: {
+  to: string;
+  tokenAmount: number;
+}): Promise<void> {
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendKey) return;
+
+  const fromEmail = Deno.env.get('EMAIL_FROM') ?? 'noreply@hypervibecourses.com';
+  const appUrl = Deno.env.get('APP_URL') ?? 'https://hypervibecourses.com';
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to,
+        subject: `${tokenAmount} BROski$ added to your account ⚡`,
+        html: `
+          <h2>${tokenAmount} BROski$ credited! ⚡</h2>
+          <p>Your token pack purchase was confirmed. Your balance has been updated.</p>
+          <p><a href="${appUrl}/tokens" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">View balance →</a></p>
+        `,
+      }),
+    });
+  } catch (err) {
+    console.error('Token email error:', err);
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function resolveUserId(email: string): Promise<string | null> {
@@ -82,6 +174,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     }
 
     console.log(`✅ Tokens awarded: user=${userId} amount=${tokenAmount} session=${session.id}`);
+    await sendTokenPurchaseEmail({ to: buyerEmail, tokenAmount });
     return new Response('OK', { status: 200 });
   }
 
@@ -92,15 +185,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     return new Response('OK — no courseId', { status: 200 });
   }
 
-  const userId = await resolveUserId(buyerEmail);
-  if (!userId) {
-    console.warn(`Payment from unregistered email: ${buyerEmail} for course ${courseId}`);
-    return new Response('OK — unregistered buyer', { status: 200 });
-  }
-
   const { data: course, error: courseLookupError } = await supabaseAdmin
     .from('courses')
-    .select('id')
+    .select('id, title')
     .eq('id', courseId)
     .maybeSingle();
 
@@ -109,6 +196,30 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     return new Response('OK — course not found', { status: 200 });
   }
 
+  const userId = await resolveUserId(buyerEmail);
+
+  // ── Unregistered buyer: save pending enrollment ──────────────────────────
+  // When the buyer creates their account, handle_new_user trigger will call
+  // apply_pending_enrollments() and unlock the course automatically.
+  if (!userId) {
+    const { error: pendingError } = await supabaseAdmin
+      .from('pending_enrollments')
+      .upsert(
+        { email: buyerEmail, course_id: courseId, stripe_session_id: session.id },
+        { onConflict: 'stripe_session_id' },
+      );
+
+    if (pendingError) {
+      console.error('Failed to save pending enrollment:', pendingError);
+      return new Response('Pending enrollment save failed', { status: 500 });
+    }
+
+    console.log(`⏳ Pending enrollment saved: email=${buyerEmail} course=${courseId} session=${session.id}`);
+    await sendEnrollmentEmail({ to: buyerEmail, courseTitle: course.title, isPending: true });
+    return new Response('OK — pending enrollment saved', { status: 200 });
+  }
+
+  // ── Registered buyer: enroll immediately ─────────────────────────────────
   const { error: enrollmentError } = await supabaseAdmin
     .from('enrollments')
     .upsert(
@@ -127,6 +238,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   }
 
   console.log(`✅ Enrolled: user=${userId} email=${buyerEmail} course=${courseId} session=${session.id}`);
+  await sendEnrollmentEmail({ to: buyerEmail, courseTitle: course.title, isPending: false });
   return new Response('OK', { status: 200 });
 }
 

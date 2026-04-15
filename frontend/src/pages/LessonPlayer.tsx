@@ -52,7 +52,7 @@ export default function LessonPlayer() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
 
   // Preview mode: skip enrollment check, show enroll CTA banner
   const isPreview = searchParams.get('preview') === 'true';
@@ -238,6 +238,9 @@ export default function LessonPlayer() {
       lessonIndex: currentLessonIndex,
       progressPercent,
     });
+
+    // Refresh token balance — DB trigger awarded +10 BROski$, sync to UI
+    void refreshUser();
 
     // Achievement check — get newly unlocked badges
     const newBadgeIds = await onLessonCompleted(newCompleted.size, lessons.length);

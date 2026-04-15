@@ -70,7 +70,7 @@ export default function CourseDetail() {
     setEnrolling(true);
 
     // Free courses: enroll directly
-    if (course.price === 0) {
+    if (course.price_pence === 0) {
       const { error } = await supabase
         .from('enrollments')
         .upsert(
@@ -114,16 +114,21 @@ export default function CourseDetail() {
             <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
               {course.title}
             </h1>
-            <div className="mt-4 flex items-center">
-              <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
-                course.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-                course.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-              }`}>
-                {course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1)}
-              </span>
-              <span className="ml-4 text-sm text-gray-500">
-                {lessons.length} lessons • {Math.round(course.duration_minutes / 60)}h {course.duration_minutes % 60}m
+            <div className="mt-4 flex items-center gap-3 flex-wrap">
+              {course.difficulty ? (
+                <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${
+                  course.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
+                  course.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {course.difficulty.charAt(0).toUpperCase() + course.difficulty.slice(1)}
+                </span>
+              ) : null}
+              <span className="text-sm text-gray-500">
+                {lessons.length} lesson{lessons.length !== 1 ? 's' : ''}
+                {course.duration_minutes != null
+                  ? ` • ${Math.round(course.duration_minutes / 60)}h ${course.duration_minutes % 60}m`
+                  : ''}
               </span>
             </div>
             <p className="mt-4 text-lg text-gray-500">
@@ -140,10 +145,10 @@ export default function CourseDetail() {
               ) : (
                 <Button size="lg" onClick={handleEnroll} className="w-full sm:w-auto" disabled={enrolling}>
                   {enrolling
-                    ? (course.price === 0 ? 'Enrolling...' : 'Redirecting to checkout…')
-                    : course.price === 0
+                    ? (course.price_pence === 0 ? 'Enrolling...' : 'Redirecting to checkout…')
+                    : course.price_pence === 0
                       ? 'Enroll for free'
-                      : `Enroll — £${course.price}`}
+                      : `Enroll — £${(course.price_pence / 100).toFixed(2).replace(/\.00$/, '')}`}
                 </Button>
               )}
             </div>

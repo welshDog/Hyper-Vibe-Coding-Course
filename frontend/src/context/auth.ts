@@ -11,9 +11,11 @@ interface AuthState {
   setSession: (session: Session | null) => void
   setLoading: (loading: boolean) => void
   signOut: () => Promise<void>
+  /** Re-fetches the user profile from DB — call after token balance changes */
+  refreshUser: () => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   session: null,
   loading: true,
@@ -23,6 +25,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     await supabase.auth.signOut()
     set({ user: null, session: null })
+  },
+  refreshUser: async () => {
+    const { session } = get()
+    if (!session?.user) return
+    try {
+      const user = await loadUserProfile(session.user.id)
+      set({ user })
+    } catch {
+      // silently ignore — stale data is better than a crash
+    }
   },
 }))
 
