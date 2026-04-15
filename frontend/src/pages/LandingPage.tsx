@@ -256,7 +256,7 @@ export default function LandingPage() {
               Browse Courses →
             </Link>
             <Link
-              to="/courses/vibe-coding-foundations"
+              to="/courses"
               className="text-gray-500 hover:text-gray-400 text-sm transition-colors"
             >
               ▶ Free Lesson
