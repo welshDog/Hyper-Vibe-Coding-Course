@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: April 15, 2026 — Phases 10E + 10I COMPLETE ✅ | Stripe fully LIVE, routes + webhook verified**
+> **Last updated: April 15, 2026 — Phases 10J LIVE ✅ | Stripe webhook live, courses seeded, RLS secured**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -36,7 +36,7 @@
 Hyper-Vibe-Coding-Course     ──── manifest.json ────▶    HyperCode V2.4
 github.com/welshDog/             (hyper-agent-spec)       github.com/welshDog/
 Hyper-Vibe-Coding-Course                                  HyperCode-V2.4
-(Supabase + Vercel)                    │                  (Docker, 26 containers)
+(Supabase + Vercel)                    │                  (Docker, 29 containers)
 Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStation zone\
                                        │                       HyperCode\HyperCode-V2.4
                               HyperAgent-SDK
@@ -49,7 +49,7 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 
 ## ✅ CURRENT STATUS: FULLY OPERATIONAL (April 15, 2026)
 
-> 🟢 ALL 23 CONTAINERS HEALTHY — Stack is LIVE!
+> 🟢 ALL 29 CONTAINERS HEALTHY — Stack is LIVE! 🦅🔥
 
 ### 🏆 Full Phase Roadmap
 
@@ -68,30 +68,39 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 10A | FastAPI / Starlette upgrade | ✅ DONE |
 | 10B | Docker Compose Network Isolation | ✅ DONE — April 14, 2026 |
 | 10C | Docker Secrets | ✅ DONE — April 14, 2026 |
-| 10E | **CognitiveUplink WS type** | ✅ DONE — already correct, verified April 15, 2026 |
-| 10F | **Stripe Checkout API** | ✅ DONE — April 14, 2026 💳 |
-| 10G | **DB — Stripe webhook writes** | ✅ DONE — April 14, 2026 |
-| 10D | **Agent-level rate limiting + auth** | ✅ DONE — April 14, 2026 🔑 |
-| 10H | **Pricing page (dashboard)** | ✅ DONE — April 14, 2026 |
-| 10I | **Stripe CLI e2e — routes + webhook LIVE** | ✅ DONE — April 15, 2026 🎉 |
+| 10D | Agent-level rate limiting + auth | ✅ DONE — April 14, 2026 🔑 |
+| 10E | CognitiveUplink WS type fix | ✅ DONE — April 15, 2026 |
+| 10F | Stripe Checkout API | ✅ DONE — April 14, 2026 💳 |
+| 10G | DB — Stripe webhook writes | ✅ DONE — April 14, 2026 |
+| 10H | Pricing page (dashboard) | ✅ DONE — April 14, 2026 |
+| 10I | Stripe CLI e2e — routes + webhook LIVE | ✅ DONE — April 15, 2026 🎉 |
+| 10J | CognitiveUplink `/ws/uplink` LIVE | ✅ DONE — April 15, 2026 |
+| 10K | Stripe webhook registered + secret synced | ✅ DONE — April 15, 2026 🔐 |
+| 10L | Courses DB seeded (6 courses live) | ✅ DONE — April 15, 2026 📚 |
+| 10M | RLS Security Definer View fixed | ✅ DONE — April 15, 2026 🔒 |
 
-### Container Health
+### Container Health (29/29 ✅)
 
 | Container | Status |
 |---|---|
-| postgres | ✅ Healthy |
-| redis | ✅ Healthy |
-| hypercode-core | ✅ Healthy |
+| hypercode-core | ✅ Healthy (watch: 48% memory — 738 MiB / 1.5 GiB) |
+| crew-orchestrator | ✅ Healthy |
+| hypercode-dashboard | ✅ Healthy |
+| hypercode-mcp-server | ✅ Healthy |
+| healer-agent | ✅ Healthy |
 | celery-worker | ✅ Healthy |
-| prometheus | ✅ Healthy |
-| grafana | ✅ Running |
+| redis | ✅ Healthy |
+| postgres | ✅ Healthy |
 | hypercode-ollama | ✅ Healthy |
-| healer-agent | ✅ Running |
-| hypercode-dashboard | ✅ Running |
-| hypercode-mcp-server | ✅ Running |
-| minio, chroma, loki, tempo, promtail | ✅ All Running |
-| cadvisor, node-exporter, alertmanager | ✅ All Running |
-| docker-socket-proxy | ✅ Running |
+| agent-x | ✅ Healthy |
+| hyper-architect | ✅ Healthy |
+| hyper-observer | ✅ Healthy |
+| hyper-worker | ✅ Healthy |
+| super-hyper-broski-agent | ✅ Healthy |
+| broski-bot | ✅ Healthy |
+| prometheus / grafana / loki / tempo / promtail | ✅ All Healthy |
+| minio / chroma / cadvisor / node-exporter / alertmanager | ✅ All Healthy |
+| docker-socket-proxy / hyper-shield-scanner / hyper-sweeper-prune | ✅ Running |
 
 ### What Fixed The Stack (For Claude's Reference)
 
@@ -119,13 +128,29 @@ In WSL: `/mnt/h/HyperStation zone/HyperCode/volumes/`
 
 ---
 
-## 🎯 NEXT UP — Remaining Phases
+## 🎯 NEXT UP — Remaining Work
 
-| Phase | Task | Why |
+| # | Task | Priority | Est. Time |
+|---|---|---|---|
+| 1 | Fix TokensPage.tsx prices + wire to checkout API | 🟡 Medium | 1 hr |
+| 2 | Fix dead link: /courses/vibe-coding-foundations → /courses | 🟡 Medium | 5 min |
+| 3 | Add BROski$ balance to Dashboard.tsx | 🟢 Nice-to-have | 30 min |
+| 4 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing | — |
+| 5 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job | — |
+| 6 | Certificates feature | 🔵 Low | — |
+| 7 | Quiz/exercise system | 🔵 Low | — |
+| 8 | Referral system (TokensPage shows +200 BROski$ refer a friend) | 🔵 Low | — |
+
+### Token Pack Price Mismatch — FIX NEEDED
+
+TokensPage.tsx still shows wrong prices + uses old Payment Links.
+Must be updated to match locked Stripe prices:
+
+| Pack | TokensPage.tsx (WRONG) | Correct Stripe Price |
 |---|---|---|
-| **10J** | CognitiveUplink `/ws/uplink` backend endpoint | `CognitiveUplink.tsx:134` connects to `ws://hostname:8081/ws/uplink` — that endpoint doesn't exist. Needs a handler in hypercode-core or crew-orchestrator |
-| **10K** | Add Stripe Price IDs to `.env` | `STRIPE_PRICE_STARTER` etc. are empty — needed for live checkout flow. Create products in Stripe Dashboard (test mode) |
-| **CVE** | Agent image CVE patching | 14 HIGH remaining on agent images (no Debian fix yet) |
+| Starter | 100 tokens / £2.99 | 200 tokens / £5 |
+| Builder | 500 tokens / £9.99 | 800 tokens / £15 |
+| Hyper | 1500 tokens / £19.99 | 2500 tokens / £35 |
 
 ### Agents Security Upgrade
 
@@ -140,6 +165,52 @@ In WSL: `/mnt/h/HyperStation zone/HyperCode/volumes/`
 | 🟡 5-12 | All remaining agent images | TBC | - | Patch |
 
 **Target: ZERO CRITICAL, <5 HIGH after patch phase**
+
+---
+
+## 🗄️ Supabase — Database Status
+
+### Courses Seeded ✅ (April 15, 2026)
+
+7 courses live in `public.courses` (price_pence in GBP pence):
+
+| Title | Slug | Price |
+|---|---|---|
+| Vibe Code The Hyper Way | hyper-vibe-course-01 | £49 |
+| Vibe Coding Foundations | vibe-coding-foundations | FREE |
+| Hyper Prompt Master | hyper-prompt-master | £29 |
+| MVP Sprint | mvp-sprint | £49 |
+| Hyperfocus HTML & CSS Quick Wins | hyperfocus-html-css | £19.99 |
+| Component Chaos Lab | component-chaos-lab | £39.99 |
+| Ship Your First Full Stack Thing | ship-full-stack | £49.99 |
+
+### DB Schema: courses table
+
+Actual columns (NOT the old seed file schema — that was wrong):
+```
+id           text (PK)
+title        text
+slug         text
+description  text
+price_pence  integer  (pence, GBP — e.g. £29 = 2900)
+currency     text     (default 'gbp')
+is_active    boolean
+created_at   timestamptz
+```
+
+### RLS Security ✅ Fixed (April 15, 2026)
+
+- `public.user_loyalty_tier` view — recreated with `security_invoker = on` (was SECURITY DEFINER, could bypass RLS)
+- `users` table — RLS ON ✅ | policies: read own profile, update own profile
+- `token_transactions` table — RLS ON ✅ | policy: read own transactions
+
+### Stripe Webhook
+
+- Webhook name: `vibe-hook` (keep this one — has delivery history)
+- Endpoint: `https://yhtmuibgdnxhbgboajhc.supabase.co/functions/v1/stripe-webhook`
+- Events: `checkout.session.completed`, `charge.refunded`
+- `STRIPE_WEBHOOK_SECRET` in Supabase env → must match `vibe-hook` signing secret
+- `brilliant-triumph` webhook = duplicate, can be deleted
 
 ---
 
@@ -244,7 +315,7 @@ USER appuser
 | Grafana Observability | 3001 | Metrics, alerts, dashboards |
 
 ### Infrastructure Stack
-- **Containers:** Docker Compose (multi-file strategy) — 23-26 containers active
+- **Containers:** Docker Compose (multi-file strategy) — 29 containers active ✅
 - **Databases:** Redis (pub/sub + cache) + PostgreSQL (persistent memory)
 - **Observability:** Prometheus + Grafana + custom health reports
 - **Secrets:** `docker-compose.secrets.yml` + `./secrets/*.txt` files
@@ -253,6 +324,7 @@ USER appuser
 - **Kubernetes:** Helm charts in `k8s/` and `helm/` (scale path)
 - **Security:** Trivy scanner (`hyper-shield-scanner`) — scans all 12 agent images
 - **Stripe:** LIVE at `/api/stripe/checkout` — Phase 10F ✅
+- **Supabase:** Edge Functions live — `stripe-webhook` + `shop-purchase` ✅
 
 ### 🌐 Phase 10B — Docker Network Topology
 
@@ -360,14 +432,14 @@ node cli/index.js tokens award <discord_id> <amount>
 node cli/index.js graduate <discord_id> --tokens 100
 ```
 
-### Stripe Testing (Phase 10F)
+### Stripe Testing
 ```bash
 # Test checkout
 curl -X POST http://localhost:8000/api/stripe/checkout \
   -H "Content-Type: application/json" \
   -d '{"price_id": "starter", "user_id": "broski_test"}'
 
-# Local webhook testing (Phase 10I)
+# Local webhook testing
 stripe listen --forward-to localhost:8000/api/stripe/webhook
 ```
 
@@ -425,7 +497,10 @@ Available MCP tools:
 - **Stripe dev mode:** Missing `STRIPE_WEBHOOK_SECRET` = signature check skipped (local only)
 - **Stripe checkout mode:** token packs use `mode="payment"`, course plans use `mode="subscription"` — defined in `CHECKOUT_MODE` dict in `stripe_service.py`
 - **Stripe container context:** Docker must use `desktop-linux` context (`docker context use desktop-linux`) — `default` context causes container name conflicts on Windows
-- **CognitiveUplink WS URL:** `CognitiveUplink.tsx:134` defaults to `ws://hostname:8081/ws/uplink` — no backend handler exists for this yet (Phase 10J)
+- **CognitiveUplink WS URL:** `CognitiveUplink.tsx:134` defaults to `ws://hostname:8000/ws/uplink` — handler now LIVE in hypercode-core (Phase 10J ✅)
+- **Supabase courses table schema:** Uses `price_pence` (int, GBP pence) + `is_active` (bool) — NOT `price` or `is_published`. Seed file updated to match.
+- **Supabase security_invoker:** `public.user_loyalty_tier` view uses `security_invoker = on` — RLS is enforced for querying user. DO NOT change to SECURITY DEFINER.
+- **Stripe webhook in Supabase:** Use `vibe-hook` endpoint. Its signing secret = `STRIPE_WEBHOOK_SECRET` in Supabase env vars. `brilliant-triumph` is a duplicate — safe to delete.
 - **Conventional commits:** `feat:` `fix:` `docs:` `chore:`
 - **Windows PowerShell first**, bash second
 - **`apps/web/`:** Archived, never migrate
@@ -441,6 +516,7 @@ Available MCP tools:
 5. **Port conflicts** — Ensure 3000, 3001, 8000, 8008, 8080, 8081, 8088 are free
 6. **Test environment** — `fakeredis` used in tests; import via `fakeredis.aioredis`
 7. **Volumes wipe** — Alpine trick: `docker run --rm -v "/path":/target alpine sh -c "rm -rf /target/*"`
+8. **hypercode-core memory** — At 48% (738 MiB / 1.5 GiB) after fresh restart April 15, 2026. Alert if > 1.2 GiB.
 
 ---
 
