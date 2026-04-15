@@ -1,6 +1,6 @@
 # 🤖 BROski Ecosystem — Claude Context Handoff (ALL REPOS SYNCED)
 > Read this first. Every word. Then start the mission.
-> **Last synced: April 15, 2026 — Phases 0–10K COMPLETE ✅ | Stripe LIVE 💳 | CognitiveUplink WS LIVE 🔌**
+> **Last synced: April 15, 2026 — Frontend payment flow COMPLETE ✅ | Pricing + TokensPage + Dashboard all wired 💳**
 
 ---
 
@@ -87,11 +87,24 @@ POST /api/stripe/webhook     → handles Stripe events (signature verified)
 
 ## 🎯 NEXT UP — Remaining Work
 
-| Task | Why |
-|---|---|
-| Wire Pricing page to `/api/stripe/checkout` | Frontend checkout button needs HyperCode-V2.4 API wired up |
-| Supabase Edge Function — post-purchase course access | Grant course access in Supabase on `checkout.session.completed` |
-| CVE agent image patching | 14 HIGH CVEs on agent images — no Debian fix yet, batch job |
+| Task | Status | Why |
+|---|---|---|
+| ✅ Wire Pricing page to `/api/stripe/checkout` | DONE April 15 | 3 tiers + loading + auth gate |
+| ✅ Fix TokensPage.tsx prices + wire to checkout API | DONE April 15 | Prices now match locked Stripe prices |
+| ✅ Add BROski$ balance card to Dashboard | DONE April 15 | Uses auth store — no extra query |
+| Fix dead link `/courses/vibe-coding-foundations` on LandingPage | Pending | LandingPage:260 → 404, should be `/courses` |
+| Record Module 1.1 + add YouTube URL to DB | Ongoing | LessonPlayer shows placeholder until `video_url` is set |
+| CVE agent image patching | Waiting | 14 HIGH CVEs — no Debian fix yet, batch job |
+
+### Frontend Checkout Pattern (standard — use for all payment buttons)
+```ts
+import { createCheckoutSession } from '../lib/payments'
+
+// price_id options: 'starter' | 'builder' | 'hyper' | 'pro_monthly' | 'pro_yearly' | 'hyper_monthly' | 'hyper_yearly'
+const url = await createCheckoutSession(priceKey, user.id)
+window.location.href = url
+```
+API target: `VITE_HYPERCODE_API_URL` env var (default: `http://localhost:8000`)
 
 ---
 
@@ -289,7 +302,9 @@ pytest backend/tests/test_stripe.py -v
 - Discord bot cogs in `discord-bot/`
 - Course shop triggers AccessProvision flow → V2.4 via webhook
 - **Stripe Checkout backend LIVE** (Phase 10F ✅ — in HyperCode-V2.4)
-- Next mission: Phase 10H — Pricing page UI + checkout button in Next.js
+- **Pricing page wired** ✅ — 3 tiers (Free/Pro £9/Hyper £29), calls `createCheckoutSession()` — April 15, 2026
+- **TokensPage wired** ✅ — correct prices (200/£5, 800/£15, 2500/£35), calls `createCheckoutSession()` — April 15, 2026
+- **Dashboard balance card** ✅ — BROski$ shown from auth store, links to `/tokens` — April 15, 2026
 
 ---
 

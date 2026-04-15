@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: April 15, 2026 — Phases 10J LIVE ✅ | Stripe webhook live, courses seeded, RLS secured**
+> **Last updated: April 15, 2026 — Frontend payment flow COMPLETE ✅ | Pricing + TokensPage + Dashboard wired**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -130,27 +130,16 @@ In WSL: `/mnt/h/HyperStation zone/HyperCode/volumes/`
 
 ## 🎯 NEXT UP — Remaining Work
 
-| # | Task | Priority | Est. Time |
-|---|---|---|---|
-| 1 | Fix TokensPage.tsx prices + wire to checkout API | 🟡 Medium | 1 hr |
-| 2 | Fix dead link: /courses/vibe-coding-foundations → /courses | 🟡 Medium | 5 min |
-| 3 | Add BROski$ balance to Dashboard.tsx | 🟢 Nice-to-have | 30 min |
-| 4 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing | — |
-| 5 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job | — |
-| 6 | Certificates feature | 🔵 Low | — |
-| 7 | Quiz/exercise system | 🔵 Low | — |
-| 8 | Referral system (TokensPage shows +200 BROski$ refer a friend) | 🔵 Low | — |
-
-### Token Pack Price Mismatch — FIX NEEDED
-
-TokensPage.tsx still shows wrong prices + uses old Payment Links.
-Must be updated to match locked Stripe prices:
-
-| Pack | TokensPage.tsx (WRONG) | Correct Stripe Price |
+| # | Task | Priority |
 |---|---|---|
-| Starter | 100 tokens / £2.99 | 200 tokens / £5 |
-| Builder | 500 tokens / £9.99 | 800 tokens / £15 |
-| Hyper | 1500 tokens / £19.99 | 2500 tokens / £35 |
+| 1 | ✅ Fix TokensPage.tsx prices + wire to checkout API | DONE — April 15, 2026 |
+| 2 | Fix dead link: `/courses/vibe-coding-foundations` → `/courses` on LandingPage | 🟡 5 min |
+| 3 | ✅ Add BROski$ balance card to Dashboard.tsx | DONE — April 15, 2026 |
+| 4 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
+| 5 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |
+| 6 | Certificates feature | 🔵 Low |
+| 7 | Quiz/exercise system | 🔵 Low |
+| 8 | Referral system | 🔵 Low |
 
 ### Agents Security Upgrade
 
