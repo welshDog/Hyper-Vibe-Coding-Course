@@ -1,6 +1,6 @@
 # 🤖 BROski Ecosystem — Claude Context Handoff (ALL REPOS SYNCED)
 > Read this first. Every word. Then start the mission.
-> **Last synced: April 14, 2026 — Phases 0–10F COMPLETE ✅ | Stripe Checkout API LIVE 💳**
+> **Last synced: April 15, 2026 — Phases 0–10K COMPLETE ✅ | Stripe LIVE 💳 | CognitiveUplink WS LIVE 🔌**
 
 ---
 
@@ -46,7 +46,15 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 9 | CVE Elimination (apt + pip pinning) | ✅ DONE — April 14, 2026 |
 | 10A | FastAPI / Starlette upgrade | ✅ DONE |
 | 10B | Docker Compose Network Isolation | ✅ DONE — April 14, 2026 |
+| 10C | Docker Secrets | ✅ DONE — April 14, 2026 |
+| 10D | Agent-level rate limiting + auth | ✅ DONE — April 14, 2026 🔑 |
+| 10E | CognitiveUplink WS type fix | ✅ DONE — April 15, 2026 |
 | 10F | **Stripe Checkout API** | ✅ DONE — April 14, 2026 💳 |
+| 10G | DB — Stripe webhook writes | ✅ DONE — April 14, 2026 |
+| 10H | Pricing page (dashboard) | ✅ DONE — April 14, 2026 |
+| 10I | Stripe CLI e2e — routes + webhook LIVE | ✅ DONE — April 15, 2026 🎉 |
+| 10J | **CognitiveUplink `/ws/uplink`** | ✅ DONE — April 15, 2026 🔌 |
+| 10K | Stripe Price IDs in `.env` | ✅ DONE — April 15, 2026 |
 
 ---
 
@@ -67,26 +75,23 @@ POST /api/stripe/webhook     → handles Stripe events (signature verified)
 
 ### Webhook events handled
 - `checkout.session.completed` → subscription activated (TODO 10G: write to DB)
-- `customer.subscription.deleted` → subscription cancelled (TODO 10G: downgrade in DB)
-- `invoice.payment_failed` → payment failed warning (TODO 10G: notify user)
-- `customer.subscription.updated` → status change logged
+- `customer.subscription.deleted` → subscription cancelled ✅ handled in HyperCode-V2.4
+- `invoice.payment_failed` → payment failed warning ✅ handled in HyperCode-V2.4
+- `customer.subscription.updated` → status change logged ✅ handled in HyperCode-V2.4
 
 ### This repo (Hyper-Vibe-Coding-Course) TODO
-- Next: wire frontend Pricing page to `/api/stripe/checkout` (Phase 10H)
+- Wire frontend Pricing page to `/api/stripe/checkout` (HyperCode-V2.4 endpoint live at port 8000)
 - Supabase Edge Function to handle post-purchase course access grant
 
 ---
 
-## 🎯 NEXT UP — Phase 10G+
+## 🎯 NEXT UP — Remaining Work
 
-| Phase | Task | Why |
-|---|---|---|
-| **10G** | DB — save subscription to Postgres on webhook | Hook `checkout.session.completed` → update users table |
-| **10H** | Frontend — Pricing page + checkout button | Next.js UI wired to `/api/stripe/checkout` |
-| **10I** | Stripe CLI end-to-end local testing | `stripe listen --forward-to localhost:8000/api/stripe/webhook` |
-| **10C** | Secrets management (Docker secrets / Vault) | `.env` files still used locally — productionise |
-| **10D** | Agent-level rate limiting + auth | Per-agent API keys for internal network |
-| **10E** | Open bug: CognitiveUplink.tsx ~130 | WS message type `"command"` → `"execute"` |
+| Task | Why |
+|---|---|
+| Wire Pricing page to `/api/stripe/checkout` | Frontend checkout button needs HyperCode-V2.4 API wired up |
+| Supabase Edge Function — post-purchase course access | Grant course access in Supabase on `checkout.session.completed` |
+| CVE agent image patching | 14 HIGH CVEs on agent images — no Debian fix yet, batch job |
 
 ---
 
