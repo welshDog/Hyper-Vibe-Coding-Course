@@ -27,10 +27,10 @@ Nothing is "merged" in the git sense. They stay as separate repos. Integration =
 
 | Fix | Repo | Status | Blocker For |
 |-----|------|--------|-------------|
-| Remove port 5432 from Course `docker-compose.yml` | Course | 🔴 Not done | Local dev |
-| Remove `apps/web` from Course `docker-compose.yml` | Course | 🔴 Not done | Local dev |
-| Rename `/leaderboard` → `/xp-leaderboard` in Course `discord-bot/cogs/xp.py` | Course | 🔴 Not done | Both bots in same server |
-| Add `discord_id VARCHAR(30) UNIQUE NULLABLE` to V2.4 users (Alembic migration) | V2.4 | 🔴 Not done | EVERYTHING in Phases 1–4 |
+| Remove port 5432 from Course docker-compose.yml | ✅ Done |
+| Remove apps/web from Course docker-compose.yml | ✅ Done |
+| Rename /leaderboard → /xp-leaderboard | ✅ Done |
+| Add discord_id VARCHAR(30) UNIQUE NULLABLE | ✅ Done |
 
 **Estimated time:** 2–3 hours total. None are risky. All are small edits.
 
