@@ -5,7 +5,7 @@ import type { Course, Lesson } from '../types/database';
 import { useAuthStore } from '../context/auth';
 import { Button } from '../components/ui/Button';
 import { PlayCircle, Lock } from 'lucide-react';
-import { getCoursePaymentLinkUrl } from '../lib/payments';
+import { createCourseCheckoutSession } from '../lib/payments';
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -88,18 +88,18 @@ export default function CourseDetail() {
       return;
     }
 
-    // Paid courses: redirect to Stripe Payment Link
-    const paymentUrl = getCoursePaymentLinkUrl(course.id, user.email);
-
-    if (!paymentUrl) {
-      console.error('[CourseDetail] No Stripe payment link configured — blocking enrollment to prevent bypass');
-      alert('Payment system is temporarily unavailable. Please try again later.');
+    // Paid courses: create Checkout Session via HyperCode API → redirect to Stripe
+    try {
+      const checkoutUrl = await createCourseCheckoutSession(
+        { id: course.id, title: course.title, price_pence: course.price_pence },
+        user.id,
+      );
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      console.error('[CourseDetail] Course checkout failed:', err);
+      alert('Payment system temporarily unavailable. Please try again.');
       setEnrolling(false);
-      return;
     }
-
-    // Redirect to Stripe — enrollment happens via webhook after payment
-    window.location.href = paymentUrl;
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;

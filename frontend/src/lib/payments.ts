@@ -84,16 +84,39 @@ export async function createCheckoutSession(
   return url
 }
 
-/** Per-course payment links — add individual course payment link env vars here */
-export function getCoursePaymentLinkUrl(courseId: string, userEmail?: string): string | null {
-  const coursePaymentLinks: Record<string, string | undefined> = {
-    // Add entries as you create payment links in Stripe:
-    // 'supabase-course-uuid': import.meta.env.VITE_STRIPE_LINK_COURSE_2,
+/**
+ * Creates a Stripe Checkout Session for a paid course purchase.
+ * Uses the HyperCode V2.4 backend API (same as token packs / subscriptions).
+ *
+ * The backend uses inline price_data so no Stripe Price ID needs to be pre-created
+ * per course. client_reference_id = courseId is set on the session so the Supabase
+ * stripe-webhook Edge Function can enroll the correct course after payment.
+ */
+export async function createCourseCheckoutSession(
+  course: { id: string; title: string; price_pence: number },
+  userId: string,
+): Promise<string> {
+  const apiUrl = (import.meta.env.VITE_HYPERCODE_API_URL as string | undefined) ?? 'http://localhost:8000'
+  const origin = window.location.origin
+  const res = await fetch(`${apiUrl}/api/stripe/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      price_id: 'course_purchase',
+      user_id: userId,
+      course_id: course.id,
+      course_title: course.title,
+      price_pence: course.price_pence,
+      success_url: `${origin}/payment-success?course_id=${course.id}`,
+      cancel_url: `${origin}/courses/${course.id}`,
+    }),
+  })
+  if (!res.ok) {
+    throw new Error(`Course checkout request failed (${res.status})`)
   }
-
-  const baseUrl = coursePaymentLinks[courseId] ?? import.meta.env.VITE_STRIPE_PAYMENT_LINK_URL as string | undefined
-  if (!baseUrl) return null
-
-  return buildStripePaymentLinkUrl({ courseId, prefilledEmail: userEmail }) ?? null
+  const data = await res.json() as { checkout_url?: string; url?: string }
+  const url = data.checkout_url ?? data.url
+  if (!url) throw new Error('No checkout URL returned from API')
+  return url
 }
 
