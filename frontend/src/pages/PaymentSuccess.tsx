@@ -5,7 +5,7 @@ import { useAuthStore } from '../context/auth';
 import { Button } from '../components/ui/Button';
 import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
 
-type Status = 'loading' | 'enrolled' | 'already_enrolled' | 'error';
+type Status = 'loading' | 'enrolled' | 'subscribed' | 'already_enrolled' | 'error';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -15,11 +15,39 @@ export default function PaymentSuccess() {
   const [courseTitle, setCourseTitle] = useState<string>('');
 
   useEffect(() => {
-    // Stripe webhook handles the actual enrollment server-side.
-    // This page polls for enrollment confirmation (max ~10s) so the
-    // user gets immediate feedback without waiting for webhook latency.
-    if (!user || !courseId) {
-      setStatus(user ? 'error' : 'loading');
+    if (!user) {
+      // Still waiting for auth to hydrate
+      return;
+    }
+
+    // ── Subscription purchase (no specific course) ────────────────────────────
+    // Enroll the user in all published courses so LessonPlayer grants access.
+    if (!courseId) {
+      async function enrollAllCourses() {
+        try {
+          const { data: courses } = await supabase
+            .from('courses')
+            .select('id')
+            .eq('is_active', true);
+
+          if (courses && courses.length > 0) {
+            await supabase
+              .from('enrollments')
+              .upsert(
+                courses.map((c) => ({
+                  user_id: user!.id,
+                  course_id: c.id,
+                  progress_percentage: 0,
+                })),
+                { onConflict: 'user_id,course_id' }
+              );
+          }
+        } catch {
+          // Non-fatal — user can still navigate to courses
+        }
+        setStatus('subscribed');
+      }
+      void enrollAllCourses();
       return;
     }
 
@@ -96,6 +124,36 @@ export default function PaymentSuccess() {
           <p className="mt-3 text-gray-500 text-sm">
             Hang tight — we're unlocking your course. This takes just a moment.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Subscription activated ──
+  if (status === 'subscribed') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
+          <div className="flex justify-center mb-6">
+            <div className="rounded-full bg-green-100 p-4">
+              <CheckCircle className="h-12 w-12 text-green-600" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">You're in! 🎉</h2>
+          <p className="mt-3 text-gray-500">
+            Subscription activated. All courses are unlocked and waiting.
+            Let's build something real.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <Link to="/courses">
+              <Button className="w-full text-base">
+                Browse all courses <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link to="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">
+              Go to Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -55,12 +55,25 @@ export function buildStripePaymentLinkUrl(options: PaymentLinkOptions = {}) {
  *                    | "starter" | "builder" | "hyper"
  * userId   — Supabase user UUID (used by the webhook to link payment to account)
  */
-export async function createCheckoutSession(priceKey: string, userId: string): Promise<string> {
+export async function createCheckoutSession(
+  priceKey: string,
+  userId: string,
+  courseId?: string,
+): Promise<string> {
   const apiUrl = (import.meta.env.VITE_HYPERCODE_API_URL as string | undefined) ?? 'http://localhost:8000'
+  const origin = window.location.origin
+  const successPath = courseId
+    ? `/payment-success?course_id=${courseId}`
+    : '/payment-success'
   const res = await fetch(`${apiUrl}/api/stripe/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ price_id: priceKey, user_id: userId }),
+    body: JSON.stringify({
+      price_id: priceKey,
+      user_id: userId,
+      success_url: `${origin}${successPath}`,
+      cancel_url: `${origin}/pricing`,
+    }),
   })
   if (!res.ok) {
     throw new Error(`Checkout request failed (${res.status})`)
