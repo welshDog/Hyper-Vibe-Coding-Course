@@ -100,7 +100,10 @@ localhost:3001 → Explore → Tempo datasource → search: hypercode-core
 | ✅ Wire Pricing page to `/api/stripe/checkout` | DONE April 15 | 3 tiers + loading + auth gate |
 | ✅ Fix TokensPage.tsx prices + wire to checkout API | DONE April 15 | Prices now match locked Stripe prices |
 | ✅ Add BROski$ balance card to Dashboard | DONE April 15 | Uses auth store — no extra query |
-| Fix dead link `/courses/vibe-coding-foundations` on LandingPage | Pending | LandingPage:260 → 404, should be `/courses` |
+| Fix dead link `/courses/vibe-coding-foundations` on LandingPage | ✅ Already fixed | Was already `/courses` |
+| ✅ Certificates feature | DONE April 16 | `/certificate/:courseId` page + DB trigger + Dashboard button |
+| ✅ Quiz/exercise system | DONE April 16 | QuizWidget in LessonPlayer + quiz_questions + quiz_attempts tables |
+| ✅ Referral system | DONE April 16 | Referral card on Dashboard + referral_codes + referrals tables + handle_new_user updated |
 | Record Module 1.1 + add YouTube URL to DB | Ongoing | LessonPlayer shows placeholder until `video_url` is set |
 | CVE agent image patching | Waiting | 14 HIGH CVEs — no Debian fix yet, batch job |
 

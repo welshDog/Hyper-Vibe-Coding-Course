@@ -54,3 +54,47 @@ export type Enrollment = {
   completed_at?: string
   progress_percentage: number
 }
+
+export type Certificate = {
+  id: string
+  user_id: string
+  course_id: string
+  issued_at: string
+}
+
+export type QuizQuestion = {
+  id: string
+  lesson_id: string
+  question: string
+  options: string[]
+  correct_answer: number
+  explanation?: string | null
+  order_index: number
+  created_at: string
+}
+
+export type QuizAttempt = {
+  id: string
+  user_id: string
+  question_id: string
+  selected_answer: number
+  is_correct: boolean
+  created_at: string
+}
+
+export type ReferralCode = {
+  id: string
+  user_id: string
+  code: string
+  created_at: string
+}
+
+export type Referral = {
+  id: string
+  referrer_user_id: string
+  referred_user_id?: string | null
+  referred_email: string
+  tokens_awarded: number
+  rewarded_at?: string | null
+  created_at: string
+}

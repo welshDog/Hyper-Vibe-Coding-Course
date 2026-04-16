@@ -17,6 +17,7 @@ import Admin from './pages/Admin';
 import TokensPage from './pages/TokensPage';
 import ShopPage from './pages/ShopPage';
 import Profile from './pages/Profile';
+import Certificate from './pages/Certificate';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
@@ -97,13 +98,22 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
         {/* Lesson Player has its own layout */}
-        <Route 
-          path="/learn/:courseId" 
+        <Route
+          path="/learn/:courseId"
           element={
             <PrivateRoute>
               <LessonPlayer />
             </PrivateRoute>
-          } 
+          }
+        />
+        {/* Certificate — standalone printable page */}
+        <Route
+          path="/certificate/:courseId"
+          element={
+            <PrivateRoute>
+              <Certificate />
+            </PrivateRoute>
+          }
         />
       </Routes>
     </Router>

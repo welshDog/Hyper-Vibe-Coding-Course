@@ -9,6 +9,7 @@ import { VideoPlayer } from '../components/VideoPlayer';
 import { cn } from '../lib/utils';
 import { useAchievements, BADGES } from '../hooks/useAchievements';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { QuizWidget } from '../components/QuizWidget';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -453,6 +454,11 @@ export default function LessonPlayer() {
                   {currentLesson.content || 'No text content for this lesson.'}
                 </div>
               </div>
+
+              {/* Quiz — only shown when enrolled (not preview) */}
+              {!isPreview && user && (
+                <QuizWidget lessonId={currentLesson.id} userId={user.id} />
+              )}
             </div>
           </div>
 

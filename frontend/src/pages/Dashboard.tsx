@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import type { Enrollment, Course } from '../types/database';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
-import { PlayCircle, Coins } from 'lucide-react';
+import { PlayCircle, Coins, Award, Copy, Check, Users } from 'lucide-react';
 
 type EnrolledCourse = Enrollment & {
   courses: Course;
@@ -14,29 +14,50 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const [enrollments, setEnrollments] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCount, setReferralCount] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
-    async function fetchEnrollments() {
-      const { data, error } = await supabase
-        .from('enrollments')
-        .select(`
-          *,
-          courses (*)
-        `)
-        .eq('user_id', user!.id);
+    async function fetchData() {
+      const [{ data: enrollData, error: enrollErr }, { data: refCode }, { count: refCount }] =
+        await Promise.all([
+          supabase
+            .from('enrollments')
+            .select('*, courses (*)')
+            .eq('user_id', user!.id),
+          supabase.rpc('get_or_create_referral_code', { p_user_id: user!.id }),
+          supabase
+            .from('referrals')
+            .select('*', { count: 'exact', head: true })
+            .eq('referrer_user_id', user!.id),
+        ]);
 
-      if (error) {
-        console.error('Error fetching enrollments:', error);
+      if (enrollErr) {
+        console.error('Error fetching enrollments:', enrollErr);
       } else {
-        setEnrollments(data as EnrolledCourse[]);
+        setEnrollments(enrollData as EnrolledCourse[]);
       }
+      if (refCode) setReferralCode(refCode as string);
+      setReferralCount(refCount ?? 0);
       setLoading(false);
     }
 
-    fetchEnrollments();
+    fetchData();
   }, [user]);
+
+  const referralLink = referralCode
+    ? `${window.location.origin}/register?ref=${referralCode}`
+    : null;
+
+  const handleCopy = async () => {
+    if (!referralLink) return;
+    await navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (!user) {
     return (
@@ -74,6 +95,47 @@ export default function Dashboard() {
           </span>
         </div>
       </Link>
+
+      {/* ── Referral card ─────────────────────────────────────────────────────── */}
+      {referralCode && (
+        <div className="mb-8 bg-gradient-to-r from-indigo-50 to-violet-50 border border-violet-200 rounded-xl px-6 py-5">
+          <div className="flex items-start gap-4">
+            <Users className="h-6 w-6 text-violet-500 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-gray-900 text-sm">Refer a friend — earn 100 BROski$</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Share your link. When they sign up, 100 BROski$ lands in your account instantly.
+                {referralCount > 0 && (
+                  <span className="ml-2 font-semibold text-violet-600">
+                    {referralCount} successful referral{referralCount !== 1 ? 's' : ''} so far! 🔥
+                  </span>
+                )}
+              </p>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                <code className="text-xs bg-white border border-violet-200 rounded px-3 py-1.5 text-violet-700 font-mono truncate max-w-xs">
+                  {referralLink}
+                </code>
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-800 bg-white border border-violet-200 rounded px-3 py-1.5 transition-colors"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3 h-3" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      Copy link
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
         <div className="px-4 py-5 sm:px-6">
@@ -124,12 +186,22 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                    <Link to={`/learn/${enrollment.course_id}`}>
-                      <Button size="sm" className="flex items-center">
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Continue
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      {enrollment.progress_percentage === 100 && (
+                        <Link to={`/certificate/${enrollment.course_id}`}>
+                          <Button size="sm" variant="outline" className="flex items-center gap-1 border-yellow-400 text-yellow-700 hover:bg-yellow-50">
+                            <Award className="h-4 w-4" />
+                            Certificate
+                          </Button>
+                        </Link>
+                      )}
+                      <Link to={`/learn/${enrollment.course_id}`}>
+                        <Button size="sm" className="flex items-center">
+                          <PlayCircle className="h-4 w-4 mr-2" />
+                          {enrollment.progress_percentage === 100 ? 'Review' : 'Continue'}
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </li>
               ))}

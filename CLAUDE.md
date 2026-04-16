@@ -137,9 +137,9 @@ In WSL: `/mnt/h/HyperStation zone/HyperCode/volumes/`
 | 3 | ✅ Add BROski$ balance card to Dashboard.tsx | DONE — April 15, 2026 |
 | 4 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
 | 5 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |
-| 6 | Certificates feature | 🔵 Low |
-| 7 | Quiz/exercise system | 🔵 Low |
-| 8 | Referral system | 🔵 Low |
+| 6 | ✅ Certificates feature | DONE — April 16, 2026 |
+| 7 | ✅ Quiz/exercise system | DONE — April 16, 2026 |
+| 8 | ✅ Referral system | DONE — April 16, 2026 |
 
 ### Agents Security Upgrade
 
