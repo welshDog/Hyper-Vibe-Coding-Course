@@ -1,7 +1,7 @@
 import { test, expect, type Route } from '@playwright/test';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const SUPABASE_ORIGIN = '**://dehhqwwsitvzgjrupapy.supabase.co/**';
+const SUPABASE_ORIGIN = '**://yhtmuibgdnxhbgboajhc.supabase.co/**';
 
 const fulfillJson = async (route: Route, payload: unknown, status = 200) => {
   await route.fulfill({

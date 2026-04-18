@@ -1,29 +1,24 @@
 import { test, expect } from '@playwright/test';
 
-test('landing page has correct title and buttons', async ({ page }) => {
+test('landing page has correct title and hero CTA', async ({ page }) => {
   await page.goto('/');
 
-  // Expect a title "to contain" a substring.
   await expect(page).toHaveTitle(/Hyper Vibe Coding Course/);
 
-  // Check for the "Get Started" button
-  const getStartedBtn = page.getByRole('button', { name: /Get Started/i }).first();
-  await expect(getStartedBtn).toBeVisible();
+  // Hero waitlist submit button (primary CTA on the landing page)
+  const joinWaitlistBtn = page.getByRole('button', { name: /Join waitlist/i }).first();
+  await expect(joinWaitlistBtn).toBeVisible();
 
-  // Check for the "View Pricing" button
-  const viewPricingBtn = page.getByRole('button', { name: /View Pricing/i }).first();
-  await expect(viewPricingBtn).toBeVisible();
+  // Secondary CTA — "Browse Courses →" link
+  const browseCoursesLink = page.getByRole('link', { name: /Browse Courses/i }).first();
+  await expect(browseCoursesLink).toBeVisible();
 });
 
-test('can navigate to pricing page', async ({ page }) => {
+test('can navigate to courses page from landing', async ({ page }) => {
   await page.goto('/');
-  
-  // Click the "View Pricing" button
-  await page.getByRole('button', { name: /View Pricing/i }).first().click();
 
-  // Expect URL to contain "pricing"
-  await expect(page).toHaveURL(/.*pricing/);
-  
-  // Expect header to be visible
-  await expect(page.getByRole('heading', { name: /Pricing/i })).toBeVisible();
+  await page.getByRole('link', { name: /Browse Courses/i }).first().click();
+
+  await expect(page).toHaveURL(/.*courses/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 });
