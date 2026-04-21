@@ -26,11 +26,15 @@ export function Navbar() {
   const [tier, setTier] = useState<'bronze' | 'silver' | 'gold' | 'hyper' | null>(null);
 
   useEffect(() => {
-    if (!user) { setTier(null); return; }
+    const userId = user?.id;
+    if (!userId) {
+      queueMicrotask(() => setTier(null));
+      return;
+    }
     supabase
       .from('user_loyalty_tier')
       .select('tier')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle()
       .then(({ data }) => {
         if (data?.tier) setTier(data.tier as 'bronze' | 'silver' | 'gold' | 'hyper');

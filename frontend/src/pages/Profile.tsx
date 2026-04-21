@@ -74,11 +74,13 @@ export default function Profile() {
 
   // Sync form when user loads
   useEffect(() => {
-    if (user) {
-      setFullName(user.full_name ?? '');
-      setAvatarUrl(user.avatar_url ?? '');
-    }
-  }, [user]);
+    const nextFullName = user?.full_name ?? '';
+    const nextAvatarUrl = user?.avatar_url ?? '';
+    queueMicrotask(() => {
+      setFullName(nextFullName);
+      setAvatarUrl(nextAvatarUrl);
+    });
+  }, [user?.id, user?.full_name, user?.avatar_url]);
 
   // Fetch enrollments, achievements, loyalty tier, and shop purchases in parallel
   useEffect(() => {

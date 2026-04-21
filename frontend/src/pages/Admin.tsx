@@ -101,7 +101,10 @@ export default function Admin() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { setLoadState('not-admin'); return; }
+    if (!user) {
+      queueMicrotask(() => setLoadState('not-admin'));
+      return;
+    }
 
     async function load() {
       // 1. Confirm admin role
@@ -332,10 +335,10 @@ export default function Admin() {
                 >
                   <div>
                     <span className="text-white text-sm">
-                      {(row.users as any)?.email ?? row.user_id}
+                      {row.users?.email ?? row.user_id}
                     </span>
                     <span className="ml-3 text-xs text-gray-500">
-                      {(row.courses as any)?.title ?? row.course_id}
+                      {row.courses?.title ?? row.course_id}
                     </span>
                   </div>
                   <span className="text-gray-600 text-xs">{timeAgo(row.enrolled_at)}</span>

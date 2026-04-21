@@ -116,7 +116,7 @@ export function useAchievements(): AchievementState {
   const [totalXp, setTotalXp] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const fetchAchievements = useCallback(async () => {
+  const refresh = useCallback(async () => {
     if (!user) {
       setEarnedBadges([]);
       setTotalXp(0);
@@ -151,8 +151,52 @@ export function useAchievements(): AchievementState {
   }, [user]);
 
   useEffect(() => {
-    void fetchAchievements();
-  }, [fetchAchievements]);
+    if (!user) {
+      queueMicrotask(() => {
+        setEarnedBadges([]);
+        setTotalXp(0);
+        setLoading(false);
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
+
+    supabase
+      .from('achievements')
+      .select('badge_id, xp_awarded, earned_at')
+      .eq('user_id', user.id)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+
+        if (error) {
+          console.error('Failed to fetch achievements:', error);
+          setLoading(false);
+          return;
+        }
+
+        const earned: EarnedBadge[] = (data ?? [])
+          .map((row) => ({
+            badge: BADGES[row.badge_id as BadgeId],
+            earnedAt: row.earned_at,
+          }))
+          .filter((e) => Boolean(e.badge));
+
+        const xp = (data ?? []).reduce((sum, row) => sum + (row.xp_awarded ?? 0), 0);
+
+        setEarnedBadges(earned);
+        setTotalXp(xp);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   // ── Check and unlock badges after a lesson completion ────────────────────
   const onLessonCompleted = useCallback(
@@ -186,12 +230,12 @@ export function useAchievements(): AchievementState {
       }
 
       if (newlyUnlocked.length > 0) {
-        await fetchAchievements();
+        await refresh();
       }
 
       return newlyUnlocked;
     },
-    [user, earnedBadges, fetchAchievements],
+    [user, earnedBadges, refresh],
   );
 
   const coins = Math.floor(totalXp * XP_TO_COINS);
@@ -202,6 +246,6 @@ export function useAchievements(): AchievementState {
     coins,
     loading,
     onLessonCompleted,
-    refresh: fetchAchievements,
+    refresh,
   };
 }

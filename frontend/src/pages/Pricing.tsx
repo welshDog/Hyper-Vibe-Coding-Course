@@ -74,7 +74,7 @@ export default function Pricing() {
     setLoadingTier(tier.name)
     try {
       const url = await createCheckoutSession(tier.priceKey, user.id)
-      window.location.href = url
+      window.location.assign(url)
     } catch {
       setError('Checkout failed — try again or contact support.')
       setLoadingTier(null)

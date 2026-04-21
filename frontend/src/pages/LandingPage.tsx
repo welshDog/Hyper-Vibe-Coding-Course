@@ -108,7 +108,7 @@ const VIBE_VS_TRADITIONAL = [
 ]
 
 // ─── Email validation ─────────────────────────────────────────────────────────
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 
 function isValidEmail(value: string): boolean {
   return value.length <= 254 && EMAIL_REGEX.test(value.trim())

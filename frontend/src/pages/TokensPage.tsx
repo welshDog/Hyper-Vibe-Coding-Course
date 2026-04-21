@@ -154,7 +154,7 @@ export default function TokensPage() {
     setBuyingPackId(packId);
     try {
       const url = await createCheckoutSession(packId, user.id);
-      window.location.href = url;
+      window.location.assign(url);
     } catch {
       setPackError('Checkout failed — try again or contact support.');
       setBuyingPackId(null);
