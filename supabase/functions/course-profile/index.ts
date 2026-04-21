@@ -19,6 +19,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const HYPERCODE_API_URL = Deno.env.get("HYPERCODE_API_URL") ?? "http://hypercode-core:8000";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 serve(async (req: Request) => {
   const url = new URL(req.url);
@@ -31,30 +34,89 @@ serve(async (req: Request) => {
     );
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-  );
+  if (!SUPABASE_URL) {
+    return new Response(
+      JSON.stringify({ error: "Missing SUPABASE_URL env var" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  const supabaseKey = SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_ANON_KEY;
+  if (!supabaseKey) {
+    return new Response(
+      JSON.stringify({ error: "Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY env var" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const supabase = createClient(SUPABASE_URL, supabaseKey);
 
   // ── Course profile from Supabase ──────────────────────────────────────────
-  const { data: courseUser, error: courseErr } = await supabase
-    .from("users")
-    .select(`
-      id,
-      discord_id,
-      username,
-      xp,
-      level,
-      broski_tokens,
-      created_at,
-      user_progress ( lesson_id, completed_at, score )
-    `)
+  const { data: linkRow, error: linkErr } = await supabase
+    .from("discord_links")
+    .select("discord_id,user_id")
     .eq("discord_id", discordId)
+    .maybeSingle();
+
+  if (linkErr) {
+    return new Response(
+      JSON.stringify({ error: "Course DB error", detail: linkErr.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  if (!linkRow?.user_id) {
+    return new Response(
+      JSON.stringify({
+        user_id: null,
+        discord_id: discordId,
+        display_name: null,
+        broski_tokens: 0,
+        tier: null,
+        lifetime_earned: 0,
+        lessons_completed: 0,
+        hypercode: null,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const courseUserId = linkRow.user_id as string;
+
+  const { data: courseUser, error: courseUserErr } = await supabase
+    .from("users")
+    .select("id,email,full_name,broski_tokens,created_at")
+    .eq("id", courseUserId)
     .single();
 
-  if (courseErr && courseErr.code !== "PGRST116") {
+  if (courseUserErr) {
     return new Response(
-      JSON.stringify({ error: "Course DB error", detail: courseErr.message }),
+      JSON.stringify({ error: "Course DB error", detail: courseUserErr.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const { count: lessonsCompleted, error: lessonsCompletedErr } = await supabase
+    .from("lesson_progress")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", courseUserId)
+    .eq("completed", true);
+
+  if (lessonsCompletedErr) {
+    return new Response(
+      JSON.stringify({ error: "Course DB error", detail: lessonsCompletedErr.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const { data: tierRow, error: tierErr } = await supabase
+    .from("user_loyalty_tier")
+    .select("tier,lifetime_earned")
+    .eq("user_id", courseUserId)
+    .maybeSingle();
+
+  if (tierErr) {
+    return new Response(
+      JSON.stringify({ error: "Course DB error", detail: tierErr.message }),
       { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
@@ -73,21 +135,15 @@ serve(async (req: Request) => {
     // HyperCode is optional — don't fail the whole response if it's down
   }
 
-  const lessonsCompleted = (courseUser?.user_progress ?? []).length;
-
   return new Response(
     JSON.stringify({
+      user_id: courseUserId,
       discord_id: discordId,
-      course: courseUser
-        ? {
-            username: courseUser.username,
-            xp: courseUser.xp,
-            level: courseUser.level,
-            broski_tokens: courseUser.broski_tokens,
-            lessons_completed: lessonsCompleted,
-            joined: courseUser.created_at,
-          }
-        : null,
+      display_name: courseUser.full_name ?? courseUser.email ?? null,
+      broski_tokens: courseUser.broski_tokens ?? 0,
+      tier: tierRow?.tier ?? null,
+      lifetime_earned: tierRow?.lifetime_earned ?? 0,
+      lessons_completed: lessonsCompleted ?? 0,
       hypercode: hypercodeUser
         ? {
             id: hypercodeUser.id,

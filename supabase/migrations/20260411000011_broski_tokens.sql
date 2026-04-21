@@ -17,8 +17,8 @@
 
 -- ── A. public.lesson_progress ────────────────────────────────────────────────
 --
--- course_id is TEXT to match public.courses.id (confirmed TEXT PK).
--- lesson_id is TEXT — no lessons table yet, plain identifier for now.
+-- course_id is UUID to match public.courses.id.
+-- lesson_id is UUID to match public.lessons.id.
 -- DROP + CREATE makes this fully idempotent (table confirmed empty).
 
 DROP TABLE IF EXISTS public.lesson_progress;
@@ -26,8 +26,8 @@ DROP TABLE IF EXISTS public.lesson_progress;
 CREATE TABLE public.lesson_progress (
   id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      UUID        NOT NULL REFERENCES public.users(id)   ON DELETE CASCADE,
-  course_id    TEXT        NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
-  lesson_id    TEXT        NOT NULL,
+  course_id    UUID        NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+  lesson_id    UUID        NOT NULL REFERENCES public.lessons(id) ON DELETE CASCADE,
   completed    BOOLEAN     NOT NULL DEFAULT false,
   completed_at TIMESTAMPTZ,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -227,7 +227,7 @@ BEGIN
       p_user_id   := NEW.user_id,
       p_amount    := 10,
       p_reason    := 'lesson_complete',
-      p_source_id := NEW.lesson_id
+      p_source_id := NEW.lesson_id::text
     );
   END IF;
   RETURN NEW;

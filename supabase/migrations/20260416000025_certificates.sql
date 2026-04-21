@@ -14,7 +14,7 @@
 CREATE TABLE IF NOT EXISTS public.certificates (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID        NOT NULL REFERENCES public.users(id)   ON DELETE CASCADE,
-  course_id   TEXT        NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+  course_id   UUID        NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
   issued_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, course_id)
 );
@@ -58,7 +58,7 @@ BEGIN
       p_user_id   := NEW.user_id,
       p_amount    := 500,
       p_reason    := 'course_complete',
-      p_source_id := NEW.course_id
+      p_source_id := NEW.course_id::text
     );
   END IF;
   RETURN NEW;

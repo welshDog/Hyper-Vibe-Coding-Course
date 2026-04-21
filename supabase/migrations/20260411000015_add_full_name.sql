@@ -16,6 +16,8 @@ ALTER TABLE public.users
 -- Uses COALESCE(full_name, email) so the view works even before
 -- a user has set their display name.
 
+DROP VIEW IF EXISTS public.user_loyalty_tier;
+
 CREATE OR REPLACE VIEW public.user_loyalty_tier AS
 SELECT
   u.id                                                           AS user_id,
