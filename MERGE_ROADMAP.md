@@ -93,17 +93,16 @@ Map: `broski_tokens` (Course Supabase) → `coins` (V2.4 BROskiWallet). One-way 
 **Goal:** Buying an `agent_access` item in Course /shop unlocks real V2.4 sandbox access.
 
 ### Course side
-- [ ] Migration 000021: add `metadata JSONB` column to `shop_items`
-- [ ] Update `shop-purchase` Edge Function: detect `metadata.type = 'agent_access'` purchases
-  - After purchase: POST to V2.4 `provision-access` endpoint
-  - Store V2.4 access token in `shop_purchases.metadata` column
-- [ ] New shop item seeded: "Agent Sandbox Access" (300 tokens, `type: agent_access`)
+- [x] Migration 000021: add `metadata JSONB` column to `shop_items` + `fulfillment_metadata JSONB` to `shop_purchases`
+- [x] Shop item seeded: "Agent Sandbox Access" (300 tokens, `metadata.type = 'agent_access'`)
+- [x] `shop-purchase` Edge Function calls V2.4 provisioning endpoint and stores fulfillment state in `shop_purchases.fulfillment_metadata`
 
 ### V2.4 side
-- [ ] New endpoint: `POST /api/v1/access/provision`
-  - Input: `{ discord_id, tier: 'sandbox' }`
-  - Creates a scoped API key, sets `agent_access_level = 1` on the V2.4 user record
-  - Returns `{ api_key, mission_control_url, expires_at }`
+- [ ] Ensure endpoint matches the locked Phase 3 contract: `POST /api/v1/access/provision`
+  - Auth: `X-Sync-Secret: <SHOP_SYNC_SECRET>`
+  - Input: `{ purchase_id, user_id, discord_id, item_type: 'agent_access', v24_tier: 'sandbox', idempotency_key }`
+  - Creates a scoped API key and logs a provision event (idempotent on idempotency_key)
+  - Returns `{ status, api_key, mission_control_url, expires_at, provision_event_id }`
 - [ ] New endpoint: `POST /api/v1/access/graduate`
   - Called by `award-graduate-badge` Edge Function
   - Upgrades `agent_access_level` to 4 (HyperCoder)
@@ -112,7 +111,7 @@ Map: `broski_tokens` (Course Supabase) → `coins` (V2.4 BROskiWallet). One-way 
 - [ ] Buy "Agent Sandbox Access" in Course /shop → receive Discord DM with Mission Control login
 - [ ] V2.4 API key works → `curl http://localhost:8820/health -H "Authorization: Bearer <key>"` → 200
 
-⚠️ **Assumption:** V2.4 has a concept of "access levels" that can be provisioned via API. Current V2.4 doesn't expose this externally — needs to be built.
+⚠️ **Assumption:** V2.4 has a concept of "access levels" that can be provisioned via API. If V2.4 is local-only (no public URL), Course provisioning cannot reach it without a tunnel.
 
 ---
 

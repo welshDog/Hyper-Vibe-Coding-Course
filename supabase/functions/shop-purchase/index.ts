@@ -30,6 +30,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno
 
 const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')             ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const V24_API_URL              = Deno.env.get('V24_API_URL')              ?? '';
+const SHOP_SYNC_SECRET         = Deno.env.get('SHOP_SYNC_SECRET')         ?? '';
 
 // Admin client — service_role bypasses RLS on all tables
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -84,6 +86,23 @@ type SpendTokensResult = {
   ok: boolean;
   new_balance?: number;
   error?: string;
+};
+
+type ProvisionRequest = {
+  purchase_id: string;
+  user_id: string;
+  discord_id: string | null;
+  item_type: 'agent_access';
+  v24_tier: string;
+  idempotency_key: string;
+};
+
+type ProvisionResponse = {
+  status: 'provisioned' | 'failed';
+  api_key?: string;
+  mission_control_url?: string;
+  expires_at?: string | null;
+  provision_event_id?: string;
 };
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -197,13 +216,15 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 6. Record purchase ────────────────────────────────────────────────────
-  const { error: insertError } = await supabaseAdmin
+  const { data: purchaseRow, error: insertError } = await supabaseAdmin
     .from('shop_purchases')
     .insert({
       user_id:      userId,
       item_id:      itemId,
       spent_tokens: shopItem.price_tokens,
-    });
+    })
+    .select('id')
+    .single();
 
   if (insertError) {
     // UNIQUE violation means a race — treat as already_owned
@@ -212,6 +233,11 @@ Deno.serve(async (req: Request) => {
     }
     console.error('shop_purchases insert failed:', insertError.message);
     return jsonAppError('Purchase record failed — contact support.');
+  }
+
+  const purchaseId = (purchaseRow as { id: string } | null)?.id;
+  if (!purchaseId) {
+    return jsonAppError('Purchase recorded, but could not confirm purchase_id — contact support.');
   }
 
   // ── 7. Unlock content for bonus_content items ─────────────────────────────
@@ -227,36 +253,113 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 7b. Queue V2.4 provisioning for agent_access items ───────────────────
-  // Phase 3 stub: the V2.4 provision-access endpoint does not exist yet.
-  // We record a pending state in fulfillment_metadata so the graduate script
-  // can check it, and return agent_access_pending:true so the frontend can
-  // show the right message ("check Discord for your setup link").
-  // When V2.4 provision-access is live, replace this block with a real fetch().
   let agentAccessPending = false;
 
   if (shopItem.metadata?.type === 'agent_access') {
     agentAccessPending = true;
-    const { error: fulfillError } = await supabaseAdmin
+    const v24Tier = shopItem.metadata.v24_tier ?? 'sandbox';
+    const { data: discordLink } = await supabaseAdmin
+      .from('discord_links')
+      .select('discord_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const discordId = (discordLink as { discord_id: string } | null)?.discord_id ?? null;
+    const idempotencyKey = `shop_purchase:${purchaseId}`;
+
+    const { error: pendingError } = await supabaseAdmin
       .from('shop_purchases')
       .update({
         fulfillment_metadata: {
-          status:    'pending_provisioning',
-          v24_tier:  shopItem.metadata.v24_tier ?? 'sandbox',
+          provision_status: 'pending',
+          mission_control_url: null,
+          expires_at: null,
+          provision_event_id: null,
+          provisioned_at: null,
           queued_at: new Date().toISOString(),
+          v24_tier: v24Tier,
+          idempotency_key: idempotencyKey,
         },
       })
-      .eq('user_id', userId)
-      .eq('item_id', itemId);
+      .eq('id', purchaseId);
 
-    if (fulfillError) {
-      // Non-fatal — purchase already succeeded. Log and continue.
-      console.warn('fulfillment_metadata update failed (non-fatal):', fulfillError.message);
+    if (pendingError) {
+      console.warn('fulfillment_metadata update failed (non-fatal):', pendingError.message);
     }
 
-    console.log(
-      `⏳ Agent access queued: user=${userId} tier=${shopItem.metadata.v24_tier ?? 'sandbox'} ` +
-      `(V2.4 provision-access endpoint pending — Phase 3)`,
-    );
+    if (!discordId) {
+      console.log(`⏳ Agent access pending: purchase=${purchaseId} user=${userId} (no discord_id linked)`);
+    } else if (!V24_API_URL || !SHOP_SYNC_SECRET) {
+      console.warn(`⏳ Agent access pending: purchase=${purchaseId} (missing V24_API_URL or SHOP_SYNC_SECRET)`);
+    } else {
+      const endpoint = `${V24_API_URL.replace(/\/$/, '')}/api/v1/access/provision`;
+      const provisionPayload: ProvisionRequest = {
+        purchase_id: purchaseId,
+        user_id: userId,
+        discord_id: discordId,
+        item_type: 'agent_access',
+        v24_tier: v24Tier,
+        idempotency_key: idempotencyKey,
+      };
+
+      let provisionRes: Response | null = null;
+      try {
+        provisionRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Sync-Secret': SHOP_SYNC_SECRET,
+          },
+          body: JSON.stringify(provisionPayload),
+        });
+      } catch (err) {
+        console.warn('V2.4 provision network error:', err);
+      }
+
+      if (provisionRes?.ok) {
+        const body = await provisionRes.json().catch(() => ({})) as ProvisionResponse;
+        const apiKey = body.api_key ?? '';
+        const apiKeyHint = apiKey ? (apiKey.startsWith('hc_') ? `hc_…${apiKey.slice(-4)}` : `…${apiKey.slice(-4)}`) : null;
+
+        const { error: provisionedError } = await supabaseAdmin
+          .from('shop_purchases')
+          .update({
+            fulfillment_metadata: {
+              provision_status: 'provisioned',
+              api_key_hint: apiKeyHint,
+              mission_control_url: body.mission_control_url ?? null,
+              expires_at: body.expires_at ?? null,
+              provision_event_id: body.provision_event_id ?? null,
+              provisioned_at: new Date().toISOString(),
+            },
+          })
+          .eq('id', purchaseId);
+
+        if (provisionedError) {
+          console.warn('Provision success but fulfillment_metadata update failed:', provisionedError.message);
+        } else {
+          agentAccessPending = false;
+        }
+      } else if (provisionRes) {
+        const errorText = await provisionRes.text().catch(() => '');
+        await supabaseAdmin
+          .from('shop_purchases')
+          .update({
+            fulfillment_metadata: {
+              provision_status: 'failed',
+              api_key_hint: null,
+              mission_control_url: null,
+              expires_at: null,
+              provision_event_id: null,
+              provisioned_at: null,
+              failed_at: new Date().toISOString(),
+              error: `v24_${provisionRes.status}`,
+              detail: errorText.slice(0, 500),
+            },
+          })
+          .eq('id', purchaseId);
+      }
+    }
   }
 
   // ── 8. Fetch the current balance for the response ─────────────────────────

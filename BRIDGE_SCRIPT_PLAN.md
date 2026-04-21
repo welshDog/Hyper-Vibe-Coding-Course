@@ -286,7 +286,7 @@ Run: cd v2-deployment && docker compose up
 Next level: BROski Elite — contribute back to V2.4 core 💎
 ```
 
-⚠️ **Assumption:** V2.4 `provision-access` endpoint exists. Does not exist yet — Layer 2 of the integration plan.
+⚠️ **Assumption:** V2.4 `access/provision` exists and matches the locked Phase 3 contract (auth header + payload fields + idempotency key).
 
 **Key file:** `scripts/lib/award-badge.js`
 
@@ -375,7 +375,7 @@ hyper-agent-spec.json       ← local copy (also in HyperAgent-SDK npm package)
 | `HyperAgent-SDK` npm package | 🔴 Not created | Step 2 |
 | `generate-v2-config` Edge Function | 🔴 Not created | Step 3 |
 | `award-graduate-badge` Edge Function | 🔴 Not created | Step 7 |
-| V2.4 `provision-access` endpoint | 🔴 Not created | Step 7 |
+| V2.4 `access/provision` endpoint | 🟡 Exists but must match Phase 3 contract | Step 7 |
 | V2.4 `discord_id` Alembic migration | 🔴 Not applied | Step 5 |
 | `agent_access` shop item category | 🟡 Needs migration 000021 | Step 1 |
 | `gh` CLI on student's machine | 🟢 External prereq | Step 6 |
@@ -391,7 +391,7 @@ hyper-agent-spec.json       ← local copy (also in HyperAgent-SDK npm package)
 4. Edge Function: generate-v2-config
 5. Edge Function: award-graduate-badge
 6. V2.4: discord_id Alembic migration
-7. V2.4: provision-access endpoint
+7. V2.4: access/provision endpoint (Phase 3 contract)
 8. scripts/graduate.js (all deps satisfied)
 ```
 
