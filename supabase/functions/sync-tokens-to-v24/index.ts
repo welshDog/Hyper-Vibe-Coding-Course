@@ -7,7 +7,7 @@
 //
 // Security:
 //   - Auth uses a shared COURSE_SYNC_SECRET sent as X-Sync-Secret header
-//   - V2.4 verifies it with constant-time compare (hmac.compare_digest)
+//   - V2.4 verifies it before awarding coins
 //   - Idempotency is enforced on the V2.4 side via course_sync_events.source_id UNIQUE
 //
 // DB Webhook payload format (Supabase sends this automatically):
@@ -30,14 +30,21 @@
 //   supabase functions deploy sync-tokens-to-v24 --no-verify-jwt
 //   supabase secrets set COURSE_SYNC_SECRET=<same-value-as-V2.4-COURSE_SYNC_SECRET>
 //   supabase secrets set V24_API_URL=https://<your-public-v24-url>
-//   Then register the Supabase DB Webhook (see docs/PHASE2_TOKEN_SYNC.md)
+//   Then register the Supabase DB Webhook in the Supabase dashboard:
+//     - Source table: public.token_transactions
+//     - Event: INSERT
+//     - URL: https://<your-project>.supabase.co/functions/v1/sync-tokens-to-v24
+//     - Headers: (none) — this edge function authenticates to V2.4 via X-Sync-Secret
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface TokenTransactionRecord {
   id: string;           // UUID — used as idempotency key (source_id) in V2.4
   user_id: string;      // Supabase auth UID
-  discord_id: string | null; // Required for V2.4 lookup — skip if null
+  discord_id?: string | null; // Optional — resolved via discord_links if missing
   amount: number;       // Token delta — only positive amounts are forwarded
   reason: string | null;
   created_at: string;
@@ -74,9 +81,44 @@ function jsonError(message: string, status = 400): Response {
   });
 }
 
+async function resolveDiscordId(
+  record: TokenTransactionRecord,
+): Promise<{ discordId: string | null; reason: "in_record" | "discord_links" | "missing" }> {
+  if (record.discord_id) {
+    return { discordId: record.discord_id, reason: "in_record" };
+  }
+
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!SUPABASE_URL) {
+    return { discordId: null, reason: "missing" };
+  }
+
+  const supabaseKey = SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_ANON_KEY;
+  if (!supabaseKey) {
+    return { discordId: null, reason: "missing" };
+  }
+
+  const supabase = createClient(SUPABASE_URL, supabaseKey);
+
+  const { data, error } = await supabase
+    .from("discord_links")
+    .select("discord_id")
+    .eq("user_id", record.user_id)
+    .maybeSingle();
+
+  if (error || !data?.discord_id) {
+    return { discordId: null, reason: "missing" };
+  }
+
+  return { discordId: data.discord_id as string, reason: "discord_links" };
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
-Deno.serve(async (req: Request) => {
+serve(async (req: Request) => {
   // Only process POST requests — Supabase DB webhooks always use POST
   if (req.method !== 'POST') {
     return jsonError('Method not allowed', 405);
@@ -106,10 +148,11 @@ Deno.serve(async (req: Request) => {
     return jsonOk({ ok: true, skipped: true, reason: 'non_positive_amount' });
   }
 
-  // ── 3. Guard: discord_id must be linked ────────────────────────────────────
-  if (!record.discord_id) {
+  // ── 3. Resolve discord_id ──────────────────────────────────────────────────
+  const { discordId, reason: discordIdSource } = await resolveDiscordId(record);
+  if (!discordId) {
     console.log(
-      `sync-tokens-to-v24: Skipping id=${record.id} — discord_id is null (user not linked)`,
+      `sync-tokens-to-v24: Skipping id=${record.id} — discord_id missing (${discordIdSource})`,
     );
     return jsonOk({ ok: true, skipped: true, reason: 'no_discord_id' });
   }
@@ -131,7 +174,7 @@ Deno.serve(async (req: Request) => {
   // ── 5. Build and send the award request to V2.4 ────────────────────────────
   const awardPayload: V24AwardPayload = {
     source_id:  record.id,
-    discord_id: record.discord_id,
+    discord_id: discordId,
     tokens:     record.amount,
     reason:     record.reason ?? 'Course reward',
   };
@@ -163,7 +206,7 @@ Deno.serve(async (req: Request) => {
   if (response.ok) {
     const body = await response.json().catch(() => ({}));
     console.log(
-      `sync-tokens-to-v24: ✅ Awarded ${record.amount} tokens to discord=${record.discord_id} ` +
+      `sync-tokens-to-v24: ✅ Awarded ${record.amount} tokens to discord=${discordId} ` +
       `source_id=${record.id}`,
     );
     return jsonOk({ ok: true, source_id: record.id, ...body });
@@ -180,7 +223,7 @@ Deno.serve(async (req: Request) => {
   // 404 = user not linked in V2.4 yet — not fatal, log and move on
   if (response.status === 404) {
     console.warn(
-      `sync-tokens-to-v24: discord_id=${record.discord_id} not found in V2.4 ` +
+      `sync-tokens-to-v24: discord_id=${discordId} not found in V2.4 ` +
       `(source_id=${record.id}) — user needs to /link-discord`,
     );
     return jsonOk({ ok: false, reason: 'v24_user_not_found' });

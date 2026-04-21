@@ -133,7 +133,7 @@ In WSL: `/mnt/h/HyperStation zone/HyperCode/volumes/`
 | # | Task | Priority |
 |---|---|---|
 | 1 | ✅ Fix TokensPage.tsx prices + wire to checkout API | DONE — April 15, 2026 |
-| 2 | Fix dead link: `/courses/vibe-coding-foundations` → `/courses` on LandingPage | 🟡 5 min |
+| 2 | ✅ Fix dead link: `/courses/vibe-coding-foundations` → `/courses` on LandingPage | DONE — April 21, 2026 |
 | 3 | ✅ Add BROski$ balance card to Dashboard.tsx | DONE — April 15, 2026 |
 | 4 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
 | 5 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |

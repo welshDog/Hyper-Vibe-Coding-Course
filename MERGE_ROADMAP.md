@@ -71,20 +71,20 @@ Nothing is "merged" in the git sense. They stay as separate repos. Integration =
 Map: `broski_tokens` (Course Supabase) → `coins` (V2.4 BROskiWallet). One-way sync only. Course is authoritative for course-earned tokens.
 
 ### Implementation
-- [ ] Course: New Edge Function `sync-tokens-to-v24`
-  - Triggered by Supabase webhook on `token_transactions` INSERT (positive amounts only)
-  - POSTs `{ discord_id, delta, reason, source_id }` to V2.4
-- [ ] V2.4: New endpoint `POST /api/v1/economy/award-from-course`
-  - Accepts the payload above
-  - Calls `BROskiWallet.add_coins(discord_id, delta)` via SQLAlchemy
-  - Idempotent: `source_id` used as dedup key (store in a `course_sync_events` table)
-  - Returns `{ ok: true, new_balance: int }`
+- [x] Course: Edge Function `sync-tokens-to-v24`
+  - Triggered by Supabase DB webhook on `public.token_transactions` INSERT (positive amounts only)
+  - Resolves `discord_id` via `public.discord_links` when it isn't present in the webhook record
+  - POSTs `{ source_id, discord_id, tokens, reason }` to V2.4 with `X-Sync-Secret` auth header
+- [x] V2.4: Endpoint `POST /api/v1/economy/award-from-course`
+  - Awards `tokens` into the user's V2.4 BROskiWallet `coins` balance
+  - Idempotent: `source_id` used as dedup key (stored in `course_sync_events`)
+  - Returns `{ awarded: true, coins_balance, xp_balance, level, source_id }`
 
 ### Verification
-- [ ] Complete a lesson → within 30s → V2.4 `/balance` shows incremented coins
-- [ ] Duplicate webhook delivery → coins not double-counted
+- [x] Verified: `sync-tokens-to-v24` → V2.4 awards coins and returns `{ awarded: true, coins_balance: ... }`
+- [x] Verified: idempotency via `course_sync_events.source_id` UNIQUE (duplicate deliveries return 409 / safe no-op)
 
-⚠️ **Assumption:** V2.4 has a stable API that accepts inbound webhooks. If V2.4 is local-only (no public URL), token sync won't work until V2.4 is deployed or a tunnel (ngrok) is in place.
+⚠️ **Assumption:** V2.4 has a stable API that accepts inbound webhooks. If V2.4 is local-only (no public URL), token sync won't work until V2.4 is deployed or a tunnel (ngrok) is in place. For local dev with Supabase running in Docker, use `V24_API_URL=http://host.docker.internal:8000`.
 
 ---
 

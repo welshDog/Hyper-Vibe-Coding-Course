@@ -54,7 +54,7 @@ Each flag has: **What could break → Why → Mitigation**
 **Why it's risky:** Economy exploit. V2.4's BROski$ coin system has real perceived value (shop, leaderboard).
 
 **Mitigation:**
-- V2.4 `award-from-course` endpoint requires a shared secret header (`X-Course-Webhook-Secret`)
+- V2.4 `award-from-course` endpoint requires a shared secret header (`X-Sync-Secret`)
 - Secret stored in: Course Edge Function environment vars + V2.4 `.env`
 - Source IP allowlist as additional guard if V2.4 is deployed (not localhost)
 - `source_id` dedup key prevents replay attacks even if the secret leaks temporarily
