@@ -1,9 +1,10 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
+// @ts-ignore -- CDN import for Deno; no local types
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const V24_API_URL = Deno.env.get('V24_API_URL') ?? '';
-const SHOP_SYNC_SECRET = Deno.env.get('SHOP_SYNC_SECRET') ?? '';
+const SUPABASE_URL = (globalThis as any).Deno?.env?.get('SUPABASE_URL') ?? '';
+const SUPABASE_SERVICE_ROLE_KEY = (globalThis as any).Deno?.env?.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const V24_API_URL = (globalThis as any).Deno?.env?.get('V24_API_URL') ?? '';
+const SHOP_SYNC_SECRET = (globalThis as any).Deno?.env?.get('SHOP_SYNC_SECRET') ?? '';
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -208,7 +209,7 @@ function buildReadme(displayName: string, agentNames: string[], missionControlUr
   ].join('\n');
 }
 
-Deno.serve(async (req: Request) => {
+(globalThis as any).Deno?.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
