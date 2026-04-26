@@ -1,0 +1,40 @@
+# Development Dependencies for AI Hub
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=3.0.0
+pytest-xdist>=2.5.0
+pytest-timeout>=2.1.0
+pytest-benchmark>=3.4.1
+hypothesis>=6.0.0
+
+# Code quality
+black>=22.0.0
+isort>=5.10.0
+flake8>=4.0.0
+mypy>=0.950
+pylint>=2.13.0
+
+# Security
+bandit>=1.7.0
+safety>=2.0.0
+
+# Documentation
+mkdocs>=1.4.0
+mkdocs-material>=8.5.0
+pymdown-extensions>=9.0
+
+# Pre-commit hooks
+pre-commit>=2.17.0
+
+# Type stubs
+types-requests>=2.27.0
+types-pyyaml>=6.0.0
+
+# Build tools
+build>=0.8.0
+twine>=4.0.0
+
+# Jupyter (for tutorials)
+jupyter>=1.0.0
+nbval>=0.9.0

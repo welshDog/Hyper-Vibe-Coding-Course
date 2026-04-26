@@ -1,0 +1,73 @@
+{
+  "name": "pytorch",
+  "version": "2.2.0",
+  "type": "framework",
+  "description": "PyTorch is an open-source machine learning framework that accelerates the path from research prototyping to production deployment. It provides tensors and dynamic neural networks in Python with strong GPU acceleration.",
+  "author": {
+    "name": "Meta AI",
+    "email": "pytorch@meta.com",
+    "organization": "Meta Platforms, Inc."
+  },
+  "license": "BSD-3-Clause",
+  "compatibility": {
+    "python": ">=3.8",
+    "platforms": ["linux", "darwin", "win32"],
+    "cuda": ">=11.0",
+    "dependencies": [
+      {"name": "numpy", "version": ">=1.20.0", "optional": false},
+      {"name": "typing-extensions", "version": ">=4.0.0", "optional": false},
+      {"name": "sympy", "version": ">=1.12.0", "optional": true},
+      {"name": "networkx", "version": ">=2.0.0", "optional": true},
+      {"name": "jinja2", "version": ">=3.0.0", "optional": true}
+    ]
+  },
+  "tags": ["pytorch", "deep-learning", "framework", "gpu", "autograd"],
+  "performance": {
+    "memory_usage": "Variable based on model size",
+    "gpu_support": true,
+    "distributed_training": true
+  },
+  "resources": {
+    "homepage": "https://pytorch.org",
+    "repository": "https://github.com/pytorch/pytorch",
+    "documentation": "https://pytorch.org/docs/stable/index.html",
+    "demo": "https://pytorch.org/tutorials/"
+  },
+  "installation": {
+    "command": "pip install torch torchvision torchaudio",
+    "pip": "pip install torch torchvision torchaudio",
+    "conda": "conda install pytorch torchvision torchaudio -c pytorch",
+    "docker": "docker pull pytorch/pytorch:latest"
+  },
+  "usage": {
+    "quickstart": "import torch\nx = torch.rand(5, 3)\nprint(x)",
+    "example_code": "import torch\nimport torch.nn as nn\n\n# Define model\nclass Net(nn.Module):\n    def __init__(self):\n        super().__init__()\n        self.fc = nn.Linear(10, 1)\n    \n    def forward(self, x):\n        return self.fc(x)\n\nmodel = Net()\noptimizer = torch.optim.SGD(model.parameters(), lr=0.01)"
+  },
+  "benchmarks": [
+    {
+      "dataset": "ImageNet",
+      "metric": "Training throughput (images/sec)",
+      "score": 1250.5,
+      "date": "2024-01-15"
+    }
+  ],
+  "changelog": [
+    {
+      "version": "2.2.0",
+      "date": "2024-01-15",
+      "changes": [
+        "Torch.compile improvements",
+        "New custom operators API",
+        "Enhanced distributed training"
+      ]
+    }
+  ],
+  "ai_discoverability": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "vector_dimensions": 384,
+    "semantic_categories": ["deep-learning", "neural-networks", "automatic-differentiation"],
+    "task_types": ["training", "inference", "optimization"],
+    "input_modalities": ["tabular", "multimodal"],
+    "output_modalities": ["embedding", "probability"]
+  }
+}

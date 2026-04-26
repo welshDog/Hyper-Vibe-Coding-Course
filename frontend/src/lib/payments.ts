@@ -6,6 +6,29 @@ export type PaymentLinkOptions = {
   courseId?: string
 }
 
+function resolveHypercodeApiUrl(): string {
+  const configured = import.meta.env.VITE_HYPERCODE_API_URL as string | undefined
+  const apiUrl = configured?.trim() || 'http://localhost:8000'
+
+  const originHost = window.location.hostname
+  const isLocalOrigin = originHost === 'localhost' || originHost === '127.0.0.1'
+  if (isLocalOrigin) return apiUrl
+
+  let apiHost: string
+  try {
+    apiHost = new URL(apiUrl).hostname
+  } catch {
+    throw new Error('Invalid VITE_HYPERCODE_API_URL')
+  }
+
+  const isLocalApi = apiHost === 'localhost' || apiHost === '127.0.0.1'
+  if (isLocalApi) {
+    throw new Error('VITE_HYPERCODE_API_URL must be set in production')
+  }
+
+  return apiUrl
+}
+
 /**
  * Builds a Stripe Payment Link URL.
  *
@@ -60,7 +83,7 @@ export async function createCheckoutSession(
   userId: string,
   courseId?: string,
 ): Promise<string> {
-  const apiUrl = (import.meta.env.VITE_HYPERCODE_API_URL as string | undefined) ?? 'http://localhost:8000'
+  const apiUrl = resolveHypercodeApiUrl()
   const origin = window.location.origin
   const successPath = courseId
     ? `/payment-success?course_id=${courseId}`
@@ -96,7 +119,7 @@ export async function createCourseCheckoutSession(
   course: { id: string; title: string; price_pence: number },
   userId: string,
 ): Promise<string> {
-  const apiUrl = (import.meta.env.VITE_HYPERCODE_API_URL as string | undefined) ?? 'http://localhost:8000'
+  const apiUrl = resolveHypercodeApiUrl()
   const origin = window.location.origin
   const res = await fetch(`${apiUrl}/api/stripe/checkout`, {
     method: 'POST',
@@ -119,4 +142,3 @@ export async function createCourseCheckoutSession(
   if (!url) throw new Error('No checkout URL returned from API')
   return url
 }
-

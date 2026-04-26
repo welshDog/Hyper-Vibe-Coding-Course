@@ -1,0 +1,64 @@
+{
+  "name": "imdb-reviews",
+  "version": "1.0.0",
+  "type": "dataset",
+  "description": "The IMDB Reviews dataset is a large movie review dataset for binary sentiment classification. It contains 50,000 movie reviews from IMDB, labeled as positive or negative. The dataset is split into 25,000 training and 25,000 testing samples.",
+  "author": {
+    "name": "Andrew Maas",
+    "email": "amaas@cs.stanford.edu",
+    "organization": "Stanford University"
+  },
+  "license": "CC0-1.0",
+  "compatibility": {
+    "python": ">=3.6",
+    "platforms": ["linux", "darwin", "win32"],
+    "dependencies": [
+      {"name": "datasets", "version": ">=2.0.0", "optional": true},
+      {"name": "pandas", "version": ">=1.0.0", "optional": true}
+    ]
+  },
+  "tags": ["nlp", "sentiment-analysis", "text-classification", "dataset", "imdb"],
+  "performance": {
+    "size": "80MB",
+    "samples": 50000,
+    "classes": 2
+  },
+  "resources": {
+    "homepage": "https://ai.stanford.edu/~amaas/data/sentiment/",
+    "documentation": "https://huggingface.co/datasets/imdb",
+    "paper": "https://www.aclweb.org/anthology/P11-1015/"
+  },
+  "installation": {
+    "command": "pip install datasets && python -c \"from datasets import load_dataset; load_dataset('imdb')\"",
+    "pip": "pip install datasets"
+  },
+  "usage": {
+    "quickstart": "from datasets import load_dataset\ndataset = load_dataset('imdb')\nprint(dataset['train'][0])",
+    "example_code": "from datasets import load_dataset\nfrom transformers import AutoTokenizer\n\n# Load dataset\ndataset = load_dataset('imdb')\n\n# Tokenize\ntokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')\n\ndef tokenize_function(examples):\n    return tokenizer(examples['text'], padding='max_length', truncation=True)\n\ntokenized_datasets = dataset.map(tokenize_function, batched=True)\n\n# Access samples\nprint(f'Training samples: {len(tokenized_datasets[\"train\"])}')\nprint(f'Test samples: {len(tokenized_datasets[\"test\"])}')"
+  },
+  "benchmarks": [
+    {
+      "dataset": "IMDB Test Set",
+      "metric": "Baseline Accuracy",
+      "score": 0.5,
+      "date": "2011-01-01"
+    }
+  ],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2011-01-01",
+      "changes": [
+        "Initial release of IMDB Reviews dataset"
+      ]
+    }
+  ],
+  "ai_discoverability": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "vector_dimensions": 384,
+    "semantic_categories": ["sentiment-analysis", "text-classification", "movie-reviews"],
+    "task_types": ["classification"],
+    "input_modalities": ["text"],
+    "output_modalities": ["probability"]
+  }
+}

@@ -1,0 +1,48 @@
+# AI Hub Code Owners
+# This file defines who is responsible for reviewing changes to different parts of the repository.
+# Lines starting with # are comments.
+# Each line is a file pattern followed by one or more owners.
+
+# Global owners (fallback for all files)
+* @welshDog @ai-hub-maintainers
+
+# Core infrastructure
+/ai_hub/ @welshDog @ai-hub-core-team
+/config/ @welshDog @ai-hub-core-team
+/scripts/ @welshDog @ai-hub-core-team
+/.github/ @welshDog @ai-hub-core-team
+
+# Framework-specific resources
+/frameworks/pytorch/ @pytorch-team @welshDog
+/frameworks/tensorflow/ @tensorflow-team @welshDog
+/frameworks/jax/ @jax-team @welshDog
+/frameworks/huggingface/ @huggingface-team @welshDog
+
+# Model categories
+/models/nlp/ @nlp-team @welshDog
+/models/vision/ @cv-team @welshDog
+/models/audio/ @audio-team @welshDog
+/models/multimodal/ @multimodal-team @welshDog
+
+# Datasets
+/datasets/ @data-team @welshDog
+
+# Benchmarks
+/benchmarks/ @benchmark-team @welshDog
+
+# Tutorials and documentation
+/tutorials/ @docs-team @welshDog
+/docs/ @docs-team @welshDog
+
+# Tools and utilities
+/tools/ @tools-team @welshDog
+
+# Dashboard
+/dashboard/ @frontend-team @welshDog
+
+# Tests
+/tests/ @qa-team @welshDog
+
+# Security-sensitive files
+SECURITY.md @welshDog @security-team
+/.github/workflows/ @welshDog @devops-team

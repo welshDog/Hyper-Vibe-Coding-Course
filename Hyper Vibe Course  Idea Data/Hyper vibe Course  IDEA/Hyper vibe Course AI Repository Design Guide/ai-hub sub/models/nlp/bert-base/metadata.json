@@ -1,0 +1,75 @@
+{
+  "name": "bert-base-uncased",
+  "version": "1.0.0",
+  "type": "model",
+  "description": "BERT (Bidirectional Encoder Representations from Transformers) is a transformer-based machine learning technique for natural language processing pre-training. This is the base uncased model with 110M parameters, pre-trained on BookCorpus and English Wikipedia.",
+  "author": {
+    "name": "Google Research",
+    "email": "bert@google.com",
+    "organization": "Google LLC"
+  },
+  "license": "Apache-2.0",
+  "compatibility": {
+    "python": ">=3.7",
+    "platforms": ["linux", "darwin", "win32"],
+    "dependencies": [
+      {"name": "transformers", "version": ">=4.0.0", "optional": false},
+      {"name": "torch", "version": ">=1.9.0", "optional": false},
+      {"name": "tokenizers", "version": ">=0.10.0", "optional": false}
+    ]
+  },
+  "tags": ["nlp", "transformer", "bert", "huggingface", "pretrained", "embeddings"],
+  "performance": {
+    "model_size": "440MB",
+    "parameters": "110M",
+    "inference_time": "50ms (GPU)",
+    "memory_usage": "1.5GB"
+  },
+  "resources": {
+    "homepage": "https://huggingface.co/bert-base-uncased",
+    "repository": "https://github.com/google-research/bert",
+    "documentation": "https://huggingface.co/docs/transformers/model_doc/bert",
+    "paper": "https://arxiv.org/abs/1810.04805",
+    "demo": "https://huggingface.co/bert-base-uncased"
+  },
+  "installation": {
+    "command": "pip install transformers torch",
+    "pip": "pip install transformers torch"
+  },
+  "usage": {
+    "quickstart": "from transformers import BertTokenizer, BertModel\ntokenizer = BertTokenizer.from_pretrained('bert-base-uncased')\nmodel = BertModel.from_pretrained('bert-base-uncased')",
+    "example_code": "from transformers import BertTokenizer, BertForSequenceClassification\nimport torch\n\n# Load model and tokenizer\ntokenizer = BertTokenizer.from_pretrained('bert-base-uncased')\nmodel = BertForSequenceClassification.from_pretrained('bert-base-uncased')\n\n# Tokenize input\ntext = 'Hello, this is a sample text.'\ninputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True)\n\n# Get predictions\nwith torch.no_grad():\n    outputs = model(**inputs)\n    predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)\n\nprint(predictions)"
+  },
+  "benchmarks": [
+    {
+      "dataset": "GLUE",
+      "metric": "Average Score",
+      "score": 78.3,
+      "date": "2024-01-10"
+    },
+    {
+      "dataset": "SQuAD 1.1",
+      "metric": "F1 Score",
+      "score": 88.5,
+      "date": "2024-01-10"
+    }
+  ],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2018-11-02",
+      "changes": [
+        "Initial release of BERT base uncased model",
+        "Pre-trained on BookCorpus (800M words) and Wikipedia (2,500M words)"
+      ]
+    }
+  ],
+  "ai_discoverability": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "vector_dimensions": 768,
+    "semantic_categories": ["natural-language-processing", "transformer", "pretrained-model"],
+    "task_types": ["classification", "embedding", "question-answering"],
+    "input_modalities": ["text"],
+    "output_modalities": ["embedding", "probability"]
+  }
+}

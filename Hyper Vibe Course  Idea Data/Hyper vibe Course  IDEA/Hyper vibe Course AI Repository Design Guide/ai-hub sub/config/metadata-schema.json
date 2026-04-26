@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Hub Resource Metadata Schema",
+  "description": "Standardized metadata schema for all AI resources in the repository",
+  "type": "object",
+  "required": ["name", "version", "type", "description", "author", "license", "compatibility"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique resource name",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["framework", "dataset", "model", "tutorial", "benchmark", "tool"]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 500
+    },
+    "author": {
+      "type": "object",
+      "required": ["name", "email"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "organization": { "type": "string" },
+        "orcid": { "type": "string" }
+      }
+    },
+    "license": {
+      "type": "string",
+      "enum": ["MIT", "Apache-2.0", "BSD-3-Clause", "GPL-3.0", "LGPL-3.0", "Proprietary", "CC-BY-4.0", "CC0-1.0", "Other"]
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["python", "platforms"],
+      "properties": {
+        "python": {
+          "type": "string",
+          "description": "Python version requirement",
+          "default": ">=3.8"
+        },
+        "platforms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["linux", "darwin", "win32"]
+          }
+        },
+        "cuda": {
+          "type": "string",
+          "description": "CUDA version requirement"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "version"],
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "type": "string" },
+              "optional": { "type": "boolean", "default": false }
+            }
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "nlp", "computer-vision", "reinforcement-learning", "generative-ai",
+          "transformer", "cnn", "rnn", "gan", "diffusion", "llm",
+          "pytorch", "tensorflow", "jax", "onnx", "huggingface",
+          "training", "inference", "optimization", "quantization",
+          "multimodal", "speech", "audio", "tabular", "time-series",
+          "edge", "cloud", "distributed", "federated"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 10
+    },
+    "performance": {
+      "type": "object",
+      "properties": {
+        "inference_time": { "type": "number" },
+        "memory_usage": { "type": "string" },
+        "model_size": { "type": "string" },
+        "accuracy": { "type": "number" },
+        "f1_score": { "type": "number" },
+        "bleu_score": { "type": "number" }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "homepage": { "type": "string", "format": "uri" },
+        "repository": { "type": "string", "format": "uri" },
+        "documentation": { "type": "string", "format": "uri" },
+        "paper": { "type": "string", "format": "uri" },
+        "demo": { "type": "string", "format": "uri" }
+      }
+    },
+    "installation": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "command": { "type": "string" },
+        "conda": { "type": "string" },
+        "pip": { "type": "string" },
+        "docker": { "type": "string" }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "quickstart": { "type": "string" },
+        "example_code": { "type": "string" },
+        "cli_command": { "type": "string" }
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dataset": { "type": "string" },
+          "metric": { "type": "string" },
+          "score": { "type": "number" },
+          "date": { "type": "string", "format": "date" }
+        }
+      }
+    },
+    "changelog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["version", "date", "changes"],
+        "properties": {
+          "version": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "changes": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "ai_discoverability": {
+      "type": "object",
+      "description": "Fields to enhance AI system discoverability",
+      "properties": {
+        "embedding_model": { "type": "string" },
+        "vector_dimensions": { "type": "integer" },
+        "semantic_categories": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "task_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["classification", "regression", "generation", "translation", "summarization", "question-answering", "embedding", "clustering", "anomaly-detection"]
+          }
+        },
+        "input_modalities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["text", "image", "audio", "video", "tabular", "graph", "multimodal"]
+          }
+        },
+        "output_modalities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["text", "image", "audio", "video", "tabular", "embedding", "probability"]
+          }
+        }
+      }
+    }
+  }
+}

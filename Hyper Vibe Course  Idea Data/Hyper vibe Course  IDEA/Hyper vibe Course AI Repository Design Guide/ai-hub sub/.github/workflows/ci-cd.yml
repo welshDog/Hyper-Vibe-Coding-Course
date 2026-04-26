@@ -1,0 +1,291 @@
+name: AI Hub CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run nightly tests
+    - cron: '0 0 * * *'
+
+env:
+  PYTHON_VERSION: '3.10'
+  NODE_VERSION: '18'
+
+jobs:
+  # Job 1: Metadata Validation
+  validate-metadata:
+    runs-on: ubuntu-latest
+    name: Validate Resource Metadata
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        pip install packaging
+    
+    - name: Validate all metadata files
+      run: |
+        python -c "
+        from ai_hub.metadata import batch_validate
+        import json
+        results = batch_validate('.')
+        print(json.dumps(results['stats'], indent=2))
+        if results['stats']['failed'] > 0:
+            print('Failed validations:')
+            for r, e in results['errors'].items():
+                print(f'  {r}: {e}')
+            exit(1)
+        "
+    
+    - name: Check schema compliance
+      run: |
+        python scripts/validate_schema.py
+
+  # Job 2: Unit Tests
+  unit-tests:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run unit tests
+      run: |
+        pytest tests/unit/ -v --cov=ai_hub --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  # Job 3: Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests
+    needs: [validate-metadata, unit-tests]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    
+    - name: Run integration tests
+      run: |
+        pytest tests/integration/ -v --timeout=300
+    
+    - name: Test AI Autonomy
+      run: |
+        pytest tests/test_ai_autonomy.py -v --timeout=400
+
+  # Job 4: Performance Benchmarks
+  performance-benchmarks:
+    runs-on: ubuntu-latest
+    name: Performance Benchmarks
+    needs: [unit-tests]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Run benchmarks
+      run: |
+        python -m pytest tests/benchmarks/ -v --benchmark-only --benchmark-json=output.json
+    
+    - name: Compare benchmarks
+      run: |
+        python scripts/compare_benchmarks.py output.json
+
+  # Job 5: Compatibility Checks
+  compatibility-check:
+    runs-on: ${{ matrix.os }}
+    name: Compatibility Check
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+    
+    - name: Check cross-platform compatibility
+      run: |
+        python -c "
+        from ai_hub.compatibility import CompatibilityChecker
+        import platform
+        checker = CompatibilityChecker('.')
+        print(f'Running on {platform.system()} {platform.release()}')
+        print('Compatibility check passed')
+        "
+
+  # Job 6: Security Scan
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Bandit security scan
+      uses: PyCQA/bandit@main
+      with:
+        args: "-r ai_hub/ -f json -o bandit-report.json || true"
+    
+    - name: Check for vulnerabilities
+      run: |
+        pip install safety
+        safety check
+    
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-report
+        path: bandit-report.json
+
+  # Job 7: Documentation Build
+  docs-build:
+    runs-on: ubuntu-latest
+    name: Documentation Build
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install docs dependencies
+      run: |
+        pip install mkdocs mkdocs-material pymdown-extensions
+    
+    - name: Build documentation
+      run: |
+        mkdocs build --strict
+    
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./site
+
+  # Job 8: Dashboard Build and Deploy
+  dashboard-deploy:
+    runs-on: ubuntu-latest
+    name: Dashboard Build & Deploy
+    needs: [unit-tests, integration-tests]
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install dashboard dependencies
+      run: |
+        cd dashboard
+        npm install
+    
+    - name: Build dashboard
+      run: |
+        cd dashboard
+        npm run build
+    
+    - name: Deploy dashboard
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dashboard/dist
+        destination_dir: dashboard
+
+  # Job 9: Release
+  release:
+    runs-on: ubuntu-latest
+    name: Create Release
+    needs: [integration-tests, performance-benchmarks, security-scan]
+    if: github.ref == 'refs/heads/main' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+    
+    - name: Build and publish package
+      run: |
+        pip install build twine
+        python -m build
+        twine upload dist/*
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+  # Job 10: Metrics Collection
+  metrics:
+    runs-on: ubuntu-latest
+    name: Collect Metrics
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Collect repository metrics
+      run: |
+        python scripts/collect_metrics.py
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Update metrics dashboard
+      run: |
+        python scripts/update_dashboard_metrics.py

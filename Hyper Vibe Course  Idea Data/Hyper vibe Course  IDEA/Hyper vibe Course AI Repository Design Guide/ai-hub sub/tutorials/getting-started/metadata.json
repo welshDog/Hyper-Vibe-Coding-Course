@@ -1,0 +1,41 @@
+{
+  "name": "getting-started",
+  "version": "1.0.0",
+  "type": "tutorial",
+  "description": "A comprehensive getting started guide for AI Hub. Learn how to discover resources, check compatibility, and integrate AI components into your projects. This tutorial covers the basics of semantic search, metadata validation, and autonomous resource discovery.",
+  "author": {
+    "name": "AI Hub Team",
+    "email": "tutorials@aihub.dev",
+    "organization": "AI Hub Community"
+  },
+  "license": "MIT",
+  "compatibility": {
+    "python": ">=3.8",
+    "platforms": ["linux", "darwin", "win32"],
+    "dependencies": [
+      {"name": "ai-hub", "version": ">=1.0.0", "optional": false},
+      {"name": "jupyter", "version": ">=1.0.0", "optional": true}
+    ]
+  },
+  "tags": ["tutorial", "getting-started", "beginner", "documentation"],
+  "resources": {
+    "homepage": "https://aihub.dev/tutorials/getting-started",
+    "documentation": "https://aihub.dev/docs/getting-started"
+  },
+  "installation": {
+    "command": "pip install ai-hub && git clone https://github.com/welshDog/AI.git",
+    "pip": "pip install ai-hub"
+  },
+  "usage": {
+    "quickstart": "from ai_hub import SemanticSearch\nsearch = SemanticSearch()\nresults = search.find('transformer model')",
+    "example_code": "# Complete getting started example\nfrom ai_hub import SemanticSearch, AIAutonomyClient\n\n# Initialize search\nsearch = SemanticSearch()\n\n# Find resources\nmodels = search.find(\n    query='sentiment analysis model',\n    resource_type='model',\n    tags=['nlp'],\n    limit=5\n)\n\n# Check compatibility\nfrom ai_hub import CompatibilityChecker\nchecker = CompatibilityChecker()\nreport = checker.check_resource(\n    'models/nlp/bert-base',\n    environment={'python': '3.9.0', 'platform': 'linux'}\n)\n\nprint(f'Compatible: {report.is_compatible}')"
+  },
+  "ai_discoverability": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "vector_dimensions": 384,
+    "semantic_categories": ["tutorial", "education", "getting-started"],
+    "task_types": ["classification"],
+    "input_modalities": ["text"],
+    "output_modalities": ["text"]
+  }
+}
