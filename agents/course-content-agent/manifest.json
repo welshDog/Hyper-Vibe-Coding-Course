@@ -1,0 +1,217 @@
+{
+  "$schema": "https://hyper-agent-sdk.dev/manifest.schema.json",
+  "name": "course-content-agent",
+  "version": "0.1.0",
+  "description": "Keeps Hyper-Vibe modules, quizzes and media status in sync between Git scripts/, Supabase, and Claude.",
+  "author": "welshDog",
+  "tags": ["course", "content", "automation", "supabase", "mcp"],
+
+  "runtime": {
+    "port": 8012,
+    "healthcheck": "/health",
+    "timeout_ms": 30000
+  },
+
+  "memory": {
+    "backend": "supabase",
+    "tables": ["hv_modules", "hv_quizzes", "hv_agent_runs"]
+  },
+
+  "triggers": [
+    {
+      "type": "cron",
+      "schedule": "0 * * * *",
+      "skill": "scan_scripts_folder",
+      "description": "Scan scripts/ every hour for new or changed module markdown files."
+    },
+    {
+      "type": "manual",
+      "skill": "sync_all",
+      "description": "Run a full sync manually via CLI or Mission Control."
+    },
+    {
+      "type": "webhook",
+      "path": "/webhook/github",
+      "skill": "handle_push_event",
+      "description": "Triggered by GitHub push events when scripts/ changes."
+    }
+  ],
+
+  "skills": [
+    {
+      "name": "scan_scripts_folder",
+      "description": "Walks scripts/ directory, hashes each M*.md file, upserts hv_modules row if hash changed.",
+      "input": {
+        "force": { "type": "boolean", "default": false }
+      }
+    },
+    {
+      "name": "upsert_module_from_script",
+      "description": "Parse one module script file and upsert into hv_modules. Returns module row + changed flag.",
+      "input": {
+        "path":  { "type": "string",  "required": true,  "example": "scripts/M2-your-first-vibe.md" },
+        "force": { "type": "boolean", "default": false }
+      },
+      "output": {
+        "module":  { "type": "object" },
+        "changed": { "type": "boolean" }
+      }
+    },
+    {
+      "name": "generate_quiz_for_module",
+      "description": "Calls Claude (via MCP) with the module script + quiz format instructions. Saves result to hv_quizzes.",
+      "input": {
+        "module_code":   { "type": "string", "required": true,  "example": "M2" },
+        "overwrite":     { "type": "boolean", "default": false }
+      },
+      "output": {
+        "quiz_id":       { "type": "string" },
+        "question_count":{ "type": "integer" }
+      }
+    },
+    {
+      "name": "sync_trackers_from_db",
+      "description": "Regenerates COURSE_MASTER_TRACKER.md and COURSE_VIDEO_TRACKER.md from live Supabase state. Commits to repo.",
+      "input": {
+        "commit": { "type": "boolean", "default": true }
+      }
+    },
+    {
+      "name": "update_module_status",
+      "description": "Update script/video/podcast status flags for a module.",
+      "input": {
+        "module_code":    { "type": "string", "required": true },
+        "status_script":  { "type": "string", "enum": ["draft","ready","recorded","edited","published"] },
+        "status_video":   { "type": "string", "enum": ["draft","ready","recorded","edited","published"] },
+        "status_podcast": { "type": "string", "enum": ["draft","ready","recorded","edited","published"] }
+      }
+    },
+    {
+      "name": "handle_push_event",
+      "description": "Handles incoming GitHub push webhook. Filters for scripts/ path changes and triggers upsert_module_from_script for each changed file.",
+      "input": {
+        "payload": { "type": "object", "required": true }
+      }
+    },
+    {
+      "name": "sync_all",
+      "description": "Full sync: scan scripts → upsert modules → generate missing quizzes → regenerate tracker files. Full audit log written to hv_agent_runs.",
+      "input": {
+        "dry_run": { "type": "boolean", "default": false }
+      }
+    }
+  ],
+
+  "mcp_tools": [
+    {
+      "name": "course.list_modules",
+      "description": "List all hv_modules with current status flags.",
+      "input_schema": { "type": "object", "properties": {}, "additionalProperties": false },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code":           { "type": "string" },
+                "title":          { "type": "string" },
+                "emoji":          { "type": "string" },
+                "level":          { "type": "string" },
+                "xp_reward":      { "type": "integer" },
+                "coin_reward":    { "type": "integer" },
+                "slug":           { "type": "string" },
+                "script_path":    { "type": "string" },
+                "status_script":  { "type": "string" },
+                "status_video":   { "type": "string" },
+                "status_podcast": { "type": "string" },
+                "content_hash":   { "type": "string" },
+                "updated_at":     { "type": "string" }
+              },
+              "required": ["code","title","slug","script_path"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["modules"]
+      }
+    },
+    {
+      "name": "course.get_module",
+      "description": "Get full details for one module by code.",
+      "input_schema": {
+        "type": "object",
+        "properties": { "module_code": { "type": "string" } },
+        "required": ["module_code"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "course.upsert_module_from_script",
+      "description": "Parse a module markdown file and upsert into hv_modules.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "path":  { "type": "string" },
+          "force": { "type": "boolean", "default": false }
+        },
+        "required": ["path"],
+        "additionalProperties": false
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "module":  { "type": "object" },
+          "changed": { "type": "boolean" }
+        },
+        "required": ["module","changed"]
+      }
+    },
+    {
+      "name": "course.save_quiz",
+      "description": "Save a quiz payload (claude-auto or manual) to hv_quizzes for a module. Payload must match Quiz Pack structure: { module_code, title, questions: [{id, type, prompt, choices?, answer_index?, explanation?}] }",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "module_code": { "type": "string" },
+          "source":      { "type": "string", "enum": ["claude-auto","manual"], "default": "claude-auto" },
+          "payload":     { "type": "object" }
+        },
+        "required": ["module_code","payload"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "course.update_status",
+      "description": "Update script/video/podcast status for a module. Only pass fields you want to change.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "module_code":    { "type": "string" },
+          "status_script":  { "type": "string", "enum": ["draft","ready","recorded","edited","published"] },
+          "status_video":   { "type": "string", "enum": ["draft","ready","recorded","edited","published"] },
+          "status_podcast": { "type": "string", "enum": ["draft","ready","recorded","edited","published"] }
+        },
+        "required": ["module_code"],
+        "additionalProperties": false
+      }
+    }
+  ],
+
+  "env_required": [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "ANTHROPIC_API_KEY",
+    "GITHUB_REPO",
+    "SCRIPTS_DIR"
+  ],
+
+  "docker": {
+    "image": "course-content-agent",
+    "port": 8012,
+    "restart": "unless-stopped",
+    "cap_drop": ["ALL"],
+    "security_opt": ["no-new-privileges:true"]
+  }
+}
