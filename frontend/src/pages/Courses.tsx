@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../context/auth';
 
 type ModuleLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'Hyper-Pro';
 
@@ -24,7 +25,9 @@ const levelBadgeClassName: Record<string, string> = {
 };
 
 export default function Courses() {
+  const { user } = useAuthStore();
   const [modules, setModules] = useState<HvModuleRow[]>([]);
+  const [completedModuleIds, setCompletedModuleIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,11 +52,46 @@ export default function Courses() {
     void fetchModules();
   }, []);
 
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId) {
+      queueMicrotask(() => setCompletedModuleIds(new Set()));
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from('module_completions')
+      .select('module_id')
+      .eq('user_id', userId)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) return;
+        const ids = new Set(((data as Array<{ module_id: string }>) ?? []).map((r) => r.module_id));
+        setCompletedModuleIds(ids);
+      })
+      .catch(() => {
+        if (cancelled) return;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   const sortedModules = useMemo(() => {
     const copy = [...modules];
     copy.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
     return copy;
   }, [modules]);
+
+  const completionSummary = useMemo(() => {
+    if (!user) return null;
+    const total = sortedModules.length;
+    if (total === 0) return null;
+    const completed = sortedModules.reduce((acc, m) => (completedModuleIds.has(m.id) ? acc + 1 : acc), 0);
+    return { completed, total };
+  }, [completedModuleIds, sortedModules, user]);
 
   if (loading) {
     return (
@@ -78,6 +116,11 @@ export default function Courses() {
         <p className="text-purple-300 text-sm mt-2">
           Pick a module, vibe hard, and stack XP.
         </p>
+        {completionSummary ? (
+          <div className="mt-4 text-sm text-gray-200 font-semibold">
+            {completionSummary.completed} / {completionSummary.total} modules complete
+          </div>
+        ) : null}
       </div>
 
       {sortedModules.length === 0 ? (
@@ -90,6 +133,7 @@ export default function Courses() {
             const levelClass =
               levelBadgeClassName[mod.level] ??
               'bg-white/10 text-gray-200 border border-white/15';
+            const isCompleted = completedModuleIds.has(mod.id);
 
             return (
               <div
@@ -111,6 +155,11 @@ export default function Courses() {
                 <h2 className="text-white font-semibold text-lg mt-4 leading-snug">
                   {mod.title}
                 </h2>
+                {isCompleted ? (
+                  <div className="mt-2 text-sm font-semibold text-emerald-200">
+                    ✅ Completed
+                  </div>
+                ) : null}
 
                 <div className="mt-3 text-sm text-purple-200 flex items-center justify-between">
                   <span className="font-semibold text-yellow-300">

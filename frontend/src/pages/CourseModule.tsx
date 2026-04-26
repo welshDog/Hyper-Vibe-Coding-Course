@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
 import { useHUD } from '../hooks/useHUD';
+import { useModuleCompletion } from '../hooks/useModuleCompletion';
 
 interface HvModuleRow {
   id: string;
@@ -268,10 +269,13 @@ export default function CourseModule() {
   const [quiz, setQuiz] = useState<HvQuizPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-  const [claimed, setClaimed] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [rewardBanner, setRewardBanner] = useState<{ xp: number; coins: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isCompleted, isLoading: completionLoading, completeModule } = useModuleCompletion(
+    moduleRow?.id ?? '',
+  );
 
   useEffect(() => {
     async function fetchModule() {
@@ -283,7 +287,7 @@ export default function CourseModule() {
       setQuiz(null);
       setAnswers({});
       setSubmitted(false);
-      setClaimed(false);
+      setRewardBanner(null);
 
       const withContent = await supabase
         .from('hv_modules')
@@ -381,57 +385,25 @@ export default function CourseModule() {
     });
   }, [answers, quiz]);
 
-  const canClaim = useMemo(() => {
-    if (!moduleRow) return false;
-    if (!submitted) return false;
-    if (!user?.id) return false;
-    if (!grade) return false;
-    return allAnswered && grade.percent >= 70;
-  }, [allAnswered, grade, moduleRow, submitted, user?.id]);
+  async function handleComplete() {
+    if (!moduleRow) return;
+    if (!user?.id) return;
+    if (quiz && !submitted) return;
+    if (isCompleted) return;
 
-  async function claimXp() {
-    if (!moduleRow || !user?.id) return;
-    const storageKey = `hv_module_claimed_${moduleRow.id}`;
-    if (window.localStorage.getItem(storageKey) === '1') {
-      setClaimed(true);
-      return;
-    }
-
-    setClaiming(true);
+    setCompleting(true);
     setError(null);
     try {
-      const { data: existing, error: existingError } = await supabase
-        .from('user_xp')
-        .select('total_xp')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existingError) {
-        setError('Could not claim XP.');
-        return;
+      const result = await completeModule(grade?.percent);
+      if (result.status === 'completed') {
+        awardXP(result.xp);
+        setRewardBanner({ xp: result.xp, coins: result.coins });
       }
-
-      const current = existing?.total_xp ?? 0;
-      const nextTotal = current + (moduleRow.xp_reward ?? 0);
-      const nextLevel = Math.max(1, Math.floor(nextTotal / 500) + 1);
-
-      const { error: upsertError } = await supabase
-        .from('user_xp')
-        .upsert(
-          { user_id: user.id, total_xp: nextTotal, level: nextLevel, last_active: new Date().toISOString() },
-          { onConflict: 'user_id' },
-        );
-
-      if (upsertError) {
-        setError('Could not claim XP.');
-        return;
+      if (result.status === 'already_completed') {
+        setRewardBanner(null);
       }
-
-      window.localStorage.setItem(storageKey, '1');
-      awardXP(moduleRow.xp_reward ?? 0);
-      setClaimed(true);
     } finally {
-      setClaiming(false);
+      setCompleting(false);
     }
   }
 
@@ -492,6 +464,11 @@ export default function CourseModule() {
         <h1 className="text-3xl font-bold text-white mt-4">{moduleRow.title}</h1>
         {moduleRow.summary ? (
           <p className="text-purple-300 text-sm mt-2">{moduleRow.summary}</p>
+        ) : null}
+        {rewardBanner ? (
+          <div className="mt-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-5 py-4 text-emerald-200 font-semibold">
+            🎉 Module Complete! +{rewardBanner.xp} XP&nbsp;&nbsp;🪙 +{rewardBanner.coins} BROski$
+          </div>
         ) : null}
       </div>
 
@@ -615,27 +592,44 @@ export default function CourseModule() {
                 </div>
               ) : null}
             </div>
-
-            {submitted ? (
-              <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
-                <button
-                  type="button"
-                  onClick={claimXp}
-                  disabled={!canClaim || claiming || claimed}
-                  className="inline-flex rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:hover:bg-purple-600 transition-colors px-4 py-2 text-white text-sm font-semibold"
-                >
-                  {claimed ? 'XP Claimed' : claiming ? 'Claiming...' : `Claim +${moduleRow.xp_reward} XP`}
-                </button>
-                {!canClaim && !claimed ? (
-                  <div className="text-sm text-purple-200">
-                    Answer every question and score at least 70% to claim XP.
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
           </div>
         )}
       </div>
+
+      {user ? (
+        <div className="mt-10 rounded-2xl bg-white/5 border border-white/10 p-6">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <h2 className="text-xl font-bold text-white">Module Completion</h2>
+            {isCompleted ? (
+              <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-sm font-bold text-emerald-200">
+                ✅ Completed
+              </span>
+            ) : null}
+          </div>
+
+          {!isCompleted ? (
+            <>
+              <button
+                type="button"
+                onClick={handleComplete}
+                disabled={
+                  completing ||
+                  completionLoading ||
+                  (Boolean(quiz) && !submitted)
+                }
+                className="mt-4 inline-flex rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:hover:bg-purple-600 transition-colors px-4 py-2 text-white text-sm font-semibold"
+              >
+                {completing ? 'Completing...' : '✅ Mark as Complete'}
+              </button>
+              {quiz && !submitted ? (
+                <div className="mt-3 text-sm text-purple-200">
+                  Submit the quiz to unlock module completion.
+                </div>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
