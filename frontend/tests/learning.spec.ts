@@ -153,9 +153,25 @@ test.describe('Enrollment & Learning', () => {
           email: user.email,
           full_name: user.fullName,
           role: 'student',
+          broski_tokens: 120,
           created_at: new Date().toISOString(),
         };
         await fulfillJson(route, asObject ? payload : [payload]);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/user_xp')) {
+        const payload = {
+          user_id: user.id,
+          total_xp: 350,
+          streak_days: 3,
+        };
+        await fulfillJson(route, asObject ? payload : [payload], method === 'POST' ? 201 : 200);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rifts')) {
+        await fulfillJson(route, asObject ? null : []);
         return;
       }
 

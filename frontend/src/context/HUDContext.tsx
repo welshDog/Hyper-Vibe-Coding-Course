@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface HUDState {
   xp: number;
@@ -26,23 +27,44 @@ export function HUDProvider({ children, userId }: HUDProviderProps) {
   const fetchHUDData = useCallback(async () => {
     if (!userId) return;
     try {
-      const res = await fetch(`/api/xp-events/user/${userId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setXP(data.total_xp ?? 0);
-        setTokens(data.tokens ?? 0);
-        setStreak(data.streak_days ?? 0);
+      const [{ data: userXp }, { data: userProfile }] = await Promise.all([
+        supabase
+          .from('user_xp')
+          .select('total_xp, streak_days')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        supabase
+          .from('users')
+          .select('broski_tokens')
+          .eq('id', userId)
+          .maybeSingle(),
+      ]);
+
+      if (!userXp) {
+        await supabase.from('user_xp').insert({ user_id: userId });
+      } else {
+        setXP(userXp.total_xp ?? 0);
+        setStreak(userXp.streak_days ?? 0);
       }
+
+      setTokens(userProfile?.broski_tokens ?? 0);
     } catch {
       // silently fail — HUD still renders with cached state
     }
   }, [userId]);
 
   useEffect(() => {
-    fetchHUDData();
-    const interval = setInterval(fetchHUDData, 60_000);
-    return () => clearInterval(interval);
-  }, [fetchHUDData]);
+    if (!userId) return;
+    const tick = () => {
+      void fetchHUDData();
+    };
+    const timeout = setTimeout(tick, 0);
+    const interval = setInterval(tick, 60_000);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [fetchHUDData, userId]);
 
   const awardXP = useCallback((amount: number) => {
     setXP((prev) => prev + amount);

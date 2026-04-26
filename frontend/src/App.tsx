@@ -21,6 +21,7 @@ import Certificate from './pages/Certificate';
 import NotFound from './pages/NotFound';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
+import { HUDProvider } from './context/HUDContext';
 
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuthStore();
@@ -37,86 +38,87 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
 }
 
 function App() {
+  const { user } = useAuthStore();
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<LandingPage />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-          <Route path="pricing" element={<Pricing />} />
-          <Route path="courses" element={<CourseCatalog />} />
-          <Route path="courses/:id" element={<CourseDetail />} />
-          <Route 
-            path="dashboard" 
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } 
-          />
-          <Route path="payment-success" element={<PaymentSuccess />} />
-          <Route path="courses/html-css" element={<HyperfocusHtmlCss />} />
-          <Route path="courses/component-chaos" element={<ComponentChaosLab />} />
-          <Route path="courses/full-stack" element={<ShipFullStackThing />} />
-          <Route
-            path="scripts"
-            element={
-              <PrivateRoute>
-                <ScriptGenerator />
-              </PrivateRoute>
-            }
-          />
-          <Route path="feedback" element={<PlaytestFeedback />} />
-          <Route
-            path="tokens"
-            element={
-              <PrivateRoute>
-                <TokensPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="shop"
-            element={
-              <PrivateRoute>
-                <ShopPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="profile"
-            element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            }
-          />
-          <Route element={<AdminRoute role="admin" />}>
-            <Route path="admin" element={<Admin />} />
+    <HUDProvider userId={user?.id}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<LandingPage />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="pricing" element={<Pricing />} />
+            <Route path="courses" element={<CourseCatalog />} />
+            <Route path="courses/:id" element={<CourseDetail />} />
+            <Route 
+              path="dashboard" 
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } 
+            />
+            <Route path="payment-success" element={<PaymentSuccess />} />
+            <Route path="courses/html-css" element={<HyperfocusHtmlCss />} />
+            <Route path="courses/component-chaos" element={<ComponentChaosLab />} />
+            <Route path="courses/full-stack" element={<ShipFullStackThing />} />
+            <Route
+              path="scripts"
+              element={
+                <PrivateRoute>
+                  <ScriptGenerator />
+                </PrivateRoute>
+              }
+            />
+            <Route path="feedback" element={<PlaytestFeedback />} />
+            <Route
+              path="tokens"
+              element={
+                <PrivateRoute>
+                  <TokensPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="shop"
+              element={
+                <PrivateRoute>
+                  <ShopPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
+            <Route element={<AdminRoute role="admin" />}>
+              <Route path="admin" element={<Admin />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
           </Route>
-          <Route path="*" element={<NotFound />} />
-        </Route>
-        {/* Lesson Player has its own layout */}
-        <Route
-          path="/learn/:courseId"
-          element={
-            <PrivateRoute>
-              <LessonPlayer />
-            </PrivateRoute>
-          }
-        />
-        {/* Certificate — standalone printable page */}
-        <Route
-          path="/certificate/:courseId"
-          element={
-            <PrivateRoute>
-              <Certificate />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </Router>
+          <Route
+            path="/learn/:courseId"
+            element={
+              <PrivateRoute>
+                <LessonPlayer />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/certificate/:courseId"
+            element={
+              <PrivateRoute>
+                <Certificate />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </HUDProvider>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 interface Rift {
   id: string;
@@ -20,13 +21,13 @@ export function useRift(): RiftState {
   useEffect(() => {
     const fetchRift = async () => {
       try {
-        const res = await fetch('/api/rifts/active');
-        if (res.ok) {
-          const data = await res.json();
-          setActiveRift(data.rift ?? null);
-        } else {
-          setActiveRift(null);
-        }
+        const { data } = await supabase
+          .from('rifts')
+          .select('id, topic, multiplier, expires_at')
+          .eq('is_closed', false)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+        setActiveRift((data as Rift | null) ?? null);
       } catch {
         setActiveRift(null);
       }

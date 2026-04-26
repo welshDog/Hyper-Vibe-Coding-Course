@@ -186,9 +186,25 @@ test.describe('Authentication', () => {
           email: user.email,
           full_name: user.fullName,
           role: 'student',
+          broski_tokens: 120,
           created_at: new Date().toISOString(),
         };
         await fulfillJson(route, asObject ? payload : [payload]);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/user_xp')) {
+        const payload = {
+          user_id: 'test-user-id',
+          total_xp: 350,
+          streak_days: 3,
+        };
+        await fulfillJson(route, asObject ? payload : [payload], method === 'POST' ? 201 : 200);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rifts')) {
+        await fulfillJson(route, asObject ? null : []);
         return;
       }
 
@@ -242,6 +258,9 @@ test.describe('Authentication', () => {
     // Verify dashboard access
     await expect(page).toHaveURL(/\/dashboard/);
     await expect(page.getByRole('heading', { name: 'My Learning' })).toBeVisible();
+    const hudBar = page.locator('div.z-50');
+    await expect(hudBar.getByText('XP', { exact: true })).toBeVisible();
+    await expect(hudBar.getByText('BROski$', { exact: true })).toBeVisible();
 
     await page.click('button:has-text("Sign out")');
     await expect(page).toHaveURL('/');
