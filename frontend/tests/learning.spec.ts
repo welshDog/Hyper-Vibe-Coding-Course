@@ -307,14 +307,14 @@ test.describe('Enrollment & Learning', () => {
   });
 
   test('should enroll in a free course and navigate to lesson player', async ({ page }) => {
-    await navigateClient(page, '/courses');
+    await navigateClient(page, '/catalog');
 
     // Wait for course card to appear
     await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15_000 });
 
     // Navigate to course detail
     await page.getByRole('button', { name: 'View Course' }).first().click();
-    await expect(page).toHaveURL(/\/courses\/1/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/catalog\/1/, { timeout: 10_000 });
     await expect(page.locator('h1')).toHaveText(course.title);
 
     // Enroll (free course → direct enrollment, no Stripe redirect)
@@ -374,6 +374,6 @@ test.describe('Enrollment & Learning', () => {
     await navigateClient(page, '/learn/1');
 
     // LessonPlayer should redirect to course detail when not enrolled
-    await expect(page).toHaveURL(/\/courses\/1/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/catalog\/1/, { timeout: 10_000 });
   });
 });

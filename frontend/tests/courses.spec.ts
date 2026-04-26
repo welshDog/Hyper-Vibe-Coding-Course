@@ -85,7 +85,7 @@ test.describe('Course Browsing & Details', () => {
       await fulfillJson(route, wantsObject(route) ? null : []);
     });
 
-    await page.goto('/courses');
+    await page.goto('/catalog');
     
     await expect(page.locator('h1')).toHaveText('Course Catalog');
     
@@ -154,13 +154,13 @@ test.describe('Course Browsing & Details', () => {
       await fulfillJson(route, wantsObject(route) ? null : []);
     });
 
-    await page.goto('/courses');
+    await page.goto('/catalog');
     
     // Click on the first course
     await page.getByRole('link', { name: 'Intro to Programming' }).click();
 
     // Assert redirection to detail page
-    await expect(page).toHaveURL(/\/courses\/1/);
+    await expect(page).toHaveURL(/\/catalog\/1/);
     
     // Check details
     await expect(page.locator('h1')).toHaveText('Intro to Programming');

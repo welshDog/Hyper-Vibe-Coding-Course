@@ -131,7 +131,7 @@ export async function createCourseCheckoutSession(
       course_title: course.title,
       price_pence: course.price_pence,
       success_url: `${origin}/payment-success?course_id=${course.id}`,
-      cancel_url: `${origin}/courses/${course.id}`,
+      cancel_url: `${origin}/catalog/${course.id}`,
     }),
   })
   if (!res.ok) {
