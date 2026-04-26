@@ -1,21 +1,27 @@
 {
-  "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "@types/node": "^25.5.0"
-  },
   "name": "hyper-vibe-coding-course",
   "version": "1.0.0",
-  "description": "Course content + launch kit for **Vibe Coding Foundations (Course 1)**, including curriculum, email sequences, gamification, marketing assets, and a deployable landing page.",
+  "description": "Course content + launch kit for Vibe Coding Foundations (Course 1), including curriculum, email sequences, gamification, marketing assets, and a deployable landing page.",
   "main": "index.js",
+  "type": "commonjs",
   "directories": {
     "doc": "docs",
     "test": "tests"
   },
+  "scripts": {
+    "test": "cd frontend && npm test",
+    "test:frontend": "cd frontend && npm test",
+    "test:api": "cd apps/api && npm test",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:api": "cd apps/api && npm run dev",
+    "build": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0"
+  },
   "dependencies": {
     "undici-types": "^7.18.2"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -24,7 +30,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/welshDog/Hyper-Vibe-Coding-Course/issues"
   },
