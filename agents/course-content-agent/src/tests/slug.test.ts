@@ -1,8 +1,9 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
-import { slugifyTitle } from '../tools/slug.js'
+import { describe, expect, it } from '@jest/globals'
+import { slugifyTitle } from '../tools/slug'
 
-test('slugifyTitle strips emoji and normalizes', () => {
-  assert.equal(slugifyTitle('🌱 Your First Vibe'), 'your-first-vibe')
-  assert.equal(slugifyTitle('  🛡️  Security & SRE Observability  '), 'security-sre-observability')
+describe('slugifyTitle', () => {
+  it('strips emoji and normalizes', () => {
+    expect(slugifyTitle('🌱 Your First Vibe')).toBe('your-first-vibe')
+    expect(slugifyTitle('  🛡️  Security & SRE Observability  ')).toBe('security-sre-observability')
+  })
 })

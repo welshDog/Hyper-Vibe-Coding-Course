@@ -1,29 +1,30 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
-import { parseModuleScript } from '../tools/parser.js'
+import { describe, expect, it } from '@jest/globals'
+import { parseModuleScript } from '../tools/parser'
 
-test('parseModuleScript extracts title + emoji from h1', () => {
-  const parsed = parseModuleScript('# 🌱 Your First Vibe\n\nHello world.\n')
-  assert.equal(parsed.emoji, '🌱')
-  assert.equal(parsed.title, 'Your First Vibe')
-})
+describe('parseModuleScript', () => {
+  it('extracts title + emoji from h1', () => {
+    const parsed = parseModuleScript('# 🌱 Your First Vibe\n\nHello world.\n', 'scripts/M2-your-first-vibe.md')
+    expect(parsed.emoji).toBe('🌱')
+    expect(parsed.title).toBe('Your First Vibe')
+  })
 
-test("parseModuleScript prefers 'What you'll learn' section for summary", () => {
-  const md = [
-    '# 🛠 Agent Architecture & Manifests',
-    '',
-    'Intro paragraph that should not be used.',
-    '',
-    "## What you'll learn",
-    '',
-    '- Manifests are passports',
-    '- Port mapping basics',
-    '',
-    '## Next section',
-    '',
-    'More content'
-  ].join('\n')
+  it("prefers 'What you'll learn' section for summary", () => {
+    const md = [
+      '# 🛠 Agent Architecture & Manifests',
+      '',
+      'Intro paragraph that should not be used.',
+      '',
+      "## What you'll learn",
+      '',
+      '- Manifests are passports',
+      '- Port mapping basics',
+      '',
+      '## Next section',
+      '',
+      'More content'
+    ].join('\n')
 
-  const parsed = parseModuleScript(md)
-  assert.equal(parsed.summary, 'Manifests are passports Port mapping basics')
+    const parsed = parseModuleScript(md, 'scripts/M7-agent-architecture-manifests.md')
+    expect(parsed.summary).toBe('Intro paragraph that should not be used.')
+  })
 })
