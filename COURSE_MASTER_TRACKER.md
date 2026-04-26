@@ -15,6 +15,7 @@
 | 🛠️ Tech Platform (Supabase + Stripe + Auth) | - | ✅ LIVE | - |
 | 💰 BROski$ Token Economy | - | ✅ LIVE | - |
 | 🔧 CI / Docker / API blockers | 3 | ✅ ALL FIXED | 0 |
+| 🧪 E2E Test Suite (Playwright) | 33 | ✅ 33/33 GREEN | 0 |
 
 ---
 
@@ -30,6 +31,15 @@
 - CI fixed: Playwright runs inside `frontend/` ✅ ← April 26
 - Docker: `apps/api/Dockerfile` + `package.json` created ✅ ← April 26
 - Root `npm test` working ✅ ← April 26
+- **Playwright E2E: 33/33 passing — chromium + firefox + webkit ✅ ← April 26**
+- **`npm run lint` clean ✅ ← April 26**
+- **`npx tsc --noEmit` clean ✅ ← April 26**
+
+### What Was Fixed in E2E (April 26)
+- `courses.spec.ts` — updated mocks to match `price_pence`, `is_active`, "Enroll — £xx.xx" button
+- `auth.spec.ts` — register flow now matches success screen + "Go to login", HEAD requests handled
+- `learning.spec.ts` — removed debug logging, stable Supabase mocks
+- `landing.spec.ts` — lightweight `/rest/v1/**` mock added to silence Supabase fetch noise
 
 ### Manual Steps Still Needed (YOU do these)
 - [ ] Register Supabase DB Webhook: `token_transactions` → INSERT → `sync-tokens-to-v24`
@@ -138,7 +148,7 @@
 | Supabase | Course platform + auth + DB | ✅ Live |
 | Stripe | Payments | ✅ Live (test mode) |
 | Vercel | Frontend hosting | ✅ Connected |
-| GitHub Actions | CI (Playwright tests) | ✅ Fixed April 26 |
+| GitHub Actions | CI (Playwright) | ✅ 33/33 green |
 
 ---
 
