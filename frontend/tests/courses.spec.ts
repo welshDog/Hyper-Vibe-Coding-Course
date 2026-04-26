@@ -171,3 +171,234 @@ test.describe('Course Browsing & Details', () => {
     await expect(page.getByRole('button', { name: 'Enroll — £29.99' })).toBeVisible();
   });
 });
+
+test.describe('/courses — Module List Page', () => {
+  const user = {
+    id: 'test-user-id',
+    email: 'test@example.com',
+    fullName: 'Test User',
+  };
+
+  const modules = Array.from({ length: 12 }, (_, idx) => {
+    const n = idx + 1;
+    return {
+      id: `mod-${n}`,
+      code: `M${n}`,
+      title: `Module ${n}`,
+      emoji: '📦',
+      level: 'Beginner',
+      xp_reward: 100,
+      coin_reward: 50,
+      slug: `m${n}`,
+      summary: `Summary for M${n}`,
+      script_path: `modules/m${n}.md`,
+      content: `# Module ${n}\n\nWelcome to M${n}.`,
+    };
+  });
+
+  const installSupabaseMocks = async (page: any, options: { authenticated: boolean }) => {
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    });
+
+    await page.route('**/auth/v1/**', async (route: Route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const method = request.method();
+      const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+
+      if (method === 'OPTIONS') {
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': origin,
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-headers': request.headers()['access-control-request-headers'] ?? '*',
+            'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+            vary: 'origin',
+          },
+          body: '',
+        });
+        return;
+      }
+
+      if (url.pathname.startsWith('/auth/v1/token')) {
+        await fulfillJson(route, {
+          access_token: 'fake-jwt-token',
+          token_type: 'bearer',
+          expires_in: 3600,
+          refresh_token: 'fake-refresh-token',
+          user: {
+            id: user.id,
+            aud: 'authenticated',
+            role: 'authenticated',
+            email: user.email,
+            user_metadata: { full_name: user.fullName },
+          },
+        });
+        return;
+      }
+
+      if (url.pathname.startsWith('/auth/v1/user')) {
+        if (!options.authenticated) {
+          await fulfillJson(route, {}, 401);
+          return;
+        }
+        await fulfillJson(route, {
+          id: user.id,
+          aud: 'authenticated',
+          role: 'authenticated',
+          email: user.email,
+          user_metadata: { full_name: user.fullName },
+        });
+        return;
+      }
+
+      if (url.pathname.startsWith('/auth/v1/logout')) {
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': origin,
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-headers': '*',
+            'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+            vary: 'origin',
+          },
+          body: '',
+        });
+        return;
+      }
+
+      await fulfillJson(route, {});
+    });
+
+    await page.route('**/rest/v1/**', async (route: Route) => {
+      const request = route.request();
+      const url = new URL(request.url());
+      const method = request.method();
+      const asObject = wantsObject(route);
+
+      if (method === 'OPTIONS') {
+        const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': origin,
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-headers': request.headers()['access-control-request-headers'] ?? '*',
+            'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+            vary: 'origin',
+          },
+          body: '',
+        });
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/hv_modules')) {
+        if (url.search.includes('slug=eq.')) {
+          const slug = decodeURIComponent((url.search.match(/slug=eq\.([^&]+)/)?.[1] ?? '').trim());
+          const mod = modules.find((m) => m.slug === slug) ?? modules[0];
+          await fulfillJson(route, asObject ? mod : [mod]);
+          return;
+        }
+        await fulfillJson(route, modules);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/module_completions')) {
+        if (!options.authenticated) {
+          await fulfillJson(route, asObject ? null : []);
+          return;
+        }
+        const payload = [{ id: 'mc-1', user_id: user.id, module_id: modules[0].id }];
+        await fulfillJson(route, asObject ? payload[0] : payload);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/users')) {
+        if (!options.authenticated) {
+          await fulfillJson(route, asObject ? null : []);
+          return;
+        }
+        const payload = {
+          id: user.id,
+          email: user.email,
+          full_name: user.fullName,
+          role: 'student',
+          broski_tokens: 120,
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+        };
+        await fulfillJson(route, asObject ? payload : [payload]);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/user_xp')) {
+        if (!options.authenticated) {
+          await fulfillJson(route, asObject ? null : []);
+          return;
+        }
+        const payload = {
+          user_id: user.id,
+          total_xp: 350,
+          level: 3,
+          streak_days: 3,
+          last_active: new Date().toISOString(),
+        };
+        await fulfillJson(route, asObject ? payload : [payload], method === 'POST' ? 201 : 200);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rifts')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/user_loyalty_tier')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      await fulfillJson(route, asObject ? null : []);
+    });
+  };
+
+  const loginAsTestUser = async (page: any) => {
+    await installSupabaseMocks(page, { authenticated: true });
+    await page.goto('/login');
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', 'Password123');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/dashboard/);
+  };
+
+  test('loads course grid without auth', async ({ page }) => {
+    await installSupabaseMocks(page, { authenticated: false });
+    await page.goto('/courses');
+    await expect(page.getByRole('heading', { name: /modules/i })).toBeVisible();
+    await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
+  });
+
+  test('shows M1 through M12 module codes', async ({ page }) => {
+    await installSupabaseMocks(page, { authenticated: false });
+    await page.goto('/courses');
+    for (const code of ['M1', 'M2', 'M3', 'M12']) {
+      await expect(page.getByText(code)).toBeVisible();
+    }
+  });
+
+  test('Start Module button links to correct slug', async ({ page }) => {
+    await installSupabaseMocks(page, { authenticated: false });
+    await page.goto('/courses');
+    const firstCard = page.locator('[data-testid="module-card"]').first();
+    const link = firstCard.getByRole('link', { name: /start module/i });
+    await expect(link).toHaveAttribute('href', /\/courses\//);
+  });
+
+  test('shows completion progress when authenticated', async ({ page }) => {
+    await loginAsTestUser(page);
+    await page.goto('/courses');
+    await expect(page.getByText(/modules complete/i)).toBeVisible();
+  });
+});

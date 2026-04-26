@@ -112,7 +112,7 @@ export default function Courses() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Hyper Vibe Coding Course</h1>
+        <h1 className="text-3xl font-bold text-white">Hyper Vibe Modules</h1>
         <p className="text-purple-300 text-sm mt-2">
           Pick a module, vibe hard, and stack XP.
         </p>
@@ -138,6 +138,7 @@ export default function Courses() {
             return (
               <div
                 key={mod.id}
+                data-testid="module-card"
                 className="rounded-2xl bg-white/5 border border-white/10 p-6 flex flex-col"
               >
                 <div className="flex items-center justify-between">

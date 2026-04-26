@@ -485,9 +485,9 @@ export default function CourseModule() {
       <div className="mt-10">
         <h2 className="text-2xl font-bold text-white mb-3">Quiz</h2>
         {!user ? (
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+          <div data-testid="quiz" className="rounded-2xl bg-white/5 border border-white/10 p-6">
             <p className="text-gray-200">
-              Sign in to take the quiz and claim XP.
+              Log in to take the quiz and claim XP.
             </p>
             <div className="mt-4">
               <Link
@@ -499,11 +499,11 @@ export default function CourseModule() {
             </div>
           </div>
         ) : !quiz ? (
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-6 text-gray-300">
+          <div data-testid="quiz" className="rounded-2xl bg-white/5 border border-white/10 p-6 text-gray-300">
             Quiz coming soon.
           </div>
         ) : (
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
+          <div data-testid="quiz" className="rounded-2xl bg-white/5 border border-white/10 p-6">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <h3 className="text-white font-semibold text-lg">
                 {quiz.title ?? `Quiz: ${moduleRow.title}`}

@@ -77,9 +77,9 @@ export default function Leaderboard() {
           <thead className="bg-white/5 text-gray-200">
             <tr>
               <th className="px-4 py-3 font-semibold">Rank</th>
-              <th className="px-4 py-3 font-semibold">Player</th>
+              <th className="px-4 py-3 font-semibold">Name</th>
               <th className="px-4 py-3 font-semibold">Level</th>
-              <th className="px-4 py-3 font-semibold">Total XP</th>
+              <th className="px-4 py-3 font-semibold">XP</th>
               <th className="px-4 py-3 font-semibold">Streak</th>
             </tr>
           </thead>
@@ -126,7 +126,7 @@ export default function Leaderboard() {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-gray-300 text-center">
-                  No leaderboard entries yet.
+                  No one on the leaderboard yet.
                 </td>
               </tr>
             ) : null}

@@ -92,6 +92,7 @@ export default function Quests() {
           return (
             <div
               key={q.questId}
+              data-testid="quest-item"
               className="rounded-2xl bg-white/5 border border-white/10 p-6"
             >
               <div className="flex items-center justify-between gap-4 flex-wrap">
