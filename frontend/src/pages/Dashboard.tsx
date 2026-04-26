@@ -17,6 +17,8 @@ export default function Dashboard() {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [xpTotal, setXpTotal] = useState<number | null>(null);
+  const [xpLevel, setXpLevel] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -48,9 +50,47 @@ export default function Dashboard() {
     fetchData();
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+    supabase
+      .from('user_xp')
+      .select('total_xp, level')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) return;
+        if (!data) {
+          setXpTotal(0);
+          setXpLevel(1);
+          return;
+        }
+        setXpTotal(typeof data.total_xp === 'number' ? data.total_xp : 0);
+        setXpLevel(typeof data.level === 'number' ? data.level : 1);
+      })
+      .catch(() => {
+        if (cancelled) return;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const referralLink = referralCode
     ? `${window.location.origin}/register?ref=${referralCode}`
     : null;
+
+  const levelThresholds = [0, 100, 250, 500, 1000, 2000];
+  const safeLevel = Math.max(1, Math.min(xpLevel ?? 1, 6));
+  const safeTotal = Math.max(0, xpTotal ?? 0);
+  const currentFloor = levelThresholds[safeLevel - 1] ?? 0;
+  const nextFloor = safeLevel < 6 ? levelThresholds[safeLevel] ?? 2000 : null;
+  const intoLevel = safeTotal - currentFloor;
+  const levelSpan = nextFloor != null ? Math.max(1, nextFloor - currentFloor) : 1;
+  const progressPct = nextFloor == null ? 100 : Math.max(0, Math.min(100, (intoLevel / levelSpan) * 100));
 
   const handleCopy = async () => {
     if (!referralLink) return;
@@ -79,6 +119,35 @@ export default function Dashboard() {
           </h2>
         </div>
       </div>
+
+      {typeof xpTotal === 'number' && typeof xpLevel === 'number' ? (
+        <div className="mb-8 bg-white border border-gray-200 rounded-xl px-6 py-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-sm font-bold text-purple-700">
+                Level {safeLevel}
+              </span>
+              <span className="text-sm text-gray-600">
+                {safeTotal.toLocaleString()} XP
+              </span>
+            </div>
+            <div className="text-xs text-gray-500 font-medium">
+              {nextFloor == null
+                ? 'Max level'
+                : `${currentFloor.toLocaleString()} → ${nextFloor.toLocaleString()} XP`}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-[width] duration-700 ease-out"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* ── BROski$ balance card ───────────────────────────────────────────── */}
       <Link to="/tokens" className="block mb-8">

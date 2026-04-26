@@ -6,29 +6,20 @@ import { LoyaltyTierBadge } from './LoyaltyTierBadge';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-function BroskiBalance({ tokens }: { tokens: number }) {
-  return (
-    <Link
-      to="/tokens"
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-50 border border-yellow-200 hover:bg-yellow-100 transition-colors text-sm font-bold text-yellow-700"
-      title="BROski$ — click to buy more or view history"
-    >
-      <span>💰</span>
-      <span>{tokens.toLocaleString()} BROski$</span>
-    </Link>
-  );
-}
-
 export function Navbar() {
   const { user, signOut } = useAuthStore();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [tier, setTier] = useState<'bronze' | 'silver' | 'gold' | 'hyper' | null>(null);
+  const [broskiTokens, setBroskiTokens] = useState<number | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const userId = user?.id;
     if (!userId) {
       queueMicrotask(() => setTier(null));
+      queueMicrotask(() => setBroskiTokens(null));
+      queueMicrotask(() => setAvatarUrl(null));
       return;
     }
     supabase
@@ -39,6 +30,31 @@ export function Navbar() {
       .then(({ data }) => {
         if (data?.tier) setTier(data.tier as 'bronze' | 'silver' | 'gold' | 'hyper');
       });
+  }, [user?.id]);
+
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId) return;
+
+    let cancelled = false;
+    supabase
+      .from('users')
+      .select('broski_tokens, avatar_url')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) return;
+        setBroskiTokens(typeof data.broski_tokens === 'number' ? data.broski_tokens : null);
+        setAvatarUrl(typeof data.avatar_url === 'string' ? data.avatar_url : null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const handleSignOut = async () => {
@@ -94,7 +110,6 @@ export function Navbar() {
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {user ? (
               <div className="ml-3 relative flex items-center gap-3">
-                <BroskiBalance tokens={user.broski_tokens ?? 0} />
                 {tier && <LoyaltyTierBadge tier={tier} size="sm" />}
                 <Link
                   to="/shop"
@@ -102,12 +117,29 @@ export function Navbar() {
                 >
                   🛒 Shop
                 </Link>
-                <Link
-                  to="/profile"
-                  className="text-sm text-gray-700 hover:text-primary transition-colors font-medium"
-                >
-                  {(user.full_name ?? user.email)?.split(' ')[0] ?? 'Profile'}
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link to="/profile" className="flex items-center gap-2">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={(user.full_name ?? user.email) ?? 'avatar'}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                        {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <span className="text-sm text-gray-700 hover:text-primary transition-colors font-medium">
+                      {(user.full_name ?? user.email)?.split(' ')[0] ?? 'Profile'}
+                    </span>
+                  </Link>
+                  {typeof broskiTokens === 'number' ? (
+                    <div className="text-sm font-bold text-gray-700">
+                      🪙 {broskiTokens.toLocaleString()}
+                    </div>
+                  ) : null}
+                </div>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign out
@@ -190,13 +222,26 @@ export function Navbar() {
             {user ? (
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={(user.full_name ?? user.email) ?? 'avatar'}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                  )}
                 </div>
                 <div className="ml-3">
                   <div className="text-base font-medium text-gray-800">{user.full_name ?? user.email}</div>
                   <div className="text-sm font-medium text-gray-500">{user.email}</div>
+                  {typeof broskiTokens === 'number' ? (
+                    <div className="text-sm font-bold text-gray-700 mt-0.5">
+                      🪙 {broskiTokens.toLocaleString()}
+                    </div>
+                  ) : null}
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto">
                   Sign out
