@@ -53,7 +53,7 @@
 ### MON: Reorganization (2-3 hours)
 
 **Morning (1.5 hrs):**
-- [ ] Create new folder structure (backend/app/, frontend/public/, docs/course/, etc.)
+- [ ] Create new folder structure (frontend/, supabase/, apps/api/, api/, docs/course/, etc.)
 - [ ] Move 00-06_*.md files into docs/guides/
 - [ ] Move landing page content into `frontend/src/pages/LandingPage.tsx`
 - [ ] Create LICENSE file (MIT)
@@ -73,9 +73,10 @@
 # Should see this structure
 docs/course/
 docs/guides/
-frontend/src/pages/LandingPage.tsx
-backend/app/
-tests/
+frontend/
+supabase/
+apps/api/
+api/
 config/
 assets/
 ```
@@ -86,19 +87,18 @@ assets/
 
 **Morning (1.5 hrs):**
 - [ ] Create `docs/SETUP.md` - Step-by-step environment setup
-  - Prerequisites (Node 18+, Python 3.10+, Git)
+  - Prerequisites (Node 18+, Git, Supabase CLI)
   - Clone repo
   - Install frontend deps (`npm install`)
-  - Install backend deps (`pip install -r requirements.txt`)
   - Create .env files from .env.example
   - Verify everything works
   
 - [ ] Create `docs/ARCHITECTURE.md` - System overview
   - Phase 0-3 timeline
-  - Tech stack (React/Vite + FastAPI + Supabase)
+  - Tech stack (React/Vite + Supabase + Stripe + Edge Functions)
   - Environments (local, staging, production)
-  - How data flows (frontend → backend → database)
-  - Deployment strategy (Vercel for FE, Fly.io for BE)
+  - How data flows (frontend → Supabase/Stripe/Edge Functions)
+  - Deployment strategy (Vercel for frontend + API routes, Supabase for DB/functions)
 
 **Afternoon (1.5 hrs):**
 - [ ] Create `docs/ENVIRONMENT.md` - Env vars guide
@@ -106,12 +106,10 @@ assets/
   # Environment Variables
   
   ## Frontend (.env.local)
-  VITE_API_URL=http://localhost:8000
+  VITE_HYPERCODE_API_URL=http://localhost:8000
   VITE_COURSE_PLATFORM_KEY=xxx
   
   ## Backend (.env)
-  DATABASE_URL=postgresql://...
-  JWT_SECRET=xxx
   SUPABASE_URL=xxx
   SUPABASE_KEY=xxx
   ```
@@ -721,43 +719,14 @@ npm run build       # Should build without errors
 ### THU: Backend Scaffolding + Week 3-4 Content (2 hours)
 
 **Morning (1.5 hrs):**
-- [ ] Initialize FastAPI backend:
-  ```bash
-  cd backend
-  pip install fastapi uvicorn sqlalchemy python-dotenv pyjwt
-  pip freeze > requirements.txt
-  ```
-
-- [ ] Create `backend/src/main.py`:
-  ```python
-  from fastapi import FastAPI
-  from fastapi.middleware.cors import CORSMiddleware
-  
-  app = FastAPI()
-  
-  app.add_middleware(
-      CORSMiddleware,
-      allow_origins=["*"],
-      allow_methods=["*"],
-      allow_headers=["*"],
-  )
-  
-  @app.get("/health")
-  def health_check():
-      return {"status": "ok"}
-  
-  if __name__ == "__main__":
-      import uvicorn
-      uvicorn.run(app, host="0.0.0.0", port=8000)
-  ```
-
-- [ ] Create `backend/.env.example`:
-  ```
-  DATABASE_URL=postgresql://user:password@localhost/vibe_coding
-  JWT_SECRET=your-secret-key-here
-  SUPABASE_URL=
-  SUPABASE_KEY=
-  ```
+- [ ] Confirm server-side layers and ownership:
+  - `supabase/functions/` is used for Stripe webhooks and DB-side fulfillment
+  - `api/` contains optional Vercel serverless routes (e.g. BROski chat)
+  - `apps/api/` contains an optional Node/Express API used for local dev/experiments
+- [ ] Verify key env vars are documented and present:
+  - `frontend/.env` (Supabase + HyperCode checkout API + Stripe payment link)
+  - Vercel environment variables (production)
+  - Supabase secrets (Edge Functions)
 
 **Afternoon (0.5 hrs):**
 - [ ] Extract Week 3-4 content from curriculum:
@@ -792,7 +761,7 @@ npm run build       # Should build without errors
 ✅ Frontend scaffolded (Vite + React + TS)
 ✅ 3 core components built
 ✅ CI/CD updated with frontend lint + tests
-✅ Backend scaffolded (FastAPI)
+✅ Server-side integration documented (Supabase + optional APIs)
 ✅ Week 3-4 curriculum populated
 ✅ Git CI workflow passing
 

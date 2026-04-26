@@ -355,7 +355,7 @@ By end of Week 4, you should have completed:
 ✅ Week 1-4 curriculum complete
 ✅ Landing page deployed
 ✅ Frontend scaffolded (Vite + React + TS)
-✅ Backend scaffolded (FastAPI)
+✅ Backend services in place (Supabase + Edge Functions + optional APIs)
 ✅ CI/CD pipeline working
 ✅ Gamification system designed (specs only, no code yet)
 ✅ Marketing assets ready

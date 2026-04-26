@@ -13,9 +13,8 @@
 | `frontend/src/components/RiftBanner.tsx` | Live rift event banner with countdown |
 | `frontend/src/context/HUDContext.tsx` | Global HUD state provider |
 | `frontend/src/hooks/useHUD.ts` | Hook to read HUD state anywhere |
-| `frontend/src/hooks/useRift.ts` | Hook that polls /rifts/active every 30s |
-| `api/xp_events.py` | FastAPI: award XP, get user XP, leaderboard |
-| `api/rifts.py` | FastAPI: create/get/close rifts |
+| `frontend/src/hooks/useRift.ts` | Hook that polls the `public.rifts` table for an active rift |
+| `supabase/migrations/20260426162000_xp_rifts_gamification.sql` | Supabase schema for `user_xp`, `xp_events`, `rifts` |
 
 ---
 
@@ -42,45 +41,53 @@ function App() {
 
 ```tsx
 import { useHUD } from '../hooks/useHUD';
+import { supabase } from '../lib/supabase';
 
 function CodeEditor() {
   const { awardXP } = useHUD();
 
   const handleSubmit = async () => {
     // run their code...
-    await fetch('/api/xp-events/award', {
-      method: 'POST',
-      body: JSON.stringify({ user_id, event_type: 'code_submit', amount: 25 })
+    const amount = 25;
+    awardXP(amount);
+
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return;
+
+    await supabase.from('xp_events').insert({
+      user_id: user.id,
+      event_type: 'code_submit',
+      amount,
     });
-    awardXP(25); // triggers the toast immediately
+
+    const { data: xpRow } = await supabase
+      .from('user_xp')
+      .select('total_xp')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const total = (xpRow?.total_xp ?? 0) + amount;
+    await supabase.from('user_xp').upsert({ user_id: user.id, total_xp: total });
   };
 }
 ```
 
-### 3. Fire a Rift from admin panel (or CLI)
+### 3. Fire a Rift (admin / ops)
 
-```bash
-curl -X POST http://localhost:8000/api/rifts/create \\
-  -H 'Content-Type: application/json' \\
-  -d '{"topic": "async/await", "multiplier": 2.0, "duration_minutes": 45}'
+Create a row in `public.rifts` (e.g. via Supabase SQL editor or an admin tool):
+
+```sql
+insert into public.rifts (topic, multiplier, expires_at, description)
+values ('async/await', 2.0, now() + interval '45 minutes', 'Double XP for async/await drills');
 ```
 
-The purple banner appears on EVERY student's screen within 30 seconds. ⚡
+The purple banner appears for everyone as `useRift()` polls and detects an active, unexpired rift.
 
 ---
 
-## 🔌 Wire to Supabase (Next Step)
-
-Both `xp_events.py` and `rifts.py` have `# TODO: Replace with real Supabase` comments.
-
-Replace mock data with:
-```python
-from supabase import create_client
-client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Get user XP
-result = client.table('user_xp').select('*').eq('user_id', user_id).single().execute()
-```
+## 🔌 Notes
+- `awardXP()` is a UI affordance (instant feedback). Persisting XP requires writing to Supabase (`xp_events` and `user_xp`).
+- `rifts` are public-readable, so the banner can render for anonymous users too.
 
 ---
 

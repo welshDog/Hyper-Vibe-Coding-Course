@@ -44,7 +44,7 @@ What's missing:
 **Time:** 15-20 hours  
 **Result:** Score 320+/593 (54%)
 
-### **WEEK 3: TECH STACK** (Frontend + backend scaffolded)
+### **WEEK 3: TECH STACK** (Frontend + Supabase scaffolded)
 **Goal:** Build first components + setup CI/CD + infrastructure  
 **Time:** 20-25 hours  
 **Result:** Score 400+/593 (67%)
@@ -56,50 +56,29 @@ What's missing:
 
 ---
 
-## 📋 REORGANIZATION CHECKLIST (Do This FIRST - Next 2-3 hours)
+## 📋 REORGANIZATION CHECKLIST (Status: already completed in this repo)
 
-### STEP 1: Create New Folder Structure
+### STEP 1: Validate Current Folder Structure
 
 ```bash
-# You're in: H:\Hyper Vibe Coding Course
-
-# Create new folders
-mkdir docs\course
-mkdir docs\guides
-mkdir frontend\public
-mkdir backend\app\api\routes
-mkdir backend\app\models
-mkdir backend\app\core
-mkdir backend\app\tests
-mkdir tests\unit
-mkdir tests\integration
-mkdir tests\e2e
-
-# Create placeholders
-echo. > docs\course\week-1\README.md
-echo. > docs\course\week-2\README.md
-echo. > docs\course\week-3\README.md
-echo. > docs\course\week-4\README.md
+cd frontend
+npm install
+npm run dev
 ```
 
 ### STEP 2: Move Existing Files
 
-```bash
-# Move course content into guides
-move 00_QUICK_START_GUIDE.md docs\guides\QUICK_START.md
-move 01_COURSE1_COMPLETE_CURRICULUM.md docs\course\CURRICULUM.md
-move 03_EMAIL_SEQUENCES.md docs\guides\EMAIL_SEQUENCES.md
-move 04_GAMIFICATION_SYSTEM.md docs\guides\GAMIFICATION.md
-move 05_MARKETING_ASSETS.md docs\guides\MARKETING.md
-move 06_4WEEK_LAUNCH_PLAN.md docs\guides\LAUNCH_PLAN.md
+File moves are already done in this repo.
 
-# Move landing page
-move 02_LANDING_PAGE.html frontend\public\index.html
-```
+Current structure highlights:
+- `frontend/src/pages/LandingPage.tsx`
+- `supabase/migrations/`
+- `apps/api/` (optional)
+- `api/` (optional Vercel routes)
 
 ### STEP 3: Create Essential Root Files
 
-Create these files at the root level:
+These files already exist at the root level:
 
 **1. LICENSE (copy MIT license)**
 ```
@@ -128,11 +107,7 @@ We welcome contributions. See CONTRIBUTING.md in the repository root.
 ### STEP 4: Verify the Result
 
 ```bash
-# Run git status
 git status
-
-# You should see moved/new files but no deletions of original files yet
-# Commit this reorganization
 git add .
 git commit -m "chore: reorganize repo structure for Phase 1"
 git push origin develop

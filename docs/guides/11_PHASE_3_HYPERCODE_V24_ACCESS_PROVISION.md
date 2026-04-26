@@ -83,7 +83,7 @@ If the DM fails:
 - Still return `status: provisioned` (the provision exists)
 - Log the failure so the user can be re-DM’d manually or via retry tooling
 
-## Implementation checklist (HyperCode V2.4)
+## Implementation checklist (HyperCode V2.4 repo)
 
 - [ ] Verify router exists: `backend/app/api/v1/endpoints/access.py`
 - [ ] Update request/response schema to match the locked contract
@@ -94,7 +94,7 @@ If the DM fails:
 - [ ] DM the student with the key + Mission Control URL
 - [ ] Return the locked response payload
 
-## Local test (manual)
+## Local test (manual, against HyperCode V2.4 service)
 
 ```powershell
 $secret = "<SHOP_SYNC_SECRET>"
@@ -118,4 +118,3 @@ Invoke-RestMethod `
 Expected:
 - First call provisions and returns `status=provisioned`
 - Second call returns **409** (idempotent replay)
-

@@ -30,7 +30,7 @@ Description:
 Transform root-level markdown files into organized structure.
 
 ## Tasks
-- [ ] Create new folders: `docs/course/`, `docs/guides/`, `frontend/public/`, `backend/app/`, etc.
+- [ ] Create new folders: `docs/course/`, `docs/guides/`, `frontend/`, `supabase/`, `apps/api/`, `api/`, etc.
 - [ ] Move course content files into `docs/guides/`:
   - `00_QUICK_START_GUIDE.md` → `docs/guides/QUICK_START.md`
   - `01_COURSE1_COMPLETE_CURRICULUM.md` → `docs/course/CURRICULUM.md`
@@ -48,7 +48,7 @@ Transform root-level markdown files into organized structure.
 - [ ] All docs organized in `docs/` folder
 - [ ] Course content in `docs/course/`
 - [ ] Marketing guides in `docs/guides/`
-- [ ] Landing page in `frontend/public/`
+- [ ] Landing page in `frontend/src/pages/LandingPage.tsx`
 - [ ] All tests pass: `git status` is clean
 
 ## Time Estimate
@@ -72,10 +72,9 @@ Description:
 Create comprehensive setup guide so users can get started in 5-10 minutes.
 
 ## Content Required
-- Prerequisites (Node 18+, Python 3.10+, Git)
+- Prerequisites (Node 18+, Git, Supabase CLI)
 - Clone instructions
 - Frontend setup (`npm install`)
-- Backend setup (`pip install -r requirements.txt`)
 - Environment file creation from `.env.example`
 - Verification steps (run dev server, test API health)
 - Troubleshooting section
@@ -105,9 +104,9 @@ Explain how the entire system works at a high level.
 
 ## Content Required
 - Phase 0-3 timeline and what each does
-- Tech stack breakdown (React/Vite, FastAPI, Supabase)
+- Tech stack breakdown (React/Vite, Supabase, Stripe, Edge Functions)
 - Development environments (local, staging, production)
-- Data flow diagram (frontend → backend → database)
+- Data flow diagram (frontend → Supabase/Stripe/Edge Functions)
 - Deployment strategy for each part
 - Key architectural decisions and why
 
@@ -136,7 +135,7 @@ Document all environment variables needed for development and production.
 
 ## Content Required
 - Frontend `.env.local` variables (API URL, course platform key, etc.)
-- Backend `.env` variables (database, JWT secret, Supabase, etc.)
+- Supabase + server-side variables (Edge Function secrets, webhook signing secret, etc.)
 - Explanation of what each variable does
 - Example values (safe examples, not real secrets)
 - Which are required vs. optional
@@ -144,7 +143,7 @@ Document all environment variables needed for development and production.
 ## Acceptance Criteria
 - [ ] File exists at `docs/ENVIRONMENT.md`
 - [ ] All env vars documented
-- [ ] `.env.example` files created in `frontend/` and `backend/`
+- [ ] `.env.example` files created in `frontend/` (and any optional API folders used)
 - [ ] Clear which vars are required
 
 ## Time Estimate
@@ -166,7 +165,7 @@ Document how to deploy frontend, backend, and database.
 ## Content Required
 - Vercel deployment (platform + API routes)
 - Vercel deployment (frontend app)
-- Fly.io / Render deployment (backend API)
+- Supabase deployment (migrations + Edge Functions)
 - Database migrations strategy
 - Environment secrets management
 - CI/CD pipeline overview
@@ -664,9 +663,9 @@ Ensure code quality enforcement.
 
 ### THURSDAY TASKS
 
-#### Issue: Initialize FastAPI backend
+#### Issue: Align server-side layers (Supabase + optional APIs)
 ```
-Title: Initialize FastAPI backend with basic structure
+Title: Align server-side layers (Supabase + optional APIs)
 Type: Task
 Labels: Week 3, Backend, Priority-1
 Assignee: You
@@ -674,21 +673,18 @@ Assignee: You
 Description:
 
 ## Goal
-Set up production-ready backend.
+Document and validate the server-side pieces that power the platform.
 
 ## Tasks
-- [ ] Create virtual environment: `python -m venv venv`
-- [ ] Install FastAPI: `pip install fastapi uvicorn sqlalchemy python-dotenv pyjwt`
-- [ ] Create `backend/src/main.py` with health endpoint
-- [ ] Create `backend/requirements.txt`
-- [ ] Create `backend/.env.example`
-- [ ] Create folder structure (models, routes, utils, config)
-- [ ] Test: `uvicorn src.main:app --reload` should run
+- [ ] Confirm Supabase Edge Functions are the source of truth for webhooks (`supabase/functions/`)
+- [ ] Confirm the Vercel `api/` routes are optional and still work locally if used
+- [ ] Confirm `apps/api/` is optional (local dev/experiments) and document how to run it if needed
+- [ ] Verify frontend points at the correct checkout backend (`VITE_HYPERCODE_API_URL`)
+- [ ] Verify Supabase migrations are applied cleanly to the linked project
 
 ## Acceptance Criteria
-- [ ] Backend runs locally
-- [ ] Health endpoint returns 200
-- [ ] Requirements.txt updated
+- [ ] Team can identify which server-side component owns which responsibility
+- [ ] Checkout + webhook → DB fulfillment is understood and debuggable
 
 ## Time Estimate
 1.5 hours
@@ -726,7 +722,7 @@ Populate remaining weeks with course content.
 
 ### FRIDAY-SUNDAY TASKS
 
-#### Issue: Week 3 Review - Frontend and backend scaffolded
+#### Issue: Week 3 Review - Frontend and backend ready
 ```
 Title: Week 3 Review - Frontend, backend, and CI/CD ready
 Type: Task
@@ -740,7 +736,8 @@ Verify all Phase 1 tech is ready for Phase 2.
 
 ## Checklist
 - [ ] Frontend dev server runs locally
-- [ ] Backend health endpoint works
+- [ ] Checkout endpoint works (creates Stripe checkout session)
+- [ ] Webhook processing works (Edge Function receives events and writes to DB)
 - [ ] CI/CD pipeline passes
 - [ ] All tests pass
 - [ ] Week 3-4 curriculum populated
