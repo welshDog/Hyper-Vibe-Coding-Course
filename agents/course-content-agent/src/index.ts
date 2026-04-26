@@ -76,7 +76,7 @@ async function main() {
     }
 
     case 'scan': {
-      const force = hasFlag('--force');
+      const force = hasFlag('--force-upsert') || hasFlag('--force');
       await scanScriptsFolder(force);
       break;
     }
@@ -87,7 +87,7 @@ async function main() {
         console.error('❌ --path is required. Example: --path scripts/M2-your-first-vibe.md (or pass as positional arg)');
         process.exit(1);
       }
-      const force = hasFlag('--force');
+      const force = hasFlag('--force-upsert') || hasFlag('--force');
       const result = await upsertModuleFromScript(filePath, force);
       console.log(result.changed ? '✅ Upserted.' : '⏩  No change.');
       break;

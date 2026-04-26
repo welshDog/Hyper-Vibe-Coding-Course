@@ -38,9 +38,13 @@ const COIN_MAP: Record<string, number> = {
 
 /** Extract emoji from start of a string if present */
 function extractEmoji(str: string): { emoji: string; text: string } {
-  const emojiMatch = str.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}][\s]?)/u);
+  const emojiMatch = str.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F)?)(?:\s+)?/u);
   if (emojiMatch) {
-    return { emoji: emojiMatch[1].trim(), text: str.replace(emojiMatch[1], '').trim() };
+    const text = str
+      .replace(emojiMatch[0], '')
+      .replace(/^\uFE0F+/g, '')
+      .trim();
+    return { emoji: emojiMatch[1].trim(), text };
   }
   return { emoji: '📦', text: str.trim() };
 }
@@ -67,7 +71,7 @@ function parseCode(filePath: string, frontmatter: Record<string, string>): strin
 
 /** Parse optional YAML-lite frontmatter (--- block at top of file) */
 function parseFrontmatter(content: string): { meta: Record<string, string>; body: string } {
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/m);
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   if (!fmMatch) return { meta: {}, body: content };
 
   const meta: Record<string, string> = {};
@@ -93,13 +97,36 @@ function parseSummary(body: string): string | null {
   for (const line of lines) {
     if (!pastH1 && line.startsWith('# ')) { pastH1 = true; continue; }
     if (!pastH1) continue;
-    if (line.startsWith('#') || line.startsWith('**Level') || line.startsWith('**Earn')) continue;
+    if (
+      line.startsWith('#') ||
+      line.startsWith('>') ||
+      line.startsWith('**Module') ||
+      line.startsWith('**Level') ||
+      line.startsWith('**XP') ||
+      line.startsWith('**Coins') ||
+      line.startsWith('**Earn')
+    ) continue;
+    if (/^-{3,}$/.test(line.trim())) continue;
     if (line.trim() === '') { if (paragraphLines.length > 0) break; continue; }
     paragraphLines.push(line.trim());
     if (paragraphLines.length >= 3) break;
   }
 
   return paragraphLines.length > 0 ? paragraphLines.join(' ') : null;
+}
+
+function parseXpReward(meta: Record<string, string>, body: string, code: string): number {
+  if (meta.xp_reward) return parseInt(meta.xp_reward);
+  const match = body.match(/\*\*XP:\*\*\s*(\d+)/i);
+  if (match) return parseInt(match[1]);
+  return XP_MAP[code] ?? 30;
+}
+
+function parseCoinReward(meta: Record<string, string>, body: string, code: string): number {
+  if (meta.coin_reward) return parseInt(meta.coin_reward);
+  const match = body.match(/\*\*Coins:\*\*\s*(\d+)/i);
+  if (match) return parseInt(match[1]);
+  return COIN_MAP[code] ?? 10;
 }
 
 /** Parse level from frontmatter or body text */
@@ -136,8 +163,8 @@ export function parseModuleScript(content: string, filePath: string): ModuleMeta
   const title = meta.title ?? titleText;
   const slug = meta.slug ?? toSlug(titleText);
   const level = parseLevel(meta, body, code);
-  const xp_reward = meta.xp_reward ? parseInt(meta.xp_reward) : (XP_MAP[code] ?? 30);
-  const coin_reward = meta.coin_reward ? parseInt(meta.coin_reward) : (COIN_MAP[code] ?? 10);
+  const xp_reward = parseXpReward(meta, body, code);
+  const coin_reward = parseCoinReward(meta, body, code);
   const summary = meta.summary ?? parseSummary(body);
 
   return { code, title, emoji, level, xp_reward, coin_reward, slug, summary, script_path: filePath };
