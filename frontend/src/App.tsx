@@ -19,8 +19,10 @@ import ShopPage from './pages/ShopPage';
 import Profile from './pages/Profile';
 import Certificate from './pages/Certificate';
 import NotFound from './pages/NotFound';
-import LeaderboardPage from './pages/LeaderboardPage';
-import QuestPage from './pages/QuestPage';
+import Leaderboard from './pages/Leaderboard';
+import Quests from './pages/Quests';
+import Courses from './pages/Courses';
+import CourseModule from './pages/CourseModule';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
@@ -50,14 +52,16 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="pricing" element={<Pricing />} />
-            <Route path="courses" element={<CourseCatalog />} />
-            <Route path="courses/:id" element={<CourseDetail />} />
-            <Route path="leaderboard" element={<LeaderboardPage />} />
+            <Route path="courses" element={<Courses />} />
+            <Route path="courses/:slug" element={<CourseModule />} />
+            <Route path="catalog" element={<CourseCatalog />} />
+            <Route path="catalog/:id" element={<CourseDetail />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
             <Route
               path="quests"
               element={
                 <PrivateRoute>
-                  <QuestPage />
+                  <Quests />
                 </PrivateRoute>
               }
             />

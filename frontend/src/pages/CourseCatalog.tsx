@@ -85,7 +85,7 @@ export default function CourseCatalog() {
                       </div>
                     ) : null}
                   </div>
-                  <Link to={`/courses/${course.id}`} className="block mt-2">
+                  <Link to={`/catalog/${course.id}`} className="block mt-2">
                     <p className="text-xl font-semibold text-gray-900 hover:text-primary transition-colors">
                       {course.title}
                     </p>
@@ -106,7 +106,7 @@ export default function CourseCatalog() {
                         ▶ Free preview
                       </Button>
                     </Link>
-                    <Link to={`/courses/${course.id}`}>
+                    <Link to={`/catalog/${course.id}`}>
                       <Button>View Course</Button>
                     </Link>
                   </div>

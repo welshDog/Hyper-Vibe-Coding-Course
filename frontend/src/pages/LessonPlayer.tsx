@@ -110,7 +110,7 @@ export default function LessonPlayer() {
         }
 
         if (!enrollment) {
-          navigate(`/courses/${courseId}`);
+          navigate(`/catalog/${courseId}`);
           return;
         }
       }
