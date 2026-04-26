@@ -27,6 +27,13 @@ test.describe('/courses/:slug — Module Detail', () => {
     fullName: 'Test User',
   };
 
+  const navigateClient = async (page: Page, path: string) => {
+    await page.evaluate((nextPath) => {
+      window.history.pushState({}, '', nextPath);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, path);
+  };
+
   const modules = [
     {
       id: 'mod-1',
@@ -44,11 +51,6 @@ test.describe('/courses/:slug — Module Detail', () => {
   ];
 
   const installSupabaseMocks = async (page: Page, options: { authenticated: boolean }) => {
-    await page.addInitScript(() => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    });
-
     await page.route('**/auth/v1/**', async (route) => {
       const request = route.request();
       const url = new URL(request.url());
@@ -217,6 +219,38 @@ test.describe('/courses/:slug — Module Detail', () => {
         return;
       }
 
+      if (url.pathname.startsWith('/rest/v1/enrollments')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rpc/get_or_create_referral_code')) {
+        await fulfillJson(route, 'REFTEST');
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/referrals')) {
+        if (method === 'HEAD') {
+          const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+          await route.fulfill({
+            status: 200,
+            headers: {
+              'access-control-allow-origin': origin,
+              'access-control-allow-credentials': 'true',
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+              'access-control-expose-headers': 'content-range',
+              'content-range': '0-0/0',
+              vary: 'origin',
+            },
+            body: '',
+          });
+          return;
+        }
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
       if (url.pathname.startsWith('/rest/v1/rifts')) {
         await fulfillJson(route, asObject ? null : []);
         return;
@@ -238,29 +272,34 @@ test.describe('/courses/:slug — Module Detail', () => {
     await page.fill('input[name="password"]', 'Password123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
   };
 
   test('loads module content without auth', async ({ page }) => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
+    await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start module/i }).click();
-    await expect(page.getByRole('heading')).toBeVisible();
+    await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /module 1/i })).toBeVisible();
   });
 
   test('shows login prompt for quiz when not authenticated', async ({ page }) => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
+    await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start module/i }).click();
+    await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible();
     const hasQuiz = await page.locator('[data-testid="quiz"]').isVisible().catch(() => false);
-    const hasLoginPrompt = await page.getByText(/log in/i).isVisible().catch(() => false);
+    const hasLoginPrompt = await page.getByText(/log in to take the quiz/i).isVisible().catch(() => false);
     expect(hasQuiz || hasLoginPrompt).toBeTruthy();
   });
 
   test('shows Mark as Complete button when authenticated', async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto('/courses');
+    await navigateClient(page, '/courses');
+    await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start module/i }).click();
     await expect(page.getByRole('button', { name: /mark as complete|completed/i })).toBeVisible();
   });
 });
-

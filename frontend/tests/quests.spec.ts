@@ -27,12 +27,14 @@ test.describe('/quests — Quest Tracker', () => {
     fullName: 'Test User',
   };
 
-  const installSupabaseMocks = async (page: Page, options: { authenticated: boolean }) => {
-    await page.addInitScript(() => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    });
+  const navigateClient = async (page: Page, path: string) => {
+    await page.evaluate((nextPath) => {
+      window.history.pushState({}, '', nextPath);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, path);
+  };
 
+  const installSupabaseMocks = async (page: Page, options: { authenticated: boolean }) => {
     await page.route('**/auth/v1/**', async (route) => {
       const request = route.request();
       const url = new URL(request.url());
@@ -160,6 +162,38 @@ test.describe('/quests — Quest Tracker', () => {
         return;
       }
 
+      if (url.pathname.startsWith('/rest/v1/enrollments')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rpc/get_or_create_referral_code')) {
+        await fulfillJson(route, 'REFTEST');
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/referrals')) {
+        if (method === 'HEAD') {
+          const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+          await route.fulfill({
+            status: 200,
+            headers: {
+              'access-control-allow-origin': origin,
+              'access-control-allow-credentials': 'true',
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+              'access-control-expose-headers': 'content-range',
+              'content-range': '0-0/0',
+              vary: 'origin',
+            },
+            body: '',
+          });
+          return;
+        }
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
       if (url.pathname.startsWith('/rest/v1/rifts')) {
         await fulfillJson(route, asObject ? null : []);
         return;
@@ -191,6 +225,7 @@ test.describe('/quests — Quest Tracker', () => {
     await page.fill('input[name="password"]', 'Password123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
   };
 
   test('redirects to login when not authenticated', async ({ page }) => {
@@ -201,13 +236,14 @@ test.describe('/quests — Quest Tracker', () => {
 
   test('shows quest page when authenticated', async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto('/quests');
+    await navigateClient(page, '/quests');
     await expect(page.getByRole('heading', { name: /quests/i })).toBeVisible();
   });
 
   test('shows empty state when no quests', async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto('/quests');
+    await navigateClient(page, '/quests');
+    await expect(page.getByRole('heading', { name: /quests/i })).toBeVisible();
     const hasQuests = (await page.locator('[data-testid="quest-item"]').count()) > 0;
     const hasEmpty = await page
       .getByText(/no active quests/i)
@@ -216,4 +252,3 @@ test.describe('/quests — Quest Tracker', () => {
     expect(hasQuests || hasEmpty).toBeTruthy();
   });
 });
-

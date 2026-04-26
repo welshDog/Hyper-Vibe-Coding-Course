@@ -179,6 +179,13 @@ test.describe('/courses — Module List Page', () => {
     fullName: 'Test User',
   };
 
+  const navigateClient = async (page: any, path: string) => {
+    await page.evaluate((nextPath: string) => {
+      window.history.pushState({}, '', nextPath);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, path);
+  };
+
   const modules = Array.from({ length: 12 }, (_, idx) => {
     const n = idx + 1;
     return {
@@ -197,11 +204,6 @@ test.describe('/courses — Module List Page', () => {
   });
 
   const installSupabaseMocks = async (page: any, options: { authenticated: boolean }) => {
-    await page.addInitScript(() => {
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-    });
-
     await page.route('**/auth/v1/**', async (route: Route) => {
       const request = route.request();
       const url = new URL(request.url());
@@ -350,6 +352,38 @@ test.describe('/courses — Module List Page', () => {
         return;
       }
 
+      if (url.pathname.startsWith('/rest/v1/enrollments')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rpc/get_or_create_referral_code')) {
+        await fulfillJson(route, 'REFTEST');
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/referrals')) {
+        if (method === 'HEAD') {
+          const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+          await route.fulfill({
+            status: 200,
+            headers: {
+              'access-control-allow-origin': origin,
+              'access-control-allow-credentials': 'true',
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+              'access-control-expose-headers': 'content-range',
+              'content-range': '0-0/0',
+              vary: 'origin',
+            },
+            body: '',
+          });
+          return;
+        }
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
       if (url.pathname.startsWith('/rest/v1/rifts')) {
         await fulfillJson(route, asObject ? null : []);
         return;
@@ -371,6 +405,7 @@ test.describe('/courses — Module List Page', () => {
     await page.fill('input[name="password"]', 'Password123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
   };
 
   test('loads course grid without auth', async ({ page }) => {
@@ -384,7 +419,7 @@ test.describe('/courses — Module List Page', () => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
     for (const code of ['M1', 'M2', 'M3', 'M12']) {
-      await expect(page.getByText(code)).toBeVisible();
+      await expect(page.getByText(code, { exact: true })).toBeVisible();
     }
   });
 
@@ -398,7 +433,7 @@ test.describe('/courses — Module List Page', () => {
 
   test('shows completion progress when authenticated', async ({ page }) => {
     await loginAsTestUser(page);
-    await page.goto('/courses');
+    await navigateClient(page, '/courses');
     await expect(page.getByText(/modules complete/i)).toBeVisible();
   });
 });
