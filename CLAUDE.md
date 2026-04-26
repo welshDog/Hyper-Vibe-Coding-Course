@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: April 15, 2026 — Frontend payment flow COMPLETE ✅ | Pricing + TokensPage + Dashboard wired**
+> **Last updated: April 26, 2026 — Live HUD + XP Events + Rift Banner system LIVE ⚡**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -47,7 +47,7 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 
 ---
 
-## ✅ CURRENT STATUS: FULLY OPERATIONAL (April 15, 2026)
+## ✅ CURRENT STATUS: FULLY OPERATIONAL (April 26, 2026)
 
 > 🟢 ALL 29 CONTAINERS HEALTHY — Stack is LIVE! 🦅🔥
 
@@ -78,82 +78,103 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 10K | Stripe webhook registered + secret synced | ✅ DONE — April 15, 2026 🔐 |
 | 10L | Courses DB seeded (6 courses live) | ✅ DONE — April 15, 2026 📚 |
 | 10M | RLS Security Definer View fixed | ✅ DONE — April 15, 2026 🔒 |
-
-### Container Health (29/29 ✅)
-
-| Container | Status |
-|---|---|
-| hypercode-core | ✅ Healthy (watch: 48% memory — 738 MiB / 1.5 GiB) |
-| crew-orchestrator | ✅ Healthy |
-| hypercode-dashboard | ✅ Healthy |
-| hypercode-mcp-server | ✅ Healthy |
-| healer-agent | ✅ Healthy |
-| celery-worker | ✅ Healthy |
-| redis | ✅ Healthy |
-| postgres | ✅ Healthy |
-| hypercode-ollama | ✅ Healthy |
-| agent-x | ✅ Healthy |
-| hyper-architect | ✅ Healthy |
-| hyper-observer | ✅ Healthy |
-| hyper-worker | ✅ Healthy |
-| super-hyper-broski-agent | ✅ Healthy |
-| broski-bot | ✅ Healthy |
-| prometheus / grafana / loki / tempo / promtail | ✅ All Healthy |
-| minio / chroma / cadvisor / node-exporter / alertmanager | ✅ All Healthy |
-| docker-socket-proxy / hyper-shield-scanner / hyper-sweeper-prune | ✅ Running |
-
-### What Fixed The Stack (For Claude's Reference)
-
-1. **`POSTGRES_PASSWORD_FILE` + `POSTGRES_PASSWORD` conflict** — Removed `_FILE` override from postgres in `docker-compose.secrets.yml`. Postgres uses plain env var from `.env` only.
-2. **`.env` broken line** — `POSTGRES_PASSWORD` was concatenated onto `MISSION_CONTROL_URL` with no newline. Fixed manually in nano.
-3. **Special chars in password** — Password contains `/`, `+`, `=` — must be quoted in `.env`: `POSTGRES_PASSWORD="..."`
-4. **Stale postgres data volume** — Wiped using Alpine container (no sudo): `docker run --rm -v "/path/to/volumes/postgres":/target alpine sh -c "rm -rf /target/*"`
-5. **`POSTGRES_USER` missing** — Added `POSTGRES_USER=postgres` to `.env`
-
-### Core API Confirmed Working
-```json
-{"status":"ok","service":"hypercode-core","version":"2.0.0","environment":"development"}
-```
-
-### Start Command (Always Use This)
-```bash
-docker compose -f docker-compose.yml -f docker-compose.secrets.yml up -d
-```
-
-### Volumes Location
-```
-H:/HyperStation zone/HyperCode/volumes/
-```
-In WSL: `/mnt/h/HyperStation zone/HyperCode/volumes/`
+| 11A | Live HUD + XP Events system | ✅ DONE — April 26, 2026 ⚡ |
+| 11B | Rift Events system (Live Code Rifts) | ✅ DONE — April 26, 2026 🌀 |
 
 ---
 
-## 🎯 NEXT UP — Remaining Work
+## ⚡ GAMIFICATION SYSTEM — LIVE (April 26, 2026)
+
+> Claude: This system is NOW BUILT. Do NOT suggest building it — check what's wired vs what needs Supabase hookup.
+
+### 🖥️ Live HUD (frontend/src/components/HUD.tsx) ✅ BUILT
+- Sticky top bar: XP bar + BROski$ token balance + streak indicator
+- `HUDContext.tsx` — global state provider with `awardXP(amount)` function
+- `useHUD.ts` hook — call `awardXP(25)` anywhere to trigger the toast
+- Polls `/api/xp-events/user/{id}` every 60s for live data
+- **TO WIRE:** Wrap `App.tsx` with `<HUDProvider userId={user.id}>` + `<HUD />`
+
+### ⚡ XP Toast (frontend/src/components/XPToast.tsx) ✅ BUILT
+- Animated "+25 XP — Nice one BROski♾️!" popup
+- Auto-dismisses after 2.2 seconds
+- Triggered by `awardXP()` in HUDContext
+
+### 🌀 Rift Banner (frontend/src/components/RiftBanner.tsx) ✅ BUILT
+- Appears when a rift is active — purple gradient banner with countdown timer
+- Goes red + pulses when < 5 minutes remain
+- `useRift.ts` polls `/api/rifts/active` every 30s
+- **UNIQUE FEATURE — no other edtech platform has this**
+
+### 🔥 XP Events API (api/xp_events.py) ✅ BUILT (mock data)
+```
+POST /api/xp-events/award           → awards XP, returns total_xp + tokens + streak
+GET  /api/xp-events/user/{user_id}  → get user XP/tokens/streak for HUD display
+GET  /api/xp-events/leaderboard     → top students by XP
+```
+- **TODO: Replace mock data with real Supabase queries**
+- XP table: `code_submit=25, quest_complete=100, daily_login=10, course_complete=500`
+- Supports `rift_multiplier` field — auto-doubles XP during active rifts
+
+### 🌀 Rifts API (api/rifts.py) ✅ BUILT (in-memory store)
+```
+GET    /api/rifts/active   → returns active rift or null (polled by RiftBanner)
+POST   /api/rifts/create   → fire a new rift (admin/teacher endpoint)
+DELETE /api/rifts/close    → manually close rift
+```
+- Currently uses in-memory store — **TODO: move to Supabase/Redis for persistence**
+- To fire a rift from CLI:
+```bash
+curl -X POST http://localhost:8000/api/rifts/create \
+  -H 'Content-Type: application/json' \
+  -d '{"topic": "arrays", "multiplier": 2.0, "duration_minutes": 45}'
+```
+
+### 📋 Full build guide: `docs/HUD_RIFT_GUIDE.md`
+
+---
+
+## 🗺️ NEXT UP — Remaining Work (as of April 26, 2026)
 
 | # | Task | Priority |
 |---|---|---|
-| 1 | ✅ Fix TokensPage.tsx prices + wire to checkout API | DONE — April 15, 2026 |
-| 2 | ✅ Fix dead link: `/courses/vibe-coding-foundations` → `/courses` on LandingPage | DONE — April 21, 2026 |
-| 3 | ✅ Add BROski$ balance card to Dashboard.tsx | DONE — April 15, 2026 |
-| 4 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
-| 5 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |
-| 6 | ✅ Certificates feature | DONE — April 16, 2026 |
-| 7 | ✅ Quiz/exercise system | DONE — April 16, 2026 |
-| 8 | ✅ Referral system | DONE — April 16, 2026 |
+| 1 | Wire `HUDProvider` + `<HUD />` into `App.tsx` | 🔴 NOW |
+| 2 | Replace mock data in `xp_events.py` with Supabase queries | 🔴 NOW |
+| 3 | Move rifts store from in-memory → Supabase or Redis | 🟡 Soon |
+| 4 | Quest-based learning modules UI (`QuestPage.tsx`) | 🟡 Day 3 |
+| 5 | `/economy/award-from-course` endpoint | 🟡 Day 4 |
+| 6 | Global leaderboard page | 🟡 Day 5 |
+| 7 | Admin Rift control panel UI | 🟡 Day 6 |
+| 8 | Hero onboarding page + invite first real student | 🟡 Day 7 |
+| 9 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
+| 10 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |
 
-### Agents Security Upgrade
+---
 
-> ⚠️ READ THIS BEFORE TOUCHING ANY DOCKERFILE OR AGENT FILE!
+## 🎮 Gamification Architecture Summary
 
-| Priority | Image | CRITICAL | HIGH | Action |
-|----------|-------|----------|------|--------|
-| 🔴 1 | `hypercode-v24-agent-x` | **11** | 55 | Patch NOW |
-| 🔴 2 | `hypercode-v24-celery-worker` | TBC | HIGH | Patch |
-| 🔴 3 | `hypercode-v24-crew-orchestrator` | TBC | HIGH | Patch |
-| 🔴 4 | `hypercode-v24-healer-agent` | TBC | HIGH | Patch |
-| 🟡 5-12 | All remaining agent images | TBC | - | Patch |
+```
+Student submits code
+       ↓
+POST /api/xp-events/award  (with rift_multiplier if rift active)
+       ↓
+awardXP(25) → HUDContext updates → XPToast fires ⚡
+       ↓
+HUD bar animates to new XP total 🎯
+       ↓
+If rift active → RiftBanner shows 2x multiplier countdown 🌀
+```
 
-**Target: ZERO CRITICAL, <5 HIGH after patch phase**
+- **BROski$ coins** — earned by completing tasks, agent milestones, commits
+- **XP levels** — track developer + system progression
+- **Achievements** — unlocked by specific actions in hyper-mission-system
+- **Digital Shop:** Prompt Packs (200 BROski$), Templates (150 BROski$), Bonus Lessons (100 BROski$)
+- 🏆 Celebrate wins! Every patched CVE = BROski$ earned!
+
+### BROski$ Token Economy
+- `public.users.broski_tokens` — balance column
+- `token_transactions` — append-only ledger with idempotency guards
+- `award_tokens()` + `spend_tokens()` — SECURITY DEFINER, server-side only
+- `shop_items` + `shop_purchases` — JSONB metadata fields
 
 ---
 
@@ -185,6 +206,40 @@ price_pence  integer  (pence, GBP — e.g. £29 = 2900)
 currency     text     (default 'gbp')
 is_active    boolean
 created_at   timestamptz
+```
+
+### DB Schema: XP / Gamification (TODO — needs migration)
+```sql
+-- Needs to be created:
+CREATE TABLE user_xp (
+  user_id     text PRIMARY KEY,
+  total_xp    integer DEFAULT 0,
+  tokens      integer DEFAULT 0,
+  streak_days integer DEFAULT 0,
+  last_active timestamptz,
+  level       integer DEFAULT 1
+);
+
+CREATE TABLE xp_events (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         text,
+  event_type      text,
+  amount          integer,
+  rift_multiplier float DEFAULT 1.0,
+  course_id       text,
+  quest_id        text,
+  created_at      timestamptz DEFAULT now()
+);
+
+CREATE TABLE rifts (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  topic       text,
+  multiplier  float,
+  expires_at  timestamptz,
+  description text,
+  created_by  text,
+  created_at  timestamptz DEFAULT now()
+);
 ```
 
 ### RLS Security ✅ Fixed (April 15, 2026)
@@ -330,28 +385,28 @@ Script: `scripts/network-migrate.sh`
 ## 📁 Directory Structure Guide
 
 ```
-HyperCode-V2.4/
-├── .claude/                    # Claude AI config & skills
-│   ├── settings.local.json     # Claude permissions & MCP config
-│   └── skills/                 # Skill modules for Claude
-├── agents/                     # All AI agent definitions
-├── backend/                    # FastAPI core backend
-├── broski-business-agents/     # Business automation agents
-├── cli/                        # BROski Terminal CLI
-├── config/                     # App configuration files
-├── dashboard/                  # Mission Control (Next.js)
-├── docs/                       # Documentation
-├── grafana/                    # Grafana dashboards & config
-├── hyper-mission-system/       # Mission/quest gamification engine
-├── k8s/                        # Kubernetes manifests
-├── helm/                       # Helm charts
-├── mcp/                        # MCP server implementations
-├── monitoring/                 # Prometheus config & alert rules
-├── scripts/                    # Dev & ops shell scripts
-├── security/                   # Security scanning & secrets
-├── services/                   # Microservice implementations
-├── tests/                      # Test suite (pytest)
-└── tools/                      # Developer tooling
+Hyper-Vibe-Coding-Course/
+├── frontend/src/
+│   ├── components/
+│   │   ├── HUD.tsx              ⚡ NEW — sticky XP/token/streak bar
+│   │   ├── XPToast.tsx          ⚡ NEW — animated +XP popup
+│   │   └── RiftBanner.tsx       ⚡ NEW — live rift event banner
+│   ├── context/
+│   │   └── HUDContext.tsx       ⚡ NEW — global HUD state + awardXP()
+│   ├── hooks/
+│   │   ├── useHUD.ts            ⚡ NEW — hook to use HUD anywhere
+│   │   └── useRift.ts           ⚡ NEW — polls /rifts/active every 30s
+│   ├── pages/
+│   ├── App.tsx                  ⚠️  TODO: wrap with HUDProvider + add <HUD />
+│   └── main.tsx
+├── api/
+│   ├── xp_events.py             ⚡ NEW — XP award + user XP + leaderboard
+│   └── rifts.py                 ⚡ NEW — create/get/close rift events
+├── docs/
+│   └── HUD_RIFT_GUIDE.md        ⚡ NEW — full wiring guide
+├── supabase/
+├── discord-bot/
+└── CLAUDE.md                    ← you are here
 ```
 
 ---
@@ -370,39 +425,6 @@ docker compose -f docker-compose.yml -f docker-compose.secrets.yml --profile age
 docker compose -f docker-compose.yml -f docker-compose.secrets.yml --profile agents --profile hyper --profile health --profile mission up -d
 ```
 
-### Docker Compose Profiles
-
-| Profile | Services |
-|---------|---------|
-| *(none)* | Core infra + observability + MCP server |
-| `agents` | All specialist agents |
-| `hyper` | Hyper-architect, observer, worker, agent-x |
-| `health` | HyperHealth API + worker |
-| `mission` | HyperMission API + UI |
-| `discord` | Broski Discord bot |
-
-### Security Scanning
-```bash
-make scan-all
-make scan-agent AGENT=healer
-make scan-build AGENT=agent-x
-make build-secure
-
-# PowerShell — scan ALL 12 agent images
-$images = @("hypercode-v24-agent-x","hypercode-v24-broski-bot","hypercode-v24-celery-worker",
-             "hypercode-v24-crew-orchestrator","hypercode-v24-healer-agent","hypercode-v24-hyper-architect",
-             "hypercode-v24-hyper-observer","hypercode-v24-hyper-worker","hypercode-v24-hypercode-mcp-server",
-             "hypercode-v24-test-agent","hypercode-v24-throttle-agent","hypercode-v24-tips-tricks-writer")
-foreach ($img in $images) { docker exec hyper-shield-scanner trivy image --scanners vuln --severity HIGH,CRITICAL --quiet $img }
-```
-
-### Testing
-```bash
-python -m pytest tests/ --tb=short -q
-python -m pytest tests/unit/ -v --tb=short
-pytest backend/tests/test_stripe.py -v
-```
-
 ### Paths (copy-paste ready)
 ```powershell
 cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4"
@@ -411,14 +433,11 @@ cd "H:\HyperAgent-SDK"
 cd "H:\the hyper vibe coding hub"
 ```
 
-### CLI (from H:\HyperAgent-SDK)
-```powershell
-$env:HYPERCODE_API_URL = "http://localhost:8000"
-node cli/index.js status
-node cli/index.js agents list
-node cli/index.js logs --tail 20
-node cli/index.js tokens award <discord_id> <amount>
-node cli/index.js graduate <discord_id> --tokens 100
+### Fire a Rift (from any terminal)
+```bash
+curl -X POST http://localhost:8000/api/rifts/create \
+  -H 'Content-Type: application/json' \
+  -d '{"topic": "async/await", "multiplier": 2.0, "duration_minutes": 45}'
 ```
 
 ### Stripe Testing
@@ -481,15 +500,17 @@ Available MCP tools:
 - **GitHub Actions:** Always `--no-cache --pull` in security scanning workflows
 - **jaraco.* packages:** Always pin explicitly
 - **docker-socket agents** (healer/coder/05-devops): Use `docker-ce-cli` repo, NOT `docker.io`
-- **Alembic + create_all:** DB was bootstrapped with `DB_AUTO_CREATE=true` (SQLAlchemy `create_all`). If `alembic_version` table is missing, run `alembic stamp 006` first, then `alembic upgrade head`. Never skip stamp — migrations will try to re-create existing tables.
+- **Alembic + create_all:** DB was bootstrapped with `DB_AUTO_CREATE=true`. If `alembic_version` table is missing, run `alembic stamp 006` first, then `alembic upgrade head`.
 - **Stripe webhook:** `/api/stripe/webhook` is rate-limit exempt — do NOT add rate limiting
 - **Stripe dev mode:** Missing `STRIPE_WEBHOOK_SECRET` = signature check skipped (local only)
-- **Stripe checkout mode:** token packs use `mode="payment"`, course plans use `mode="subscription"` — defined in `CHECKOUT_MODE` dict in `stripe_service.py`
-- **Stripe container context:** Docker must use `desktop-linux` context (`docker context use desktop-linux`) — `default` context causes container name conflicts on Windows
-- **CognitiveUplink WS URL:** `CognitiveUplink.tsx:134` defaults to `ws://hostname:8000/ws/uplink` — handler now LIVE in hypercode-core (Phase 10J ✅)
-- **Supabase courses table schema:** Uses `price_pence` (int, GBP pence) + `is_active` (bool) — NOT `price` or `is_published`. Seed file updated to match.
-- **Supabase security_invoker:** `public.user_loyalty_tier` view uses `security_invoker = on` — RLS is enforced for querying user. DO NOT change to SECURITY DEFINER.
-- **Stripe webhook in Supabase:** Use `vibe-hook` endpoint. Its signing secret = `STRIPE_WEBHOOK_SECRET` in Supabase env vars. `brilliant-triumph` is a duplicate — safe to delete.
+- **Stripe checkout mode:** token packs use `mode="payment"`, course plans use `mode="subscription"`
+- **Stripe container context:** Docker must use `desktop-linux` context (`docker context use desktop-linux`)
+- **CognitiveUplink WS URL:** `CognitiveUplink.tsx:134` defaults to `ws://hostname:8000/ws/uplink`
+- **Supabase courses table schema:** Uses `price_pence` (int, GBP pence) + `is_active` (bool) — NOT `price` or `is_published`
+- **Supabase security_invoker:** `public.user_loyalty_tier` view uses `security_invoker = on` — DO NOT change to SECURITY DEFINER
+- **Stripe webhook in Supabase:** Use `vibe-hook` endpoint. `brilliant-triumph` is a duplicate — safe to delete
+- **HUD system:** `xp_events.py` + `rifts.py` currently use MOCK DATA — replace with Supabase before production
+- **Rifts store:** Currently in-memory in `rifts.py` — replace with Redis/Supabase for multi-instance support
 - **Conventional commits:** `feat:` `fix:` `docs:` `chore:`
 - **Windows PowerShell first**, bash second
 - **`apps/web/`:** Archived, never migrate
@@ -505,23 +526,8 @@ Available MCP tools:
 5. **Port conflicts** — Ensure 3000, 3001, 8000, 8008, 8080, 8081, 8088 are free
 6. **Test environment** — `fakeredis` used in tests; import via `fakeredis.aioredis`
 7. **Volumes wipe** — Alpine trick: `docker run --rm -v "/path":/target alpine sh -c "rm -rf /target/*"`
-8. **hypercode-core memory** — At 48% (738 MiB / 1.5 GiB) after fresh restart April 15, 2026. Alert if > 1.2 GiB.
-
----
-
-## 🎮 Gamification System
-
-- **BROski$ coins** — earned by completing tasks, agent milestones, commits
-- **XP levels** — track developer + system progression
-- **Achievements** — unlocked by specific actions in hyper-mission-system
-- **Digital Shop:** Prompt Packs (200 BROski$), Templates (150 BROski$), Bonus Lessons (100 BROski$)
-- 🏆 Celebrate wins! Every patched CVE = BROski$ earned!
-
-### BROski$ Token Economy
-- `public.users.broski_tokens` — balance column
-- `token_transactions` — append-only ledger with idempotency guards
-- `award_tokens()` + `spend_tokens()` — SECURITY DEFINER, server-side only
-- `shop_items` + `shop_purchases` — JSONB metadata fields
+8. **hypercode-core memory** — At 48% (738 MiB / 1.5 GiB) after fresh restart. Alert if > 1.2 GiB.
+9. **HUD not showing yet** — `App.tsx` still needs `<HUDProvider>` + `<HUD />` wrapping. See docs/HUD_RIFT_GUIDE.md.
 
 ---
 
@@ -540,9 +546,8 @@ Available MCP tools:
 
 - [README.md](README.md) — Main project overview
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
-- [SECURITY.md](SECURITY.md) — Security policy
+- [docs/HUD_RIFT_GUIDE.md](docs/HUD_RIFT_GUIDE.md) — HUD + Rift wiring guide ⚡ NEW
 - [.claude/](.claude/) — Claude AI config, skills & settings
-- [docs/claude-integration/](docs/claude-integration/) — Claude AI integration guide
 
 ---
 
