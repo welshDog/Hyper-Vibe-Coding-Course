@@ -4,7 +4,7 @@
  * Writes directly to Supabase `rifts` table (admin RLS guards the insert).
  */
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 
 interface ActiveRift {
   id: string;
@@ -39,9 +39,16 @@ export default function AdminRiftPanel() {
   }
 
   useEffect(() => {
-    fetchActiveRift();
-    const interval = setInterval(fetchActiveRift, 15000);
-    return () => clearInterval(interval);
+    const timeoutId = window.setTimeout(() => {
+      void fetchActiveRift();
+    }, 0);
+    const intervalId = window.setInterval(() => {
+      void fetchActiveRift();
+    }, 15000);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
   }, []);
 
   async function openRift() {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabase';
 import { useHUD } from '../hooks/useHUD';
 import { useAuthStore } from '../context/auth';
 
@@ -22,7 +22,7 @@ interface CompleteResult {
 }
 
 export default function QuestPage() {
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const { awardXP } = useHUD();
   const [quests, setQuests] = useState<Quest[]>([]);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -65,6 +65,7 @@ export default function QuestPage() {
       const result = data as CompleteResult;
       const awarded = result.xp_awarded ?? xpReward;
       awardXP(awarded);
+      await refreshUser();
       setCompleted((prev) => new Set([...prev, questId]));
       const mult = result.rift_multiplier && result.rift_multiplier > 1
         ? ` (${result.rift_multiplier}x Rift!)` : '';

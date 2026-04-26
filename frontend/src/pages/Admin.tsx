@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
 import { cn } from '../lib/utils';
+import AdminRiftPanel from '../components/AdminRiftPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -220,6 +221,8 @@ export default function Admin() {
             sub="total held across all students — engagement proxy"
           />
         </div>
+
+        <AdminRiftPanel />
 
         {/* ── Waitlist ──────────────────────────────────────────────────── */}
         <section className="mb-12">

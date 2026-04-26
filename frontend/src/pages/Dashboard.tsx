@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { PlayCircle, Coins, Award, Copy, Check, Users } from 'lucide-react';
 
 type EnrolledCourse = Enrollment & {
-  courses: Course;
+  courses?: Course | null;
 };
 
 export default function Dashboard() {
@@ -160,18 +160,23 @@ export default function Dashboard() {
             <ul className="divide-y divide-gray-200">
               {enrollments.map((enrollment) => (
                 <li key={enrollment.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
+                  {(() => {
+                    const course = enrollment.courses ?? null;
+                    const courseTitle = course?.title ?? 'Course';
+                    const courseThumbnailUrl = course?.thumbnail_url ?? 'https://via.placeholder.com/150';
+                    return (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md overflow-hidden">
                         <img 
-                          src={enrollment.courses.thumbnail_url || 'https://via.placeholder.com/150'} 
-                          alt={enrollment.courses.title}
+                          src={courseThumbnailUrl}
+                          alt={courseTitle}
                           className="h-full w-full object-cover"
                         />
                       </div>
                       <div className="ml-4">
                         <h4 className="text-lg font-medium text-primary">
-                          {enrollment.courses.title}
+                          {courseTitle}
                         </h4>
                         <div className="mt-1 flex items-center">
                           <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
@@ -203,6 +208,8 @@ export default function Dashboard() {
                       </Link>
                     </div>
                   </div>
+                    );
+                  })()}
                 </li>
               ))}
             </ul>

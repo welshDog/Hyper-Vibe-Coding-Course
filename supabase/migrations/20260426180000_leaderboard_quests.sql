@@ -3,38 +3,32 @@
 -- Leaderboard public view + quests + user_quests tables
 -- ============================================================
 
--- 1. Public profiles view (safe leaderboard surface)
--- Exposes only display_name + avatar_url — never email/id directly
-CREATE OR REPLACE VIEW public.public_profiles
-WITH (security_invoker = on) AS
-SELECT
-  u.id          AS user_id,
-  u.display_name,
-  u.avatar_url
-FROM public.users u;
+-- 1. Leaderboard view (public read surface)
+-- NOTE: This view intentionally exposes no user_id/email — only safe display fields.
+-- In Supabase, views can bypass underlying table RLS unless security_invoker is enabled.
+-- We rely on that behavior here to allow a public leaderboard without relaxing RLS on
+-- public.users or public.user_xp.
+DROP VIEW IF EXISTS public.leaderboard;
 
--- 2. Leaderboard view — joins user_xp with public_profiles
-CREATE OR REPLACE VIEW public.leaderboard
-WITH (security_invoker = on) AS
+CREATE VIEW public.leaderboard AS
 SELECT
-  pp.display_name,
-  pp.avatar_url,
+  COALESCE(NULLIF(u.full_name, ''), 'Anonymous BROski') AS display_name,
+  NULL::text AS avatar_url,
   ux.total_xp,
   ux.level,
   ux.streak_days,
-  ux.tokens,
+  COALESCE(u.broski_tokens, 0) AS tokens,
   ROW_NUMBER() OVER (ORDER BY ux.total_xp DESC) AS rank
 FROM public.user_xp ux
-JOIN public.public_profiles pp ON pp.user_id = ux.user_id
+JOIN public.users u ON u.id = ux.user_id
 ORDER BY ux.total_xp DESC
 LIMIT 50;
 
--- 3. RLS: allow anyone (incl. anon) to SELECT from leaderboard view
 ALTER VIEW public.leaderboard OWNER TO postgres;
 GRANT SELECT ON public.leaderboard TO anon, authenticated;
-GRANT SELECT ON public.public_profiles TO anon, authenticated;
 
 -- 4. Admin INSERT/UPDATE on rifts (only role = 'admin')
+DROP POLICY IF EXISTS "admin_write_rifts" ON public.rifts;
 CREATE POLICY "admin_write_rifts"
   ON public.rifts
   FOR ALL
@@ -106,6 +100,7 @@ DECLARE
   v_rift_mult float := 1.0;
   v_active_rift rifts%ROWTYPE;
   v_final_xp integer;
+  v_token_award jsonb;
 BEGIN
   -- Check quest exists and is active
   SELECT * INTO v_quest FROM quests WHERE id = p_quest_id AND is_active = true;
@@ -124,7 +119,7 @@ BEGIN
   -- Check for active rift multiplier
   SELECT * INTO v_active_rift
   FROM rifts
-  WHERE expires_at > now()
+  WHERE is_closed = false AND expires_at > now()
   ORDER BY created_at DESC
   LIMIT 1;
   IF FOUND THEN v_rift_mult := v_active_rift.multiplier; END IF;
@@ -136,22 +131,37 @@ BEGIN
 
   -- Log XP event
   INSERT INTO xp_events (user_id, event_type, amount, rift_multiplier, quest_id)
-  VALUES (v_user_id::text, 'quest_complete', v_final_xp, v_rift_mult, p_quest_id::text);
+  VALUES (v_user_id, 'quest_complete', v_final_xp, v_rift_mult, p_quest_id::text);
 
   -- Upsert user_xp
-  INSERT INTO user_xp (user_id, total_xp, tokens)
-  VALUES (v_user_id::text, v_final_xp, v_quest.token_reward)
+  INSERT INTO user_xp (user_id, total_xp, level, last_active)
+  VALUES (
+    v_user_id,
+    v_final_xp,
+    GREATEST(1, FLOOR(v_final_xp / 500) + 1),
+    now()
+  )
   ON CONFLICT (user_id) DO UPDATE SET
     total_xp = user_xp.total_xp + v_final_xp,
-    tokens   = user_xp.tokens + v_quest.token_reward,
-    level    = GREATEST(1, FLOOR((user_xp.total_xp + v_final_xp) / 500) + 1),
+    level = GREATEST(1, FLOOR((user_xp.total_xp + v_final_xp) / 500) + 1),
     last_active = now();
+
+  IF v_quest.token_reward > 0 THEN
+    SELECT public.award_tokens(
+      v_user_id,
+      v_quest.token_reward,
+      'quest_reward',
+      NULL,
+      p_quest_id::text
+    ) INTO v_token_award;
+  END IF;
 
   RETURN jsonb_build_object(
     'success', true,
     'xp_awarded', v_final_xp,
     'tokens_awarded', v_quest.token_reward,
-    'rift_multiplier', v_rift_mult
+    'rift_multiplier', v_rift_mult,
+    'token_new_balance', COALESCE(v_token_award->>'new_balance', NULL)
   );
 END;
 $$;
