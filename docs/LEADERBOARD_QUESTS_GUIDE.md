@@ -8,19 +8,15 @@
 
 ### 1. Leaderboard (`/leaderboard`)
 - **Public page** — no auth required
-- Reads from `public.leaderboard` Supabase view
-- View joins `user_xp` + `public_profiles` (safe — no email/id exposed)
-- Shows: rank medal, avatar, display_name, level, streak, XP, BROski$
-- File: `frontend/src/pages/LeaderboardPage.tsx`
+- Reads from `leaderboard` Supabase view/table (top 50)
+- Shows: rank, avatar/initials, display name, level, streak, XP
+- File: `frontend/src/pages/Leaderboard.tsx`
 
-### 2. QuestPage (`/quests`)
+### 2. Quests (`/quests`)
 - **Private page** — auth required
-- Reads from `public.quests` (active only)
-- Reads user completions from `public.user_quests`
-- Complete button calls `complete_quest(quest_id)` RPC
-- RPC is atomic: inserts user_quests + xp_events + upserts user_xp + applies rift multiplier
-- After completion: calls `awardXP(n)` to update HUD live
-- File: `frontend/src/pages/QuestPage.tsx`
+- Reads the signed-in user’s quest rows from `public.user_quests` and joins `quests` for title/description
+- Shows an empty state when there are no active quests for the user
+- File: `frontend/src/pages/Quests.tsx`
 
 ### 3. Admin Rift Panel
 - **Embedded inside existing `Admin` page** (not a new route)
@@ -89,15 +85,9 @@ import AdminRiftPanel from '../components/AdminRiftPanel';
 
 | Component | data-testid |
 |---|---|
-| Leaderboard rows container | `leaderboard-rows` |
-| Quest row | `quest-row` |
-| Complete quest button | `complete-quest-{id}` |
-| Admin rift panel | `admin-rift-panel` |
-| Open rift button | `open-rift-btn` |
-| Close rift button | `close-rift-btn` |
-| Topic input | `rift-topic-input` |
-| Multiplier select | `rift-multiplier-select` |
-| Duration select | `rift-duration-select` |
+| Course module card (Courses) | `module-card` |
+| Quiz section (Module detail) | `quiz` |
+| Quest item row (Quests) | `quest-item` |
 
 ---
 
@@ -105,5 +95,9 @@ import AdminRiftPanel from '../components/AdminRiftPanel';
 
 - Add `<AdminRiftPanel />` to `Admin.tsx`
 - Add Leaderboard + Quests links to Navbar/Dashboard
-- Write Playwright tests (stubs for leaderboard + quest flow)
+- Playwright e2e tests added:
+  - `frontend/tests/courses.spec.ts`
+  - `frontend/tests/course-module.spec.ts`
+  - `frontend/tests/leaderboard.spec.ts`
+  - `frontend/tests/quests.spec.ts`
 - Module 1.1 content generation

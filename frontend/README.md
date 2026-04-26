@@ -28,5 +28,6 @@ VITE_STRIPE_PAYMENT_LINK_URL=
 npm run lint
 npm run build
 npx tsc -p tsconfig.json --noEmit
+npm test
 npm run test:e2e
 ```

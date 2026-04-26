@@ -15,7 +15,7 @@ npm run dev
 # -> http://localhost:5173
 
 # 3. Run Tests
-npx playwright test
+npm test
 ```
 
 ## 🧪 Testing Strategy
@@ -23,6 +23,10 @@ We use Playwright to test the *actual* rendered page, not just the HTML source.
 - **Location**: `frontend/tests/`
 - **Critical Flows**:
   - Landing page loads correctly
+  - Courses list loads (`/courses`)
+  - Module detail loads (`/courses/:slug`)
+  - Leaderboard loads (`/leaderboard`)
+  - Quests redirect + authenticated view (`/quests`)
   - CTA buttons link to Gumroad/Discord
   - Analytics script is present
   - Mobile viewport responsiveness

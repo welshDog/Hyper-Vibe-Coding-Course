@@ -68,6 +68,15 @@ VITE_STRIPE_PAYMENT_LINK_URL=
 
 ---
 
+## 🧪 Tests (E2E)
+
+```bash
+cd frontend
+npm test
+```
+
+---
+
 ## 🏗️ Full Stack Architecture
 
 ```
