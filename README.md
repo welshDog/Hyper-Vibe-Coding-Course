@@ -23,7 +23,7 @@ Stripe-powered token packs. Supabase backend. HyperCode AI engine. Vercel fronte
 
 | Service | Purpose |
 |---------|----------|
-| ⚡ [Vercel](https://vercel.com) | Next.js frontend hosting |
+| ⚡ [Vercel](https://vercel.com) | Frontend hosting + serverless routes |
 | 🗄️ [Supabase](https://supabase.com) | Database + Auth + Edge Functions |
 | 💳 [Stripe](https://stripe.com) | Token pack payments |
 | 🧠 [HyperCode V2.4](https://github.com/welshDog/HyperCode-V2.4) | AI backend engine |
@@ -47,18 +47,18 @@ Stripe-powered token packs. Supabase backend. HyperCode AI engine. Vercel fronte
 ```bash
 git clone https://github.com/welshDog/Hyper-Vibe-Coding-Course
 cd Hyper-Vibe-Coding-Course
-cp .env.local.example .env.local
+cd frontend
+cp .env.example .env
 npm install
 npm run dev
 ```
 
-### Required `.env.local` Variables
+### Required `frontend/.env` Variables
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-HYPERCODE_V24_URL=https://hypercode-v24-production.up.railway.app
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_HYPERCODE_API_URL=http://localhost:8000
 ```
 
 ---
@@ -66,7 +66,7 @@ HYPERCODE_V24_URL=https://hypercode-v24-production.up.railway.app
 ## 🏗️ Full Stack Architecture
 
 ```
-User visits → Vercel (Next.js)
+User visits → Vercel (Vite SPA)
 ↓ auth
 Supabase (Auth + DB)
 ↓ payment

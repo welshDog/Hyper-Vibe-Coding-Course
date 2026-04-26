@@ -2,6 +2,10 @@
 
 This folder contains Vercel Serverless Functions for the Hyper Vibe Coding Course.
 
+These routes run in Vercel (or via `vercel dev`). They are separate from:
+- The Vite frontend (`frontend/`, port 5173)
+- The HyperCode V2.4 backend (Stripe Checkout API, default `http://localhost:8000`)
+
 ## Routes
 
 ### `POST /api/broski-chat`
@@ -35,6 +39,8 @@ Chat with BROski — the AI mentor powered by Vercel AI Gateway → Claude.
 ## Test locally
 
 ```bash
+vercel dev
+
 curl -X POST http://localhost:3000/api/broski-chat \
   -H "Content-Type: application/json" \
   -d '{"prompt": "Explain React hooks in 3 bullet points"}'
