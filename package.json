@@ -12,6 +12,7 @@
     "test": "npm --prefix frontend test --",
     "test:frontend": "npm --prefix frontend test --",
     "test:api": "npm --prefix apps/api test --",
+    "sync-course": "npm --prefix agents/course-content-agent run sync-course --",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:api": "npm --prefix apps/api run dev",
     "build": "npm --prefix frontend run build"
