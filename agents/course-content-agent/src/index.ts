@@ -1,95 +1,117 @@
-import { upsertModuleFromScript } from './skills/upsert_module_from_script.js'
-import { scanScriptsFolder } from './skills/scan_scripts_folder.js'
-import { updateModuleStatus } from './skills/update_module_status.js'
+#!/usr/bin/env node
+/**
+ * index.ts — Course Content Agent CLI
+ * 
+ * Commands:
+ *   sync   — run sync_all (full pipeline)
+ *   scan   — scan scripts/ folder only
+ *   upsert — upsert a single module script
+ *   status — update module status flags
+ *   quiz   — generate quiz for a module
+ *   
+ * Usage:
+ *   npm run sync-course              — full sync
+ *   npm run sync-course -- scan      — scan only
+ *   npm run sync-course -- upsert --path scripts/M2-your-first-vibe.md
+ *   npm run sync-course -- status --module M2 --video recorded
+ *   npm run sync-course -- quiz --module M3
+ *   npm run sync-course -- sync --dry-run
+ */
 
-type Args = Record<string, string | boolean>
+import 'dotenv/config';
+import { scanScriptsFolder }        from './skills/scan_scripts_folder.js';
+import { upsertModuleFromScript }   from './skills/upsert_module_from_script.js';
+import { updateModuleStatus }       from './skills/update_module_status.js';
+import { generateQuizForModule }    from './skills/generate_quiz_for_module.js';
+import { syncAll }                  from './skills/sync_all.js';
+import { handlePushEvent }          from './skills/handle_push_event.js';
 
-const allowedStatuses = new Set(['draft', 'ready', 'recorded', 'edited', 'published'] as const)
-type AllowedStatus = 'draft' | 'ready' | 'recorded' | 'edited' | 'published'
+const args = process.argv.slice(2);
+const command = args[0] ?? 'sync';
 
-function parseStatus(value: unknown, flagName: string): AllowedStatus | undefined {
-  if (typeof value !== 'string') return undefined
-  if (allowedStatuses.has(value as AllowedStatus)) return value as AllowedStatus
-  throw new Error(
-    `Invalid ${flagName}. Allowed: draft|ready|recorded|edited|published (got: ${value})`
-  )
+function getArg(flag: string): string | undefined {
+  const i = args.indexOf(flag);
+  return i !== -1 ? args[i + 1] : undefined;
 }
 
-function parseArgs(argv: string[]): Args {
-  const args: Args = {}
-  for (let i = 0; i < argv.length; i += 1) {
-    const token = argv[i] ?? ''
-    if (!token.startsWith('--')) continue
-    const key = token.slice(2)
-    const next = argv[i + 1]
-    if (!next || next.startsWith('--')) {
-      args[key] = true
-      continue
-    }
-    args[key] = next
-    i += 1
-  }
-  return args
+function hasFlag(flag: string): boolean {
+  return args.includes(flag);
 }
 
-async function main(): Promise<void> {
-  const [command] = process.argv.slice(2)
-  const args = parseArgs(process.argv.slice(3))
+async function main() {
+  console.log(`🤖 Course Content Agent — command: ${command}\n`);
 
-  if (command === 'sync') {
-    const pathArg = args.path
-    if (typeof pathArg !== 'string') {
-      throw new Error('Missing required flag: --path <scripts/Mx-...md>')
-    }
-    const force = args.force === true
-    const result = await upsertModuleFromScript({ path: pathArg, force })
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-    return
-  }
-
-  if (command === 'scan') {
-    const force = args.force === true
-    const trigger = (args.trigger === 'cron' || args.trigger === 'webhook'
-      ? args.trigger
-      : 'manual') as 'cron' | 'manual' | 'webhook'
-    const result = await scanScriptsFolder({ force, trigger })
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-    return
-  }
-
-  if (command === 'status') {
-    const moduleCode = args.module
-    if (typeof moduleCode !== 'string') {
-      throw new Error('Missing required flag: --module <M1>')
+  switch (command) {
+    case 'sync': {
+      const dryRun = hasFlag('--dry-run');
+      await syncAll(dryRun);
+      break;
     }
 
-    const statusScript = parseStatus(args.script, '--script')
-    const statusVideo = parseStatus(args.video, '--video')
-    const statusPodcast = parseStatus(args.podcast, '--podcast')
+    case 'scan': {
+      const force = hasFlag('--force');
+      await scanScriptsFolder(force);
+      break;
+    }
 
-    const payload: {
-      module_code: string
-      status_script?: AllowedStatus
-      status_video?: AllowedStatus
-      status_podcast?: AllowedStatus
-    } = { module_code: moduleCode }
+    case 'upsert': {
+      const filePath = getArg('--path');
+      if (!filePath) {
+        console.error('❌ --path is required. Example: --path scripts/M2-your-first-vibe.md');
+        process.exit(1);
+      }
+      const force = hasFlag('--force');
+      const result = await upsertModuleFromScript(filePath, force);
+      console.log(result.changed ? '✅ Upserted.' : '⏩  No change.');
+      break;
+    }
 
-    if (statusScript) payload.status_script = statusScript
-    if (statusVideo) payload.status_video = statusVideo
-    if (statusPodcast) payload.status_podcast = statusPodcast
+    case 'status': {
+      const module_code = getArg('--module');
+      if (!module_code) {
+        console.error('❌ --module is required. Example: --module M2');
+        process.exit(1);
+      }
+      await updateModuleStatus({
+        module_code,
+        status_script:  getArg('--script')  as any,
+        status_video:   getArg('--video')   as any,
+        status_podcast: getArg('--podcast') as any,
+      });
+      break;
+    }
 
-    const result = await updateModuleStatus(payload)
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
-    return
+    case 'quiz': {
+      const module_code = getArg('--module');
+      if (!module_code) {
+        console.error('❌ --module is required. Example: --module M3');
+        process.exit(1);
+      }
+      const overwrite = hasFlag('--overwrite');
+      const result = await generateQuizForModule(module_code, overwrite);
+      console.log(`✅ Quiz ready: ${result.question_count} questions, v${result.version} (id: ${result.quiz_id})`);
+      break;
+    }
+
+    case 'webhook': {
+      // For testing: pipe a GitHub push payload via stdin
+      // echo '{"commits":[{"modified":["scripts/M2-your-first-vibe.md"]}]}' | npm run sync-course -- webhook
+      const chunks: Buffer[] = [];
+      for await (const chunk of process.stdin) chunks.push(chunk);
+      const payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      const result = await handlePushEvent(payload);
+      console.log('Webhook result:', JSON.stringify(result, null, 2));
+      break;
+    }
+
+    default:
+      console.error(`❌ Unknown command: ${command}`);
+      console.log('Available commands: sync | scan | upsert | status | quiz | webhook');
+      process.exit(1);
   }
-
-  throw new Error(
-    'Unknown command. Use: sync --path <file> [--force] | scan [--force] [--trigger cron|manual|webhook] | status --module <M1> [--script <status>] [--video <status>] [--podcast <status>]'
-  )
 }
 
-main().catch((err) => {
-  const message = err instanceof Error ? err.message : String(err)
-  process.stderr.write(`${message}\n`)
-  process.exitCode = 1
-})
+main().catch(err => {
+  console.error('💥 Fatal error:', err);
+  process.exit(1);
+});

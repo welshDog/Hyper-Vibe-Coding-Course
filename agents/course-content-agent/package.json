@@ -1,22 +1,29 @@
 {
   "name": "course-content-agent",
-  "private": true,
   "version": "0.1.0",
+  "description": "Hyper-Vibe Course Content Agent — keeps modules, quizzes and media status in sync",
+  "author": "welshDog",
+  "license": "AGPL-3.0",
   "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
-    "sync-course": "node dist/index.js sync",
-    "test": "npm run build && node --test dist/tests/*.test.js"
+    "build":        "tsc",
+    "dev":          "tsx src/index.ts",
+    "sync-course":  "tsx src/index.ts",
+    "test":         "node --experimental-vm-modules node_modules/.bin/jest",
+    "lint":         "eslint src/**/*.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.99.1"
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@supabase/supabase-js": "^2.47.0",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "typescript": "^5.9.3"
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3",
+    "jest": "^29.7.0",
+    "@jest/globals": "^29.7.0",
+    "ts-jest": "^29.1.2"
   }
 }

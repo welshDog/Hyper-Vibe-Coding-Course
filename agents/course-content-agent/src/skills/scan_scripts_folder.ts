@@ -1,91 +1,65 @@
-import { readdir } from 'node:fs/promises'
-import path from 'node:path'
-import { getOptionalEnv, getRequiredEnv } from '../tools/env.js'
-import { createServiceRoleClient } from '../tools/supabase.js'
-import { upsertModuleFromScript } from './upsert_module_from_script.js'
+/**
+ * scan_scripts_folder.ts
+ * Walk SCRIPTS_DIR for M*.md files → upsert changed ones → write hv_agent_runs audit row.
+ */
+import * as fs from 'fs';
+import * as path from 'path';
+import { getSupabaseClient } from '../tools/supabase.js';
+import { upsertModuleFromScript } from './upsert_module_from_script.js';
 
-export type ScanScriptsFolderInput = {
-  force?: boolean
-  trigger?: 'cron' | 'manual' | 'webhook'
+export interface ScanResult {
+  scanned: number;
+  changed: number;
+  errors: Array<{ file: string; error: string }>;
+  duration_ms: number;
 }
 
-export type ScanScriptsFolderOutput = {
-  scanned: number
-  changed: number
-  errors: Array<{ path: string; message: string }>
-}
+export async function scanScriptsFolder(force = false): Promise<ScanResult> {
+  const scriptsDir = process.env.SCRIPTS_DIR ?? 'scripts';
+  const startMs = Date.now();
+  const errors: Array<{ file: string; error: string }> = [];
 
-async function listModuleMarkdownFiles(rootDir: string): Promise<string[]> {
-  const results: string[] = []
-  const stack: string[] = [rootDir]
-
-  while (stack.length > 0) {
-    const current = stack.pop()
-    if (!current) continue
-
-    const entries = await readdir(current, { withFileTypes: true })
-    for (const entry of entries) {
-      const fullPath = path.join(current, entry.name)
-      if (entry.isDirectory()) {
-        stack.push(fullPath)
-        continue
-      }
-      if (!entry.isFile()) continue
-      if (!/^M\d{1,2}.*\.md$/i.test(entry.name)) continue
-      results.push(fullPath)
-    }
+  if (!fs.existsSync(scriptsDir)) {
+    throw new Error(`Scripts directory not found: ${path.resolve(scriptsDir)}`);
   }
 
-  results.sort((a, b) => a.localeCompare(b))
-  return results
-}
+  const files = fs.readdirSync(scriptsDir)
+    .filter(f => /^M\d{1,2}[\-_.].+\.md$/i.test(f))
+    .sort();
 
-export async function scanScriptsFolder(
-  input: ScanScriptsFolderInput
-): Promise<ScanScriptsFolderOutput> {
-  const scriptsDirEnv = getOptionalEnv('SCRIPTS_DIR') ?? 'scripts'
-  const scriptsDir = path.isAbsolute(scriptsDirEnv)
-    ? scriptsDirEnv
-    : path.resolve(process.cwd(), scriptsDirEnv)
+  console.log(`🔍 Scanning ${files.length} module script(s) in ${scriptsDir}/`);
 
-  const supabase = createServiceRoleClient()
-  const trigger = input.trigger ?? 'manual'
-
-  const startedAt = Date.now()
-  const files = await listModuleMarkdownFiles(scriptsDir)
-
-  let changed = 0
-  const errors: Array<{ path: string; message: string }> = []
-
-  for (const filePath of files) {
+  let changed = 0;
+  for (const file of files) {
+    const filePath = path.join(scriptsDir, file).replace(/\\/g, '/');
     try {
-      const payload: { path: string; force?: boolean } = { path: filePath }
-      if (typeof input.force === 'boolean') payload.force = input.force
-      const result = await upsertModuleFromScript(payload)
-      if (result.changed) changed += 1
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      errors.push({ path: filePath, message })
+      const result = await upsertModuleFromScript(filePath, force);
+      if (result.changed) changed++;
+      else console.log(`⏩  [${filePath}] no change — skipped`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`❌  [${filePath}] ${msg}`);
+      errors.push({ file: filePath, error: msg });
     }
   }
 
-  const durationMs = Date.now() - startedAt
+  const duration_ms = Date.now() - startMs;
 
-  const repoName = getRequiredEnv('GITHUB_REPO')
-  const runPayload = {
-    trigger,
-    modules_scanned: files.length,
-    modules_changed: changed,
-    quizzes_written: 0,
-    errors: errors.length > 0 ? { repo: repoName, errors } : null,
-    duration_ms: durationMs
+  // Write audit row
+  try {
+    const supabase = getSupabaseClient();
+    await supabase.from('hv_agent_runs').insert({
+      trigger:          'manual',
+      modules_scanned:  files.length,
+      modules_changed:  changed,
+      quizzes_written:  0,
+      errors:           errors.length > 0 ? errors : null,
+      duration_ms,
+    });
+  } catch (auditErr) {
+    console.warn('Audit log write failed (non-fatal):', auditErr);
   }
 
-  const runResult = await supabase.from('hv_agent_runs').insert(runPayload)
-  if (runResult.error) {
-    const message = runResult.error.message
-    errors.push({ path: 'hv_agent_runs', message })
-  }
-
-  return { scanned: files.length, changed, errors }
+  console.log(`✨ Scan complete — ${files.length} scanned, ${changed} changed, ${errors.length} errors (${duration_ms}ms)`);
+  return { scanned: files.length, changed, errors, duration_ms };
 }

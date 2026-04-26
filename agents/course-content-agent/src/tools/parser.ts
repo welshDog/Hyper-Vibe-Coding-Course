@@ -1,79 +1,144 @@
-export type ParsedModuleScript = {
-  h1Raw?: string
-  title?: string
-  emoji?: string
-  summary?: string
+/**
+ * parser.ts — Markdown module script parser
+ * Extracts: code, title, emoji, level, xp_reward, coin_reward, slug, summary
+ * Handles both frontmatter YAML and H1-based parsing
+ */
+
+export interface ModuleMeta {
+  code: string;         // 'M2'
+  title: string;        // 'Your First Vibe'
+  emoji: string;        // '🌱'
+  level: string;        // 'Beginner'
+  xp_reward: number;
+  coin_reward: number;
+  slug: string;         // 'your-first-vibe'
+  summary: string | null;
+  script_path: string;
 }
 
-function cleanH1(h1Line: string): { title?: string; emoji?: string } {
-  const raw = h1Line.replace(/^#\s+/, '').trim()
-  if (raw.length === 0) return {}
+const LEVEL_MAP: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+  'hyper-pro': 'Hyper-Pro',
+  elite: 'Elite',
+};
 
-  const match = raw.match(/^([^\p{L}\p{N}]{1,4})\s+(.*)$/u)
-  if (match && match[2] && match[2].trim().length > 0) {
-    const emoji = match[1]?.trim()
-    const title = match[2].trim()
-    return emoji ? { emoji, title } : { title }
+const XP_MAP: Record<string, number> = {
+  M1: 30, M2: 50, M3: 30, M4: 40, M5: 50,
+  M6: 75, M7: 70, M8: 70, M9: 80, M10: 80,
+  M11: 150, M12: 100,
+};
+
+const COIN_MAP: Record<string, number> = {
+  M1: 10, M2: 20, M3: 10, M4: 15, M5: 20,
+  M6: 30, M7: 25, M8: 25, M9: 35, M10: 35,
+  M11: 100, M12: 50,
+};
+
+/** Extract emoji from start of a string if present */
+function extractEmoji(str: string): { emoji: string; text: string } {
+  const emojiMatch = str.match(/^([\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}][\s]?)/u);
+  if (emojiMatch) {
+    return { emoji: emojiMatch[1].trim(), text: str.replace(emojiMatch[1], '').trim() };
   }
-
-  return { title: raw }
+  return { emoji: '📦', text: str.trim() };
 }
 
-function extractSummaryFromWhatYoullLearn(lines: string[]): string | undefined {
-  const headingRe = /^##\s+what you[’']ll learn\b/i
-  const startIndex = lines.findIndex((line) => headingRe.test(line.trim()))
-  if (startIndex === -1) return undefined
-
-  const collected: string[] = []
-  for (let i = startIndex + 1; i < lines.length; i += 1) {
-    const line = lines[i] ?? ''
-    if (/^#{1,6}\s+/.test(line.trim())) break
-    const trimmed = line.trim()
-    if (trimmed.length === 0) continue
-    collected.push(trimmed.replace(/^[-*]\s+/, '').trim())
-    if (collected.length >= 6) break
-  }
-
-  if (collected.length === 0) return undefined
-  return collected.join(' ')
+/** Convert title text to slug */
+export function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 }
 
-function extractFirstParagraph(lines: string[], h1Index: number): string | undefined {
-  const collected: string[] = []
-  for (let i = h1Index + 1; i < lines.length; i += 1) {
-    const line = lines[i] ?? ''
-    const trimmed = line.trim()
-    if (trimmed.length === 0) {
-      if (collected.length > 0) break
-      continue
-    }
-    if (/^#{1,6}\s+/.test(trimmed)) break
-    collected.push(trimmed)
-    if (collected.join(' ').length > 240) break
-  }
-  const paragraph = collected.join(' ').trim()
-  return paragraph.length > 0 ? paragraph : undefined
+/** Parse module code from file path or frontmatter */
+function parseCode(filePath: string, frontmatter: Record<string, string>): string {
+  if (frontmatter.code) return frontmatter.code.toUpperCase();
+  const match = filePath.match(/[/\\](M\d{1,2})[\-_.]/i);
+  if (match) return match[1].toUpperCase();
+  const baseMatch = filePath.match(/^(M\d{1,2})[\-_.]/i);
+  if (baseMatch) return baseMatch[1].toUpperCase();
+  throw new Error(`Cannot determine module code from path: ${filePath}`);
 }
 
-export function parseModuleScript(markdown: string): ParsedModuleScript {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
-  const h1Index = lines.findIndex((line) => line.trim().startsWith('# '))
+/** Parse optional YAML-lite frontmatter (--- block at top of file) */
+function parseFrontmatter(content: string): { meta: Record<string, string>; body: string } {
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/m);
+  if (!fmMatch) return { meta: {}, body: content };
 
-  const parsed: ParsedModuleScript = {}
+  const meta: Record<string, string> = {};
+  fmMatch[1].split('\n').forEach(line => {
+    const [k, ...v] = line.split(':');
+    if (k && v.length) meta[k.trim()] = v.join(':').trim();
+  });
+  return { meta, body: fmMatch[2] };
+}
 
-  if (h1Index !== -1) {
-    const h1Line = lines[h1Index]?.trim() ?? ''
-    parsed.h1Raw = h1Line
-    const { emoji, title } = cleanH1(h1Line)
-    if (emoji) parsed.emoji = emoji
-    if (title) parsed.title = title
+/** Extract the first H1 line */
+function parseH1(body: string): string | null {
+  const match = body.match(/^#\s+(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
+/** Extract summary: first paragraph after the H1 that isn't a badge/header */
+function parseSummary(body: string): string | null {
+  const lines = body.split('\n');
+  let pastH1 = false;
+  const paragraphLines: string[] = [];
+
+  for (const line of lines) {
+    if (!pastH1 && line.startsWith('# ')) { pastH1 = true; continue; }
+    if (!pastH1) continue;
+    if (line.startsWith('#') || line.startsWith('**Level') || line.startsWith('**Earn')) continue;
+    if (line.trim() === '') { if (paragraphLines.length > 0) break; continue; }
+    paragraphLines.push(line.trim());
+    if (paragraphLines.length >= 3) break;
   }
 
-  const summary =
-    extractSummaryFromWhatYoullLearn(lines) ??
-    (h1Index !== -1 ? extractFirstParagraph(lines, h1Index) : undefined)
+  return paragraphLines.length > 0 ? paragraphLines.join(' ') : null;
+}
 
-  if (summary) parsed.summary = summary
+/** Parse level from frontmatter or body text */
+function parseLevel(meta: Record<string, string>, body: string, code: string): string {
+  if (meta.level) {
+    const found = LEVEL_MAP[meta.level.toLowerCase()];
+    if (found) return found;
+  }
+  const levelMatch = body.match(/\*\*Level:\*\*\s*([\w\-]+)/i);
+  if (levelMatch) {
+    const found = LEVEL_MAP[levelMatch[1].toLowerCase()];
+    if (found) return found;
+  }
+  // Fallback by module number
+  const num = parseInt(code.replace('M', ''));
+  if (num <= 3) return 'Beginner';
+  if (num <= 5) return 'Intermediate';
+  if (num <= 8) return 'Advanced';
+  if (num <= 10) return 'Hyper-Pro';
+  return 'Elite';
+}
 
-  return parsed
+/**
+ * Main parser entry point.
+ * @param content Raw markdown file content
+ * @param filePath Relative path e.g. 'scripts/M2-your-first-vibe.md'
+ */
+export function parseModuleScript(content: string, filePath: string): ModuleMeta {
+  const { meta, body } = parseFrontmatter(content);
+
+  const code = parseCode(filePath, meta);
+  const h1 = parseH1(body) ?? meta.title ?? code;
+  const { emoji, text: titleText } = extractEmoji(h1);
+  const title = meta.title ?? titleText;
+  const slug = meta.slug ?? toSlug(titleText);
+  const level = parseLevel(meta, body, code);
+  const xp_reward = meta.xp_reward ? parseInt(meta.xp_reward) : (XP_MAP[code] ?? 30);
+  const coin_reward = meta.coin_reward ? parseInt(meta.coin_reward) : (COIN_MAP[code] ?? 10);
+  const summary = meta.summary ?? parseSummary(body);
+
+  return { code, title, emoji, level, xp_reward, coin_reward, slug, summary, script_path: filePath };
 }
