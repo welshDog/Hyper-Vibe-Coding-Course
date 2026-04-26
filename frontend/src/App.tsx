@@ -19,6 +19,8 @@ import ShopPage from './pages/ShopPage';
 import Profile from './pages/Profile';
 import Certificate from './pages/Certificate';
 import NotFound from './pages/NotFound';
+import LeaderboardPage from './pages/LeaderboardPage';
+import QuestPage from './pages/QuestPage';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
@@ -50,6 +52,15 @@ function App() {
             <Route path="pricing" element={<Pricing />} />
             <Route path="courses" element={<CourseCatalog />} />
             <Route path="courses/:id" element={<CourseDetail />} />
+            <Route path="leaderboard" element={<LeaderboardPage />} />
+            <Route
+              path="quests"
+              element={
+                <PrivateRoute>
+                  <QuestPage />
+                </PrivateRoute>
+              }
+            />
             <Route 
               path="dashboard" 
               element={
