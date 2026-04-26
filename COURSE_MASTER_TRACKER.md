@@ -15,7 +15,7 @@
 | 🛠️ Tech Platform (Supabase + Stripe + Auth) | - | ✅ LIVE | - |
 | 💰 BROski$ Token Economy | - | ✅ LIVE | - |
 | 🔧 CI / Docker / API blockers | 3 | ✅ ALL FIXED | 0 |
-| 🧪 E2E Test Suite (Playwright) | 33 | ✅ 33/33 GREEN | 0 |
+| 🧪 E2E Test Suite (Playwright) | 72 | ✅ 72/72 GREEN | 0 |
 
 ---
 
@@ -31,7 +31,7 @@
 - CI fixed: Playwright runs inside `frontend/` ✅ ← April 26
 - Docker: `apps/api/Dockerfile` + `package.json` created ✅ ← April 26
 - Root `npm test` working ✅ ← April 26
-- **Playwright E2E: 33/33 passing — chromium + firefox + webkit ✅ ← April 26**
+- **Playwright E2E: 72/72 passing — chromium + firefox + webkit ✅ ← April 26**
 - **`npm run lint` clean ✅ ← April 26**
 - **`npx tsc --noEmit` clean ✅ ← April 26**
 
@@ -63,14 +63,11 @@
 
 ## 🎓 LESSON MODULES — Scripts via NotebookLM
 
-> **HOW TO USE:** Open notebooklm.google.com → Upload these 5 docs:
-> 1. `LEARN-TO-HYPER-VIBE-CODE.md`
-> 2. `VIDEO_SCRIPTS.md`
-> 3. `HyperCode-Comprehensive-Research-Report.pdf`
-> 4. `Overview-and-Vision.pdf`
-> 5. `hypercode-blurbs.md`
+> **HOW TO USE:** Open notebooklm.google.com → Upload the 50-source list in:
+> `docs/course/NOTEBOOKLM_MASTER_PROMPT_PACK.md`
 >
-> Then paste each module prompt from `NOTEBOOKLM_PROMPT_PACK.md` one at a time.
+> Then paste each module prompt from:
+> `docs/course/NOTEBOOKLM_MASTER_PROMPT_PACK.md`
 
 | # | Module Title | Topic | NotebookLM Prompt | Script | Recorded | Edited | Published |
 |---|-------------|-------|-------------------|--------|----------|--------|-----------|

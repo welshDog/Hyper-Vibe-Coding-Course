@@ -1,12 +1,79 @@
 # 🧠 HYPER VIBE CODING COURSE — NotebookLM Master Prompt Pack
 ## Built by welshDog | Hyper-Vibe Ecosystem | April 2026
 
-> Upload these source docs to NotebookLM before running prompts:
-> 1. HyperCode Comprehensive Research Report PDF
-> 2. Overview-and-Vision PDF
-> 3. The-Hyper-Vibe-Courses-info.md
-> 4. COURSE_MASTER_TRACKER.md
-> 5. Any CLAUDE.md / CLAUDE_CONTEXT.md files
+> NotebookLM supports up to 50 sources. Load the full repo context first, then run the prompts.
+
+## 📂 Recommended NotebookLM Sources (50)
+
+### 🔴 Tier 1 — Must Have (Core Course + Platform)
+| # | File | Why |
+|---|------|-----|
+| 1 | `README.md` | Product overview + current platform features |
+| 2 | `docs/PRD.md` | Current product direction |
+| 3 | `docs/ARCHITECTURE.md` | System overview and relationships |
+| 4 | `docs/TECHNICAL-ARCHITECTURE.md` | Implementation details and technical constraints |
+| 5 | `docs/DEVELOPMENT.md` | Local dev + testing conventions |
+| 6 | `docs/DEPLOYMENT-RUNBOOK.md` | Deploy mental model + operational notes |
+| 7 | `docs/BROSKI_XP_SYSTEM.md` | XP + BROski$ economy rules |
+| 8 | `docs/HUD_RIFT_GUIDE.md` | HUD + rift concepts and mechanics |
+| 9 | `docs/LEADERBOARD_QUESTS_GUIDE.md` | Leaderboard/Quests behavior + UI expectations |
+| 10 | `COURSE_MASTER_TRACKER.md` | What’s done vs what’s next (production tracker) |
+
+### 🟡 Tier 2 — Strategy + Process + Launch
+| # | File | Why |
+|---|------|-----|
+| 11 | `docs/TOOLS_GUIDE.md` | Tooling conventions and workflow |
+| 12 | `docs/DEVLOG.md` | Timeline context + decisions |
+| 13 | `docs/BUG_TRACKER.md` | Known issues to avoid repeating |
+| 14 | `docs/guides/START_HERE.md` | Onboarding voice + flow |
+| 15 | `docs/guides/QUICK_START.md` | Fast onboarding steps |
+| 16 | `docs/guides/INDEX.md` | Doc map for cross-references |
+| 17 | `docs/guides/GAMIFICATION.md` | Gamification voice + mechanics |
+| 18 | `docs/guides/DAILY_RITUAL.md` | ADHD-friendly cadence + tone |
+| 19 | `docs/guides/LAUNCH_PLAN.md` | Launch planning |
+| 20 | `docs/guides/LAUNCH-PLAN.md` | Alternate/legacy launch plan |
+| 21 | `docs/guides/MARKETING.md` | Marketing voice + angles |
+| 22 | `docs/guides/EMAIL_SEQUENCES.md` | Copy style + CTA patterns |
+| 23 | `docs/guides/09_IMMEDIATE_ACTION_PLAN.md` | Execution order |
+| 24 | `docs/guides/07_WEEK_BY_WEEK_SPRINT.md` | Sprint rhythm |
+| 25 | `docs/guides/08_GITHUB_ISSUES_TEMPLATE.md` | How we structure tasks |
+| 26 | `docs/guides/10_LAUNCH_ISSUES.md` | Common launch blockers |
+| 27 | `docs/guides/11_PHASE_3_HYPERCODE_V24_ACCESS_PROVISION.md` | Access + provisioning context |
+| 28 | `docs/guides/CLAUDE_SKILLS_HYPER_VIBE.md` | Voice + skill conventions |
+
+### 🟢 Tier 3 — Module Seeds (Your existing skeleton scripts)
+| # | File | Why |
+|---|------|-----|
+| 29 | `scripts/M1-designing-your-focus-zone.md` | Existing module seed |
+| 30 | `scripts/M2-your-first-vibe.md` | Existing module seed |
+| 31 | `scripts/M3-prompt-like-a-pro.md` | Existing module seed |
+| 32 | `scripts/M4-build-your-first-app.md` | Existing module seed |
+| 33 | `scripts/M5-full-stack-vibe.md` | Existing module seed |
+| 34 | `scripts/M6-hypercode-the-hyper-way.md` | Existing module seed |
+| 35 | `scripts/M7-agent-architecture-manifests.md` | Existing module seed |
+| 36 | `scripts/M8-soulful-entities-ai-pets.md` | Existing module seed |
+| 37 | `scripts/M9-web3-integration-on-chain.md` | Existing module seed |
+| 38 | `scripts/M10-security-sre-observability.md` | Existing module seed |
+| 39 | `scripts/M11-ship-scale-graduate.md` | Existing module seed |
+| 40 | `scripts/M12-ride-or-die-contribution.md` | Existing module seed |
+
+### 🔵 Tier 4 — Curriculum + Supporting Packs
+| # | File | Why |
+|---|------|-----|
+| 41 | `docs/course/CURRICULUM.md` | Canon structure + learning progression |
+| 42 | `docs/course/week-1/README.md` | Week 1 expectations |
+| 43 | `docs/course/week-1/SCOPE_MODULE_1.1.md` | Module scope detail |
+| 44 | `docs/course/week-2/README.md` | Week 2 expectations |
+| 45 | `docs/course/week-3/README.md` | Week 3 expectations |
+| 46 | `docs/course/week-4/README.md` | Week 4 expectations |
+
+### 🟣 Tier 5 — Deep Reference (Idea Data)
+| # | File | Why |
+|---|------|-----|
+| 47 | `Hyper Vibe Course  Idea Data/Hyper vibe Course NoteBook/NOTEBOOKLM_PROMPT_PACK.md` | Alternate prompt pack + voice reference |
+| 48 | `Hyper Vibe Course  Idea Data/Hyper vibe Course NoteBook/COURSE_VIDEO_TRACKER.md` | Video pipeline + publishing plan |
+| 49 | `Hyper Vibe Course  Idea Data/Hyper vibe Course PDF/HyperCode_V2.4.pdf` | Core HyperCode context |
+| 50 | `Hyper Vibe Course  Idea Data/Hyper vibe Course PDF/Hyperfocus_Mission_Control.pdf` | Mission Control reference |
 
 ---
 
@@ -14,10 +81,10 @@
 
 1. Go to [notebooklm.google.com](https://notebooklm.google.com)
 2. Create a new Notebook called "Hyper Vibe Course Builder"
-3. Upload ALL 5 source docs above
+3. Upload the source docs above (up to 50)
 4. Copy-paste each MODULE PROMPT below
 5. Save output as `scripts/M[N]-[slug].md` in your repo
-6. Repeat for all 10 modules — ~15 mins per module
+6. Repeat for every module you want to generate
 
 ---
 
