@@ -18,17 +18,34 @@ export async function upsertModuleFromScript(
   filePath: string,
   force = false
 ): Promise<UpsertResult> {
-  const absPath = path.resolve(filePath);
+  const candidatePaths: string[] = [];
+  const repoRoot = path.resolve(process.cwd(), '..', '..');
 
-  if (!fs.existsSync(absPath)) {
-    throw new Error(`Script file not found: ${absPath}`);
+  if (path.isAbsolute(filePath)) {
+    candidatePaths.push(filePath);
+  } else {
+    candidatePaths.push(path.resolve(process.cwd(), filePath));
+    candidatePaths.push(path.resolve(repoRoot, filePath));
+
+    const scriptsDir = process.env.SCRIPTS_DIR ?? '../../scripts';
+    candidatePaths.push(path.resolve(process.cwd(), scriptsDir, filePath));
+    candidatePaths.push(path.resolve(process.cwd(), scriptsDir, path.basename(filePath)));
+  }
+
+  const absPath = candidatePaths.find(p => fs.existsSync(p));
+  if (!absPath) {
+    throw new Error(
+      `Script file not found. Tried:\n` +
+      candidatePaths.map(p => `- ${p}`).join('\n')
+    );
   }
 
   const content = fs.readFileSync(absPath, 'utf8');
   const hash = sha256(content);
 
   // Use relative path as script_path (portable across machines)
-  const relativePath = filePath.replace(/\\/g, '/');
+  const relativeToRepoRoot = path.relative(repoRoot, absPath);
+  const relativePath = (relativeToRepoRoot.startsWith('..') ? filePath : relativeToRepoRoot).replace(/\\/g, '/');
 
   const meta = parseModuleScript(content, relativePath);
 

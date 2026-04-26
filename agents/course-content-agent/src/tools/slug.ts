@@ -1,4 +1,6 @@
 export function slugifyTitle(input: string): string {
+  if (input.trim().length === 0) return ''
+
   const withoutEmojiPrefix = input
     .replace(/^\s*[^\p{L}\p{N}]+/u, '')
     .trim()

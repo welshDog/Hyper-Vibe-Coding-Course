@@ -15,7 +15,7 @@ export interface ScanResult {
 }
 
 export async function scanScriptsFolder(force = false): Promise<ScanResult> {
-  const scriptsDir = process.env.SCRIPTS_DIR ?? 'scripts';
+  const scriptsDir = process.env.SCRIPTS_DIR ?? '../../scripts';
   const startMs = Date.now();
   const errors: Array<{ file: string; error: string }> = [];
 

@@ -18,13 +18,33 @@
  *   npm run sync-course -- sync --dry-run
  */
 
-import 'dotenv/config';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import dotenv from 'dotenv';
 import { scanScriptsFolder }        from './skills/scan_scripts_folder.js';
 import { upsertModuleFromScript }   from './skills/upsert_module_from_script.js';
 import { updateModuleStatus }       from './skills/update_module_status.js';
 import { generateQuizForModule }    from './skills/generate_quiz_for_module.js';
 import { syncAll }                  from './skills/sync_all.js';
 import { handlePushEvent }          from './skills/handle_push_event.js';
+
+function loadEnv(): void {
+  const cwd = process.cwd();
+  const repoRoot = path.resolve(cwd, '..', '..');
+
+  const candidateEnvFiles = [
+    path.resolve(cwd, '.env'),
+    path.resolve(repoRoot, '.env'),
+  ];
+
+  for (const envPath of candidateEnvFiles) {
+    if (!fs.existsSync(envPath)) continue;
+    dotenv.config({ path: envPath });
+    return;
+  }
+}
+
+loadEnv();
 
 const args = process.argv.slice(2);
 const command = args[0] ?? 'sync';
@@ -36,6 +56,13 @@ function getArg(flag: string): string | undefined {
 
 function hasFlag(flag: string): boolean {
   return args.includes(flag);
+}
+
+function getPositionalArg(index: number): string | undefined {
+  const value = args[index];
+  if (!value) return undefined;
+  if (value.startsWith('--')) return undefined;
+  return value;
 }
 
 async function main() {
@@ -55,9 +82,9 @@ async function main() {
     }
 
     case 'upsert': {
-      const filePath = getArg('--path');
+      const filePath = getArg('--path') ?? getPositionalArg(1);
       if (!filePath) {
-        console.error('❌ --path is required. Example: --path scripts/M2-your-first-vibe.md');
+        console.error('❌ --path is required. Example: --path scripts/M2-your-first-vibe.md (or pass as positional arg)');
         process.exit(1);
       }
       const force = hasFlag('--force');
@@ -67,9 +94,9 @@ async function main() {
     }
 
     case 'status': {
-      const module_code = getArg('--module');
+      const module_code = getArg('--module') ?? getPositionalArg(1);
       if (!module_code) {
-        console.error('❌ --module is required. Example: --module M2');
+        console.error('❌ --module is required. Example: --module M2 (or pass as positional arg)');
         process.exit(1);
       }
       await updateModuleStatus({
@@ -82,9 +109,9 @@ async function main() {
     }
 
     case 'quiz': {
-      const module_code = getArg('--module');
+      const module_code = getArg('--module') ?? getPositionalArg(1);
       if (!module_code) {
-        console.error('❌ --module is required. Example: --module M3');
+        console.error('❌ --module is required. Example: --module M3 (or pass as positional arg)');
         process.exit(1);
       }
       const overwrite = hasFlag('--overwrite');
