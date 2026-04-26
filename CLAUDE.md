@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: April 26, 2026 — Live HUD + XP Events + Rift Banner system LIVE ⚡**
+> **Last updated: April 26, 2026 — Gamification FULLY LIVE — Supabase wired, HUD in App.tsx, 33 E2E tests passing ✅**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -49,7 +49,7 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 
 ## ✅ CURRENT STATUS: FULLY OPERATIONAL (April 26, 2026)
 
-> 🟢 ALL 29 CONTAINERS HEALTHY — Stack is LIVE! 🦅🔥
+> 🟢 ALL 29 CONTAINERS HEALTHY + GAMIFICATION STACK LIVE 🦅🔥
 
 ### 🏆 Full Phase Roadmap
 
@@ -78,58 +78,88 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 10K | Stripe webhook registered + secret synced | ✅ DONE — April 15, 2026 🔐 |
 | 10L | Courses DB seeded (6 courses live) | ✅ DONE — April 15, 2026 📚 |
 | 10M | RLS Security Definer View fixed | ✅ DONE — April 15, 2026 🔒 |
-| 11A | Live HUD + XP Events system | ✅ DONE — April 26, 2026 ⚡ |
-| 11B | Rift Events system (Live Code Rifts) | ✅ DONE — April 26, 2026 🌀 |
+| 11A | Live HUD components (HUD.tsx, XPToast, RiftBanner) | ✅ DONE — April 26, 2026 ⚡ |
+| 11B | Rift Events system (RiftBanner + api/rifts.py) | ✅ DONE — April 26, 2026 🌀 |
+| 11C | Supabase gamification schema (migration) | ✅ DONE — April 26, 2026 🗄️ |
+| 11D | HUD wired into App.tsx + Layout.tsx (auth-aware) | ✅ DONE — April 26, 2026 🔗 |
+| 11E | HUDContext + useRift.ts reading from Supabase directly | ✅ DONE — April 26, 2026 ⚡ |
+| 11F | E2E tests updated + all 33 passing | ✅ DONE — April 26, 2026 🧪 |
 
 ---
 
-## ⚡ GAMIFICATION SYSTEM — LIVE (April 26, 2026)
+## ⚡ GAMIFICATION SYSTEM — FULLY LIVE (April 26, 2026)
 
-> Claude: This system is NOW BUILT. Do NOT suggest building it — check what's wired vs what needs Supabase hookup.
+> Claude: This system is COMPLETELY BUILT AND WIRED. **Do NOT suggest building or re-wiring it.**
+> Frontend reads from Supabase directly — the legacy FastAPI endpoints are mock-only backups.
 
-### 🖥️ Live HUD (frontend/src/components/HUD.tsx) ✅ BUILT
-- Sticky top bar: XP bar + BROski$ token balance + streak indicator
-- `HUDContext.tsx` — global state provider with `awardXP(amount)` function
-- `useHUD.ts` hook — call `awardXP(25)` anywhere to trigger the toast
-- Polls `/api/xp-events/user/{id}` every 60s for live data
-- **TO WIRE:** Wrap `App.tsx` with `<HUDProvider userId={user.id}>` + `<HUD />`
+### Architecture (Final State)
 
-### ⚡ XP Toast (frontend/src/components/XPToast.tsx) ✅ BUILT
-- Animated "+25 XP — Nice one BROski♾️!" popup
-- Auto-dismisses after 2.2 seconds
-- Triggered by `awardXP()` in HUDContext
-
-### 🌀 Rift Banner (frontend/src/components/RiftBanner.tsx) ✅ BUILT
-- Appears when a rift is active — purple gradient banner with countdown timer
-- Goes red + pulses when < 5 minutes remain
-- `useRift.ts` polls `/api/rifts/active` every 30s
-- **UNIQUE FEATURE — no other edtech platform has this**
-
-### 🔥 XP Events API (api/xp_events.py) ✅ BUILT (mock data)
 ```
-POST /api/xp-events/award           → awards XP, returns total_xp + tokens + streak
-GET  /api/xp-events/user/{user_id}  → get user XP/tokens/streak for HUD display
-GET  /api/xp-events/leaderboard     → top students by XP
+Student submits code
+       ↓
+awardXP(25) called → HUDContext updates immediately → XPToast fires ⚡
+       ↓
+Supabase `user_xp` table updated via direct client call
+       ↓
+HUD bar animates to new XP total 🎯
+       ↓
+If rift active in `rifts` table → RiftBanner shows 2x multiplier countdown 🌀
 ```
-- **TODO: Replace mock data with real Supabase queries**
-- XP table: `code_submit=25, quest_complete=100, daily_login=10, course_complete=500`
-- Supports `rift_multiplier` field — auto-doubles XP during active rifts
 
-### 🌀 Rifts API (api/rifts.py) ✅ BUILT (in-memory store)
+### Files (ALL COMPLETE ✅)
+
+| File | Status | Notes |
+|------|--------|-------|
+| `frontend/src/components/HUD.tsx` | ✅ LIVE | Sticky top bar: XP bar + BROski$ + streak |
+| `frontend/src/components/XPToast.tsx` | ✅ LIVE | Animated +XP popup, auto-dismisses 2.2s |
+| `frontend/src/components/RiftBanner.tsx` | ✅ LIVE | Purple banner + countdown, red panic at <5 min |
+| `frontend/src/components/Layout.tsx` | ✅ UPDATED | HUD inserted into app shell |
+| `frontend/src/context/HUDContext.tsx` | ✅ LIVE | Reads from Supabase `user_xp` table directly |
+| `frontend/src/hooks/useHUD.ts` | ✅ LIVE | Hook — call `awardXP(n)` anywhere |
+| `frontend/src/hooks/useRift.ts` | ✅ LIVE | Reads from Supabase `rifts` table directly |
+| `frontend/src/App.tsx` | ✅ UPDATED | Wrapped with `<HUDProvider userId={user.id}>` |
+| `api/xp_events.py` | ⚠️ MOCK ONLY | Legacy FastAPI endpoints — frontend no longer calls these |
+| `api/rifts.py` | ⚠️ MOCK ONLY | Legacy in-memory store — frontend uses Supabase directly |
+| `supabase/migrations/20260426162000_xp_rifts_gamification.sql` | ✅ LIVE | `user_xp` + `xp_events` + `rifts` tables + RLS |
+| `frontend/tests/auth.spec.ts` | ✅ UPDATED | Mocks Supabase REST for `user_xp` + `rifts` + `broski_tokens` |
+| `frontend/tests/learning.spec.ts` | ✅ UPDATED | Asserts HUD presence on learning pages |
+
+### Supabase Tables (LIVE as of April 26, 2026)
+
+```sql
+-- ALL THREE TABLES CREATED via migration 20260426162000
+user_xp     — user_id PK, total_xp, tokens, streak_days, last_active, level
+xp_events   — log of every XP award (event_type, amount, rift_multiplier, course_id, quest_id)
+rifts       — active/past rifts (topic, multiplier, expires_at, description, created_by)
 ```
-GET    /api/rifts/active   → returns active rift or null (polled by RiftBanner)
-POST   /api/rifts/create   → fire a new rift (admin/teacher endpoint)
-DELETE /api/rifts/close    → manually close rift
+
+- RLS policies applied to all 3 tables ✅
+- Indices on `user_id` + `expires_at` for performance ✅
+
+### XP Award Values
 ```
-- Currently uses in-memory store — **TODO: move to Supabase/Redis for persistence**
-- To fire a rift from CLI:
+code_submit      = 25 XP
+quest_complete   = 100 XP
+daily_login      = 10 XP
+course_complete  = 500 XP
+first_attempt    = 15 XP
+```
+All values support `rift_multiplier` — double during active rifts.
+
+### Fire a Rift (admin CLI — still works via legacy endpoint OR direct Supabase insert)
 ```bash
 curl -X POST http://localhost:8000/api/rifts/create \
   -H 'Content-Type: application/json' \
-  -d '{"topic": "arrays", "multiplier": 2.0, "duration_minutes": 45}'
+  -d '{"topic": "async/await", "multiplier": 2.0, "duration_minutes": 45}'
 ```
 
-### 📋 Full build guide: `docs/HUD_RIFT_GUIDE.md`
+### Test Results (April 26, 2026)
+```
+Frontend lint:  ✅ 1 warning only (react-refresh in HUDContext.tsx — acceptable)
+Frontend build: ✅ clean TypeScript compile
+E2E tests:      ✅ 33 passed
+API tests:      ✅ (no API tests yet — by design)
+```
 
 ---
 
@@ -137,44 +167,48 @@ curl -X POST http://localhost:8000/api/rifts/create \
 
 | # | Task | Priority |
 |---|---|---|
-| 1 | Wire `HUDProvider` + `<HUD />` into `App.tsx` | 🔴 NOW |
-| 2 | Replace mock data in `xp_events.py` with Supabase queries | 🔴 NOW |
-| 3 | Move rifts store from in-memory → Supabase or Redis | 🟡 Soon |
-| 4 | Quest-based learning modules UI (`QuestPage.tsx`) | 🟡 Day 3 |
-| 5 | `/economy/award-from-course` endpoint | 🟡 Day 4 |
-| 6 | Global leaderboard page | 🟡 Day 5 |
-| 7 | Admin Rift control panel UI | 🟡 Day 6 |
-| 8 | Hero onboarding page + invite first real student | 🟡 Day 7 |
-| 9 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
-| 10 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |
+| 1 | Quest-based learning modules UI (`QuestPage.tsx`) | 🔴 Day 3 |
+| 2 | `/economy/award-from-course` endpoint | 🔴 Day 4 |
+| 3 | Global leaderboard page | 🟡 Day 5 |
+| 4 | Admin Rift control panel UI | 🟡 Day 6 |
+| 5 | Hero onboarding page + invite first real student | 🟡 Day 7 |
+| 6 | Record Module 1.1 + add YouTube URL to DB | 🟡 Ongoing |
+| 7 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch job |
+| 8 | Promote `api/rifts.py` from mock to production (Supabase-backed admin endpoint) | 🟡 Soon |
 
 ---
 
-## 🎮 Gamification Architecture Summary
+## 📁 Directory Structure Guide
 
 ```
-Student submits code
-       ↓
-POST /api/xp-events/award  (with rift_multiplier if rift active)
-       ↓
-awardXP(25) → HUDContext updates → XPToast fires ⚡
-       ↓
-HUD bar animates to new XP total 🎯
-       ↓
-If rift active → RiftBanner shows 2x multiplier countdown 🌀
+Hyper-Vibe-Coding-Course/
+├── frontend/src/
+│   ├── components/
+│   │   ├── HUD.tsx              ✅ LIVE — sticky XP/token/streak bar
+│   │   ├── XPToast.tsx          ✅ LIVE — animated +XP popup
+│   │   ├── RiftBanner.tsx       ✅ LIVE — live rift event banner
+│   │   └── Layout.tsx           ✅ UPDATED — HUD in app shell
+│   ├── context/
+│   │   └── HUDContext.tsx       ✅ LIVE — Supabase-wired state + awardXP()
+│   ├── hooks/
+│   │   ├── useHUD.ts            ✅ LIVE — hook to use HUD anywhere
+│   │   └── useRift.ts           ✅ LIVE — reads Supabase `rifts` table
+│   ├── pages/
+│   ├── App.tsx              ✅ UPDATED — HUDProvider wrapping auth user
+│   └── main.tsx
+├── api/
+│   ├── xp_events.py         ⚠️ MOCK — legacy, not called by frontend
+│   └── rifts.py             ⚠️ MOCK — legacy, admin CLI use only
+├── supabase/
+│   └── migrations/
+│       └── 20260426162000_xp_rifts_gamification.sql  ✅ APPLIED
+├── docs/
+│   └── HUD_RIFT_GUIDE.md    ✅ Full wiring guide
+├── frontend/tests/
+│   ├── auth.spec.ts         ✅ UPDATED — mocks Supabase user_xp + rifts
+│   └── learning.spec.ts     ✅ UPDATED — asserts HUD presence
+└── CLAUDE.md              ← you are here
 ```
-
-- **BROski$ coins** — earned by completing tasks, agent milestones, commits
-- **XP levels** — track developer + system progression
-- **Achievements** — unlocked by specific actions in hyper-mission-system
-- **Digital Shop:** Prompt Packs (200 BROski$), Templates (150 BROski$), Bonus Lessons (100 BROski$)
-- 🏆 Celebrate wins! Every patched CVE = BROski$ earned!
-
-### BROski$ Token Economy
-- `public.users.broski_tokens` — balance column
-- `token_transactions` — append-only ledger with idempotency guards
-- `award_tokens()` + `spend_tokens()` — SECURITY DEFINER, server-side only
-- `shop_items` + `shop_purchases` — JSONB metadata fields
 
 ---
 
@@ -195,8 +229,6 @@ If rift active → RiftBanner shows 2x multiplier countdown 🌀
 | Ship Your First Full Stack Thing | ship-full-stack | £49.99 |
 
 ### DB Schema: courses table
-
-Actual columns (NOT the old seed file schema — that was wrong):
 ```
 id           text (PK)
 title        text
@@ -208,10 +240,10 @@ is_active    boolean
 created_at   timestamptz
 ```
 
-### DB Schema: XP / Gamification (TODO — needs migration)
+### DB Schema: XP / Gamification ✅ LIVE (April 26, 2026)
 ```sql
--- Needs to be created:
-CREATE TABLE user_xp (
+-- migration: supabase/migrations/20260426162000_xp_rifts_gamification.sql
+user_xp(
   user_id     text PRIMARY KEY,
   total_xp    integer DEFAULT 0,
   tokens      integer DEFAULT 0,
@@ -220,7 +252,7 @@ CREATE TABLE user_xp (
   level       integer DEFAULT 1
 );
 
-CREATE TABLE xp_events (
+xp_events(
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         text,
   event_type      text,
@@ -231,7 +263,7 @@ CREATE TABLE xp_events (
   created_at      timestamptz DEFAULT now()
 );
 
-CREATE TABLE rifts (
+rifts(
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   topic       text,
   multiplier  float,
@@ -242,19 +274,15 @@ CREATE TABLE rifts (
 );
 ```
 
-### RLS Security ✅ Fixed (April 15, 2026)
-
-- `public.user_loyalty_tier` view — recreated with `security_invoker = on` (was SECURITY DEFINER, could bypass RLS)
-- `users` table — RLS ON ✅ | policies: read own profile, update own profile
-- `token_transactions` table — RLS ON ✅ | policy: read own transactions
+### RLS Security ✅
+- `user_loyalty_tier` view — `security_invoker = on` (DO NOT change to SECURITY DEFINER)
+- `users`, `token_transactions`, `user_xp`, `xp_events`, `rifts` — all RLS ON ✅
 
 ### Stripe Webhook
-
-- Webhook name: `vibe-hook` (keep this one — has delivery history)
+- Webhook name: `vibe-hook` (keep this one)
 - Endpoint: `https://yhtmuibgdnxhbgboajhc.supabase.co/functions/v1/stripe-webhook`
 - Events: `checkout.session.completed`, `charge.refunded`
-- `STRIPE_WEBHOOK_SECRET` in Supabase env → must match `vibe-hook` signing secret
-- `brilliant-triumph` webhook = duplicate, can be deleted
+- `brilliant-triumph` webhook = duplicate, safe to delete
 
 ---
 
@@ -267,221 +295,45 @@ GET  /api/stripe/plans       → lists available plan names
 POST /api/stripe/webhook     → handles Stripe events (signature verified)
 ```
 
-### Webhook events handled (Phase 10G — DB writes LIVE)
-- `checkout.session.completed` → saves to `payments` table + awards BROski$ + sets subscription tier
-- `customer.subscription.deleted` → subscription cancelled
-- `invoice.payment_failed` → payment failed warning
-- `customer.subscription.updated` → status change logged
-
-### 🔒 Stripe Prices — LOCKED (April 14, 2026)
-
-| Pack | Price | Tokens | Stripe Product |
-|---|---|---|---|
-| Starter | £5 GBP | 200 | BROski Starter Pack |
-| Builder | £15 GBP | 800 | BROski Builder Pack |
-| Hyper | £35 GBP | 2500 | BROski Hyper Pack |
+### Stripe Prices — LOCKED
+| Pack | Price | Tokens |
+|---|---|---|
+| Starter | £5 | 200 BROski$ |
+| Builder | £15 | 800 BROski$ |
+| Hyper | £35 | 2500 BROski$ |
 
 | Tier | Monthly | Yearly |
 |---|---|---|
 | Pro | £9/mo | £90/yr |
 | Hyper | £29/mo | £290/yr |
 
-### .env keys to add
-```env
-STRIPE_SECRET_KEY=sk_live_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-STRIPE_PRICE_STARTER=price_xxx
-STRIPE_PRICE_BUILDER=price_xxx
-STRIPE_PRICE_HYPER=price_xxx
-STRIPE_PRICE_PRO_MONTHLY=price_xxx
-STRIPE_PRICE_PRO_YEARLY=price_xxx
-STRIPE_PRICE_HYPER_MONTHLY=price_xxx
-STRIPE_PRICE_HYPER_YEARLY=price_xxx
-```
-
 ---
 
 ## 🔐 Security Standards — MANDATORY FOR ALL DOCKERFILES
 
-> Claude: ALWAYS apply these rules when writing or editing any Dockerfile.
-
-### Rule 1 — Base Image
+### Rule 1 — Base Image: `FROM python:3.11-slim` (NEVER `python:latest`)
+### Rule 2 — OS Package Hardening
 ```dockerfile
-# ✅ CORRECT
-FROM python:3.11-slim
-
-# ❌ NEVER
-FROM python:latest
+RUN apt-get update --allow-releaseinfo-change && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends ca-certificates curl libexpat1 openssl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ```
-
-### Rule 2 — OS Package Hardening (Part A — every runtime stage)
-```dockerfile
-RUN apt-get update --allow-releaseinfo-change && \
-    apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates curl libexpat1 openssl && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-```
-
-### Rule 3 — Pip Tool Hardening (Part B — every Python runtime stage)
+### Rule 3 — Pip Hardening
 ```dockerfile
 RUN pip install --upgrade --no-cache-dir \
     "pip==26.0.1" "setuptools>=80.0.0" "wheel==0.46.2" \
     "jaraco.context>=6.0.0" "jaraco.functools>=4.1.0" "jaraco.text>=4.0.0"
 ```
-
-### Rule 4 — Never Run as Root
-```dockerfile
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-USER appuser
-```
-
-### Rule 5 — Security Scanner
-- Tool: **Trivy** (running as `hyper-shield-scanner` container)
-- Scan: `docker exec hyper-shield-scanner trivy image --scanners vuln --severity HIGH,CRITICAL --quiet <image>`
-- Target: **ZERO CRITICAL, <5 HIGH**
-
----
-
-## 🧬 Architecture Overview
-
-### Core Services
-
-| Service | Port | Purpose |
-|---|---|---|
-| HyperCode Core (FastAPI) | 8000 | Main backend, memory hub, integrations |
-| Agent X (Meta-Architect) | 8080 | Designs & deploys AI agents autonomously |
-| Crew Orchestrator | 8081 | Agent lifecycle + task execution |
-| Healer Agent | 8008 | Self-healing — monitors & auto-recovers services |
-| BROski Terminal (CLI UI) | 3000 | Custom terminal interface |
-| Mission Control Dashboard | 8088 | Next.js/React real-time dashboard |
-| Grafana Observability | 3001 | Metrics, alerts, dashboards |
-
-### Infrastructure Stack
-- **Containers:** Docker Compose (multi-file strategy) — 29 containers active ✅
-- **Databases:** Redis (pub/sub + cache) + PostgreSQL (persistent memory)
-- **Observability:** Prometheus + Grafana + custom health reports
-- **Secrets:** `docker-compose.secrets.yml` + `./secrets/*.txt` files
-- **Networks:** 5 isolated networks — `data-net` + `obs-net` are `internal: true`
-- **MCP Gateway:** Full Model Context Protocol server integration
-- **Kubernetes:** Helm charts in `k8s/` and `helm/` (scale path)
-- **Security:** Trivy scanner (`hyper-shield-scanner`) — scans all 12 agent images
-- **Stripe:** LIVE at `/api/stripe/checkout` — Phase 10F ✅
-- **Supabase:** Edge Functions live — `stripe-webhook` + `shop-purchase` ✅
-
-### 🌐 Phase 10B — Docker Network Topology
-
-- `frontend-net` (bridge, internet) — dashboard, mission-ui, mcp-server
-- `backend-net` (bridge, internet) — hypercode-core (bridges all layers)
-- `agents-net` (bridge, internet) — all AI agents, LLM API calls
-- `data-net` (bridge, **internal: true**) — redis + postgres + minio + chroma
-- `obs-net` (bridge, **internal: true**) — prometheus, grafana, loki, tempo, promtail
-
-Script: `scripts/network-migrate.sh`
-
----
-
-## 📁 Directory Structure Guide
-
-```
-Hyper-Vibe-Coding-Course/
-├── frontend/src/
-│   ├── components/
-│   │   ├── HUD.tsx              ⚡ NEW — sticky XP/token/streak bar
-│   │   ├── XPToast.tsx          ⚡ NEW — animated +XP popup
-│   │   └── RiftBanner.tsx       ⚡ NEW — live rift event banner
-│   ├── context/
-│   │   └── HUDContext.tsx       ⚡ NEW — global HUD state + awardXP()
-│   ├── hooks/
-│   │   ├── useHUD.ts            ⚡ NEW — hook to use HUD anywhere
-│   │   └── useRift.ts           ⚡ NEW — polls /rifts/active every 30s
-│   ├── pages/
-│   ├── App.tsx                  ⚠️  TODO: wrap with HUDProvider + add <HUD />
-│   └── main.tsx
-├── api/
-│   ├── xp_events.py             ⚡ NEW — XP award + user XP + leaderboard
-│   └── rifts.py                 ⚡ NEW — create/get/close rift events
-├── docs/
-│   └── HUD_RIFT_GUIDE.md        ⚡ NEW — full wiring guide
-├── supabase/
-├── discord-bot/
-└── CLAUDE.md                    ← you are here
-```
-
----
-
-## 🛠️ Development Commands
-
-### Quick Start
-```bash
-# Core stack
-docker compose -f docker-compose.yml -f docker-compose.secrets.yml up -d
-
-# Core + all agents
-docker compose -f docker-compose.yml -f docker-compose.secrets.yml --profile agents up -d
-
-# Full stack
-docker compose -f docker-compose.yml -f docker-compose.secrets.yml --profile agents --profile hyper --profile health --profile mission up -d
-```
-
-### Paths (copy-paste ready)
-```powershell
-cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4"
-cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4\backend"
-cd "H:\HyperAgent-SDK"
-cd "H:\the hyper vibe coding hub"
-```
-
-### Fire a Rift (from any terminal)
-```bash
-curl -X POST http://localhost:8000/api/rifts/create \
-  -H 'Content-Type: application/json' \
-  -d '{"topic": "async/await", "multiplier": 2.0, "duration_minutes": 45}'
-```
-
-### Stripe Testing
-```bash
-# Test checkout
-curl -X POST http://localhost:8000/api/stripe/checkout \
-  -H "Content-Type: application/json" \
-  -d '{"price_id": "starter", "user_id": "broski_test"}'
-
-# Local webhook testing
-stripe listen --forward-to localhost:8000/api/stripe/webhook
-```
-
----
-
-## 🧠 Code Conventions
-
-### Python
-- **Formatter:** Ruff (`ruff.toml`)
-- **Linter:** Pylint (`.pylintrc`) + Ruff
-- **Type checker:** Pyright (`pyrightconfig.json`)
-- **Test runner:** pytest
-- **Python version:** 3.11 in Docker images (3.13+ in devcontainer)
-- **Package manager:** pip with `requirements.lock`
-
-### Async Patterns
-- All agent communication uses `async/await`
-- Redis pub/sub for real-time agent messaging
-- FastAPI background tasks for long-running agent jobs
-
-### Agent Naming Conventions
-- Agent files: `snake_case.py`
-- Agent classes: `PascalCaseAgent`
-- Agent endpoints: `/agents/{agent_name}/{action}`
+### Rule 4 — Never Root: `RUN groupadd -r appuser && useradd -r -g appuser appuser` + `USER appuser`
+### Rule 5 — Trivy scanner: target ZERO CRITICAL, <5 HIGH
 
 ---
 
 ## 🚀 MCP Integration
-
-Available MCP tools:
-- `mcp__hypercode__hypercode_system_health` — full system health check
-- `mcp__hypercode__hypercode_agent_system_health` — agent-specific health
-- `mcp__hypercode__hypercode_list_agents` — list all registered agents
-- `mcp__hypercode__hypercode_list_tasks` — list active tasks
+- `mcp__hypercode__hypercode_system_health`
+- `mcp__hypercode__hypercode_agent_system_health`
+- `mcp__hypercode__hypercode_list_agents`
+- `mcp__hypercode__hypercode_list_tasks`
 
 ---
 
@@ -489,31 +341,23 @@ Available MCP tools:
 
 - **Docker imports:** `from app.X import Y` — NEVER `from backend.app.X import Y`
 - **FastAPI routing:** First-match wins — public routes BEFORE auth-gated compat routes
-- **Alembic down_revision:** Must match EXACT revision string
-- **CLI folder:** All `hyper-agent` commands run from `H:\HyperAgent-SDK`
-- **Logs empty on fresh boot:** Normal — Redis `hypercode:logs` populates as agents run
-- **Port convention:** 3100-3199 writing, 3200-3299 code, 3300-3399 data, 3400-3499 discord, 3500-3599 automation
+- **HUD data source:** Frontend reads `user_xp` + `rifts` from Supabase directly — NOT from `api/xp_events.py` or `api/rifts.py`
+- **Legacy API endpoints:** `api/xp_events.py` + `api/rifts.py` are MOCK ONLY — do not wire frontend to them
+- **Rifts admin:** Use direct Supabase insert OR legacy CLI curl endpoint for creating rifts
+- **HUDContext lint warning:** `react-refresh/only-export-components` in HUDContext.tsx — known, acceptable, do not auto-fix
 - **Supabase ↔ V2.4 Postgres:** NEVER merge schemas
 - **`.env` files:** Never committed — use Docker secrets in production
-- **One bot:** broski-bot. Old Replit bot = dead.
-- **API keys:** `hc_` prefix + `secrets.token_urlsafe(32)` — 43 chars, URL-safe
-- **GitHub Actions:** Always `--no-cache --pull` in security scanning workflows
-- **jaraco.* packages:** Always pin explicitly
-- **docker-socket agents** (healer/coder/05-devops): Use `docker-ce-cli` repo, NOT `docker.io`
-- **Alembic + create_all:** DB was bootstrapped with `DB_AUTO_CREATE=true`. If `alembic_version` table is missing, run `alembic stamp 006` first, then `alembic upgrade head`.
 - **Stripe webhook:** `/api/stripe/webhook` is rate-limit exempt — do NOT add rate limiting
-- **Stripe dev mode:** Missing `STRIPE_WEBHOOK_SECRET` = signature check skipped (local only)
-- **Stripe checkout mode:** token packs use `mode="payment"`, course plans use `mode="subscription"`
-- **Stripe container context:** Docker must use `desktop-linux` context (`docker context use desktop-linux`)
-- **CognitiveUplink WS URL:** `CognitiveUplink.tsx:134` defaults to `ws://hostname:8000/ws/uplink`
-- **Supabase courses table schema:** Uses `price_pence` (int, GBP pence) + `is_active` (bool) — NOT `price` or `is_published`
-- **Supabase security_invoker:** `public.user_loyalty_tier` view uses `security_invoker = on` — DO NOT change to SECURITY DEFINER
-- **Stripe webhook in Supabase:** Use `vibe-hook` endpoint. `brilliant-triumph` is a duplicate — safe to delete
-- **HUD system:** `xp_events.py` + `rifts.py` currently use MOCK DATA — replace with Supabase before production
-- **Rifts store:** Currently in-memory in `rifts.py` — replace with Redis/Supabase for multi-instance support
+- **Stripe checkout mode:** token packs = `mode="payment"`, course plans = `mode="subscription"`
+- **Stripe container context:** `docker context use desktop-linux`
+- **Supabase courses table:** `price_pence` (int) + `is_active` (bool) — NOT `price` or `is_published`
+- **`public.user_loyalty_tier`:** `security_invoker = on` — DO NOT change to SECURITY DEFINER
+- **Alembic:** If `alembic_version` missing, run `alembic stamp 006` first
+- **One bot:** broski-bot only. Old Replit bot = dead.
+- **API keys:** `hc_` prefix + `secrets.token_urlsafe(32)` = 43 chars
+- **`apps/web/`:** Archived, never migrate
 - **Conventional commits:** `feat:` `fix:` `docs:` `chore:`
 - **Windows PowerShell first**, bash second
-- **`apps/web/`:** Archived, never migrate
 
 ---
 
@@ -526,27 +370,16 @@ Available MCP tools:
 5. **Port conflicts** — Ensure 3000, 3001, 8000, 8008, 8080, 8081, 8088 are free
 6. **Test environment** — `fakeredis` used in tests; import via `fakeredis.aioredis`
 7. **Volumes wipe** — Alpine trick: `docker run --rm -v "/path":/target alpine sh -c "rm -rf /target/*"`
-8. **hypercode-core memory** — At 48% (738 MiB / 1.5 GiB) after fresh restart. Alert if > 1.2 GiB.
-9. **HUD not showing yet** — `App.tsx` still needs `<HUDProvider>` + `<HUD />` wrapping. See docs/HUD_RIFT_GUIDE.md.
-
----
-
-## 🔑 Key Dependencies
-
-### Python
-- `fastapi` + `uvicorn`, `pydantic`, `redis`/`aioredis`, `sqlalchemy`/`asyncpg`
-- `openai`, `anthropic`, `mcp`, `pytest` + `fakeredis`
-
-### Node.js (dashboard)
-- `next.js`, `vitest`, TypeScript throughout
+8. **hypercode-core memory** — Alert if > 1.2 GiB
+9. **HUDContext lint warning** — `react-refresh/only-export-components` — known + acceptable
 
 ---
 
 ## 📚 Further Reading
 
-- [README.md](README.md) — Main project overview
-- [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guidelines
-- [docs/HUD_RIFT_GUIDE.md](docs/HUD_RIFT_GUIDE.md) — HUD + Rift wiring guide ⚡ NEW
+- [README.md](README.md)
+- [docs/HUD_RIFT_GUIDE.md](docs/HUD_RIFT_GUIDE.md) — HUD + Rift wiring guide ⚡
+- [supabase/migrations/](supabase/migrations/) — all DB migrations
 - [.claude/](.claude/) — Claude AI config, skills & settings
 
 ---
