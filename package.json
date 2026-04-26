@@ -9,12 +9,12 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "cd frontend && npm test",
-    "test:frontend": "cd frontend && npm test",
-    "test:api": "cd apps/api && npm test",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:api": "cd apps/api && npm run dev",
-    "build": "cd frontend && npm run build"
+    "test": "npm --prefix frontend test --",
+    "test:frontend": "npm --prefix frontend test --",
+    "test:api": "npm --prefix apps/api test --",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:api": "npm --prefix apps/api run dev",
+    "build": "npm --prefix frontend run build"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

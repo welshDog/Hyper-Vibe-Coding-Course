@@ -1,18 +1,32 @@
-import { test, expect, type Route } from '@playwright/test';
+import { test, expect, type Route, type Page } from '@playwright/test';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-const SUPABASE_ORIGIN = '**://yhtmuibgdnxhbgboajhc.supabase.co/**';
-
 const fulfillJson = async (route: Route, payload: unknown, status = 200) => {
+  const origin = route.request().headers()['origin'] ?? 'http://localhost:5173';
   await route.fulfill({
     status,
     contentType: 'application/json',
+    headers: {
+      'access-control-allow-origin': origin,
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+      'access-control-expose-headers': 'content-range',
+      vary: 'origin',
+    },
     body: JSON.stringify(payload),
   });
 };
 
 const wantsObject = (route: Route) =>
   Boolean(route.request().headers()['accept']?.includes('application/vnd.pgrst.object+json'));
+
+const navigateClient = async (page: Page, path: string) => {
+  await page.evaluate((nextPath) => {
+    window.history.pushState({}, '', nextPath);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, path);
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -28,11 +42,11 @@ test.describe('Enrollment & Learning', () => {
     id: '1',
     title: 'Intro to Programming',
     description: 'Learn the basics of coding.',
-    price: 0,
+    price_pence: 0,
     duration_minutes: 120,
     difficulty: 'beginner',
     thumbnail_url: 'https://via.placeholder.com/150',
-    is_published: true,
+    is_active: true,
   };
 
   const lessons = [
@@ -64,15 +78,27 @@ test.describe('Enrollment & Learning', () => {
   test.beforeEach(async ({ page }) => {
     isEnrolled = false;
 
-    await page.goto('/');
-    await page.evaluate(() => localStorage.clear());
-
-    // ── Route all Supabase traffic through our mock ───────────────────────
-    // Domain-scoped — does NOT intercept Supabase realtime/websocket
-    await page.route(SUPABASE_ORIGIN, async (route) => {
+    const handleSupabaseRequest = async (route: Route) => {
       const request = route.request();
       const url = new URL(request.url());
       const asObject = wantsObject(route);
+      const method = request.method();
+      const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+
+      if (method === 'OPTIONS') {
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': origin,
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-headers': request.headers()['access-control-request-headers'] ?? '*',
+            'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+            vary: 'origin',
+          },
+          body: '',
+        });
+        return;
+      }
 
       // Auth: token exchange (login)
       if (url.pathname.startsWith('/auth/v1/token')) {
@@ -94,7 +120,17 @@ test.describe('Enrollment & Learning', () => {
 
       // Auth: logout
       if (url.pathname.startsWith('/auth/v1/logout')) {
-        await route.fulfill({ status: 204, body: '' });
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': origin,
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-headers': '*',
+            'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+            vary: 'origin',
+          },
+          body: '',
+        });
         return;
       }
 
@@ -120,6 +156,37 @@ test.describe('Enrollment & Learning', () => {
           created_at: new Date().toISOString(),
         };
         await fulfillJson(route, asObject ? payload : [payload]);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/user_loyalty_tier')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rpc/get_or_create_referral_code')) {
+        await fulfillJson(route, 'REF-CODE');
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/referrals')) {
+        if (method === 'HEAD') {
+          await route.fulfill({
+            status: 200,
+            headers: {
+              'access-control-allow-origin': origin,
+              'access-control-allow-credentials': 'true',
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+              'access-control-expose-headers': 'content-range',
+              'content-range': '0-0/0',
+              vary: 'origin',
+            },
+            body: '',
+          });
+          return;
+        }
+        await fulfillJson(route, asObject ? null : []);
         return;
       }
 
@@ -177,7 +244,6 @@ test.describe('Enrollment & Learning', () => {
 
       // DB: progress
       if (url.pathname.startsWith('/rest/v1/progress')) {
-        const method = request.method();
         if (method === 'POST') {
           await fulfillJson(
             route,
@@ -193,8 +259,26 @@ test.describe('Enrollment & Learning', () => {
         return;
       }
 
-      // Anything else: pass through (realtime, storage, etc.)
+      if (url.pathname.startsWith('/rest/v1/')) {
+        await fulfillJson(route, asObject ? null : []);
+        return;
+      }
+
+      if (url.pathname.startsWith('/auth/v1/')) {
+        await fulfillJson(route, {});
+        return;
+      }
+
       await route.continue();
+    };
+
+    await page.route('**/auth/v1/**', handleSupabaseRequest);
+    await page.route('**/rest/v1/**', handleSupabaseRequest);
+
+    await page.addInitScript(() => {
+      if (window.sessionStorage.getItem('__e2e_localstorage_cleared__')) return;
+      window.localStorage.clear();
+      window.sessionStorage.setItem('__e2e_localstorage_cleared__', '1');
     });
 
     // ── Log in before each test ───────────────────────────────────────────
@@ -207,7 +291,7 @@ test.describe('Enrollment & Learning', () => {
   });
 
   test('should enroll in a free course and navigate to lesson player', async ({ page }) => {
-    await page.goto('/courses');
+    await navigateClient(page, '/courses');
 
     // Wait for course card to appear
     await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15_000 });
@@ -229,7 +313,7 @@ test.describe('Enrollment & Learning', () => {
   test('should display lesson player with correct content', async ({ page }) => {
     // Go directly to lesson player (simulate already-enrolled state)
     isEnrolled = true;
-    await page.goto('/learn/1');
+    await navigateClient(page, '/learn/1');
 
     await expect(page.getByTestId('lesson-player-container')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('course-title')).toHaveText(course.title);
@@ -239,7 +323,7 @@ test.describe('Enrollment & Learning', () => {
 
   test('should mark a lesson complete and update progress', async ({ page }) => {
     isEnrolled = true;
-    await page.goto('/learn/1');
+    await navigateClient(page, '/learn/1');
 
     await expect(page.getByTestId('mark-complete-btn')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('mark-complete-btn').click();
@@ -253,7 +337,7 @@ test.describe('Enrollment & Learning', () => {
 
   test('should navigate between lessons', async ({ page }) => {
     isEnrolled = true;
-    await page.goto('/learn/1');
+    await navigateClient(page, '/learn/1');
 
     await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 1', { timeout: 15_000 });
 
@@ -271,7 +355,7 @@ test.describe('Enrollment & Learning', () => {
 
   test('should redirect unenrolled user away from lesson player', async ({ page }) => {
     // isEnrolled stays false — enrollment check returns empty
-    await page.goto('/learn/1');
+    await navigateClient(page, '/learn/1');
 
     // LessonPlayer should redirect to course detail when not enrolled
     await expect(page).toHaveURL(/\/courses\/1/, { timeout: 10_000 });

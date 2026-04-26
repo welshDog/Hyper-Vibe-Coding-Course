@@ -101,7 +101,7 @@ export default function LessonPlayer() {
           .select('id')
           .eq('user_id', user!.id)
           .eq('course_id', courseId)
-          .single();
+          .maybeSingle();
 
         if (enrollmentError) {
           setError('Failed to verify enrollment');
@@ -147,7 +147,7 @@ export default function LessonPlayer() {
       if (!isPreview && resolvedLessons.length > 0) {
         const lessonIds = resolvedLessons.map((l) => l.id);
         const { data: progressData, error: progressError } = await supabase
-          .from('lesson_progress')
+          .from('progress')
           .select('lesson_id')
           .eq('user_id', user!.id)
           .eq('completed', true)
@@ -204,7 +204,7 @@ export default function LessonPlayer() {
     }
 
     // Persist progress to DB
-    const { error: progressError } = await supabase.from('lesson_progress').upsert({
+    const { error: progressError } = await supabase.from('progress').upsert({
       user_id: user.id,
       course_id: courseId,
       lesson_id: currentLesson.id,
