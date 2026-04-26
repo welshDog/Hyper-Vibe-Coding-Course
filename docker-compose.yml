@@ -19,7 +19,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:password@postgres:5432/hypervibe
       JWT_SECRET: dev-secret-change-in-prod
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5173
       NODE_ENV: development
     depends_on:
       - postgres
