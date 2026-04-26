@@ -35,6 +35,6 @@ npm run build
 ```
 
 ## 🔄 Migration Notes (From Phase 1)
-- The old `frontend/public/index.html` has been moved to `frontend/index.html`.
+- The original static landing page has been replaced by the React landing page in `frontend/src/pages/LandingPage.tsx`.
 - Python-based E2E tests have been replaced by `landing.spec.ts`.
 - CI now runs `npm ci` and `npx playwright test`.

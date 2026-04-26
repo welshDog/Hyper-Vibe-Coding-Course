@@ -38,7 +38,7 @@ Transform root-level markdown files into organized structure.
   - `04_GAMIFICATION_SYSTEM.md` → `docs/guides/GAMIFICATION.md`
   - `05_MARKETING_ASSETS.md` → `docs/guides/MARKETING.md`
   - `06_4WEEK_LAUNCH_PLAN.md` → `docs/guides/LAUNCH_PLAN.md`
-- [ ] Move landing page: `02_LANDING_PAGE.html` → `frontend/public/index.html`
+- [ ] Move landing page content into `frontend/src/pages/LandingPage.tsx`
 - [ ] Create LICENSE file (MIT)
 - [ ] Create CHANGELOG.md template
 - [ ] Update README.md to point to docs/
@@ -164,7 +164,7 @@ Description:
 Document how to deploy frontend, backend, and database.
 
 ## Content Required
-- GitHub Pages deployment (landing page + docs)
+- Vercel deployment (platform + API routes)
 - Vercel deployment (frontend app)
 - Fly.io / Render deployment (backend API)
 - Database migrations strategy
@@ -389,9 +389,9 @@ Complete all Week 1 course materials.
 
 ### TUESDAY-WEDNESDAY TASKS
 
-#### Issue: Deploy landing page to GitHub Pages
+#### Issue: Deploy platform to Vercel
 ```
-Title: Deploy landing page to GitHub Pages
+Title: Deploy platform to Vercel
 Type: Task
 Labels: Week 2, Deployment, Priority-1
 Assignee: You
@@ -402,18 +402,18 @@ Description:
 Get landing page live and accessible.
 
 ## Tasks
-- [ ] Review `frontend/public/index.html` for responsiveness
+- [ ] Review `frontend/src/pages/LandingPage.tsx` for responsiveness
 - [ ] Test in browser dev tools (mobile + desktop)
 - [ ] Add SEO meta tags
-- [ ] Verify GitHub Pages settings
-- [ ] Trigger Pages deployment
-- [ ] Test landing page loads at GitHub URL
+- [ ] Verify Vercel project settings (build, output, env vars)
+- [ ] Trigger a production deployment
+- [ ] Test landing page loads at the production URL
 - [ ] Add custom domain (optional)
 - [ ] Verify HTTPS enabled
 - [ ] Test email signup form
 
 ## Acceptance Criteria
-- [ ] Landing page live at GitHub Pages URL
+- [ ] Landing page live at production URL
 - [ ] Mobile responsive ✓
 - [ ] HTTPS enabled ✓
 - [ ] Email signup working ✓

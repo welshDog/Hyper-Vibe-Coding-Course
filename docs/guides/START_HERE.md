@@ -8,7 +8,7 @@ This course is designed to get you **shipping real software in 4 weeks**.
 
 ## 🚀 Step 1: Join the Community (Right Now)
 Coding is lonely. Vibe Coding is a team sport.
-1. **Click here to join the Discord**: [Insert Discord Invite Link]
+1. **Click here to join the Discord**: https://discord.gg/6VzzNDwUwV
 2. Go to the `#introductions` channel.
 3. Post: "Hi, I'm [Name]. I'm here to build [App Idea/Goal]."
 

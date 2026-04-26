@@ -55,7 +55,7 @@
 **Morning (1.5 hrs):**
 - [ ] Create new folder structure (backend/app/, frontend/public/, docs/course/, etc.)
 - [ ] Move 00-06_*.md files into docs/guides/
-- [ ] Move 02_LANDING_PAGE.html → frontend/public/index.html
+- [ ] Move landing page content into `frontend/src/pages/LandingPage.tsx`
 - [ ] Create LICENSE file (MIT)
 - [ ] Create CHANGELOG.md (initial template)
 - [ ] Verify all folders have proper .gitkeep if needed
@@ -73,7 +73,7 @@
 # Should see this structure
 docs/course/
 docs/guides/
-frontend/public/index.html
+frontend/src/pages/LandingPage.tsx
 backend/app/
 tests/
 config/
@@ -117,7 +117,7 @@ assets/
   ```
 
 - [ ] Create `docs/DEPLOYMENT.md`
-  - How GitHub Pages deployment works (already set up)
+  - How Vercel deployment works (already set up)
   - Future Vercel deployment (process outlined)
   - Future Fly.io backend deployment
   - Database migrations strategy
@@ -329,7 +329,7 @@ NEW SCORE ESTIMATE: ~250/593 (42%)
 ### TUE-WED: Landing Page Deployment (4 hours)
 
 **Tuesday Morning (2 hrs):**
-- [ ] Review `frontend/public/index.html` (your 02_LANDING_PAGE.html)
+- [ ] Review `frontend/src/pages/LandingPage.tsx`
   - Verify mobile responsive (test in browser dev tools)
   - Verify all links work
   - Verify color scheme is applied
@@ -343,20 +343,19 @@ NEW SCORE ESTIMATE: ~250/593 (42%)
   <meta property="og:image" content="/og-image.png">
   ```
 
-- [ ] Verify GitHub Pages deployment:
-  - Go to repo Settings → Pages
-  - Confirm it's set to deploy from `gh-pages` branch or `/root`
-  - Verify workflow runs successfully
-  - Visit `https://w3lshdog.github.io/Hyper-Vibe-Coding-Course/`
-  - Test that landing page loads ✅
+- [ ] Verify Vercel deployment:
+  - Confirm the Vercel project is connected to the repo
+  - Confirm production environment variables are set
+  - Verify the latest production deployment succeeded
+  - Visit the production URL and confirm the landing page loads ✅
 
 **Tuesday Afternoon (1 hr):**
 - [ ] Set up custom domain (optional, but recommended):
   - Buy domain from Namecheap (~$12/yr)
-  - Update DNS CNAME to point to GitHub Pages
-  - OR just use GitHub URL for now
+  - Point DNS to Vercel (per Vercel domain setup)
+  - OR just use the Vercel URL for now
 
-- [ ] Verify SSL (GitHub Pages auto-provides HTTPS)
+- [ ] Verify SSL (Vercel auto-provides HTTPS)
 
 **Wednesday Morning (1 hr):**
 - [ ] Add email capture to landing page:
@@ -368,7 +367,7 @@ NEW SCORE ESTIMATE: ~250/593 (42%)
 **Verification:**
 ```bash
 # Landing page should be:
-✅ Deployed to GitHub Pages
+✅ Deployed to Vercel
 ✅ Mobile responsive
 ✅ HTTPS enabled
 ✅ Email signup integrated (or placeholder)

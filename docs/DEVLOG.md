@@ -4,12 +4,12 @@
 
 | Original | Rebuild |
 |----------|--------|
-| Static GitHub Pages landing | Full-stack React + Node app |
-| External tools (Gumroad, Airtable) | Custom backend + PostgreSQL |
-| Markdown curriculum docs | Database-driven lessons with JSON content |
-| No auth | JWT auth with accessibility preferences |
-| Planned gamification (external) | Native XP/streaks/badge system |
-| Manual setup | `docker-compose up` one-command setup |
+| Static GitHub Pages landing | Vite + React platform deployed to Vercel |
+| External tools (Gumroad, Airtable) | Supabase + Stripe + Edge Functions |
+| Markdown-only curriculum docs | DB-backed courses/lessons + docs in-repo |
+| No auth | Supabase Auth + RLS-protected data |
+| Planned gamification (external) | Native XP/tokens/quests/leaderboards |
+| Manual setup | Frontend dev server + Supabase CLI migrations |
 
 ## Why These Choices?
 
@@ -52,11 +52,8 @@ Reduces cognitive load when navigating.
 
 ## Known TODOs
 
-- [ ] Record Module 1.1 video (script ready)
-- [ ] Real video player (YouTube embed or MUX)
-- [ ] Seed courses to Supabase
-- [ ] Add Stripe payment success page + webhook enrollment
-- [ ] Add quiz/assessment system
-- [ ] User profile page (`/profile` route)
-- [ ] Fix BUG-013 (password validation) + BUG-014 (post-signup message)
-- [ ] Un-skip `learning.spec.ts`
+- [ ] Keep docs synchronized with the codebase (architecture/runbooks/guides)
+- [ ] Consolidate overlapping permissive RLS policies (performance)
+- [ ] Align frontend DB types with the current Supabase schema
+- [ ] Decide whether `apps/api/` + `docker-compose.yml` remain supported or become legacy
+- [ ] Un-skip `learning.spec.ts` (or remove if obsolete)

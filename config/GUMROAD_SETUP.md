@@ -1,6 +1,12 @@
-# 📦 Gumroad Configuration
+# 📦 Gumroad Configuration (Legacy)
 
-**Use this reference when setting up your product on Gumroad.**
+This file is a legacy reference from the early “Lean Launch” phase.
+
+Current production payments for the platform are Stripe-based (checkout + webhooks) and are handled via:
+- Supabase Edge Function: `supabase/functions/stripe-webhook/`
+- Frontend checkout integration: `frontend/src/lib/payments.ts`
+
+Keep the Gumroad flow only if you are explicitly running a Gumroad-based product alongside the platform.
 
 ## 1. Product Details
 - **Name**: Hyper Vibe Coding Course 1
@@ -21,7 +27,7 @@
 
 ## 3. Checkout / Thank You Page
 - **Button Text**: "View Content"
-- **Redirect URL**: `https://w3lshdog.github.io/Hyper-Vibe-Coding-Course/guides/START_HERE` (If hosting docs publicly)
+- **Redirect URL**: `https://hyper-vibe-coding-course.vercel.app/` (or your docs URL if you host docs publicly)
 - **Note**: "Welcome to the Vibe! Check your email for the Discord invite link."
 
 ## 4. Automated Workflow (Email Receipt)

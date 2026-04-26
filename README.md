@@ -59,7 +59,12 @@ npm run dev
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 VITE_HYPERCODE_API_URL=http://localhost:8000
+VITE_STRIPE_PAYMENT_LINK_URL=
 ```
+
+### Notes
+- `VITE_HYPERCODE_API_URL` points at the HyperCode V2.4 backend API (Stripe checkout), not `apps/api`.
+- Supabase schema changes live in `supabase/migrations/` and are applied with the Supabase CLI to the linked project.
 
 ---
 

@@ -20,6 +20,8 @@ VITE_HYPERCODE_API_URL=http://localhost:8000
 VITE_STRIPE_PAYMENT_LINK_URL=
 ```
 
+`VITE_HYPERCODE_API_URL` is the HyperCode backend base URL used for Stripe checkout session creation.
+
 ## Scripts
 
 ```bash

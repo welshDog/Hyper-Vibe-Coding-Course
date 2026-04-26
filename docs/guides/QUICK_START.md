@@ -35,7 +35,7 @@ This is NOT just templates. These are **production-ready, copy-paste-able resour
 ---
 
 ### **File 2: Landing Page** (20 KB)
-**File:** `frontend/public/index.html`
+**File:** `frontend/src/pages/LandingPage.tsx`
 
 **Contains:** Beautiful, high-converting landing page (ready to deploy).
 
@@ -47,10 +47,9 @@ This is NOT just templates. These are **production-ready, copy-paste-able resour
 - Responsive (mobile + desktop)
 
 **How to use:**
-1. Option A: Upload HTML to Vercel (free) or Netlify (free) as-is
-   - No coding needed, just upload the file
-2. Option B: Copy the code → paste into Webflow/Framer
-3. Option C: Use as inspiration → rebuild in Webflow yourself
+1. Option A: Deploy the repo to Vercel (recommended for the full platform)
+2. Option B: Reuse the landing page sections in another builder (Webflow/Framer)
+3. Option C: Use as inspiration → rebuild the page elsewhere
 3. Update text with:
    - Your name/story
    - Course start date

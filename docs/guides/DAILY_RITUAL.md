@@ -3,20 +3,20 @@
 **Commit to this 5-minute routine every single day until launch.**
 
 ## 1. Health Check (30 seconds)
-- [ ] **GitHub Actions**: Are the latest runs green?
-  - `ci.yml` (Tests)
-  - `pages.yml` (Deploy)
-- [ ] **Live Site**: Does `https://w3lshdog.github.io/Hyper-Vibe-Coding-Course/` load?
+- [ ] **Vercel Deployments**: Is the latest production deployment green?
+- [ ] **Supabase**: Any auth/db errors in logs or alerts?
+- [ ] **Live Site**: Does the production URL load and render correctly?
 
 ## 2. Funnel Check (2 minutes)
-- [ ] **Click "Start Free"**: Does it open the Gumroad checkout?
-- [ ] **Click "Join Discord"**: Does the invite link work?
+- [ ] **Login/Signup**: Can you create a fresh test user?
+- [ ] **Checkout**: Does it redirect to Stripe checkout?
+- [ ] **Webhook**: After a test payment, does Supabase grant the expected enrollment/tokens?
 - [ ] **Mobile**: Open the site on your phone. Does the hero section look good?
 
 ## 3. Pulse Check (2 minutes)
 - [ ] **Analytics**:
   - Visitors yesterday: _____
-  - "checkout_click" events: _____
+  - Checkout starts: _____
 - [ ] **Support**:
   - New emails: _____
   - New Discord intros: _____

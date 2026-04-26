@@ -1,263 +1,86 @@
-## 1. Architecture Design
+# Technical Architecture
+
+## 1. System Overview
 
 ```mermaid
 graph TD
-    A[User Browser] --> B[React Frontend Application]
-    B --> C[Supabase Client SDK]
-    C --> D[Supabase Auth Service]
-    C --> E[Supabase Database]
-    C --> F[Supabase Storage]
-    B --> G[Stripe Payment SDK]
-    G --> H[Stripe Payment Gateway]
-    B --> I[Analytics Service]
-    I --> J[Data Warehouse]
+  U[User Browser] --> FE[Vercel: Vite + React SPA]
 
-    subgraph "Frontend Layer"
-        B
-    end
+  FE --> SBJS[Supabase JS Client]
+  SBJS --> SBA[Supabase Auth]
+  SBJS --> SBD[Supabase Postgres + RLS]
 
-    subgraph "Backend Services (Supabase)"
-        D
-        E
-        F
-    end
+  FE --> HC[HyperCode API (Stripe Checkout)]
+  HC --> ST[Stripe]
+  ST --> SBEF[Supabase Edge Function: stripe-webhook]
+  SBEF --> SBD
 
-    subgraph "External Services"
-        H
-        J
-    end
+  FE --> VA[Vercel API Routes (optional)]
 ```
 
-## 2. Technology Description
-- **Frontend**: React@18 + Tailwind CSS@3 + Vite
-- **Initialization Tool**: vite-init
-- **Backend**: Supabase (Authentication, PostgreSQL Database, File Storage)
-- **Payment Processing**: Stripe SDK
-- **Video Streaming**: Custom player with HLS support
-- **State Management**: React Context + useReducer
-- **Routing**: React Router v6
-- **Form Handling**: React Hook Form + Zod validation
+## 2. Tech Stack (What’s Actually In This Repo)
+- **Frontend**: `frontend/` (React 18 + TypeScript + Vite + Tailwind)
+- **Database/Auth**: Supabase (Auth + Postgres + RLS)
+- **Edge Functions**: `supabase/functions/` (TypeScript)
+- **Payments**: Stripe (checkout + webhooks)
+- **Optional APIs**:
+  - `api/` Vercel serverless routes (e.g. BROski chat)
+  - `apps/api/` Node/Express API used for local development/experiments
 
-## 3. Route Definitions
-| Route | Purpose |
-|-------|---------|
-| / | Landing page with hero section and course previews |
-| /courses | Course catalog with search and filtering |
-| /courses/:id | Individual course detail page |
-| /learn/:courseId | Video learning interface |
-| /dashboard | User learning dashboard and progress |
-| /profile | User profile and settings |
-| /checkout | Payment processing page |
-| /admin | Admin dashboard for content management |
-| /login | User authentication page |
-| /register | New user registration |
-| /certificates/:id | Certificate verification and download |
+## 3. Frontend Routes
+Routes are defined in `frontend/src/App.tsx`.
 
-## 4. API Definitions
+| Route | Auth | Purpose |
+|------|------|---------|
+| `/` | Public | Landing page |
+| `/pricing` | Public | Pricing tiers + checkout entry |
+| `/login` | Public | Login |
+| `/register` | Public | Signup |
+| `/courses` | Public | Course catalog |
+| `/courses/:id` | Public | Course detail |
+| `/leaderboard` | Public | Public leaderboard |
+| `/dashboard` | Required | User dashboard |
+| `/quests` | Required | Quests |
+| `/tokens` | Required | Token packs |
+| `/shop` | Required | Shop |
+| `/profile` | Required | Profile |
+| `/scripts` | Required | Script generator |
+| `/learn/:courseId` | Required | Lesson player |
+| `/certificate/:courseId` | Required | Certificate view |
+| `/admin` | Admin | Admin panel |
+| `/payment-success` | Public | Stripe redirect success page |
 
-### 4.1 Authentication APIs
-```
-POST /auth/v1/token
-```
-Request:
-```json
-{
-  "email": "user@example.com",
-  "password": "securepassword",
-  "grant_type": "password"
-}
-```
+## 4. Server-Side Endpoints Used by the Frontend
 
-### 4.2 Course APIs
-```
-GET /rest/v1/courses
-```
-Query Parameters:
-- category: string (optional)
-- difficulty: string (optional)
-- price_max: number (optional)
-- search: string (optional)
+### 4.1 Supabase (Auth + Postgres)
+The frontend uses the Supabase client to call:
+- Auth (sign up, sign in, sign out)
+- PostgREST queries against application tables under RLS
 
-Response:
-```json
-{
-  "data": [
-    {
-      "id": "course-uuid",
-      "title": "React Mastery",
-      "description": "Complete React course",
-      "price": 99.99,
-      "duration": 1200,
-      "difficulty": "intermediate",
-      "rating": 4.8,
-      "enrolled_count": 1543
-    }
-  ]
-}
-```
+### 4.2 Stripe checkout (HyperCode API)
+Checkout is created by calling the configured HyperCode backend:
 
-### 4.3 Progress Tracking APIs
-```
-POST /rest/v1/progress
-```
-Request:
-```json
-{
-  "user_id": "user-uuid",
-  "course_id": "course-uuid",
-  "lesson_id": "lesson-uuid",
-  "completion_percentage": 100,
-  "time_spent": 1800
-}
-```
+- URL: `${VITE_HYPERCODE_API_URL}/api/stripe/checkout`
+- Method: `POST`
+- Response: `{ checkout_url: string }` or `{ url: string }`
 
-### 4.4 Payment APIs
-```
-POST /create-checkout-session
-```
-Request:
-```json
-{
-  "price_id": "price_123",
-  "success_url": "https://hypervibe.com/success",
-  "cancel_url": "https://hypervibe.com/cancel"
-}
-```
+The frontend calls this endpoint from `frontend/src/lib/payments.ts` and redirects the browser to the returned checkout URL.
 
-## 5. Server Architecture Diagram
+### 4.3 Vercel API routes (optional)
+Serverless routes live in `api/` (example: `POST /api/broski-chat`).
 
-```mermaid
-graph TD
-    A[Client Request] --> B[API Gateway]
-    B --> C[Authentication Layer]
-    C --> D[Business Logic Layer]
-    D --> E[Data Access Layer]
-    E --> F[(PostgreSQL Database)]
-    D --> G[External Services]
-    G --> H[Stripe API]
-    G --> I[Email Service]
-    G --> J[Analytics Service]
+## 5. Payments → Enrollment Flow
+1. User starts checkout from the frontend (pricing page or course purchase).
+2. Frontend requests a Stripe Checkout Session from the backend and redirects to Stripe.
+3. Stripe sends webhook events to the Supabase `stripe-webhook` Edge Function.
+4. The Edge Function validates the event and applies entitlements in Postgres (e.g., inserts enrollments/tokens) using idempotent writes.
 
-    subgraph "Supabase Infrastructure"
-        B
-        C
-        E
-        F
-    end
-
-    subgraph "Application Logic"
-        D
-    end
-
-    subgraph "Third-party Integrations"
-        H
-        I
-        J
-    end
-```
-
-## 6. Data Model
-
-### 6.1 Data Model Definition
-```mermaid
-erDiagram
-    USERS ||--o{ ENROLLMENTS : has
-    USERS ||--o{ PROGRESS : tracks
-    COURSES ||--o{ ENROLLMENTS : receives
-    COURSES ||--o{ LESSONS : contains
-    LESSONS ||--o{ PROGRESS : measures
-    COURSES }o--|| INSTRUCTORS : teaches
-    USERS ||--o{ PAYMENTS : makes
-    USERS ||--o{ SUBSCRIPTIONS : has
-
-    USERS {
-        uuid id PK
-        string email
-        string password_hash
-        string full_name
-        string avatar_url
-        string role
-        timestamp created_at
-        timestamp last_login
-    }
-
-    COURSES {
-        uuid id PK
-        string title
-        text description
-        decimal price
-        string difficulty
-        int duration_minutes
-        uuid instructor_id FK
-        string thumbnail_url
-        boolean is_published
-        timestamp created_at
-    }
-
-    LESSONS {
-        uuid id PK
-        uuid course_id FK
-        string title
-        int order_index
-        string video_url
-        text content
-        int duration_seconds
-        boolean is_free
-    }
-
-    ENROLLMENTS {
-        uuid id PK
-        uuid user_id FK
-        uuid course_id FK
-        timestamp enrolled_at
-        timestamp completed_at
-        decimal progress_percentage
-    }
-
-    PROGRESS {
-        uuid id PK
-        uuid user_id FK
-        uuid lesson_id FK
-        boolean completed
-        int time_spent_seconds
-        timestamp completed_at
-    }
-
-    PAYMENTS {
-        uuid id PK
-        uuid user_id FK
-        string stripe_payment_intent_id
-        decimal amount
-        string currency
-        string status
-        timestamp created_at
-    }
-
-    SUBSCRIPTIONS {
-        uuid id PK
-        uuid user_id FK
-        string stripe_subscription_id
-        string plan_type
-        timestamp start_date
-        timestamp end_date
-        boolean is_active
-    }
-```
-
-### 6.2 Data Definition Language
-
-```sql
--- Users table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    avatar_url TEXT,
-    role VARCHAR(20) DEFAULT 'student' CHECK (role IN ('student', 'instructor', 'admin')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_login TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+## 6. Data Model (High-Level)
+This project’s source-of-truth schema is in `supabase/migrations/`. Key tables include:
+- `public.users` (profile mirror of `auth.users`)
+- `public.courses`, `public.lessons`
+- `public.enrollments` (course unlocks; timestamp column name may differ across early migrations vs current DB)
+- XP/tokens/shop/quests tables added via later migrations
 );
 
 -- Courses table

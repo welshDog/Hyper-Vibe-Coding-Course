@@ -1,31 +1,28 @@
-# 🚀 Launch Roadmap: Option A (Static + External)
+# 🚀 Launch Roadmap (Current)
 
 This file defines the GitHub Issues required to execute the launch plan.
 Copy and paste these blocks into new GitHub Issues.
 
 ---
 
-## Issue 1: [Milestone A] Checkout + Delivery E2E
+## Issue 1: [Milestone A] Stripe Checkout + Webhook Fulfillment (E2E)
 **Labels**: `launch`, `marketing`, `p0`
 **Assignee**: @me
 **Due**: 2026-03-15
 
 ### Description
-Configure Gumroad (or equivalent) for "Course 1" and ensure the purchase flow works perfectly from landing page to content delivery.
+Ensure the Stripe purchase flow works end-to-end: user starts checkout → Stripe payment succeeds → webhook is processed → Supabase grants entitlements (enrollment/tokens).
 
 ### Tasks
-- [ ] Create "Course 1" product in Gumroad (Price: Free/Low)
-- [ ] Create "Thank You" page content linking to `docs/guides/START_HERE.md`
-- [ ] Configure automated email receipt with:
-  - [ ] Link to Course Index
-  - [ ] Link to Discord Invite
-  - [ ] Support contact info
-- [ ] Perform test purchase (use 100% discount code)
-- [ ] Verify email arrives within 5 mins
+- [ ] Confirm checkout creation endpoint is reachable from the frontend (`VITE_HYPERCODE_API_URL`)
+- [ ] Confirm Stripe webhook is configured to call Supabase Edge Function (`supabase/functions/stripe-webhook/`)
+- [ ] Perform a test purchase in Stripe (test mode)
+- [ ] Verify webhook processing creates the expected DB records (enrollment/tokens)
+- [ ] Verify the buyer can access the purchased course immediately after redirect
 
 ### Acceptance Criteria
-- [ ] I can buy the course, get the email, click the link, and land on the Start Guide.
-- [ ] Discord invite link is valid.
+- [ ] A test user can complete checkout and is granted the correct entitlements in Supabase.
+- [ ] The purchase flow is idempotent (replayed webhook events do not double-grant).
 
 ---
 
@@ -35,11 +32,11 @@ Configure Gumroad (or equivalent) for "Course 1" and ensure the purchase flow wo
 **Due**: 2026-03-14
 
 ### Description
-Polish the `frontend/public/index.html` to be ready for real traffic.
+Polish the landing page in `frontend/src/pages/LandingPage.tsx` to be ready for real traffic.
 
 ### Tasks
 - [ ] Replace all `#` placeholder links with real URLs:
-  - [ ] "Start Course 1" -> Gumroad Checkout URL
+  - [ ] "Start Course 1" -> pricing / checkout entry
   - [ ] "Join Discord" -> Discord Invite URL
 - [ ] Add "Trust" section (money back guarantee / outcome promise)
 - [ ] Verify mobile responsiveness (check on phone)
@@ -62,7 +59,7 @@ Add privacy-friendly analytics to track conversion funnel.
 
 ### Tasks
 - [ ] Sign up for Plausible (or similar)
-- [ ] Add tracking script to `frontend/public/index.html` `<head>`
+- [ ] Add tracking script to the frontend app shell (Vite/React)
 - [ ] Add custom event tracking to buttons:
   - [ ] `class="btn-primary"` -> `data-event="checkout_click"`
   - [ ] `class="btn-secondary"` -> `data-event="discord_click"`
@@ -86,7 +83,7 @@ Ensure documentation is self-serve for new students.
 - [ ] Create `docs/guides/START_HERE.md` (The "Day 1" guide)
 - [ ] Update `docs/guides/INDEX.md` to point to Start Here
 - [ ] Verify `SHOWCASE.md` is accurate
-- [ ] Check `docs/ARCHITECTURE.md` reflects Option A
+- [ ] Check `docs/ARCHITECTURE.md` reflects the current platform architecture
 
 ### Acceptance Criteria
 - [ ] A stranger can read `START_HERE.md` and know exactly what to do next.

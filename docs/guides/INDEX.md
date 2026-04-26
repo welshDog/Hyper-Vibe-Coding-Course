@@ -38,7 +38,7 @@ Here's everything I've created for you. Use this as your roadmap.
 
 - Week 2: Course content + landing page (15-20 hrs)
   - Complete Week 1 curriculum
-  - Deploy landing page to GitHub Pages
+  - Deploy the platform to Vercel (production)
   - Draft Week 2 content
   - Course platform setup guide
 
@@ -160,7 +160,7 @@ Here's everything I've created for you. Use this as your roadmap.
   - Jest/Vitest testing
 
 - Common mistakes to avoid
-- GitHub Pages setup
+- Vercel deployment basics
 - Version management
 
 **When to use:** Reference while reorganizing repo in Week 1
@@ -183,8 +183,8 @@ Full 4-week course curriculum with:
 - Gamification points
 - Student resources
 
-### File: `frontend/public/index.html`
-Beautiful, deployed-ready landing page with:
+### File: `frontend/src/pages/LandingPage.tsx`
+Landing page implementation used by the Vercel-deployed platform:
 - Neon gradient design
 - Course cards
 - Benefits section
@@ -220,7 +220,6 @@ Original 4-week timeline + infrastructure setup guide for:
 - ConvertKit
 - Discord
 - Stripe
-- GitHub Pages
 - Vercel
 - Landing page deployment
 
@@ -385,7 +384,7 @@ By end of Week 4, you should have completed:
 4. **PROJECT_REVIEW_FRAMEWORK.md** (scoring + assessment)
 5. **GITHUB_BEST_PRACTICES.md** (standards + setup)
 6. **01_COURSE1_COMPLETE_CURRICULUM.md** (course content)
-7. **frontend/public/index.html** (deployed landing page)
+7. **frontend/src/pages/LandingPage.tsx** (platform landing page)
 8. **03-06_*.md** (email, gamification, marketing sequences)
 
 ### What This All Means:
