@@ -7,6 +7,12 @@
 
 If you’re organizing sources in Google Drive for quick NotebookLM reuse, mirror this structure:
 
+Drive root (your setup):
+
+```
+G:\My Drive\HYPER Vibe Coding Course
+```
+
 ```
 My Drive/
 └── the vibe course/
@@ -50,7 +56,7 @@ My Drive/
 
 If you have additional “Course Core” files that are not present in this repo (e.g. PDFs, XLSX, or standalone brand docs), store them in `01 - Course Core/` and include them in NotebookLM alongside the Tier 1 list below.
 
-## �📂 Recommended NotebookLM Sources (50)
+## �� Recommended NotebookLM Sources (50)
 
 ### 🔴 Tier 1 — Must Have (Core Course + Platform)
 | # | File | Why |
