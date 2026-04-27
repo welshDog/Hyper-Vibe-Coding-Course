@@ -3,7 +3,54 @@
 
 > NotebookLM supports up to 50 sources. Load the full repo context first, then run the prompts.
 
-## 📂 Recommended NotebookLM Sources (50)
+## �️ Recommended Google Drive Structure
+
+If you’re organizing sources in Google Drive for quick NotebookLM reuse, mirror this structure:
+
+```
+My Drive/
+└── the vibe course/
+    ├── 01 - Course Core/
+    ├── 02 - Module Scripts/
+    ├── 03 - Research & Docs/
+    ├── 04 - Assets & Media/
+    └── 05 - Working Docs/
+```
+
+### What Goes Where (mapped to this repo)
+
+**01 - Course Core (NotebookLM Tier 1)**
+- `README.md`
+- `docs/PRD.md`
+- `docs/ARCHITECTURE.md`
+- `docs/TECHNICAL-ARCHITECTURE.md`
+- `docs/DEVELOPMENT.md`
+- `docs/DEPLOYMENT-RUNBOOK.md`
+- `docs/BROSKI_XP_SYSTEM.md`
+- `docs/HUD_RIFT_GUIDE.md`
+- `docs/LEADERBOARD_QUESTS_GUIDE.md`
+- `COURSE_MASTER_TRACKER.md`
+
+**02 - Module Scripts**
+- `scripts/M1-designing-your-focus-zone.md` through `scripts/M12-ride-or-die-contribution.md`
+- Any expanded scripts you generate from NotebookLM (save alongside the originals)
+
+**03 - Research & Docs (NotebookLM Tier 2+)**
+- `docs/**` (guides, notes, trackers you want searchable)
+- `Hyper Vibe Course  Idea Data/**` (PDFs + notebook packs + deep reference)
+
+**04 - Assets & Media**
+- `assets/**` (if/when you start collecting thumbnails, screenshots, videos)
+- `Hyper Vibe Course  Idea Data/**` media folders (PNG/MP4/M4A) if you want them in Drive
+
+**05 - Working Docs**
+- Day-to-day planning docs, checklists, and anything you edit frequently outside Git
+
+### External (Drive-only) Sources
+
+If you have additional “Course Core” files that are not present in this repo (e.g. PDFs, XLSX, or standalone brand docs), store them in `01 - Course Core/` and include them in NotebookLM alongside the Tier 1 list below.
+
+## �📂 Recommended NotebookLM Sources (50)
 
 ### 🔴 Tier 1 — Must Have (Core Course + Platform)
 | # | File | Why |
