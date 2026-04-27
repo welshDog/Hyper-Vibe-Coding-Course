@@ -3,24 +3,19 @@
 
 > NotebookLM supports up to 50 sources. Load the full repo context first, then run the prompts.
 
-## �️ Recommended Google Drive Structure
+## 🗂️ Recommended Google Drive Structure
 
 If you’re organizing sources in Google Drive for quick NotebookLM reuse, mirror this structure:
 
-Drive root (your setup):
+Drive root (your setup): `G:\My Drive\HYPER Vibe Coding Course`
 
 ```
 G:\My Drive\HYPER Vibe Coding Course
-```
-
-```
-My Drive/
-└── the vibe course/
-    ├── 01 - Course Core/
-    ├── 02 - Module Scripts/
-    ├── 03 - Research & Docs/
-    ├── 04 - Assets & Media/
-    └── 05 - Working Docs/
+├── 01 - Course Core/
+├── 02 - Module Scripts/
+├── 03 - Research & Docs/
+├── 04 - Assets & Media/
+└── 05 - Working Docs/
 ```
 
 ### What Goes Where (mapped to this repo)
@@ -56,7 +51,7 @@ My Drive/
 
 If you have additional “Course Core” files that are not present in this repo (e.g. PDFs, XLSX, or standalone brand docs), store them in `01 - Course Core/` and include them in NotebookLM alongside the Tier 1 list below.
 
-## �� Recommended NotebookLM Sources (50)
+## 📂 Recommended NotebookLM Sources (50)
 
 ### 🔴 Tier 1 — Must Have (Core Course + Platform)
 | # | File | Why |
