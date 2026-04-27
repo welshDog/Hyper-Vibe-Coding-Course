@@ -15,6 +15,10 @@ graph TD
   ST --> SBEF[Supabase Edge Function: stripe-webhook]
   SBEF --> SBD
 
+  SBD --> DBWH[Supabase DB Webhook: token_transactions INSERT]
+  DBWH --> TOKEF[Supabase Edge Function: sync-tokens-to-v24]
+  TOKEF --> HCV24[HyperCode V2.4 API: award-from-course]
+
   FE --> VA[Vercel API Routes (optional)]
 ```
 
@@ -74,6 +78,18 @@ Serverless routes live in `api/` (example: `POST /api/broski-chat`).
 2. Frontend requests a Stripe Checkout Session from the backend and redirects to Stripe.
 3. Stripe sends webhook events to the Supabase `stripe-webhook` Edge Function.
 4. The Edge Function validates the event and applies entitlements in Postgres (e.g., inserts enrollments/tokens) using idempotent writes.
+
+## 5.1 Tokens → HyperCode V2.4 sync
+
+1. Course awards BROski$ by inserting a row into `public.token_transactions`.
+2. Supabase Database Webhook (table: `token_transactions`, event: `INSERT`) calls the Edge Function `sync-tokens-to-v24`.
+3. The Edge Function resolves `discord_id` (from `token_transactions.discord_id` or `discord_links`) and calls:
+   - `POST ${V24_API_URL}/api/v1/economy/award-from-course`
+   - Header: `X-Sync-Secret: ${COURSE_SYNC_SECRET}`
+4. HyperCode V2.4 enforces idempotency using `source_id` as the dedup key and returns:
+   - `200` on success
+   - `409` if already processed (safe no-op)
+   - `404` if the user is not linked in V2.4 yet
 
 ## 6. Data Model (High-Level)
 This project’s source-of-truth schema is in `supabase/migrations/`. Key tables include:

@@ -118,3 +118,59 @@ Invoke-RestMethod `
 Expected:
 - First call provisions and returns `status=provisioned`
 - Second call returns **409** (idempotent replay)
+
+---
+
+## Course rewards → V2.4 token sync (Quests + awards)
+
+When the Course awards BROski$ (e.g. course completion), Supabase inserts into `public.token_transactions`.
+That insert triggers a Supabase Database Webhook which calls the Edge Function `sync-tokens-to-v24`, which then calls HyperCode V2.4 to mirror the token delta into the V2.4 wallet.
+
+This section covers the HyperCode V2.4 side only (the inbound endpoint).
+
+### Endpoint
+
+**POST** `/api/v1/economy/award-from-course`
+
+### Auth
+
+- Header: `X-Sync-Secret: <COURSE_SYNC_SECRET>`
+- Secret lives only in:
+  - HyperCode V2.4 backend environment: `COURSE_SYNC_SECRET`
+  - Course Supabase Edge Function secrets: `COURSE_SYNC_SECRET`
+
+### Request (locked contract)
+
+```json
+{
+  "source_id": "uuid-from-token_transactions.id",
+  "discord_id": "string",
+  "tokens": 10,
+  "reason": "Course reward"
+}
+```
+
+### Response (locked contract)
+
+```json
+{
+  "ok": true,
+  "source_id": "uuid"
+}
+```
+
+### Idempotency rules
+
+- `source_id` is the dedup key.
+- If a request arrives with an already-processed `source_id`, return **409** (Course treats it as safe/no-op).
+
+### Behavior rules
+
+- Return **404** if the `discord_id` does not exist in V2.4 yet (Course will log `v24_user_not_found`).
+- Return **200** on success.
+
+### Environment variables
+
+Set these in HyperCode V2.4 backend:
+
+- `COURSE_SYNC_SECRET` (required)

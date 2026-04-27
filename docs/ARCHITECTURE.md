@@ -26,6 +26,7 @@ Hyper Vibe is a Vite + React frontend backed by Supabase (Auth + Postgres + Edge
 ### 3) Server-side functions
 - **Supabase Edge Functions**: `supabase/functions/`
   - **stripe-webhook**: Receives Stripe webhook events and applies enrollments / token grants in Postgres
+  - **sync-tokens-to-v24**: Triggered by a Supabase DB Webhook on `public.token_transactions` inserts; mirrors token awards into HyperCode V2.4
 - **Vercel API routes**: `api/`
   - Serverless endpoints used for small “backend-y” features (e.g. BROski AI gateway)
 - **Optional local API**: `apps/api/`
@@ -47,6 +48,12 @@ Hyper Vibe is a Vite + React frontend backed by Supabase (Auth + Postgres + Edge
 2. Frontend calls the checkout endpoint (`VITE_HYPERCODE_API_URL`, e.g. `POST /api/stripe/checkout`) and redirects to Stripe.
 3. Stripe sends webhook events to the Supabase `stripe-webhook` Edge Function.
 4. The Edge Function validates the purchase and inserts an enrollment for the correct user/course (idempotent insert).
+
+### Course rewards → HyperCode V2.4 wallet
+1. Course awards BROski$ by inserting into `public.token_transactions`.
+2. Supabase DB Webhook triggers Edge Function `sync-tokens-to-v24`.
+3. Edge Function calls HyperCode V2.4: `POST /api/v1/economy/award-from-course` with `X-Sync-Secret`.
+4. HyperCode V2.4 enforces idempotency using `source_id = token_transactions.id` and updates the V2.4 wallet.
 
 ## 🛡️ Security Model (High Level)
 - **RLS-first**: All sensitive tables in Supabase rely on RLS for access control.
