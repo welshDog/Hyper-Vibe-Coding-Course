@@ -5,22 +5,34 @@
 
 ## 🗂️ Recommended Google Drive Structure
 
-If you’re organizing sources in Google Drive for quick NotebookLM reuse, mirror this structure:
-
-Drive root (your setup): `G:\My Drive\HYPER Vibe Coding Course`
+Drive root (current reality): `G:\My Drive\HYPER Vibe Coding Course`
 
 ```
 G:\My Drive\HYPER Vibe Coding Course
-├── 01 - Course Core/
-├── 02 - Module Scripts/
-├── 03 - Research & Docs/
-├── 04 - Assets & Media/
-└── 05 - Working Docs/
+├── Course_Curriculum/
+├── NotebookLM_Sources/
+├── Notes/
+└── Archive/
 ```
 
 ### What Goes Where (mapped to this repo)
 
-**01 - Course Core (NotebookLM Tier 1)**
+**Course_Curriculum**
+- `docs/course/**`
+- `scripts/**`
+
+**NotebookLM_Sources**
+- `docs/**` (architecture, guides, runbooks, etc)
+- `Hyper Vibe Course  Idea Data/**` (PDFs + notebook packs + deep reference)
+
+**Notes**
+- This file (`docs/course/NOTEBOOKLM_MASTER_PROMPT_PACK.md`)
+- Planning docs, checklists, naming standards, and prompt packs
+
+**Archive**
+- Old exports, superseded maps, and archived drafts
+
+**NotebookLM Tier 1 (Core Course + Platform)**
 - `README.md`
 - `docs/PRD.md`
 - `docs/ARCHITECTURE.md`
@@ -32,20 +44,9 @@ G:\My Drive\HYPER Vibe Coding Course
 - `docs/LEADERBOARD_QUESTS_GUIDE.md`
 - `COURSE_MASTER_TRACKER.md`
 
-**02 - Module Scripts**
-- `scripts/M1-designing-your-focus-zone.md` through `scripts/M12-ride-or-die-contribution.md`
-- Any expanded scripts you generate from NotebookLM (save alongside the originals)
-
-**03 - Research & Docs (NotebookLM Tier 2+)**
-- `docs/**` (guides, notes, trackers you want searchable)
-- `Hyper Vibe Course  Idea Data/**` (PDFs + notebook packs + deep reference)
-
-**04 - Assets & Media**
+**Assets & Media (optional)**
 - `assets/**` (if/when you start collecting thumbnails, screenshots, videos)
 - `Hyper Vibe Course  Idea Data/**` media folders (PNG/MP4/M4A) if you want them in Drive
-
-**05 - Working Docs**
-- Day-to-day planning docs, checklists, and anything you edit frequently outside Git
 
 ### External (Drive-only) Sources
 
