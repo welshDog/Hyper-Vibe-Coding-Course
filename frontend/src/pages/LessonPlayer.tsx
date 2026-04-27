@@ -10,6 +10,7 @@ import { cn } from '../lib/utils';
 import { useAchievements, BADGES } from '../hooks/useAchievements';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { QuizWidget } from '../components/QuizWidget';
+import { useAutoQuestTriggers } from '../hooks/useAutoQuestTriggers';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ export default function LessonPlayer() {
 
   const { onLessonCompleted, totalXp, earnedBadges } = useAchievements();
   const { trackLessonStarted, trackLessonCompleted, trackBadgeEarned } = useAnalytics();
+  const { triggerQuest } = useAutoQuestTriggers();
 
   // Track which lessons we've already fired lesson_started for (per mount)
   const trackedStartRef = useRef(new Set<string>());
@@ -216,6 +218,8 @@ export default function LessonPlayer() {
       return;
     }
 
+    await triggerQuest('FIRST_LESSON');
+
     // Update enrollment progress %
     const progressPercent =
       lessons.length > 0
@@ -229,6 +233,10 @@ export default function LessonPlayer() {
       })
       .eq('user_id', user.id)
       .eq('course_id', courseId);
+
+    if (newCompleted.size === lessons.length) {
+      await triggerQuest('COURSE_COMPLETE');
+    }
 
     // Analytics
     trackLessonCompleted({

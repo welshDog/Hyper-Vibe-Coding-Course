@@ -74,9 +74,20 @@ test.describe('Enrollment & Learning', () => {
 
   // Tracks server-side enrollment state across the test
   let isEnrolled = false;
+  let completedQuestIds: string[] = [];
+  let completedLessonIds: string[] = [];
+
+  const quests = [
+    { id: 'q-first-lesson', title: 'First Lesson' },
+    { id: 'q-quiz-master', title: 'Quiz Master' },
+    { id: 'q-course-complete', title: 'Course Complete' },
+    { id: 'q-streak-5', title: '5-Day Streak' },
+  ];
 
   test.beforeEach(async ({ page }) => {
     isEnrolled = false;
+    completedQuestIds = [];
+    completedLessonIds = [];
 
     const handleSupabaseRequest = async (route: Route) => {
       const request = route.request();
@@ -261,17 +272,43 @@ test.describe('Enrollment & Learning', () => {
       // DB: progress
       if (url.pathname.startsWith('/rest/v1/progress')) {
         if (method === 'POST') {
+          const body = JSON.parse(request.postData() ?? '{}') as {
+            lesson_id?: string;
+            completed?: boolean;
+          };
+          if (body.lesson_id && body.completed === true && !completedLessonIds.includes(body.lesson_id)) {
+            completedLessonIds.push(body.lesson_id);
+          }
+          const lessonId = body.lesson_id ?? lessons[0].id;
           await fulfillJson(
             route,
             asObject
-              ? { id: 'progress-1', lesson_id: lessons[0].id, completed: true }
-              : [{ id: 'progress-1', lesson_id: lessons[0].id, completed: true }],
+              ? { id: 'progress-1', lesson_id: lessonId, completed: true }
+              : [{ id: 'progress-1', lesson_id: lessonId, completed: true }],
             201,
           );
           return;
         }
-        // GET progress: return empty (nothing completed yet)
-        await fulfillJson(route, asObject ? null : []);
+        const payload = completedLessonIds.map((lessonId, idx) => ({
+          id: `progress-${idx + 1}`,
+          lesson_id: lessonId,
+          completed: true,
+        }));
+        await fulfillJson(route, asObject ? payload[0] ?? null : payload);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/quests')) {
+        await fulfillJson(route, asObject ? quests[0] : quests);
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/rpc/complete_quest')) {
+        const payload = JSON.parse(request.postData() ?? '{}') as { p_quest_id?: string };
+        const questId = payload.p_quest_id ?? '';
+        const alreadyDone = completedQuestIds.includes(questId);
+        if (!alreadyDone && questId) completedQuestIds.push(questId);
+        await fulfillJson(route, alreadyDone ? { success: false, error: 'Quest already completed' } : { success: true });
         return;
       }
 
@@ -349,6 +386,28 @@ test.describe('Enrollment & Learning', () => {
 
     // Progress text updates
     await expect(page.getByTestId('progress-text')).toHaveText('1 / 2 completed');
+
+    await expect.poll(() => completedQuestIds).toContain('q-first-lesson');
+  });
+
+  test('should award Course Complete quest when all lessons are completed', async ({ page }) => {
+    isEnrolled = true;
+    await navigateClient(page, '/learn/1');
+
+    await expect(page.getByTestId('mark-complete-btn')).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId('mark-complete-btn').click();
+    await expect.poll(() => completedQuestIds).toContain('q-first-lesson');
+
+    await page.getByTestId('next-lesson-btn').click();
+    await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 2');
+
+    await expect(page.getByTestId('mark-complete-btn')).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId('mark-complete-btn').click();
+
+    await expect(page.getByTestId('lesson-completed-icon-1')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('progress-text')).toHaveText('2 / 2 completed');
+
+    await expect.poll(() => completedQuestIds).toContain('q-course-complete');
   });
 
   test('should navigate between lessons', async ({ page }) => {

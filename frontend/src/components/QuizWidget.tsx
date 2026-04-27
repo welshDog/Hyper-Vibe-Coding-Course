@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 import { CheckCircle, XCircle, ChevronRight, RotateCcw } from 'lucide-react';
 import { Button } from './ui/Button';
+import { useAutoQuestTriggers } from '../hooks/useAutoQuestTriggers';
 
 type QuizQuestion = {
   id: string;
@@ -27,6 +28,8 @@ export function QuizWidget({ lessonId, userId }: Props) {
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { triggerQuest } = useAutoQuestTriggers();
+  const quizMasterTriggeredRef = useRef(false);
 
   useEffect(() => {
     async function fetchQuiz() {
@@ -74,6 +77,15 @@ export function QuizWidget({ lessonId, userId }: Props) {
 
     void fetchQuiz();
   }, [lessonId, userId]);
+
+  useEffect(() => {
+    if (!done) return;
+    if (quizMasterTriggeredRef.current) return;
+    if (questions.length === 0) return;
+    if (score !== questions.length) return;
+    quizMasterTriggeredRef.current = true;
+    void triggerQuest('QUIZ_MASTER');
+  }, [done, questions.length, score, triggerQuest]);
 
   if (loading || questions.length === 0) return null;
 
