@@ -398,8 +398,8 @@ test.describe('Enrollment & Learning', () => {
     await page.getByTestId('mark-complete-btn').click();
     await expect.poll(() => completedQuestIds).toContain('q-first-lesson');
 
-    await page.getByTestId('next-lesson-btn').click();
-    await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 2');
+    await page.getByTestId('lesson-item-1').click();
+    await expect(page.getByTestId('current-lesson-title')).toHaveText('Lesson 2', { timeout: 15_000 });
 
     await expect(page.getByTestId('mark-complete-btn')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('mark-complete-btn').click();

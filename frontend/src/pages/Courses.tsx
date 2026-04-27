@@ -69,8 +69,7 @@ export default function Courses() {
         if (error) return;
         const ids = new Set(((data as Array<{ module_id: string }>) ?? []).map((r) => r.module_id));
         setCompletedModuleIds(ids);
-      })
-      .catch(() => {
+      }, () => {
         if (cancelled) return;
       });
 

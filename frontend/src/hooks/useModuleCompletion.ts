@@ -45,8 +45,7 @@ export function useModuleCompletion(moduleId: string) {
           setIsCompleted(Boolean(data?.id));
         }
         setIsLoading(false);
-      })
-      .catch(() => {
+      }, () => {
         if (cancelled) return;
         setIsCompleted(false);
         setIsLoading(false);

@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface HUDState {

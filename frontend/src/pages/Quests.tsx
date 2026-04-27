@@ -5,10 +5,10 @@ import { useAuthStore } from '../context/auth';
 interface UserQuestRow {
   quest_id: string;
   completed_at: string | null;
-  quest: {
+  quest: Array<{
     title: string;
     description: string | null;
-  } | null;
+  }> | null;
 }
 
 export default function Quests() {
@@ -44,8 +44,8 @@ export default function Quests() {
 
   const quests = useMemo(() => {
     return rows.map((r) => {
-      const title = r.quest?.title ?? 'Quest';
-      const description = r.quest?.description ?? null;
+      const title = r.quest?.[0]?.title ?? 'Quest';
+      const description = r.quest?.[0]?.description ?? null;
       const target = 1;
       const current = r.completed_at ? 1 : 0;
       return { questId: r.quest_id, title, description, current, target };

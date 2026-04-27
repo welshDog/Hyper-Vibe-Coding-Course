@@ -9,7 +9,7 @@
 // Usage — wrap a single risky section:
 //   <ErrorBoundary fallback={<p>Section unavailable</p>}><RiskyComponent /></ErrorBoundary>
 
-import { Component, ReactNode, ErrorInfo } from 'react'
+import { Component, type ReactNode, type ErrorInfo } from 'react'
 
 interface Props {
   children: ReactNode

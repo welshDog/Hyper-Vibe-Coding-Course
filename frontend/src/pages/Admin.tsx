@@ -32,8 +32,8 @@ type EnrollmentRow = {
   user_id: string;
   course_id: string;
   enrolled_at: string;
-  courses: { title: string } | null;
-  users: { email: string; full_name: string } | null;
+  courses: Array<{ title: string }> | null;
+  users: Array<{ email: string; full_name: string }> | null;
 };
 
 type PaymentRow = {
@@ -338,10 +338,10 @@ export default function Admin() {
                 >
                   <div>
                     <span className="text-white text-sm">
-                      {row.users?.email ?? row.user_id}
+                      {row.users?.[0]?.email ?? row.user_id}
                     </span>
                     <span className="ml-3 text-xs text-gray-500">
-                      {row.courses?.title ?? row.course_id}
+                      {row.courses?.[0]?.title ?? row.course_id}
                     </span>
                   </div>
                   <span className="text-gray-600 text-xs">{timeAgo(row.enrolled_at)}</span>

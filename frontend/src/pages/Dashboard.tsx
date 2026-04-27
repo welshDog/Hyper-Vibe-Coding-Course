@@ -69,8 +69,7 @@ export default function Dashboard() {
         }
         setXpTotal(typeof data.total_xp === 'number' ? data.total_xp : 0);
         setXpLevel(typeof data.level === 'number' ? data.level : 1);
-      })
-      .catch(() => {
+      }, () => {
         if (cancelled) return;
       });
 

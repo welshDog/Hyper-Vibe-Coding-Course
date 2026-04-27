@@ -29,7 +29,7 @@ type ShopPurchaseWithItem = {
   item_id: string;
   spent_tokens: number;
   purchased_at: string;
-  shop_items: { name: string } | null;
+  shop_items: Array<{ name: string }> | null;
 };
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -363,7 +363,7 @@ export default function Profile() {
                 {shopPurchases.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-800 font-medium">
-                      {p.shop_items?.name ?? '—'}
+                      {p.shop_items?.[0]?.name ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-yellow-600 tabular-nums">
                       -{p.spent_tokens.toLocaleString()} 🪙

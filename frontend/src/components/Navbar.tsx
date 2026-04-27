@@ -47,8 +47,7 @@ export function Navbar() {
         if (error || !data) return;
         setBroskiTokens(typeof data.broski_tokens === 'number' ? data.broski_tokens : null);
         setAvatarUrl(typeof data.avatar_url === 'string' ? data.avatar_url : null);
-      })
-      .catch(() => {
+      }, () => {
         if (cancelled) return;
       });
 
