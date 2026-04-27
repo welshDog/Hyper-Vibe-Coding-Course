@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: April 26, 2026 — Phase 12 COMPLETE — Leaderboard + Quests + Admin Rift UI all LIVE. 33 E2E passing. 🏆**
+> **Last updated: April 27, 2026 — Phase 12 COMPLETE — Leaderboard + Quests + Admin Rift UI all LIVE. 72 E2E passing. 🏆**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -83,7 +83,7 @@ Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStatio
 | 11C | Supabase gamification schema (user_xp, xp_events, rifts) | ✅ DONE — April 26, 2026 🗄️ |
 | 11D | HUD wired into App.tsx + Layout.tsx | ✅ DONE — April 26, 2026 🔗 |
 | 11E | HUDContext + useRift reading Supabase directly | ✅ DONE — April 26, 2026 ⚡ |
-| 11F | E2E tests updated — 33 passing | ✅ DONE — April 26, 2026 🧪 |
+| 11F | E2E tests updated — 72 passing | ✅ DONE — April 26, 2026 🧪 |
 | 12A | Leaderboard page (`/leaderboard`) | ✅ DONE — April 26, 2026 🏆 |
 | 12B | QuestPage (`/quests`) + `complete_quest` RPC | ✅ DONE — April 26, 2026 ⚔️ |
 | 12C | Admin Rift Panel (AdminRiftPanel.tsx in Admin.tsx) | ✅ DONE — April 26, 2026 🌀 |
@@ -158,7 +158,7 @@ All values multiplied by active rift `multiplier` if a rift is live.
 ```
 Frontend lint:  ✅ no errors (1 known warning: react-refresh in HUDContext.tsx — leave it)
 Frontend build: ✅ clean TypeScript compile
-E2E tests:      ✅ 33 passed
+E2E tests:      ✅ 72 passed
 API tests:      ✅ (no API tests yet — by design)
 Supabase push:  ✅ both migrations applied to linked DB
 ```
@@ -174,16 +174,27 @@ curl -X POST http://localhost:8000/api/rifts/create \
 
 ---
 
-## 🗺️ NEXT UP — Remaining Work (as of April 26, 2026)
+## 🗺️ NEXT UP — Remaining Work (as of April 27, 2026)
 
 | # | Task | Priority |
 |---|---|---|
-| 1 | Module 1.1 content generation + DB sync | 🔴 Next |
-| 2 | Hero onboarding page + invite first real student | 🔴 Next |
-| 3 | Playwright tests for leaderboard + quest flow + admin rift | 🟡 Soon |
-| 4 | `/economy/award-from-course` endpoint | 🟡 Soon |
-| 5 | Auto-quest triggers (lesson watch, quiz submit, streak check) | 🟡 Day 4 |
-| 6 | Agent image CVE patching (14 HIGH, no Debian fix yet) | 🟡 Batch |
+| 1 | Course content: generate expanded scripts (M1–M12) via NotebookLM and save to Drive + repo `scripts/` | 🔴 Next |
+| 2 | Drive media pipeline: create `Visuals_SlideDecks`, `Infographics`, `Audio_Podcasts`, `Video_Overviews`, `Exports_Final` folders under `G:\\My Drive\\HYPER Vibe Coding Course` | 🔴 Next |
+| 3 | Align `docs/course/NOTEBOOKLM_MASTER_PROMPT_PACK.md` Drive section to the real Drive folder names (`Course_Curriculum`, `NotebookLM_Sources`, `Notes`, `Archive`) | 🟡 Soon |
+| 4 | Hero onboarding page + invite first real student | 🟡 Soon |
+| 5 | `/economy/award-from-course` endpoint | 🟡 Soon |
+| 6 | Auto-quest triggers (lesson watch, quiz submit, streak check) | 🟡 Batch |
+
+### 🗂️ Drive Workspace (Current Reality)
+
+Drive root:
+`G:\My Drive\HYPER Vibe Coding Course`
+
+Current folders:
+- `Course_Curriculum` (curriculum, quiz pack, lesson plans, module outlines)
+- `NotebookLM_Sources` (research + per-module NotebookLM source docs)
+- `Notes` (prompt packs, checklists, naming standards, master index)
+- `Archive` (old maps/exports)
 
 ---
 
