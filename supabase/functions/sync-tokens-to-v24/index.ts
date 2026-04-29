@@ -135,15 +135,22 @@ serve(async (req: Request) => {
 
   const record = payload.record;
 
+  if (payload.type !== "INSERT" || payload.table !== "token_transactions") {
+    return jsonOk({ ok: true, skipped: true, reason: "unsupported_event" });
+  }
+
   if (!record || typeof record !== 'object') {
     console.error('sync-tokens-to-v24: Missing record in payload');
     return jsonError('Missing record in payload', 400);
   }
 
   // ── 2. Guard: only forward positive amounts (skip refunds / deductions) ────
-  if (!record.amount || record.amount <= 0) {
+  const amount = typeof record.amount === "number"
+    ? record.amount
+    : Number((record as unknown as Record<string, unknown>)["tokens"] ?? 0);
+  if (!amount || amount <= 0) {
     console.log(
-      `sync-tokens-to-v24: Skipping non-positive amount=${record.amount} for id=${record.id}`,
+      `sync-tokens-to-v24: Skipping non-positive amount=${amount} for id=${record.id}`,
     );
     return jsonOk({ ok: true, skipped: true, reason: 'non_positive_amount' });
   }
@@ -175,38 +182,52 @@ serve(async (req: Request) => {
   const awardPayload: V24AwardPayload = {
     source_id:  record.id,
     discord_id: discordId,
-    tokens:     record.amount,
+    tokens:     amount,
     reason:     record.reason ?? 'Course reward',
   };
 
   const v24Endpoint = `${v24ApiUrl.replace(/\/$/, '')}/api/v1/economy/award-from-course`;
 
-  let response: Response;
-  try {
-    response = await fetch(v24Endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'X-Sync-Secret': courseSyncSecret,
-      },
-      body: JSON.stringify(awardPayload),
-    });
-  } catch (fetchErr) {
-    // Network error — log but return 200 so Supabase does NOT retry
-    // (V2.4 idempotency guard means retries are safe, but network retries
-    //  from Supabase itself can cause duplicate calls — we handle dedup in V2.4)
+  const attemptDelaysMs = [0, 250, 750];
+  let response: Response | null = null;
+  let lastNetworkError: unknown = null;
+  for (const delayMs of attemptDelaysMs) {
+    if (delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    try {
+      const r = await fetch(v24Endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Sync-Secret': courseSyncSecret,
+        },
+        body: JSON.stringify(awardPayload),
+      });
+      if (r.status >= 500) {
+        response = r;
+        continue;
+      }
+      response = r;
+      break;
+    } catch (fetchErr) {
+      lastNetworkError = fetchErr;
+      continue;
+    }
+  }
+  if (!response) {
     console.error(
       `sync-tokens-to-v24: Network error posting to V2.4 for source_id=${record.id}:`,
-      fetchErr,
+      lastNetworkError,
     );
-    return jsonOk({ ok: false, reason: 'v24_network_error' });
+    return jsonError("V2.4 network error", 502);
   }
 
   // ── 6. Handle V2.4 response ─────────────────────────────────────────────────
   if (response.ok) {
     const body = await response.json().catch(() => ({}));
     console.log(
-      `sync-tokens-to-v24: ✅ Awarded ${record.amount} tokens to discord=${discordId} ` +
+      `sync-tokens-to-v24: ✅ Awarded ${amount} tokens to discord=${discordId} ` +
       `source_id=${record.id}`,
     );
     return jsonOk({ ok: true, source_id: record.id, ...body });
@@ -229,10 +250,18 @@ serve(async (req: Request) => {
     return jsonOk({ ok: false, reason: 'v24_user_not_found' });
   }
 
-  // Any other error — log but return 200 (avoid Supabase retry storm)
+  if (response.status === 401 || response.status === 403) {
+    const errBody = await response.text().catch(() => '');
+    console.error(
+      `sync-tokens-to-v24: V2.4 auth failed (${response.status}) for source_id=${record.id}: ${errBody}`,
+    );
+    return jsonError("V2.4 auth failed", 502);
+  }
+
+  // Any other error — log but return non-2xx so delivery can be retried upstream
   const errBody = await response.text().catch(() => '');
   console.error(
     `sync-tokens-to-v24: V2.4 returned ${response.status} for source_id=${record.id}: ${errBody}`,
   );
-  return jsonOk({ ok: false, reason: `v24_error_${response.status}` });
+  return jsonError(`V2.4 error ${response.status}`, 502);
 });
