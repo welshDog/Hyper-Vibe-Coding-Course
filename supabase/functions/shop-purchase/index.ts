@@ -26,7 +26,7 @@
 //   supabase functions deploy shop-purchase
 //   (verify_jwt is ON by default — do NOT pass --no-verify-jwt)
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')             ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';

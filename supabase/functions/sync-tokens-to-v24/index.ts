@@ -36,16 +36,15 @@
 //     - URL: https://<your-project>.supabase.co/functions/v1/sync-tokens-to-v24
 //     - Headers: (none) — this edge function authenticates to V2.4 via X-Sync-Secret
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface TokenTransactionRecord {
-  id: string;           // UUID — used as idempotency key (source_id) in V2.4
-  user_id: string;      // Supabase auth UID
-  discord_id?: string | null; // Optional — resolved via discord_links if missing
-  amount: number;       // Token delta — only positive amounts are forwarded
+  id: string;
+  user_id: string;
+  discord_id?: string | null;
+  amount: number;
   reason: string | null;
   created_at: string;
 }
@@ -118,8 +117,7 @@ async function resolveDiscordId(
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
-serve(async (req: Request) => {
-  // Only process POST requests — Supabase DB webhooks always use POST
+Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return jsonError('Method not allowed', 405);
   }
@@ -144,28 +142,24 @@ serve(async (req: Request) => {
     return jsonError('Missing record in payload', 400);
   }
 
-  // ── 2. Guard: only forward positive amounts (skip refunds / deductions) ────
+  // ── 2. Guard: only forward positive amounts ────────────────────────────────
   const amount = typeof record.amount === "number"
     ? record.amount
     : Number((record as unknown as Record<string, unknown>)["tokens"] ?? 0);
   if (!amount || amount <= 0) {
-    console.log(
-      `sync-tokens-to-v24: Skipping non-positive amount=${amount} for id=${record.id}`,
-    );
+    console.log(`sync-tokens-to-v24: Skipping non-positive amount=${amount} for id=${record.id}`);
     return jsonOk({ ok: true, skipped: true, reason: 'non_positive_amount' });
   }
 
   // ── 3. Resolve discord_id ──────────────────────────────────────────────────
   const { discordId, reason: discordIdSource } = await resolveDiscordId(record);
   if (!discordId) {
-    console.log(
-      `sync-tokens-to-v24: Skipping id=${record.id} — discord_id missing (${discordIdSource})`,
-    );
+    console.log(`sync-tokens-to-v24: Skipping id=${record.id} — discord_id missing (${discordIdSource})`);
     return jsonOk({ ok: true, skipped: true, reason: 'no_discord_id' });
   }
 
   // ── 4. Read env vars ────────────────────────────────────────────────────────
-  const v24ApiUrl      = Deno.env.get('V24_API_URL') ?? '';
+  const v24ApiUrl        = Deno.env.get('V24_API_URL') ?? '';
   const courseSyncSecret = Deno.env.get('COURSE_SYNC_SECRET') ?? '';
 
   if (!v24ApiUrl) {
@@ -204,10 +198,7 @@ serve(async (req: Request) => {
         },
         body: JSON.stringify(awardPayload),
       });
-      if (r.status >= 500) {
-        response = r;
-        continue;
-      }
+      if (r.status >= 500) { response = r; continue; }
       response = r;
       break;
     } catch (fetchErr) {
@@ -216,52 +207,34 @@ serve(async (req: Request) => {
     }
   }
   if (!response) {
-    console.error(
-      `sync-tokens-to-v24: Network error posting to V2.4 for source_id=${record.id}:`,
-      lastNetworkError,
-    );
+    console.error(`sync-tokens-to-v24: Network error posting to V2.4 for source_id=${record.id}:`, lastNetworkError);
     return jsonError("V2.4 network error", 502);
   }
 
   // ── 6. Handle V2.4 response ─────────────────────────────────────────────────
   if (response.ok) {
     const body = await response.json().catch(() => ({}));
-    console.log(
-      `sync-tokens-to-v24: ✅ Awarded ${amount} tokens to discord=${discordId} ` +
-      `source_id=${record.id}`,
-    );
+    console.log(`sync-tokens-to-v24: ✅ Awarded ${amount} tokens to discord=${discordId} source_id=${record.id}`);
     return jsonOk({ ok: true, source_id: record.id, ...body });
   }
 
-  // 409 = already processed — idempotent, treat as success
   if (response.status === 409) {
-    console.log(
-      `sync-tokens-to-v24: source_id=${record.id} already processed in V2.4 — safe to ignore`,
-    );
+    console.log(`sync-tokens-to-v24: source_id=${record.id} already processed in V2.4 — safe to ignore`);
     return jsonOk({ ok: true, skipped: true, reason: 'already_processed' });
   }
 
-  // 404 = user not linked in V2.4 yet — not fatal, log and move on
   if (response.status === 404) {
-    console.warn(
-      `sync-tokens-to-v24: discord_id=${discordId} not found in V2.4 ` +
-      `(source_id=${record.id}) — user needs to /link-discord`,
-    );
+    console.warn(`sync-tokens-to-v24: discord_id=${discordId} not found in V2.4 (source_id=${record.id}) — user needs to /link-discord`);
     return jsonOk({ ok: false, reason: 'v24_user_not_found' });
   }
 
   if (response.status === 401 || response.status === 403) {
     const errBody = await response.text().catch(() => '');
-    console.error(
-      `sync-tokens-to-v24: V2.4 auth failed (${response.status}) for source_id=${record.id}: ${errBody}`,
-    );
+    console.error(`sync-tokens-to-v24: V2.4 auth failed (${response.status}) for source_id=${record.id}: ${errBody}`);
     return jsonError("V2.4 auth failed", 502);
   }
 
-  // Any other error — log but return non-2xx so delivery can be retried upstream
   const errBody = await response.text().catch(() => '');
-  console.error(
-    `sync-tokens-to-v24: V2.4 returned ${response.status} for source_id=${record.id}: ${errBody}`,
-  );
+  console.error(`sync-tokens-to-v24: V2.4 returned ${response.status} for source_id=${record.id}: ${errBody}`);
   return jsonError(`V2.4 error ${response.status}`, 502);
 });
