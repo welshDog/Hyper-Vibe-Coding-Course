@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-01
+
+### Fixed
+- **Edge Functions** — fixed `Deno.core.runMicrotasks()` crash across all 4 functions
+  - `shop-purchase` — replaced `esm.sh` supabase-js import with `npm:@supabase/supabase-js@2`
+  - `stripe-webhook` — replaced `esm.sh` stripe + supabase imports with `npm:stripe@14.21.0` + `npm:@supabase/supabase-js@2`
+  - `course-profile` — replaced deprecated `std@0.168 serve` with `Deno.serve()` + fixed imports
+  - `sync-tokens-to-v24` — replaced deprecated `std@0.168 serve` with `Deno.serve()` + fixed imports
+
+### Deployed
+- All 4 edge functions deployed to Supabase project `yhtmuibgdnxhbgboajhc` via Supabase CLI v2.95.4
+  - `shop-purchase` (422.1kB)
+  - `course-profile` (75.81kB)
+  - `stripe-webhook` (491.9kB) — `--no-verify-jwt`
+  - `sync-tokens-to-v24` (78.38kB) — `--no-verify-jwt`
+
+### Infrastructure
+- Installed Supabase CLI v2.95.4 on WSL2 (Ubuntu 22.04)
+- Installed `jq` on WSL2 for API response debugging
+
 ## [0.3.0] - 2026-04-11
 
 ### Added
@@ -42,4 +62,3 @@ All notable changes to this project will be documented in this file.
 - Course design documents and launch kit
 - GitHub Actions CI + GitHub Pages deployment
 - Issue templates and PR template
-

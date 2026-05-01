@@ -20,8 +20,8 @@
 //   supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
 //   supabase secrets set STRIPE_SECRET_KEY=sk_live_...
 
-import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno&no-check';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2?target=deno';
+import Stripe from 'npm:stripe@14.21.0';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-04-10',
@@ -199,8 +199,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const userId = await resolveUserId(buyerEmail);
 
   // ── Unregistered buyer: save pending enrollment ──────────────────────────
-  // When the buyer creates their account, handle_new_user trigger will call
-  // apply_pending_enrollments() and unlock the course automatically.
   if (!userId) {
     const { error: pendingError } = await supabaseAdmin
       .from('pending_enrollments')
@@ -243,8 +241,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 }
 
 // ── Handler: charge.refunded ──────────────────────────────────────────────────
-// Only handles refunds for token pack purchases (identified by metadata.token_amount).
-// Course refunds are handled manually (unenrollment is a support workflow).
 
 async function handleChargeRefunded(charge: Stripe.Charge): Promise<Response> {
   const tokenAmount = charge.metadata?.token_amount
@@ -252,7 +248,6 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<Response> {
     : null;
 
   if (!tokenAmount || isNaN(tokenAmount)) {
-    // Not a token pack — course refunds handled separately
     return new Response('OK — not a token purchase', { status: 200 });
   }
 
@@ -268,8 +263,6 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<Response> {
     return new Response('OK — unregistered user', { status: 200 });
   }
 
-  // Deduct tokens — spend_tokens() enforces floor at 0 via CHECK constraint.
-  // If balance < tokenAmount, clamp to current balance so we never go negative.
   const { data: userData } = await supabaseAdmin
     .from('users')
     .select('broski_tokens')
@@ -328,7 +321,6 @@ Deno.serve(async (req: Request) => {
       return handleChargeRefunded(event.data.object as Stripe.Charge);
 
     default:
-      // Acknowledge unhandled events — don't let Stripe retry them
       return new Response('OK — unhandled event type', { status: 200 });
   }
 });
