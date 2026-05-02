@@ -1,7 +1,7 @@
 # 🌌 CLAUDE_DESIGN_STYLE.md
 # HyperFocus Z0ne — Master Design System & Brand Bible
 > Read this first. Every design session. No exceptions.
-> Built by @welshDog — Lyndz Williams, Llanelli, Wales 🏴
+> Built by @welshDog — Lyndz Williams, Llanelli, Wales 🏴󠁧󠁢󠁷󠁬󠁳󠁿
 > Last updated: May 2026
 
 ---
@@ -485,10 +485,93 @@ HyperCore:  "29 agents. One brain. Zero limits."
 
 ---
 
+## 📝 ANY OTHER NOTES
+
+### 🧠 Designing for Neurodivergent Brains — Always
+This isn't just aesthetic. Every decision in this doc exists because the people using HyperFocus Z0ne have ADHD, dyslexia, or are autistic. That means:
+- **Reduce friction at every turn** — one clear action per screen, never two competing CTAs
+- **Predictable layouts** — same sidebar, same header, every page. No surprises.
+- **Reward progress constantly** — dopamine hits matter here more than anywhere else
+- **Error states are NEVER the user's fault** in the copy — always a "let's try again" not a blame
+- **Reading difficulty is real** — chunked content, big text, generous spacing is not optional
+
+### 🌍 Accessibility Baseline (non-negotiable)
+- **WCAG AA minimum** for all text contrast — AA+ preferred
+- **Focus rings always visible** — never `outline: none` without a custom replacement
+- **All animations respect** `prefers-reduced-motion` — wrap every keyframe in a media query
+- **Alt text on every image** — descriptive, not "image of..."
+- **ARIA labels** on all icon-only buttons — no exceptions
+- **Tab order** must be logical and never skip interactive elements
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+
+### 🔧 Design Workflow — Session Start Checklist
+Every time you open a design file or start a new component, run through this:
+```
+[ ] Read this file top to bottom if it's been more than a week
+[ ] Check /brand/ folder for latest logo assets before designing
+[ ] Confirm you're using the correct colour tokens — no raw hex hardcoding
+[ ] Check WHATS_DONE.md — don't redesign something already built
+[ ] Mobile view first — always design at 375px before expanding
+[ ] Run contrast checker before finalising any text colour combo
+[ ] Add prefers-reduced-motion before shipping any animation
+```
+
+### 🤝 Handing Off to Developers
+When passing designs to a dev (or to Claude to build):
+- **Export measurements in px** not rem — Claude converts, designers don't need to
+- **Name every layer** — no "Rectangle 47" ever
+- **Include hover + active + disabled states** for every interactive component
+- **Write the micro-copy in the design file** — not "button text here"
+- **Annotate animations** — specify duration, easing token, trigger event
+- **Link to this file** in every Figma page description
+
+### 💡 New Component Checklist
+Before shipping any new UI component to production:
+```
+[ ] Dark background only — tested on #0A0E1A
+[ ] Text 16px minimum
+[ ] Hover state defined
+[ ] Focus state defined (keyboard nav)
+[ ] Mobile layout tested at 375px
+[ ] prefers-reduced-motion handled
+[ ] ARIA label if icon-only
+[ ] Matches existing spacing tokens (no magic numbers)
+[ ] Tested with a simulated dyslexia filter (browser extension)
+```
+
+### 🚀 Future Design Directions (on the roadmap)
+These aren't built yet — but keep them in mind so new work doesn't block them:
+- **HFZ Design Token export** → Figma tokens → JSON → Tailwind config (auto-sync pipeline)
+- **Component Storybook** → Every component documented with all states, live on `/design-system`
+- **BROski$Pets 3D card flip** → WebGL or CSS 3D, full holographic back-of-card design
+- **Adaptive difficulty UI** → Course UI subtly shifts based on student's focus score (more whitespace, larger text when score dips)
+- **Dark + Darker mode** → Two dark options: standard `#0A0E1A` and ultra-dark `#020408` for night owls
+- **Custom HFZ icon set** → Phosphor-based but with Z0ne personality — brain, lightning, circuit nodes, coin, portal, pet paw
+
+### 🐶 A Note from Lyndz
+> This ecosystem was built by a neurodivergent brain, for neurodivergent brains.
+> Every pixel, every animation, every word in the UI is a deliberate choice to make
+> someone feel like they belong here — like the Z0ne was made for them.
+> Because it was.
+>
+> Keep it weird. Keep it warm. Keep it Welsh. 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+> — @welshDog
+
+---
+
 <div align="center">
 
 **HyperFocus Z0ne** — Enter the Z0ne. Build the future.
-Built by @welshDog — Lyndz Williams 🏴
+Built by @welshDog — Lyndz Williams 🏴󠁧󠁢󠁷󠁬󠁳󠁿
 *The Z0ne is where neurodivergent builders belong.*
 
 </div>
