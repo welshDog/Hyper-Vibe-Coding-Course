@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BROski$Pets — Companion Inventory</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  body{margin:0;background:var(--space-black)}
+  .app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+  .body{display:grid;grid-template-columns:340px 1fr;gap:24px;padding:24px;overflow:hidden}
+  .inv{overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  .right{overflow-y:auto;display:flex;flex-direction:column;gap:20px}
+  .filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{padding:5px 10px;border-radius:6px;background:rgba(139,156,200,0.08);border:1px solid rgba(139,156,200,0.15);color:#8B9CC8;font-size:11px;font-weight:600;letter-spacing:0.06em;cursor:pointer}
+  .chip.on{background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.4);color:#00D4FF}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="../hyper-vibe/Primitives.jsx"></script>
+<script type="text/babel" src="Pets.jsx"></script>
+<script type="text/babel">
+const PETS = [
+  { id:'7a4c', name:'Vibe Pup',     rarity:'legendary', stage:'TRAINED',    level:14, xp:2840, maxXp:4000, traits:['focus+','dyslexia-buff','welsh-fire'], stats:{str:78,vib:92,spd:64,lck:88} },
+  { id:'2f91', name:'CodeKitsu',    rarity:'epic',      stage:'TRAINED',    level:9,  xp:1240, maxXp:2000, traits:['ship-fast','test-buff'], stats:{str:55,vib:71,spd:82,lck:48} },
+  { id:'b023', name:'BROski',       rarity:'rare',      stage:'HATCH',      level:4,  xp:480,  maxXp:1000, traits:['streak-aura'], stats:{str:32,vib:45,spd:38,lck:50} },
+  { id:'19de', name:'Glitchling',   rarity:'rare',      stage:'EGG',        level:1,  xp:120,  maxXp:500,  traits:['rare-drop'], stats:{str:18,vib:22,spd:15,lck:35} },
+  { id:'4cc8', name:'Token Tot',    rarity:'common',    stage:'EGG',        level:1,  xp:40,   maxXp:500,  traits:['common'], stats:{str:10,vib:12,spd:10,lck:14} },
+];
+
+function App(){
+  const [sel, setSel] = React.useState(PETS[0]);
+  const [filter, setFilter] = React.useState('all');
+  const visible = filter === 'all' ? PETS : PETS.filter(p => p.rarity === filter);
+
+  return (
+    <div className="app" data-screen-label="01 BROskiPets Inventory">
+      <HVZHud xp={2840} maxXp={4000} tokens={1240} streak={7} />
+      <div className="body">
+        <div className="inv">
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+              <h2 style={{margin:0,fontFamily:'var(--font-display)',fontSize:22,fontWeight:700}}>My Pack <span style={{color:'#8B9CC8',fontWeight:500,fontSize:14}}>· {PETS.length}</span></h2>
+              <span style={{fontSize:11,color:'#A855F7',fontWeight:700,letterSpacing:'0.08em'}}>dNFT v2</span>
+            </div>
+            <div className="filter-row">
+              {['all','legendary','epic','rare','common'].map(f => (
+                <span key={f} className={`chip ${filter===f?'on':''}`} onClick={()=>setFilter(f)}>{f.toUpperCase()}</span>
+              ))}
+            </div>
+          </div>
+          {visible.map(p => (
+            <PetCard key={p.id} {...p} selected={sel.id===p.id} onSelect={()=>setSel(p)} />
+          ))}
+          <button style={{padding:14,borderRadius:12,border:'1px dashed rgba(0,212,255,0.4)',background:'transparent',color:'#00D4FF',fontWeight:600,cursor:'pointer',fontFamily:'var(--font-body)',fontSize:14}}>
+            + Mint a new egg · 50 BROski$
+          </button>
+        </div>
+        <div className="right">
+          <PetDetail pet={sel} />
+          <div>
+            <div style={{fontSize:11,color:'#8B9CC8',letterSpacing:'0.1em',fontWeight:700,marginBottom:10}}>RECENT ACTIVITY · {sel.name.toUpperCase()}</div>
+            <PetActivityRow icon="⚔️" title="Won quest · Prompt Like a Pro" when="14m ago" gain="+120 XP" />
+            <PetActivityRow icon="🥚" title="Hatched at lvl 3" when="Yesterday" gain="+1 stage" />
+            <PetActivityRow icon="🪙" title="Fed · 25 BROski$" when="2d ago" gain="+40 XP" />
+            <PetActivityRow icon="✨" title="Trait unlocked · welsh-fire" when="5d ago" gain="LEGENDARY" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

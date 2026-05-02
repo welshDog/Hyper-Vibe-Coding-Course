@@ -1,0 +1,23 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Cards</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>body{margin:0;padding:18px;background:var(--space-black);font-family:var(--font-body)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:#0F1B35;border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:18px;box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+.card.glow{box-shadow:0 0 20px rgba(168,85,247,0.4),0 0 40px rgba(168,85,247,0.2);transform:translateY(-2px)}
+.tag{display:inline-block;padding:3px 10px;background:rgba(123,47,190,0.2);border:1px solid rgba(168,85,247,0.3);color:#A855F7;border-radius:9999px;font-size:11px;font-weight:600}
+h4{margin:8px 0 4px;font-family:var(--font-display);font-size:18px;color:var(--text-primary);font-weight:600}
+.meta{display:flex;justify-content:space-between;font-size:13px;margin-top:10px}
+.xp{color:#FCD34D;font-weight:600}
+.bro{color:#F59E0B;font-weight:600}
+.lbl{font-size:10px;color:var(--text-secondary);font-family:var(--font-mono);letter-spacing:0.05em;margin-bottom:6px}
+</style></head><body>
+<div class="grid">
+  <div><div class="lbl">DEFAULT</div>
+    <div class="card"><span class="tag">M01 · BEGINNER</span><h4>Your First Vibe</h4>
+      <div class="meta"><span class="xp">+50 XP</span><span class="bro">💰 25 BROski$</span></div></div></div>
+  <div><div class="lbl">HOVER · LIFT + GLOW</div>
+    <div class="card glow"><span class="tag">M02 · ADVANCED</span><h4>HyperCode the Hyper Way</h4>
+      <div class="meta"><span class="xp">+200 XP</span><span class="bro">💰 100 BROski$</span></div></div></div>
+</div>
+</body></html>

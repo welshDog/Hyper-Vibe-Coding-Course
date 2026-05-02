@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>body{margin:0;padding:20px;background:var(--space-black);font-family:var(--font-body);display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:12px;align-items:center}
+.btn{font-family:var(--font-body);font-weight:600;font-size:16px;padding:12px 24px;border-radius:8px;border:0;cursor:pointer;transition:all .25s var(--ease-smooth)}
+.primary{background:linear-gradient(135deg,#7B2FBE,#00D4FF);color:#fff}
+.primary:hover{box-shadow:0 0 20px rgba(168,85,247,0.4),0 0 40px rgba(168,85,247,0.2);transform:translateY(-2px)}
+.ghost{background:transparent;color:#A855F7;border:1px solid #A855F7}
+.ghost:hover{box-shadow:0 0 16px rgba(168,85,247,0.3);background:rgba(168,85,247,0.08)}
+.danger{background:#EF4444;color:#fff}
+.dis{background:#3D4F6E;color:#1A2540;cursor:not-allowed}
+.sm{padding:10px 16px;font-size:14px}
+.lg{padding:16px 32px;font-size:18px}
+.lbl{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);width:50px}
+</style></head><body>
+<div class="row"><span class="lbl">PRIM</span><button class="btn primary sm">Let's GO →</button><button class="btn primary">Let's GO →</button><button class="btn primary lg">Ship it 🚀</button></div>
+<div class="row"><span class="lbl">GHOST</span><button class="btn ghost sm">Cancel</button><button class="btn ghost">View details</button></div>
+<div class="row"><span class="lbl">STATE</span><button class="btn danger">Delete</button><button class="btn dis" disabled>Locked</button></div>
+</body></html>

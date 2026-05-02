@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Gradients</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+body{margin:0;padding:20px;background:var(--space-black);font-family:var(--font-body)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.g{border-radius:12px;overflow:hidden;border:1px solid var(--border-violet)}
+.bar{height:80px}
+.meta{padding:10px 12px;background:var(--midnight-blue)}
+.name{font-family:var(--font-display);font-size:14px;color:var(--text-primary);font-weight:600}
+.recipe{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);margin-top:4px;line-height:1.5}
+@keyframes holographic{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+</style></head>
+<body>
+<div class="grid">
+  <div class="g">
+    <div class="bar" style="background:linear-gradient(135deg,#7B2FBE 0%,#00D4FF 100%)"></div>
+    <div class="meta"><div class="name">CTA — Hyper Action</div><div class="recipe">violet → cyan, 135°</div></div>
+  </div>
+  <div class="g">
+    <div class="bar" style="background:linear-gradient(135deg,#F59E0B 0%,#FCD34D 50%,#F59E0B 100%)"></div>
+    <div class="meta"><div class="name">BROski$ Gold Shimmer</div><div class="recipe">gold → light → gold</div></div>
+  </div>
+  <div class="g">
+    <div class="bar" style="background:linear-gradient(135deg,#D946EF,#A855F7,#00D4FF,#10F5A0,#FCD34D,#D946EF);background-size:300% 300%;animation:holographic 3s ease infinite"></div>
+    <div class="meta"><div class="name">Holographic Foil — Legendary</div><div class="recipe">animated, 3s loop · pets only</div></div>
+  </div>
+  <div class="g">
+    <div class="bar" style="background:radial-gradient(ellipse at 50% 0%,#1A0A2E 0%,#0A0E1A 70%)"></div>
+    <div class="meta"><div class="name">Hero — Deep Space</div><div class="recipe">radial, deep-violet → space-black</div></div>
+  </div>
+</div>
+</body></html>

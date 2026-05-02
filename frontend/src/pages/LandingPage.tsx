@@ -1,120 +1,23 @@
-import { useState } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowRight,
-  Zap,
-  Trophy,
-  Rocket,
-  Code2,
-  Star,
-  Users,
-  CheckCircle,
-} from 'lucide-react'
-import { Button } from '../components/ui/Button'
+import { ArrowRight, CheckCircle, Rocket } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { cn } from '../lib/utils'
+import {
+  HVZBrand,
+  HVZButton,
+  HVZCard,
+  HVZTag,
+  HVZProgress,
+  Starfield,
+  type TagColor,
+} from '../components/ui/hvz'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type WaitlistStatus = 'idle' | 'loading' | 'success' | 'duplicate' | 'error'
 
-// ─── Static data ──────────────────────────────────────────────────────────────
-const FEATURED_COURSES = [
-  {
-    title: 'Vibe Coding Foundations',
-    subtitle: 'Build 3 real apps in 4 weeks. Zero prior coding needed.',
-    level: 'Beginner',
-    levelColor: 'bg-green-100 text-green-800',
-    duration: '4 weeks',
-    price: 'FREE',
-    priceColor: 'text-green-600 font-extrabold',
-    tags: ['AI Prompting', 'React', 'Deploy'],
-    href: '/courses',
-  },
-  {
-    title: 'Hyper Prompt Master',
-    subtitle: 'Stop guessing. Start engineering prompts that actually ship.',
-    level: 'Intermediate',
-    levelColor: 'bg-violet-100 text-violet-800',
-    duration: '5 hours',
-    price: '£29',
-    priceColor: 'text-gray-900 font-extrabold',
-    tags: ['Prompt Engineering', 'Debugging', 'Refactors'],
-    href: '/courses',
-  },
-  {
-    title: 'Ship Your First Full Stack Thing',
-    subtitle: 'React + Supabase + Stripe + Vercel. One brain, one weekend.',
-    level: 'Intermediate',
-    levelColor: 'bg-violet-100 text-violet-800',
-    duration: '14 hours',
-    price: '£49.99',
-    priceColor: 'text-gray-900 font-extrabold',
-    tags: ['Full Stack', 'Auth', 'Payments'],
-    href: '/courses',
-  },
-]
-
-const HOW_IT_WORKS = [
-  {
-    step: '01',
-    title: 'Describe what you want',
-    body: 'No syntax memorisation. Tell Claude what to build in plain English — the app, the vibe, the feeling.',
-    icon: Code2,
-  },
-  {
-    step: '02',
-    title: 'Iterate with taste',
-    body: "Your job isn't to write code — it's to know when it's good. We train the taste that AI can't replace.",
-    icon: Zap,
-  },
-  {
-    step: '03',
-    title: 'Ship something real',
-    body: 'Every session ends with a deployed URL you can share. Portfolio-ready from week one.',
-    icon: Rocket,
-  },
-]
-
-const TESTIMONIALS = [
-  {
-    quote:
-      "I tried 3 bootcamps and quit all of them. Two weeks into Hyper Vibe and I've got a deployed app with my name on it. This is genuinely different.",
-    name: 'Marcus T.',
-    role: 'Former retail manager → junior dev',
-    stars: 5,
-  },
-  {
-    quote:
-      "My ADHD brain cannot do 40-hour YouTube tutorials. These sessions are short, punchy, and I actually finish them. The badge system keeps me coming back.",
-    name: 'Priya S.',
-    role: 'Graphic designer levelling up',
-    stars: 5,
-  },
-  {
-    quote:
-      "I've been coding for years but wasted so much time on boilerplate. The vibe coding approach cut my build time in half. Wish I'd found this sooner.",
-    name: 'Jake R.',
-    role: 'Product manager who now ships code',
-    stars: 5,
-  },
-]
-
-const VIBE_VS_TRADITIONAL = [
-  { old: 'Memorise syntax for weeks', vibe: 'Describe it, AI writes it' },
-  { old: '40-hour video marathons', vibe: 'Focused 2-hour build sessions' },
-  { old: 'Debug tutorials you didn\'t write', vibe: 'Debug YOUR app, YOUR ideas' },
-  { old: 'CS theory before you ship anything', vibe: 'Ship in session one' },
-  { old: 'Quit when ADHD hits', vibe: 'Short loops designed for your brain' },
-]
-
-// ─── Email validation ─────────────────────────────────────────────────────────
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+const isValidEmail = (v: string) => v.length <= 254 && EMAIL_REGEX.test(v.trim())
 
-function isValidEmail(value: string): boolean {
-  return value.length <= 254 && EMAIL_REGEX.test(value.trim())
-}
-
-// ─── Shared waitlist submit ────────────────────────────────────────────────────
 async function submitWaitlist(
   email: string,
   source: string,
@@ -125,579 +28,946 @@ async function submitWaitlist(
   return 'error'
 }
 
-// ─── Waitlist status message ───────────────────────────────────────────────────
-function WaitlistMessage({ status }: { status: WaitlistStatus }) {
-  if (status === 'idle' || status === 'loading') return null
+// ─── Section sizing ───────────────────────────────────────────────────────────
+const CONTAINER: CSSProperties = { maxWidth: 1200, margin: '0 auto', padding: '0 24px' }
+const SECTION_PAD = 'clamp(64px, 10vw, 128px) 0'
+
+// ─── Top nav ──────────────────────────────────────────────────────────────────
+function TopNav() {
   return (
-    <p
-      className={cn('text-sm mt-2', {
-        'text-green-400': status === 'success',
-        'text-yellow-400': status === 'duplicate',
-        'text-red-400': status === 'error',
-      })}
+    <header
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'rgba(10,14,26,0.85)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(168,85,247,0.18)',
+      }}
     >
-      {status === 'success' && "🎉 You're on the list! We'll shout when doors open."}
-      {status === 'duplicate' && "👀 You're already on the list — nice one!"}
-      {status === 'error' && 'Something went wrong. Try again in a sec.'}
-    </p>
+      <div
+        style={{
+          ...CONTAINER,
+          padding: '14px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <HVZBrand />
+        </Link>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+          {[
+            ['Courses', '/courses'],
+            ['Pets', '/pets'],
+            ['Pricing', '/pricing'],
+            ['Leaderboard', '/leaderboard'],
+          ].map(([label, href]) => (
+            <Link
+              key={label}
+              to={href}
+              style={{
+                color: 'var(--color-text-primary)',
+                opacity: 0.8,
+                textDecoration: 'none',
+                fontSize: 15,
+                fontWeight: 500,
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+          <Link to="/login" style={{ textDecoration: 'none' }}>
+            <HVZButton variant="ghost" size="sm">
+              Sign in
+            </HVZButton>
+          </Link>
+          <Link to="/register" style={{ textDecoration: 'none' }}>
+            <HVZButton variant="primary" size="sm">
+              Start free →
+            </HVZButton>
+          </Link>
+        </nav>
+      </div>
+    </header>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Waitlist form ────────────────────────────────────────────────────────────
+function WaitlistForm({
+  source,
+  ctaIdle,
+  ctaIcon,
+  align = 'left',
+}: {
+  source: string
+  ctaIdle: string
+  ctaIcon?: 'arrow' | 'rocket'
+  align?: 'left' | 'center'
+}) {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<WaitlistStatus>('idle')
 
-export default function LandingPage() {
-  const [heroEmail, setHeroEmail] = useState('')
-  const [heroStatus, setHeroStatus] = useState<WaitlistStatus>('idle')
-  const [footerEmail, setFooterEmail] = useState('')
-  const [footerStatus, setFooterStatus] = useState<WaitlistStatus>('idle')
-
-  async function submitHeroWaitlist(e: React.FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!isValidEmail(heroEmail)) return
-    setHeroStatus('loading')
-    setHeroStatus(await submitWaitlist(heroEmail.trim().toLowerCase(), 'hero'))
+    if (!isValidEmail(email)) return
+    setStatus('loading')
+    setStatus(await submitWaitlist(email.trim().toLowerCase(), source))
   }
 
-  async function submitFooterWaitlist(e: React.FormEvent) {
-    e.preventDefault()
-    if (!isValidEmail(footerEmail)) return
-    setFooterStatus('loading')
-    setFooterStatus(await submitWaitlist(footerEmail.trim().toLowerCase(), 'footer'))
-  }
+  const Icon = ctaIcon === 'rocket' ? Rocket : ArrowRight
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 1 — HERO
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative bg-gray-950 min-h-screen flex items-center overflow-hidden">
-        {/* Background glow */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
+    <form
+      onSubmit={onSubmit}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: align === 'center' ? 'center' : 'stretch',
+        gap: 8,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          flexWrap: 'wrap',
+          maxWidth: 480,
+          width: '100%',
+          margin: align === 'center' ? '0 auto' : 0,
+        }}
+      >
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com"
+          disabled={status === 'success'}
+          aria-label="Email address"
           style={{
-            background:
-              'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,92,246,0.4) 0%, rgba(6,182,212,0.1) 50%, transparent 70%)',
+            flex: 1,
+            minWidth: 200,
+            padding: '14px 16px',
+            background: 'var(--color-midnight-blue)',
+            border: '1px solid rgba(168,85,247,0.3)',
+            borderRadius: 8,
+            color: 'var(--color-text-primary)',
+            fontFamily: 'var(--font-body)',
+            fontSize: 16,
+            outline: 'none',
           }}
         />
-
-        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24">
-          {/* Welsh badge */}
-          <div className="mb-8">
-            <span className="inline-flex items-center rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 px-4 py-1 text-sm font-medium">
-              🏴󠁧󠁢󠁷󠁬󠁳󠁠 Built in Wales for ADHD builders — not CS students
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h1 className="max-w-3xl">
-            <span className="block text-6xl font-black text-white leading-none tracking-tight">
-              Vibe Code
-            </span>
-            <span className="block text-6xl font-black leading-none tracking-tight bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent mt-1">
-              The Hyper Way
-            </span>
-          </h1>
-
-          {/* Subheading */}
-          <p className="mt-6 text-gray-400 text-xl max-w-2xl leading-relaxed">
-            If you've got ADHD, dyslexia, or a brain that won't sit still in a classroom —
-            this was built for you. Ship real apps with AI. No CS degree. No gatekeeping.
-            Just you, Claude, and a laptop.
-          </p>
-
-          {/* Waitlist form */}
-          <form onSubmit={submitHeroWaitlist} className="mt-10">
-            <div className="flex gap-3 max-w-md">
-              <input
-                type="email"
-                value={heroEmail}
-                onChange={(e) => setHeroEmail(e.target.value)}
-                placeholder="your@email.com"
-                disabled={heroStatus === 'success'}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 flex-1 focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={heroStatus === 'loading' || heroStatus === 'success'}
-                className="bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap"
-              >
-                {heroStatus === 'loading' ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                    </svg>
-                    Joining...
-                  </>
-                ) : heroStatus === 'success' ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    You're in!
-                  </>
-                ) : (
-                  <>
-                    Join waitlist
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </div>
-            <WaitlistMessage status={heroStatus} />
-          </form>
-
-          {/* Secondary CTAs */}
-          <div className="mt-5 flex items-center gap-6">
-            <Link
-              to="/courses"
-              className="text-violet-400 hover:text-violet-300 text-sm underline-offset-4 hover:underline transition-colors"
-            >
-              Browse Courses →
-            </Link>
-            <Link
-              to="/courses"
-              className="text-gray-500 hover:text-gray-400 text-sm transition-colors"
-            >
-              ▶ Free Lesson
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 2 — SOCIAL PROOF BAR
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="bg-gray-900 py-6 border-y border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <ul className="flex flex-wrap justify-center gap-8 text-gray-400 text-sm">
-            <li>🧠 Neurodivergent-first design</li>
-            <li>⭐ BROski XP gamification</li>
-            <li>🚀 Ship real apps from week 1</li>
-            <li>⚡ AI-powered learning</li>
-            <li>💰 Start free · from £29</li>
-            <li>🏴󠁧󠁢󠁷󠁬󠁳󠁠 Built by a builder, not a corporation</li>
-          </ul>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 3 — WHAT IS VIBE CODING?
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="bg-white py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-
-            {/* Left */}
-            <div>
-              <p className="text-violet-600 font-semibold text-sm uppercase tracking-widest">
-                What is vibe coding?
-              </p>
-              <h2 className="mt-3 text-4xl font-black text-gray-900 leading-tight">
-                Taste over syntax.
-                <br />
-                <span className="text-violet-600">You direct. AI builds.</span>
-              </h2>
-              <p className="mt-5 text-gray-500 text-lg leading-relaxed">
-                Vibe coding is the idea that in 2026, the limiting factor isn't technical
-                skill — it's creative direction. AI writes the code. You decide what to build,
-                how it should feel, and whether it's any good.
-              </p>
-              <p className="mt-4 text-gray-500 text-lg leading-relaxed">
-                That's a taste problem. And taste? That's very much a human thing.
-              </p>
-              <ul className="mt-8 space-y-4">
-                {[
-                  { icon: Code2, text: 'No syntax to memorise — describe it in plain English' },
-                  { icon: Zap,   text: 'Instant feedback loops — build → see → tweak in seconds' },
-                  { icon: Trophy, text: 'Ship from day one — every lesson ends with deployed code' },
-                ].map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-start gap-3 text-gray-700">
-                    <div className="flex-shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-violet-600" />
-                    </div>
-                    <span>{text}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Right — Before vs After comparison */}
-            <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-lg">
-              <div className="grid grid-cols-2 text-xs font-bold uppercase tracking-wider">
-                <div className="bg-red-50 text-red-600 px-5 py-3 border-b border-gray-200">
-                  ❌ Old way
-                </div>
-                <div className="bg-violet-50 text-violet-600 px-5 py-3 border-b border-gray-200">
-                  ✅ Vibe way
-                </div>
-              </div>
-              {VIBE_VS_TRADITIONAL.map(({ old, vibe }, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    'grid grid-cols-2 text-sm',
-                    i % 2 === 0 ? 'bg-white' : 'bg-gray-50',
-                  )}
-                >
-                  <div className="px-5 py-4 text-gray-400 border-r border-gray-100">{old}</div>
-                  <div className="px-5 py-4 text-gray-800 font-medium">{vibe}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 4 — THE PROBLEM
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 bg-gray-950">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-block text-sm font-semibold text-violet-400 uppercase tracking-wider mb-4">
-            Why traditional learning fails
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
-            Tutorials got you 40 hours in
-            <br />
-            and you still can't build anything real.
-          </h2>
-          <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto">
-            Traditional courses optimise for syllabus completion, not shipping. You memorise
-            syntax. You debug other people's examples. And if you have ADHD, you're gone by
-            week two — not because you're not smart, but because the format is broken.
-          </p>
-          <div className="mt-10 grid sm:grid-cols-3 gap-6 text-left">
-            {[
-              { problem: 'Syntax memorisation', result: 'Boring and forgotten by Sunday' },
-              { problem: 'Watch-only tutorials', result: 'No muscle memory, no retention' },
-              { problem: 'Mega-courses (40h+)', result: 'ADHD brains tap out in hour 2' },
-            ].map(({ problem, result }) => (
-              <div key={problem} className="p-5 rounded-xl border border-red-900/40 bg-red-950/30">
-                <p className="font-semibold text-red-400 text-sm">❌ {problem}</p>
-                <p className="mt-1 text-sm text-red-300/70">{result}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 5 — HOW IT WORKS
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <p className="text-violet-600 font-semibold text-sm uppercase tracking-widest">
-              The Hyper Vibe method
-            </p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-black text-gray-900">
-              Describe. Build. Ship. Repeat.
-            </h2>
-            <p className="mt-4 text-lg text-gray-500 max-w-xl mx-auto">
-              Every session is a focused build. You leave with deployed code and a shareable
-              URL. No exceptions.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {HOW_IT_WORKS.map(({ step, title, body, icon: Icon }) => (
-              <div
-                key={step}
-                className="relative bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all"
-              >
-                <div className="absolute -top-3.5 left-6">
-                  <span className="text-xs font-bold text-violet-600 bg-violet-100 px-2.5 py-1 rounded-full">
-                    Step {step}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center h-12 w-12 rounded-xl bg-violet-100 mb-5 mt-2">
-                  <Icon className="h-6 w-6 text-violet-600" />
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-                <p className="mt-2 text-sm text-gray-500 leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 6 — FEATURED COURSES
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <p className="text-violet-400 font-semibold text-sm uppercase tracking-widest">
-                What you'll build
-              </p>
-              <h2 className="mt-2 text-3xl sm:text-4xl font-black text-white">
-                Six courses. Zero fluff.
-              </h2>
-            </div>
-            <Link
-              to="/courses"
-              className="hidden sm:flex items-center gap-1 text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              View all <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {FEATURED_COURSES.map((course) => (
-              <Link
-                key={course.title}
-                to={course.href}
-                className="group flex flex-col rounded-2xl bg-gray-900 border border-gray-800 overflow-hidden hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-200"
-              >
-                <div className="p-6 flex-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={cn('text-xs font-semibold px-2.5 py-0.5 rounded-full', course.levelColor)}>
-                      {course.level}
-                    </span>
-                    <span className="text-xs text-gray-500">{course.duration}</span>
-                  </div>
-                  <h3 className="text-base font-bold text-white group-hover:text-violet-300 transition-colors leading-snug">
-                    {course.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-400 leading-relaxed">{course.subtitle}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {course.tags.map((tag) => (
-                      <span key={tag} className="text-xs px-2 py-0.5 rounded-md bg-gray-800 text-gray-400 border border-gray-700">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
-                  <span className={cn('text-lg', course.priceColor)}>{course.price}</span>
-                  <span className="text-xs font-semibold text-violet-400 group-hover:text-violet-300 flex items-center gap-1 transition-colors">
-                    Explore <ArrowRight className="h-3 w-3" />
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-8 text-center sm:hidden">
-            <Link to="/courses">
-              <Button variant="outline" className="w-full border-gray-700 text-gray-300">
-                View all courses <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 7 — TESTIMONIALS
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <p className="text-violet-600 font-semibold text-sm uppercase tracking-widest">
-              Real results
-            </p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-black text-gray-900">
-              Students who shipped.
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {TESTIMONIALS.map(({ quote, name, role, stars }) => (
-              <div
-                key={name}
-                className="bg-gray-50 rounded-2xl p-7 border border-gray-100 flex flex-col hover:border-violet-200 transition-colors"
-              >
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: stars }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <blockquote className="flex-1 text-gray-600 text-sm leading-relaxed">
-                  "{quote}"
-                </blockquote>
-                <div className="mt-5 pt-5 border-t border-gray-200">
-                  <p className="font-bold text-gray-900 text-sm">{name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 8 — PRICING PREVIEW
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-violet-600 font-semibold text-sm uppercase tracking-widest">
-              Pricing
-            </p>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-black text-gray-900">
-              Start free. Upgrade when you're hooked.
-            </h2>
-            <p className="mt-4 text-gray-500 text-lg">No subscription traps. Pay once per course.</p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-8">
-            {/* Free tier */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-8">
-              <h3 className="text-xl font-bold text-gray-900">Free Forever</h3>
-              <p className="mt-1 text-sm text-gray-500">The full Course 1 — no card needed.</p>
-              <p className="mt-6 text-5xl font-black text-gray-900">£0</p>
-              <ul className="mt-6 space-y-3">
-                {[
-                  'Vibe Coding Foundations (full)',
-                  '4 weeks of project-based lessons',
-                  'XP + badge system',
-                  'Community Discord access',
-                  'Deploy 3 real apps',
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register" className="block mt-8">
-                <Button variant="outline" className="w-full">
-                  Start for free
-                </Button>
-              </Link>
-            </div>
-
-            {/* Paid tier */}
-            <div className="rounded-2xl border-2 border-violet-500 bg-violet-50 p-8 relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="bg-violet-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Most popular
-                </span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">Individual Courses</h3>
-              <p className="mt-1 text-sm text-gray-500">Pick the skills you need, when you need them.</p>
-              <p className="mt-6 text-5xl font-black text-gray-900">
-                £19–£49
-                <span className="text-lg font-normal text-gray-500 ml-2">/ course</span>
-              </p>
-              <ul className="mt-6 space-y-3">
-                {[
-                  'Hyper Prompt Master (£29)',
-                  'Component Chaos Lab (£39.99)',
-                  'Ship Your First Full Stack Thing (£49.99)',
-                  'Hyperfocus HTML & CSS Quick Wins (£19.99)',
-                  'Lifetime access, no expiry',
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-violet-500 flex-shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/courses" className="block mt-8">
-                <Button className="w-full bg-violet-600 hover:bg-violet-500 text-white">
-                  Browse courses <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          <p className="mt-8 text-center text-sm text-gray-400">
-            <Users className="inline h-4 w-4 mr-1 align-middle" />
-            Joined by builders from 🇬🇧 🇺🇸 🇨🇦 🇦🇺 🇳🇬 and counting.
-          </p>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          SECTION 9 — FINAL CTA
-      ═══════════════════════════════════════════════════════════════════ */}
-      <section className="bg-gray-950 py-24">
-        <div
-          className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+        <HVZButton
+          type="submit"
+          variant="primary"
+          size="md"
+          disabled={status === 'loading' || status === 'success'}
+        >
+          {status === 'loading' ? (
+            'Wiring up the Z0ne...'
+          ) : status === 'success' ? (
+            <>
+              <CheckCircle size={16} /> You're in!
+            </>
+          ) : (
+            <>
+              {ctaIdle} <Icon size={16} />
+            </>
+          )}
+        </HVZButton>
+      </div>
+      {status !== 'idle' && status !== 'loading' && (
+        <p
+          role="status"
           style={{
-            background: 'none',
+            margin: 0,
+            fontSize: 14,
+            color:
+              status === 'success'
+                ? 'var(--color-success-mint)'
+                : status === 'duplicate'
+                ? 'var(--color-warning-amber)'
+                : 'var(--color-danger-red)',
           }}
         >
-          {/* Glow */}
-          <div
-            aria-hidden="true"
-            className="absolute left-1/2 -translate-x-1/2 w-96 h-96 rounded-full pointer-events-none"
+          {status === 'success' && "🎉 You're on the list — we'll shout when doors open."}
+          {status === 'duplicate' && "👀 You're already on the list — nice one BROski♾️."}
+          {status === 'error' && "Hmm, let's try that again 🔄"}
+        </p>
+      )}
+    </form>
+  )
+}
+
+// ─── Hero ─────────────────────────────────────────────────────────────────────
+function Hero() {
+  return (
+    <section
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        background: 'radial-gradient(ellipse at 50% -10%, var(--color-deep-violet) 0%, var(--color-space-black) 70%)',
+        padding: 'clamp(64px, 10vw, 96px) 24px clamp(72px, 12vw, 128px)',
+      }}
+    >
+      <Starfield count={120} />
+      <div
+        style={{
+          ...CONTAINER,
+          position: 'relative',
+          zIndex: 1,
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)',
+          gap: 64,
+          alignItems: 'center',
+        }}
+        className="hero-grid"
+      >
+        <div style={{ maxWidth: '65ch' }}>
+          <HVZTag color="cyan">⚡ Vibe Coding · Beta · Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁿</HVZTag>
+          <h1
             style={{
-              background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)',
-              filter: 'blur(40px)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              fontSize: 'clamp(40px, 6vw, 72px)',
+              lineHeight: 1.05,
+              letterSpacing: '-0.02em',
+              color: 'var(--color-text-primary)',
+              margin: '24px 0 20px',
+              textWrap: 'balance' as CSSProperties['textWrap'],
+              background: 'none',
+              WebkitTextFillColor: 'unset',
             }}
-          />
-
-          <div className="relative">
-            <Trophy className="h-10 w-10 text-violet-400 mx-auto mb-6" />
-            <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight">
-              Ready to ship your
-              <br />
-              <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                first real app?
-              </span>
-            </h2>
-            <p className="mt-5 text-gray-400 text-lg max-w-xl mx-auto">
-              Join the waitlist and be first in when we open the doors.
-              No spam. Just a shout when you can start.
-            </p>
-
-            {/* Footer waitlist form */}
-            <form onSubmit={submitFooterWaitlist} className="mt-10">
-              <div className="flex gap-3 max-w-md mx-auto">
-                <input
-                  type="email"
-                  value={footerEmail}
-                  onChange={(e) => setFooterEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  disabled={footerStatus === 'success'}
-                  className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 flex-1 focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50"
-                />
-                <button
-                  type="submit"
-                  disabled={footerStatus === 'loading' || footerStatus === 'success'}
-                  className="bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap"
-                >
-                  {footerStatus === 'loading' ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                      </svg>
-                      Joining...
-                    </>
-                  ) : footerStatus === 'success' ? (
-                    <>
-                      <CheckCircle className="h-4 w-4" />
-                      You're in!
-                    </>
-                  ) : (
-                    <>
-                      Let's go
-                      <Rocket className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="flex justify-center">
-                <WaitlistMessage status={footerStatus} />
-              </div>
-            </form>
-
-            <p className="mt-6 text-xs text-gray-600">
-              Already got an account?{' '}
-              <Link to="/login" className="text-violet-500 hover:text-violet-400 underline underline-offset-2">
-                Sign in →
-              </Link>
-            </p>
+          >
+            Built for brains that{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              build differently
+            </span>
+            .
+          </h1>
+          <p
+            style={{
+              fontSize: 18,
+              lineHeight: 1.8,
+              color: 'var(--color-text-primary)',
+              maxWidth: '62ch',
+              margin: '0 0 32px',
+              opacity: 0.9,
+            }}
+          >
+            A gamified coding course made for ADHD, dyslexic, and autistic minds. Short lessons. Real ships. Real XP. Real BROski$. No shame, no walls of text — just momentum.
+          </p>
+          <WaitlistForm source="hero" ctaIdle="Let's GO" />
+          <div
+            style={{
+              marginTop: 24,
+              display: 'flex',
+              gap: 24,
+              flexWrap: 'wrap',
+              color: 'var(--color-text-secondary)',
+              fontSize: 14,
+            }}
+          >
+            <span>✓ Free to start</span>
+            <span>✓ No credit card</span>
+            <span>✓ Reduce-motion friendly</span>
           </div>
         </div>
-      </section>
 
+        {/* Hero stat card cluster */}
+        <div style={{ position: 'relative', minHeight: 380 }} className="hero-cluster">
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100%',
+              background: 'rgba(15,27,53,0.7)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(168,85,247,0.3)',
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: '0 0 40px rgba(168,85,247,0.2)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--color-text-secondary)',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                YOUR Z0NE · LIVE
+              </div>
+              <span
+                aria-hidden
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--color-success-mint)',
+                  boxShadow: '0 0 8px var(--color-success-mint)',
+                }}
+              />
+            </div>
+            <HVZProgress value={2840} max={4000} label="⚡ XP · LVL 7" />
+            <div style={{ marginTop: 14 }}>
+              <HVZProgress value={68} max={100} gradient="gold" label="🪙 BROSKI$ WEEKLY" />
+            </div>
+            <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <HVZTag color="mint">✓ Module 03 complete</HVZTag>
+              <HVZTag color="amber">🔥 12-day streak</HVZTag>
+            </div>
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '78%',
+              background: 'var(--color-midnight-blue)',
+              border: '1px solid rgba(0,212,255,0.25)',
+              borderRadius: 14,
+              padding: 18,
+              boxShadow: '0 0 30px rgba(0,212,255,0.18)',
+              transform: 'rotate(-2deg)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 18,
+                }}
+                aria-hidden
+              >
+                🤖
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: 14,
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  Spider · AI Mentor
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
+                  Qwen2.5 · online
+                </div>
+              </div>
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: 'var(--color-text-primary)',
+                opacity: 0.9,
+              }}
+            >
+              "Hey BROski♾️ — you're 1 step from finishing today's quest. Want a hint or shall we just ship it? 🚀"
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Features ─────────────────────────────────────────────────────────────────
+const FEATURES: { icon: string; tag: string; tagColor: TagColor; title: string; body: string }[] = [
+  {
+    icon: '🎯',
+    tag: 'LEARN',
+    tagColor: 'violet',
+    title: 'Learn by doing',
+    body: 'Every lesson is a 10-minute build. Watch a tiny clip, copy the vibe, ship it. No 4-hour theory dumps.',
+  },
+  {
+    icon: '🪙',
+    tag: 'EARN',
+    tagColor: 'gold',
+    title: 'Earn XP & BROski$',
+    body: 'Real on-chain BROski$ tokens. Real XP that levels up your profile. Your work earns even when you sleep.',
+  },
+  {
+    icon: '🤖',
+    tag: 'GROW',
+    tagColor: 'cyan',
+    title: 'AI-powered mentor',
+    body: '29 AI agents on standby. Stuck? Spider drops a hint. Lonely? Bee cheers you on. Never alone in the Z0ne.',
+  },
+]
+
+function Features() {
+  return (
+    <section style={{ padding: SECTION_PAD, background: 'var(--color-space-black)' }}>
+      <div style={CONTAINER}>
+        <div style={{ marginBottom: 48, maxWidth: '65ch' }}>
+          <HVZTag color="violet">⚡ Why Hyper Vibe Z0ne</HVZTag>
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(32px, 4vw, 48px)',
+              lineHeight: 1.1,
+              color: 'var(--color-text-primary)',
+              margin: '16px 0 14px',
+              textWrap: 'balance' as CSSProperties['textWrap'],
+            }}
+          >
+            Three things every other course gets wrong.
+          </h2>
+          <p
+            style={{
+              fontSize: 18,
+              lineHeight: 1.8,
+              color: 'var(--color-text-secondary)',
+              maxWidth: '62ch',
+              margin: 0,
+            }}
+          >
+            We didn't bolt gamification on top of a boring course. We built the course around the way ND brains actually learn.
+          </p>
+        </div>
+        <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          {FEATURES.map((f) => (
+            <HVZCard key={f.title} padding={32}>
+              <div
+                aria-hidden
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  background: 'linear-gradient(135deg, rgba(123,47,190,0.25), rgba(0,212,255,0.18))',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 28,
+                  marginBottom: 20,
+                }}
+              >
+                {f.icon}
+              </div>
+              <HVZTag color={f.tagColor}>{f.tag}</HVZTag>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: 24,
+                  color: 'var(--color-text-primary)',
+                  margin: '12px 0 10px',
+                  lineHeight: 1.2,
+                  background: 'none',
+                  WebkitTextFillColor: 'unset',
+                }}
+              >
+                {f.title}
+              </h3>
+              <p
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.7,
+                  color: 'var(--color-text-primary)',
+                  opacity: 0.85,
+                  margin: 0,
+                }}
+              >
+                {f.body}
+              </p>
+            </HVZCard>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Course preview ───────────────────────────────────────────────────────────
+const QUESTS: { code: string; emoji: string; level: string; levelColor: TagColor; title: string; xp: number; bro: number }[] = [
+  { code: 'M01', emoji: '⚡', level: 'Beginner', levelColor: 'mint', title: 'Your first vibe', xp: 50, bro: 25 },
+  { code: 'M04', emoji: '🤖', level: 'Intermediate', levelColor: 'amber', title: 'Make an AI agent listen', xp: 150, bro: 75 },
+  { code: 'M07', emoji: '🪙', level: 'Hyper-Pro', levelColor: 'pink', title: 'Mint your own BROski$Pet', xp: 500, bro: 250 },
+]
+
+function CoursePreview() {
+  return (
+    <section
+      style={{
+        padding: SECTION_PAD,
+        background: 'linear-gradient(180deg, var(--color-space-black) 0%, var(--color-midnight-blue) 100%)',
+      }}
+    >
+      <div style={CONTAINER}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            marginBottom: 48,
+            gap: 24,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ maxWidth: '65ch' }}>
+            <HVZTag color="cyan">🎓 Quests · 12 modules</HVZTag>
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 'clamp(32px, 4vw, 48px)',
+                lineHeight: 1.1,
+                color: 'var(--color-text-primary)',
+                margin: '16px 0 14px',
+                textWrap: 'balance' as CSSProperties['textWrap'],
+              }}
+            >
+              Pick a module. Vibe hard. Stack XP.
+            </h2>
+            <p
+              style={{
+                fontSize: 18,
+                lineHeight: 1.8,
+                color: 'var(--color-text-secondary)',
+                maxWidth: '62ch',
+                margin: 0,
+              }}
+            >
+              From "first line of code" to "shipped a dNFT pet contract" — every quest pays out in real progress.
+            </p>
+          </div>
+          <Link to="/courses" style={{ textDecoration: 'none' }}>
+            <HVZButton variant="ghost">All courses →</HVZButton>
+          </Link>
+        </div>
+        <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          {QUESTS.map((q) => (
+            <HVZCard key={q.code}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 14,
+                }}
+              >
+                <HVZTag color="violet">{q.code}</HVZTag>
+                <span style={{ fontSize: 24 }} aria-hidden>
+                  {q.emoji}
+                </span>
+              </div>
+              <HVZTag color={q.levelColor}>{q.level}</HVZTag>
+              <h4
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: 22,
+                  color: 'var(--color-text-primary)',
+                  margin: '12px 0 18px',
+                  lineHeight: 1.3,
+                }}
+              >
+                {q.title}
+              </h4>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 14,
+                  marginBottom: 18,
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                <span style={{ color: 'var(--color-gold-light)', fontWeight: 700 }}>+{q.xp} XP</span>
+                <span style={{ color: 'var(--color-broski-gold)', fontWeight: 700 }}>
+                  🪙 {q.bro} BROski$
+                </span>
+              </div>
+              <Link to="/courses" style={{ textDecoration: 'none', display: 'block' }}>
+                <HVZButton variant="primary" size="sm" fullWidth>
+                  Start quest →
+                </HVZButton>
+              </Link>
+            </HVZCard>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Testimonials ─────────────────────────────────────────────────────────────
+type Tier = 'silver' | 'gold' | 'hyper'
+const QUOTES: { name: string; role: string; quote: string; tier: Tier }[] = [
+  {
+    name: 'Marcus T.',
+    role: 'Former retail manager → junior dev',
+    quote:
+      "I tried 3 bootcamps and quit all of them. Two weeks into Hyper Vibe and I've got a deployed app with my name on it. This is genuinely different.",
+    tier: 'gold',
+  },
+  {
+    name: 'Priya S.',
+    role: 'ADHD · designer levelling up',
+    quote:
+      'My ADHD brain cannot do 40-hour YouTube tutorials. These sessions are short, punchy, and I actually finish them. The badge system keeps me coming back.',
+    tier: 'silver',
+  },
+  {
+    name: 'Jake R.',
+    role: 'PM who now ships code',
+    quote:
+      "I've been coding for years but wasted so much time on boilerplate. The vibe coding approach cut my build time in half. Wish I'd found this sooner.",
+    tier: 'hyper',
+  },
+]
+
+function TierChip({ t }: { t: Tier }) {
+  const styles: Record<Tier, { bg: string; col: string; label: string }> = {
+    silver: { bg: 'linear-gradient(135deg,#2A3548,#455269)', col: '#DCE5F2', label: 'Silver' },
+    gold: { bg: 'linear-gradient(135deg, var(--color-broski-gold), var(--color-gold-light))', col: 'var(--color-deep-violet)', label: 'Gold' },
+    hyper: { bg: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-violet-lt), var(--color-neon-cyan))', col: '#fff', label: 'Hyper ♾️' },
+  }
+  const s = styles[t]
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        padding: '4px 10px',
+        borderRadius: 9999,
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        background: s.bg,
+        color: s.col,
+      }}
+    >
+      {s.label}
+    </span>
+  )
+}
+
+function Testimonials() {
+  return (
+    <section style={{ padding: SECTION_PAD, background: 'var(--color-space-black)' }}>
+      <div style={CONTAINER}>
+        <div style={{ marginBottom: 48, maxWidth: '65ch' }}>
+          <HVZTag color="pink">💬 BROski♾️ in the wild</HVZTag>
+          <h2
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(32px, 4vw, 48px)',
+              lineHeight: 1.1,
+              color: 'var(--color-text-primary)',
+              margin: '16px 0 0',
+              textWrap: 'balance' as CSSProperties['textWrap'],
+            }}
+          >
+            Real ND minds, real first ships.
+          </h2>
+        </div>
+        <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          {QUOTES.map((q) => (
+            <HVZCard key={q.name} padding={28}>
+              <div
+                aria-hidden
+                style={{
+                  fontSize: 32,
+                  lineHeight: 1,
+                  color: 'var(--color-violet-lt)',
+                  marginBottom: 8,
+                  fontFamily: 'var(--font-display)',
+                }}
+              >
+                "
+              </div>
+              <p
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.8,
+                  color: 'var(--color-text-primary)',
+                  margin: '0 0 24px',
+                  maxWidth: '40ch',
+                }}
+              >
+                {q.quote}
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  paddingTop: 18,
+                  borderTop: '1px solid rgba(168,85,247,0.15)',
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: 'var(--color-text-primary)',
+                    }}
+                  >
+                    {q.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{q.role}</div>
+                </div>
+                <TierChip t={q.tier} />
+              </div>
+            </HVZCard>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Final CTA ────────────────────────────────────────────────────────────────
+function FinalCTA() {
+  return (
+    <section
+      style={{
+        position: 'relative',
+        padding: SECTION_PAD,
+        background:
+          'radial-gradient(ellipse at 50% 50%, rgba(123,47,190,0.18) 0%, var(--color-space-black) 70%)',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ ...CONTAINER, maxWidth: 720 }}>
+        <HVZTag color="violet">🚀 Ready when you are</HVZTag>
+        <h2
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: 'clamp(32px, 5vw, 56px)',
+            lineHeight: 1.1,
+            color: 'var(--color-text-primary)',
+            margin: '20px 0 16px',
+            background: 'none',
+            WebkitTextFillColor: 'unset',
+          }}
+        >
+          Ready to ship your{' '}
+          <span
+            style={{
+              background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            first real app?
+          </span>
+        </h2>
+        <p
+          style={{
+            fontSize: 18,
+            lineHeight: 1.8,
+            color: 'var(--color-text-secondary)',
+            maxWidth: '52ch',
+            margin: '0 auto 32px',
+          }}
+        >
+          Join the waitlist and be first in when we open the doors. No spam — just a shout when you can start.
+        </p>
+        <WaitlistForm source="footer" ctaIdle="Let's GO" ctaIcon="rocket" align="center" />
+        <p style={{ marginTop: 24, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+          Already got an account?{' '}
+          <Link to="/login" style={{ color: 'var(--color-neon-cyan)' }}>
+            Sign in →
+          </Link>
+        </p>
+      </div>
+    </section>
+  )
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function SiteFooter() {
+  return (
+    <footer
+      style={{
+        background: '#070912',
+        borderTop: '1px solid rgba(168,85,247,0.2)',
+        padding: '64px 24px 32px',
+      }}
+    >
+      <div style={CONTAINER}>
+        <div className="footer-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.4fr 1fr 1fr 1fr',
+            gap: 48,
+            marginBottom: 48,
+          }}
+        >
+          <div style={{ maxWidth: '40ch' }}>
+            <HVZBrand size="md" />
+            <p
+              style={{
+                fontSize: 15,
+                lineHeight: 1.8,
+                color: 'var(--color-text-secondary)',
+                margin: '16px 0 20px',
+              }}
+            >
+              Built in Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁿 by @welshDog. For brains that build differently.
+            </p>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <HVZTag color="cyan">v0.9 · Beta</HVZTag>
+              <HVZTag color="mint">● All systems green</HVZTag>
+            </div>
+          </div>
+          {(
+            [
+              { h: 'Product', links: [['Courses', '/courses'], ['BROski$Pets', '/pets'], ['Pricing', '/pricing'], ['Quests', '/quests']] },
+              { h: 'Community', links: [['Leaderboard', '/leaderboard'], ['Discord', '#'], ['GitHub', 'https://github.com/welshDog/Hyper-Vibe-Coding-Course'], ['Tokens', '/tokens']] },
+              { h: 'Brand', links: [['Manifesto', '#'], ['Press kit', '#'], ['Contact', '#'], ['Made in Wales', '#']] },
+            ] as { h: string; links: [string, string][] }[]
+          ).map((col) => (
+            <div key={col.h}>
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--color-violet-lt)',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  marginBottom: 14,
+                }}
+              >
+                {col.h}
+              </div>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                {col.links.map(([label, href]) => (
+                  <li key={label}>
+                    {href.startsWith('http') || href === '#' ? (
+                      <a
+                        href={href}
+                        style={{
+                          color: 'var(--color-text-primary)',
+                          opacity: 0.75,
+                          textDecoration: 'none',
+                          fontSize: 15,
+                        }}
+                      >
+                        {label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={href}
+                        style={{
+                          color: 'var(--color-text-primary)',
+                          opacity: 0.75,
+                          textDecoration: 'none',
+                          fontSize: 15,
+                        }}
+                      >
+                        {label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingTop: 24,
+            borderTop: '1px solid rgba(168,85,247,0.15)',
+            flexWrap: 'wrap',
+            gap: 16,
+          }}
+        >
+          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            © 2026 HyperFocus Z0ne · Keep it weird, keep it Welsh.
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 12,
+              color: 'var(--color-violet-lt)',
+              letterSpacing: '0.1em',
+            }}
+          >
+            ENTER · THE · Z0NE
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  return (
+    <div style={{ background: 'var(--color-space-black)', minHeight: '100vh' }}>
+      <style>{`
+        @media (max-width: 880px) {
+          .hero-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
+          .hero-cluster { min-height: 320px !important; }
+          .grid-3 { grid-template-columns: 1fr !important; }
+          .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+        }
+        @media (max-width: 520px) {
+          .footer-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+      <TopNav />
+      <Hero />
+      <Features />
+      <CoursePreview />
+      <Testimonials />
+      <FinalCTA />
+      <SiteFooter />
     </div>
   )
 }

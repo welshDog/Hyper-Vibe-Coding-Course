@@ -23,7 +23,6 @@ import Leaderboard from './pages/Leaderboard';
 import Quests from './pages/Quests';
 import Courses from './pages/Courses';
 import CourseModule from './pages/CourseModule';
-import PetsPage from './pages/Pets';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
@@ -48,9 +47,8 @@ function App() {
     <HUDProvider userId={user?.id}>
       <Router>
         <Routes>
-          {/* Public marketing landing — own dark chrome, skips light Layout */}
-          <Route path="/" element={<LandingPage />} />
-          <Route element={<Layout />}>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<LandingPage />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="pricing" element={<Pricing />} />
@@ -59,7 +57,6 @@ function App() {
             <Route path="catalog" element={<CourseCatalog />} />
             <Route path="catalog/:id" element={<CourseDetail />} />
             <Route path="leaderboard" element={<Leaderboard />} />
-            <Route path="pets" element={<PetsPage />} />
             <Route
               path="quests"
               element={

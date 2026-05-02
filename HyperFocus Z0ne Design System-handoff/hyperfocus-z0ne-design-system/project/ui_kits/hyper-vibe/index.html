@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hyper Vibe Z0ne — Course Platform</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  body{margin:0;background:var(--space-black);min-height:100vh}
+  .app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+  .body{display:grid;grid-template-columns:240px 1fr;overflow:hidden}
+  .main{overflow-y:auto;padding:32px 40px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="Primitives.jsx"></script>
+<script type="text/babel" src="Course.jsx"></script>
+<script type="text/babel">
+const COURSES = [
+  { code: 'M01', emoji: '🌱', title: 'Your First Vibe', level: 'Beginner', xp: 50, broski: 25, completed: true },
+  { code: 'M02', emoji: '🎤', title: 'Prompt Like a Pro', level: 'Beginner', xp: 80, broski: 40, completed: true },
+  { code: 'M03', emoji: '🏗️', title: 'Build Your First App', level: 'Intermediate', xp: 150, broski: 75 },
+  { code: 'M04', emoji: '🧠', title: 'Full Stack Vibe', level: 'Intermediate', xp: 200, broski: 100 },
+  { code: 'M05', emoji: '🔥', title: 'HyperCode the Hyper Way', level: 'Advanced', xp: 300, broski: 150 },
+  { code: 'M06', emoji: '🚀', title: 'Ship & Scale', level: 'Hyper-Pro', xp: 500, broski: 250 },
+];
+
+function App(){
+  const [view, setView] = React.useState('dashboard');
+  const [lesson, setLesson] = React.useState(null);
+  const xp = 2840, maxXp = 4000, tokens = 1240, streak = 7;
+
+  const renderMain = () => {
+    if (lesson) return (
+      <div data-screen-label="03 Lesson">
+        <HVZButton variant="ghost" size="sm" onClick={()=>setLesson(null)}>← Back to courses</HVZButton>
+        <div style={{height:24}} />
+        <HVZLessonContent
+          title={lesson.title}
+          body="Short sentence first. Then the deeper bit if you want it. We're going to write three lines of code that say hi to the Z0ne — that's it. No setup, no fluff. Quick win, then we level up." />
+      </div>
+    );
+    if (view === 'courses') return (
+      <div data-screen-label="02 Courses">
+        <h1 style={{margin:0,fontFamily:'var(--font-display)',fontSize:36,fontWeight:700}}>Hyper Vibe Modules</h1>
+        <p style={{color:'#A855F7',margin:'8px 0 0',fontSize:14,letterSpacing:'0.05em'}}>Pick a module, vibe hard, stack XP.</p>
+        <div style={{marginTop:16,fontWeight:600,color:'#F0F4FF'}}>2 / 6 modules complete</div>
+        <div className="grid">
+          {COURSES.map(c => <HVZCourseCard key={c.code} {...c} onStart={()=>setLesson(c)} />)}
+        </div>
+      </div>
+    );
+    return (
+      <div data-screen-label="01 Dashboard">
+        <HVZHero />
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',margin:'40px 0 8px'}}>
+          <h2 style={{margin:0,fontFamily:'var(--font-display)',fontSize:28,fontWeight:700}}>Continue your quest</h2>
+          <span style={{color:'#A855F7',cursor:'pointer',fontSize:14,fontWeight:600}} onClick={()=>setView('courses')}>See all →</span>
+        </div>
+        <div className="grid">
+          {COURSES.slice(0,3).map(c => <HVZCourseCard key={c.code} {...c} onStart={()=>setLesson(c)} />)}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="app">
+      <HVZHud xp={xp} maxXp={maxXp} tokens={tokens} streak={streak} />
+      <div className="body">
+        <HVZSidebar active={view} onNavigate={(v)=>{setLesson(null);setView(v)}} />
+        <div className="main">{renderMain()}</div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

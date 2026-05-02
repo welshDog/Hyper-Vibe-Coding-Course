@@ -436,6 +436,38 @@ label {
   50%       { transform: translateY(-8px); }
 }
 
+/* HyperFocus Z0ne — design-system keyframes */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1);   }
+  50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+@keyframes borderPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
+  50%      { box-shadow: 0 0 20px rgba(168, 85, 247, 1.0), 0 0 40px rgba(168, 85, 247, 0.4); }
+}
+
+@keyframes holographic {
+  0%   { background-position: 0% 50%;   }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%;   }
+}
+
+@keyframes sonarPulse {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.0); opacity: 0; }
+}
+
+@keyframes idleBreath {
+  0%, 100% { transform: scale(1.0);  }
+  50%      { transform: scale(1.02); }
+}
+
+@keyframes drift {
+  0%   { transform: translateY(0);     }
+  100% { transform: translateY(-20px); }
+}
+
 
 /* ================================================================
    8. UTILITY CLASSES

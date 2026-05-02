@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Typography — Mono / Code</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>body{margin:0;padding:20px;background:var(--space-black)}
+.term{background:#020408;border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:13px;line-height:1.7}
+.t-default{color:#00FF88}
+.t-warn{color:#FCD34D}
+.t-error{color:#FF6B6B}
+.t-meta{color:var(--text-secondary)}
+.cursor{display:inline-block;width:8px;height:14px;background:#00D4FF;vertical-align:text-bottom;animation:blinkCursor 1s steps(2) infinite}
+.spec{font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);letter-spacing:0.05em;margin-bottom:6px}
+</style></head><body>
+<div class="spec">JETBRAINS MONO · 14px · TERMINAL / LOG PANEL</div>
+<div class="term">
+<div class="t-default">[agent.spider] online · Qwen2.5:7b loaded</div>
+<div class="t-default">[hypercore] 29 containers healthy</div>
+<div class="t-warn">[agent.bee] hunger: 30 — feed soon</div>
+<div class="t-error">[contract] revert: cooldown 0:42 remaining</div>
+<div class="t-meta">$ ./broski feed --pet 001<span class="cursor"></span></div>
+</div>
+</body></html>

@@ -1,0 +1,259 @@
+/* ============================================================
+   HyperFocus Z0ne — Foundation Tokens
+   Colors + Typography + Spacing + Effects
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ---- CORE BRAND COLORS ---- */
+  --space-black: #0A0E1A;          /* Primary background, deep base */
+  --midnight-blue: #0F1B35;         /* Cards, panels, surfaces */
+  --deep-violet: #1A0A2E;           /* BROski$Pets surfaces, premium */
+  --midnight-soft: #0D1424;         /* Lesson player bg (eye strain) */
+  --terminal-black: #020408;        /* Terminal / log panels */
+
+  --hyper-violet: #7B2FBE;          /* Primary brand, buttons, CTAs */
+  --hyper-violet-light: #A855F7;    /* Hover, gradients, glows */
+  --neon-cyan: #00D4FF;             /* Speed, agents, tech, live data */
+  --pure-cyan: #00FFFF;             /* Highlights, focal points */
+
+  --broski-gold: #F59E0B;           /* BROski$ tokens, XP, rewards */
+  --broski-gold-light: #FCD34D;     /* Gold hover, coin animations */
+
+  --reward-pink: #D946EF;           /* Achievements, unlocks, rare */
+  --success-mint: #10F5A0;          /* Completed, healthy, green */
+  --warning-amber: #FBBF24;         /* Alerts, caution */
+  --danger-red: #EF4444;            /* CRITICAL errors only */
+
+  --text-primary: #F0F4FF;          /* All primary text on dark */
+  --text-secondary: #8B9CC8;        /* Labels, hints, metadata */
+  --text-disabled: #3D4F6E;         /* Inactive, placeholder */
+
+  /* ---- RARITY (BROski$Pets) ---- */
+  --rarity-common: #60A5FA;
+  --rarity-common-glow: #3B82F6;
+  --rarity-rare: #A855F7;
+  --rarity-rare-glow: #7B2FBE;
+  --rarity-epic: #D946EF;
+  --rarity-epic-glow: #BE185D;
+
+  /* ---- BORDERS / DIVIDERS ---- */
+  --border-violet: rgba(168, 85, 247, 0.2);
+  --border-violet-strong: rgba(168, 85, 247, 0.3);
+  --border-cyan: rgba(0, 212, 255, 0.2);
+  --border-soft: rgba(255, 255, 255, 0.08);
+
+  /* ---- GRADIENTS ---- */
+  --grad-cta: linear-gradient(135deg, #7B2FBE 0%, #00D4FF 100%);
+  --grad-gold: linear-gradient(135deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
+  --grad-holographic: linear-gradient(135deg, #D946EF, #A855F7, #00D4FF, #10F5A0, #FCD34D, #D946EF);
+  --grad-hero: radial-gradient(ellipse at 50% 0%, #1A0A2E 0%, #0A0E1A 70%);
+  --grad-xp: linear-gradient(90deg, #7B2FBE, #00D4FF);
+
+  /* ---- SHADOWS ---- */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow-violet: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2);
+  --shadow-glow-cyan: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.2);
+  --shadow-glow-gold: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
+
+  /* ---- SPACING (8px grid) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  /* ---- RADII ---- */
+  --radius-sm: 6px;     /* Inputs, tags, small buttons */
+  --radius-md: 12px;    /* Cards, panels (default) */
+  --radius-lg: 16px;    /* Modals, hero cards */
+  --radius-xl: 24px;    /* Feature cards, pet cards */
+  --radius-full: 9999px;
+
+  /* ---- TIMING ---- */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-sharp:  cubic-bezier(0.4, 0, 1, 1);
+  --duration-fast: 150ms;
+  --duration-mid: 300ms;
+  --duration-slow: 600ms;
+  --duration-anim: 1200ms;
+
+  /* ---- TYPE: FAMILIES ---- */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  /* ---- TYPE: SCALE ---- */
+  --type-display: 72px;
+  --type-h1: 48px;
+  --type-h2: 36px;
+  --type-h3: 24px;
+  --type-h4: 20px;
+  --type-body-lg: 18px;
+  --type-body: 16px;
+  --type-label: 14px;
+  --type-caption: 12px;
+  --type-code: 14px;
+}
+
+/* ============================================================
+   SEMANTIC TYPE
+   ============================================================ */
+
+html {
+  background: var(--space-black);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--type-body);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--space-black);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.display, h1.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--type-display);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+h1, .h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--type-h1);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+h2, .h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--type-h2);
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+h3, .h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--type-h3);
+  line-height: 1.25;
+  color: var(--text-primary);
+}
+
+h4, .h4 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--type-h4);
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.body-lg {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--type-body-lg);
+  line-height: 1.8;
+}
+
+p, .body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--type-body);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--type-label);
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.caption {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+code, .code, pre {
+  font-family: var(--font-mono);
+  font-size: var(--type-code);
+  font-weight: 400;
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================================
+   KEYFRAMES (effects.css subset)
+   ============================================================ */
+
+@keyframes borderPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.6); }
+  50%      { box-shadow: 0 0 20px rgba(168, 85, 247, 1.0), 0 0 40px rgba(168, 85, 247, 0.4); }
+}
+
+@keyframes holographic {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes sonarPulse {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.0); opacity: 0; }
+}
+
+@keyframes liquidFill {
+  0%   { width: 0%; }
+  100% { width: var(--progress, 100%); }
+}
+
+@keyframes idleBreath {
+  0%, 100% { transform: scale(1.0); }
+  50%      { transform: scale(1.02); }
+}
+
+@keyframes blinkCursor {
+  0%, 50%   { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes drift {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-20px); }
+}

@@ -53,7 +53,8 @@
       "Read(//mnt/c/Users/**)",
       "Bash(npm.cmd run *)",
       "Bash(npm view *)",
-      "Bash(npm ci *)"
+      "Bash(npm ci *)",
+      "Bash(npx vite *)"
     ]
   }
 }

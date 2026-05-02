@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Pet Card · Rarity</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>body{margin:0;padding:18px;background:#1A0A2E;font-family:var(--font-body)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.pet{position:relative;aspect-ratio:3/4;border-radius:18px;padding:3px;background:#60A5FA}
+.pet.rare{background:#A855F7}
+.pet.epic{background:#D946EF}
+.pet.legend{background:linear-gradient(135deg,#D946EF,#A855F7,#00D4FF,#10F5A0,#FCD34D,#D946EF);background-size:300% 300%;animation:holographic 3s ease infinite}
+.inner{height:100%;border-radius:15px;background:#0F1B35;padding:10px;display:flex;flex-direction:column}
+.face{flex:1;display:flex;align-items:center;justify-content:center;font-size:46px;animation:idleBreath 3s ease-in-out infinite}
+.name{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--text-primary);text-align:center}
+.rarity{font-family:var(--font-mono);font-size:9px;text-align:center;letter-spacing:0.1em;margin-top:2px}
+.r-c{color:#60A5FA}.r-r{color:#A855F7}.r-e{color:#D946EF}.r-l{background:linear-gradient(90deg,#D946EF,#00D4FF,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+</style></head><body>
+<div class="grid">
+<div class="pet"><div class="inner"><div class="face">🐾</div><div class="name">CatEep</div><div class="rarity r-c">COMMON</div></div></div>
+<div class="pet rare"><div class="inner"><div class="face">🦉</div><div class="name">OwlEep</div><div class="rarity r-r">RARE</div></div></div>
+<div class="pet epic"><div class="inner"><div class="face">🦈</div><div class="name">SharkEep</div><div class="rarity r-e">EPIC</div></div></div>
+<div class="pet legend"><div class="inner"><div class="face">🦄</div><div class="name">UnicornEep</div><div class="rarity r-l">LEGENDARY</div></div></div>
+</div>
+</body></html>

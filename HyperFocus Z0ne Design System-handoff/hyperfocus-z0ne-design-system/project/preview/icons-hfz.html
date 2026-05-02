@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>HFZ Icon Set v0</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  body{margin:0;padding:32px;background:var(--space-black);font-family:var(--font-body);color:var(--text-primary)}
+  h1{font-family:var(--font-display);font-weight:800;font-size:28px;margin:0 0 6px}
+  .sub{color:var(--text-secondary);font-size:14px;margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:760px}
+  .cell{background:#0F1B35;border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .25s}
+  .cell:hover{transform:translateY(-2px);box-shadow:0 0 20px rgba(168,85,247,0.4)}
+  .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;color:var(--text-secondary);text-transform:uppercase}
+  .row{display:flex;gap:14px;align-items:center;margin-top:32px;padding:16px;background:#0F1B35;border-radius:12px;border:1px solid rgba(0,212,255,0.2)}
+  .row .lbl{margin-right:8px}
+</style></head><body>
+<h1>HFZ Icon Set <span style="color:#00D4FF">v0</span></h1>
+<div class="sub">Stroke 1.75 · 24×24 · currentColor · drop-in for Lucide</div>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="../assets/icons/HFZ.jsx"></script>
+<script type="text/babel">
+  const ICONS = ['Brain','Lightning','CircuitNode','Coin','Portal','Paw','Streak','Infinity'];
+  const COLORS = ['#A855F7','#00D4FF','#10F5A0','#FCD34D','#D946EF'];
+  function Demo(){
+    return (<>
+      <div className="grid">
+        {ICONS.map(n => {
+          const I = HFZ[n];
+          return (
+            <div className="cell" key={n}>
+              <I size={36} color="#A855F7" />
+              <div className="lbl">{n}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="row">
+        <span className="lbl">Sizes</span>
+        <HFZ.Brain size={16} /><HFZ.Brain size={20} /><HFZ.Brain size={24} /><HFZ.Brain size={32} /><HFZ.Brain size={48} />
+      </div>
+      <div className="row">
+        <span className="lbl">Tints</span>
+        {COLORS.map(c => <HFZ.Lightning key={c} size={28} color={c} />)}
+      </div>
+    </>);
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body></html>
