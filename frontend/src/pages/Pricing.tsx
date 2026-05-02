@@ -1,9 +1,11 @@
 import { Check, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Button } from '../components/ui/Button'
+import { HVZButton, HVZCard, HVZTag } from '../components/ui/hvz'
 import { useAuthStore } from '../context/auth'
 import { createCheckoutSession } from '../lib/payments'
+
+type Accent = 'violet' | 'gold' | 'ghost'
 
 type PricingTier = {
   name: string
@@ -12,25 +14,27 @@ type PricingTier = {
   priceKey: string
   features: string[]
   cta: string
-  mostPopular?: boolean
+  accent: Accent
+  badge?: string
 }
 
 const PRICING_TIERS: PricingTier[] = [
   {
     name: 'Free',
-    description: 'Try the platform with limited previews.',
+    description: 'Try the platform, ship something real, no card needed.',
     priceMonthly: '£0',
     priceKey: '',
     features: [
-      'Browse course catalog',
+      'Browse the full course catalog',
       'Free lesson previews',
-      'Basic progress tracking',
+      'Basic XP + progress tracking',
     ],
-    cta: 'Get Started',
+    cta: 'Get started',
+    accent: 'ghost',
   },
   {
     name: 'Pro',
-    description: 'Full access to all courses and tools.',
+    description: 'Full access to all courses and BROski$ rewards.',
     priceMonthly: '£9',
     priceKey: 'pro_monthly',
     features: [
@@ -40,8 +44,9 @@ const PRICING_TIERS: PricingTier[] = [
       'Community channels',
       'Certificate on completion',
     ],
-    cta: 'Upgrade to Pro',
-    mostPopular: true,
+    cta: "Let's GO →",
+    accent: 'violet',
+    badge: '🔥 Most popular',
   },
   {
     name: 'Hyper',
@@ -55,7 +60,9 @@ const PRICING_TIERS: PricingTier[] = [
       'Hyper bonus lessons',
       'Early access to new courses',
     ],
-    cta: 'Go Hyper',
+    cta: 'Go Hyper ♾️',
+    accent: 'gold',
+    badge: '♾️ Elite tier',
   },
 ]
 
@@ -76,102 +83,167 @@ export default function Pricing() {
       const url = await createCheckoutSession(tier.priceKey, user.id)
       window.location.assign(url)
     } catch {
-      setError('Checkout failed — try again or contact support.')
+      setError("Hmm, let's try that again 🔄 — checkout failed. Ping support if it sticks.")
       setLoadingTier(null)
     }
   }
 
   return (
-    <div className="bg-white py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-base font-semibold leading-7 text-primary">Pricing</h1>
-          <p className="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Start free, upgrade when you're ready
-          </p>
-          <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">
-            Simple, transparent pricing. Cancel anytime.
+    <div className="bg-hfz-space-black min-h-screen py-20 sm:py-24 lg:py-28">
+      <div className="max-w-hfz-page mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center mb-14">
+          <HVZTag color="violet">💸 Pricing</HVZTag>
+          <h1
+            className="font-display font-extrabold tracking-hfz-tight mt-4 text-hfz-text-primary"
+            style={{
+              fontSize: 'clamp(36px, 5vw, 56px)',
+              lineHeight: 1.05,
+              background: 'none',
+              WebkitTextFillColor: 'unset',
+              textWrap: 'balance',
+            }}
+          >
+            Start free.{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Upgrade when you're hooked.
+            </span>
+          </h1>
+          <p className="mt-5 text-hfz-body-lg text-hfz-text-secondary leading-[1.8] max-w-[55ch] mx-auto">
+            Simple, transparent pricing. Cancel anytime. No subscription traps.
           </p>
         </div>
 
         {error && (
-          <p className="mt-8 text-center text-sm text-red-600">{error}</p>
+          <p
+            role="alert"
+            className="mt-4 mb-8 text-center text-sm text-hfz-danger max-w-md mx-auto"
+          >
+            {error}
+          </p>
         )}
 
-        <div className="isolate mx-auto mt-16 grid max-w-md grid-cols-1 gap-y-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-3 lg:gap-x-8 xl:gap-x-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-md lg:max-w-none mx-auto items-stretch">
           {PRICING_TIERS.map((tier) => {
             const isFree = tier.priceKey === ''
             const isLoading = loadingTier === tier.name
             const anyLoading = loadingTier !== null
 
+            const accentClass = {
+              violet: 'border-hfz-violet-light shadow-hfz-glow-violet lg:scale-[1.03]',
+              gold: 'border-hfz-gold/60 shadow-hfz-glow-gold',
+              ghost: '',
+            }[tier.accent]
+
             return (
-              <div
+              <HVZCard
                 key={tier.name}
-                className={[
-                  'rounded-3xl p-8 ring-1 ring-gray-200',
-                  tier.mostPopular ? 'bg-gray-50 ring-2 ring-primary' : 'bg-white',
-                ].join(' ')}
+                padding={32}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                }}
+                className={`${accentClass} transition-transform`}
               >
-                <div className="flex items-center justify-between gap-x-4">
+                {tier.badge && (
+                  <div className="absolute -top-3 left-6">
+                    {tier.accent === 'gold' ? (
+                      <HVZTag color="gold">{tier.badge}</HVZTag>
+                    ) : (
+                      <HVZTag color="violet">{tier.badge}</HVZTag>
+                    )}
+                  </div>
+                )}
+
+                <div>
                   <h2
-                    className={[
-                      'text-lg font-semibold leading-8',
-                      tier.mostPopular ? 'text-primary' : 'text-gray-900',
-                    ].join(' ')}
+                    className="font-display font-bold text-hfz-h3 leading-tight"
+                    style={{
+                      background: 'none',
+                      WebkitTextFillColor: 'unset',
+                      color:
+                        tier.accent === 'gold'
+                          ? 'var(--color-gold-light)'
+                          : tier.accent === 'violet'
+                          ? 'var(--color-violet-lt)'
+                          : 'var(--color-text-primary)',
+                    }}
                   >
                     {tier.name}
                   </h2>
-                  {tier.mostPopular ? (
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold leading-5 text-primary">
-                      Most popular
-                    </span>
-                  ) : null}
+                  <p className="mt-2 text-sm text-hfz-text-secondary leading-relaxed">
+                    {tier.description}
+                  </p>
                 </div>
 
-                <p className="mt-4 text-sm leading-6 text-gray-600">{tier.description}</p>
-
-                <p className="mt-6 flex items-baseline gap-x-1">
-                  <span className="text-4xl font-bold tracking-tight text-gray-900">
+                <div className="mt-6 flex items-baseline gap-2">
+                  <span
+                    className="font-display font-extrabold tracking-hfz-tight text-hfz-text-primary"
+                    style={{ fontSize: 48, lineHeight: 1 }}
+                  >
                     {tier.priceMonthly}
                   </span>
-                  <span className="text-sm font-semibold leading-6 text-gray-600">/month</span>
-                </p>
+                  <span className="text-sm font-semibold text-hfz-text-secondary">/ month</span>
+                </div>
 
-                {isFree ? (
-                  <Link to={user ? '/courses' : '/register'}>
-                    <Button variant="outline" className="mt-6 w-full">
-                      {tier.cta}
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button
-                    className="mt-6 w-full"
-                    disabled={anyLoading}
-                    onClick={() => handleCheckout(tier)}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Redirecting…
-                      </>
-                    ) : (
-                      tier.cta
-                    )}
-                  </Button>
-                )}
-
-                <ul role="list" className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
+                <ul role="list" className="mt-7 flex-1 flex flex-col gap-3 list-none p-0 m-0">
                   {tier.features.map((feature) => (
-                    <li key={feature} className="flex gap-x-3">
-                      <Check className="h-6 w-5 flex-none text-primary" aria-hidden="true" />
-                      {feature}
+                    <li key={feature} className="flex items-start gap-3 text-[15px] text-hfz-text-primary/90">
+                      <Check
+                        className={`h-5 w-5 flex-none mt-0.5 ${
+                          tier.accent === 'gold'
+                            ? 'text-hfz-gold-light'
+                            : 'text-hfz-mint'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
+
+                <div className="mt-8">
+                  {isFree ? (
+                    <Link to={user ? '/courses' : '/register'} className="block no-underline">
+                      <HVZButton variant="ghost" size="md" fullWidth>
+                        {tier.cta}
+                      </HVZButton>
+                    </Link>
+                  ) : (
+                    <HVZButton
+                      variant={tier.accent === 'gold' ? 'gold' : 'primary'}
+                      size="md"
+                      fullWidth
+                      disabled={anyLoading}
+                      onClick={() => handleCheckout(tier)}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Wiring up the Z0ne...
+                        </>
+                      ) : (
+                        tier.cta
+                      )}
+                    </HVZButton>
+                  )}
+                </div>
+              </HVZCard>
             )
           })}
         </div>
+
+        <p className="mt-12 text-center text-sm text-hfz-text-secondary">
+          All plans pay out in <span className="text-hfz-gold-light font-semibold">🪙 BROski$</span> — even Free.
+        </p>
       </div>
     </div>
   )

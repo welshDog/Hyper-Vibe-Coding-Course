@@ -1,9 +1,43 @@
 import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { HVZBrand, HVZButton, HVZCard, HVZTag } from '../components/ui/hvz';
 import { useAnalytics } from '../hooks/useAnalytics';
+
+// Shared shell — dark hero gradient, centered card
+function AuthShell({ children, tag }: { children: React.ReactNode; tag?: string }) {
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% -10%, var(--color-deep-violet) 0%, var(--color-space-black) 70%)',
+      }}
+    >
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center gap-3 mb-6">
+          <HVZBrand size="md" />
+          {tag && <HVZTag color="cyan">{tag}</HVZTag>}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-hfz-md border border-hfz-danger/40 bg-hfz-danger/10 px-4 py-3"
+    >
+      <p className="text-sm text-hfz-danger m-0">
+        Hmm, let's try that again 🔄 — {message}
+      </p>
+    </div>
+  );
+}
 
 export function Login() {
   const navigate = useNavigate();
@@ -25,7 +59,6 @@ export function Login() {
       });
 
       if (error) throw error;
-      // Identify the user in PostHog so all subsequent events are linked to them
       if (data.user) {
         identifyUser(data.user.id, {
           email: data.user.email,
@@ -37,93 +70,84 @@ export function Login() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('An unknown error occurred');
+        setError('Something went sideways — try again.');
       }
     } finally {
       setLoading(false);
     }
   };
-  
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <Link to="/register" className="font-medium text-primary hover:text-primary-hover">
-            start your 14-day free trial
+    <AuthShell tag="🔓 Welcome back, BROski♾️">
+      <HVZCard padding={32}>
+        <h1
+          className="font-display font-bold text-3xl text-hfz-text-primary mb-2 text-center"
+          style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+        >
+          Sign back in
+        </h1>
+        <p className="text-center text-sm text-hfz-text-secondary mb-6">
+          New here?{' '}
+          <Link to="/register" className="text-hfz-cyan hover:text-hfz-violet-light transition-colors font-medium">
+            Start your free quest →
           </Link>
         </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleLogin}>
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
+        <form className="flex flex-col gap-5" onSubmit={handleLogin}>
+          {error && <ErrorBox message={error} />}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@build.different"
+            />
+          </div>
 
-            <div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign in'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Password
+            </label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+
+          <HVZButton type="submit" variant="primary" size="md" disabled={loading} fullWidth>
+            {loading ? 'Wiring up the Z0ne...' : "Let's GO →"}
+          </HVZButton>
+        </form>
+      </HVZCard>
+    </AuthShell>
   );
 }
 
-// BUG-013: password validation rules
 const PASSWORD_MIN_LENGTH = 8;
-
 function validatePassword(pw: string): string | null {
-  if (pw.length < PASSWORD_MIN_LENGTH) return `At least ${PASSWORD_MIN_LENGTH} characters required`;
-  if (!/[A-Z]/.test(pw)) return 'Include at least one uppercase letter';
-  if (!/[0-9]/.test(pw)) return 'Include at least one number';
+  if (pw.length < PASSWORD_MIN_LENGTH) return `At least ${PASSWORD_MIN_LENGTH} characters`;
+  if (!/[A-Z]/.test(pw)) return 'Add at least one uppercase letter';
+  if (!/[0-9]/.test(pw)) return 'Add at least one number';
   return null;
 }
 
@@ -137,7 +161,6 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  // BUG-014: show success state instead of silent redirect
   const [success, setSuccess] = useState(false);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,141 +193,150 @@ export function Register() {
       });
 
       if (error) throw error;
-      // BUG-014: show confirmation message — don't silently redirect
       setSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('An unknown error occurred');
+        setError('Something went sideways — try again.');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Success state ──────────────────────────────────────────────────────
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
-            <div className="text-4xl mb-4">🚀</div>
-            <h2 className="text-2xl font-bold text-gray-900">Account created!</h2>
-            <p className="mt-3 text-gray-600">
-              Check your inbox at <strong>{email}</strong> and confirm your email before logging in.
+      <AuthShell tag="🎉 You're in, BROski♾️">
+        <HVZCard padding={32} glow="mint">
+          <div className="text-center">
+            <div className="text-5xl mb-4" aria-hidden>🚀</div>
+            <h1
+              className="font-display font-bold text-3xl text-hfz-text-primary mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Account live!
+            </h1>
+            <p className="text-base text-hfz-text-primary/85 mb-2">
+              Check your inbox at <strong className="text-hfz-cyan">{email}</strong> and confirm your email before logging in.
             </p>
-            <p className="mt-2 text-sm text-gray-500">
-              (No email? Check your spam folder — it sometimes ends up there.)
+            <p className="text-sm text-hfz-text-secondary mb-6">
+              No email? Check your spam folder — it sometimes ends up there.
             </p>
-            <button
+            <HVZButton
+              type="button"
+              variant="primary"
+              size="md"
+              fullWidth
               onClick={() => navigate('/login')}
-              className="mt-6 text-primary font-medium hover:underline text-sm"
             >
               Go to login →
-            </button>
+            </HVZButton>
           </div>
-        </div>
-      </div>
+        </HVZCard>
+      </AuthShell>
     );
   }
-  
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <AuthShell tag="✨ Hey bro, let's get you set up">
+      <HVZCard padding={32}>
+        <h1
+          className="font-display font-bold text-3xl text-hfz-text-primary mb-2 text-center"
+          style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+        >
           Create your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-primary hover:text-primary-hover">
-            Sign in
+        </h1>
+        <p className="text-center text-sm text-hfz-text-secondary mb-6">
+          Already in?{' '}
+          <Link to="/login" className="text-hfz-cyan hover:text-hfz-violet-light transition-colors font-medium">
+            Sign in →
           </Link>
         </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleRegister}>
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+        <form className="flex flex-col gap-5" onSubmit={handleRegister}>
+          {error && <ErrorBox message={error} />}
 
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                Full Name
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
+          <div>
+            <label
+              htmlFor="fullName"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Your name
+            </label>
+            <Input
+              id="fullName"
+              name="fullName"
+              type="text"
+              autoComplete="name"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="What should we call you?"
+            />
+          </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={PASSWORD_MIN_LENGTH}
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className={passwordError ? 'border-red-400 focus:ring-red-400' : ''}
-                />
-              </div>
-              {passwordError && (
-                <p className="mt-1 text-xs text-red-600">{passwordError}</p>
-              )}
-              {!passwordError && !password && (
-                <p className="mt-1 text-xs text-gray-400">
-                  Min 8 chars, one uppercase, one number
-                </p>
-              )}
-            </div>
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@build.different"
+            />
+          </div>
 
-            <div>
-              <Button type="submit" className="w-full" disabled={loading || !!passwordError}>
-                {loading ? 'Creating account...' : 'Create account'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Password
+            </label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={PASSWORD_MIN_LENGTH}
+              value={password}
+              onChange={handlePasswordChange}
+              placeholder="Make it solid"
+              className={passwordError ? 'border-hfz-danger focus:border-hfz-danger focus:shadow-none' : ''}
+              aria-invalid={!!passwordError}
+              aria-describedby="password-help"
+            />
+            <p
+              id="password-help"
+              className={`mt-2 text-xs ${
+                passwordError ? 'text-hfz-danger' : 'text-hfz-text-secondary'
+              }`}
+            >
+              {passwordError ?? 'Min 8 chars, one uppercase, one number'}
+            </p>
+          </div>
+
+          <HVZButton
+            type="submit"
+            variant="primary"
+            size="md"
+            fullWidth
+            disabled={loading || !!passwordError}
+          >
+            {loading ? 'Wiring up the Z0ne...' : "Let's GO →"}
+          </HVZButton>
+        </form>
+      </HVZCard>
+    </AuthShell>
   );
 }

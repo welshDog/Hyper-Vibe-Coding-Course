@@ -7,7 +7,7 @@ import { useAuthStore } from '../context/auth';
 export function Layout() {
   const { user } = useAuthStore();
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-hfz-space-black text-hfz-text-primary">
       {user && <HUD />}
       <Navbar />
       <main className="flex-grow">

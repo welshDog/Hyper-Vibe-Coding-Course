@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
+import {
+  HVZButton,
+  HVZCard,
+  HVZTag,
+  HVZProgress,
+  type TagColor,
+} from '../components/ui/hvz';
 
 type ModuleLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'Hyper-Pro';
 
@@ -16,12 +23,12 @@ interface HvModuleRow {
   slug: string;
 }
 
-const levelBadgeClassName: Record<string, string> = {
-  Beginner: 'bg-green-500/15 text-green-300 border border-green-500/30',
-  Intermediate: 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/30',
-  Advanced: 'bg-orange-500/15 text-orange-300 border border-orange-500/30',
-  'Hyper-Pro': 'bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30',
-  Elite: 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30',
+const LEVEL_TONE: Record<string, TagColor> = {
+  Beginner: 'mint',
+  Intermediate: 'amber',
+  Advanced: 'pink',
+  Elite: 'cyan',
+  'Hyper-Pro': 'pink',
 };
 
 export default function Courses() {
@@ -41,7 +48,7 @@ export default function Courses() {
         .order('code', { ascending: true });
 
       if (error) {
-        setError('Could not load modules.');
+        setError("Hmm, let's try that again 🔄 — couldn't load modules.");
         setModules([]);
       } else {
         setModules((data as HvModuleRow[]) ?? []);
@@ -64,14 +71,19 @@ export default function Courses() {
       .from('module_completions')
       .select('module_id')
       .eq('user_id', userId)
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) return;
-        const ids = new Set(((data as Array<{ module_id: string }>) ?? []).map((r) => r.module_id));
-        setCompletedModuleIds(ids);
-      }, () => {
-        if (cancelled) return;
-      });
+      .then(
+        ({ data, error }) => {
+          if (cancelled) return;
+          if (error) return;
+          const ids = new Set(
+            ((data as Array<{ module_id: string }>) ?? []).map((r) => r.module_id),
+          );
+          setCompletedModuleIds(ids);
+        },
+        () => {
+          if (cancelled) return;
+        },
+      );
 
     return () => {
       cancelled = true;
@@ -88,101 +100,125 @@ export default function Courses() {
     if (!user) return null;
     const total = sortedModules.length;
     if (total === 0) return null;
-    const completed = sortedModules.reduce((acc, m) => (completedModuleIds.has(m.id) ? acc + 1 : acc), 0);
+    const completed = sortedModules.reduce(
+      (acc, m) => (completedModuleIds.has(m.id) ? acc + 1 : acc),
+      0,
+    );
     return { completed, total };
   }, [completedModuleIds, sortedModules, user]);
 
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="text-gray-300">Loading modules...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-10">
-        <div className="text-red-300">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Hyper Vibe Modules</h1>
-        <p className="text-purple-300 text-sm mt-2">
-          Pick a module, vibe hard, and stack XP.
-        </p>
-        {completionSummary ? (
-          <div className="mt-4 text-sm text-gray-200 font-semibold">
-            {completionSummary.completed} / {completionSummary.total} modules complete
+    <div className="bg-hfz-space-black min-h-screen py-12 sm:py-16">
+      <div className="max-w-hfz-page mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-10 max-w-[65ch]">
+          <HVZTag color="cyan">🎓 Quests · Hyper Vibe Modules</HVZTag>
+          <h1
+            className="font-display font-extrabold tracking-hfz-tight mt-4 text-hfz-text-primary"
+            style={{
+              fontSize: 'clamp(36px, 5vw, 56px)',
+              lineHeight: 1.05,
+              background: 'none',
+              WebkitTextFillColor: 'unset',
+              textWrap: 'balance',
+            }}
+          >
+            Pick a module.{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Vibe hard. Stack XP.
+            </span>
+          </h1>
+          <p className="mt-4 text-hfz-body-lg text-hfz-text-secondary leading-[1.8]">
+            Every quest pays out in real progress — XP, BROski$, and a deployed thing you can show off.
+          </p>
+
+          {completionSummary && completionSummary.total > 0 && (
+            <div className="mt-6 max-w-md">
+              <HVZProgress
+                value={completionSummary.completed}
+                max={completionSummary.total}
+                gradient="mint"
+                label="🏆 Module progress"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Body */}
+        {loading ? (
+          <div className="text-hfz-text-secondary text-base">Wiring up the Z0ne...</div>
+        ) : error ? (
+          <div className="rounded-hfz-md border border-hfz-danger/40 bg-hfz-danger/10 px-5 py-4 text-hfz-danger">
+            {error}
           </div>
-        ) : null}
-      </div>
+        ) : sortedModules.length === 0 ? (
+          <HVZCard padding={32}>
+            <p className="text-base text-hfz-text-secondary m-0">
+              Your quests will show up here — modules drop soon. 🎯
+            </p>
+          </HVZCard>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedModules.map((mod) => {
+              const isCompleted = completedModuleIds.has(mod.id);
+              const tagTone = LEVEL_TONE[mod.level] ?? 'violet';
 
-      {sortedModules.length === 0 ? (
-        <div className="rounded-xl bg-white/5 border border-white/10 p-6 text-gray-300">
-          No modules available yet.
-        </div>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedModules.map((mod) => {
-            const levelClass =
-              levelBadgeClassName[mod.level] ??
-              'bg-white/10 text-gray-200 border border-white/15';
-            const isCompleted = completedModuleIds.has(mod.id);
+              return (
+                <HVZCard
+                  key={mod.id}
+                  padding={24}
+                  glow={isCompleted ? 'mint' : false}
+                  style={{ display: 'flex', flexDirection: 'column' }}
+                >
+                  <div data-testid="module-card" className="flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-3">
+                      <HVZTag color="violet">{mod.code}</HVZTag>
+                      <span className="text-2xl" aria-hidden>
+                        {mod.emoji ?? '📦'}
+                      </span>
+                    </div>
 
-            return (
-              <div
-                key={mod.id}
-                data-testid="module-card"
-                className="rounded-2xl bg-white/5 border border-white/10 p-6 flex flex-col"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full bg-purple-600/20 border border-purple-500/30 text-purple-200 text-xs font-bold">
-                      {mod.code}
-                    </span>
-                    <span className="text-lg">{mod.emoji ?? '📦'}</span>
-                  </span>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${levelClass}`}>
-                    {mod.level}
-                  </span>
-                </div>
+                    <HVZTag color={tagTone}>{mod.level}</HVZTag>
 
-                <h2 className="text-white font-semibold text-lg mt-4 leading-snug">
-                  {mod.title}
-                </h2>
-                {isCompleted ? (
-                  <div className="mt-2 text-sm font-semibold text-emerald-200">
-                    ✅ Completed
+                    <h2
+                      className="font-display font-bold text-[20px] leading-[1.3] text-hfz-text-primary mt-3 mb-1"
+                      style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                    >
+                      {mod.title}
+                    </h2>
+
+                    {isCompleted && (
+                      <div className="mt-1 mb-2 text-sm font-semibold text-hfz-mint flex items-center gap-1.5">
+                        ✓ Quest complete
+                      </div>
+                    )}
+
+                    <div className="mt-auto pt-4 flex items-center justify-between text-sm font-mono">
+                      <span className="text-hfz-gold-light font-bold">+{mod.xp_reward} XP</span>
+                      <span className="text-hfz-gold font-bold">🪙 {mod.coin_reward} BROski$</span>
+                    </div>
+
+                    <div className="mt-4">
+                      <Link to={`/courses/${mod.slug}`} className="block no-underline">
+                        <HVZButton variant="primary" size="sm" fullWidth>
+                          {isCompleted ? 'Replay quest →' : 'Start quest →'}
+                        </HVZButton>
+                      </Link>
+                    </div>
                   </div>
-                ) : null}
-
-                <div className="mt-3 text-sm text-purple-200 flex items-center justify-between">
-                  <span className="font-semibold text-yellow-300">
-                    +{mod.xp_reward} XP
-                  </span>
-                  <span className="font-semibold">
-                    💰 {mod.coin_reward} BROski$
-                  </span>
-                </div>
-
-                <div className="mt-6">
-                  <Link
-                    to={`/courses/${mod.slug}`}
-                    className="inline-flex w-full justify-center rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors px-4 py-2 text-white text-sm font-semibold"
-                  >
-                    Start Module
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                </HVZCard>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
