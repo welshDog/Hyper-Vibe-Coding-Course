@@ -3,6 +3,7 @@ import { useAuthStore } from '../context/auth';
 import { supabase } from '../lib/supabase';
 import { LoyaltyTierBadge } from '../components/LoyaltyTierBadge';
 import { ShoppingBag, Loader2, CheckCircle } from 'lucide-react';
+import { HVZCard, HVZTag, type TagColor } from '../components/ui/hvz';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,35 +41,34 @@ type PurchaseResult = {
 
 // ── Category config ───────────────────────────────────────────────────────────
 
-const CATEGORY_CONFIG: Record<string, { heading: string; badgeClasses: string }> = {
-  agent_access:  { heading: '🤖 Agent Access',        badgeClasses: 'bg-indigo-100 text-indigo-700' },
-  prompt_pack:   { heading: '🧠 Prompt Packs',        badgeClasses: 'bg-blue-100 text-blue-700'    },
-  bonus_content: { heading: '🎬 Bonus Content',        badgeClasses: 'bg-purple-100 text-purple-700' },
-  coaching:      { heading: '🎯 Coaching & Feedback',  badgeClasses: 'bg-orange-100 text-orange-700' },
-  cosmetic:      { heading: '✨ Cosmetic Upgrades',    badgeClasses: 'bg-pink-100 text-pink-700'    },
+const CATEGORY_CONFIG: Record<string, { heading: string; tone: TagColor }> = {
+  agent_access:  { heading: '🤖 Agent Access',       tone: 'cyan' },
+  prompt_pack:   { heading: '🧠 Prompt Packs',       tone: 'violet' },
+  bonus_content: { heading: '🎬 Bonus Content',      tone: 'pink' },
+  coaching:      { heading: '🎯 Coaching & Feedback', tone: 'amber' },
+  cosmetic:      { heading: '✨ Cosmetic Upgrades',  tone: 'pink' },
 };
 
-// Deterministic display order — agent_access first (premium integration item)
 const CATEGORY_ORDER = ['agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic'];
 
 // ── Skeleton card ─────────────────────────────────────────────────────────────
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3 animate-pulse">
-      <div className="h-4 bg-gray-100 rounded w-1/3" />
-      <div className="h-5 bg-gray-100 rounded w-2/3" />
-      <div className="h-3 bg-gray-100 rounded w-full" />
-      <div className="h-3 bg-gray-100 rounded w-4/5" />
+    <div className="rounded-hfz-md border border-hfz-border-violet bg-hfz-midnight p-5 flex flex-col gap-3 animate-pulse">
+      <div className="h-4 bg-hfz-violet/15 rounded w-1/3" />
+      <div className="h-5 bg-hfz-violet/15 rounded w-2/3" />
+      <div className="h-3 bg-hfz-violet/15 rounded w-full" />
+      <div className="h-3 bg-hfz-violet/15 rounded w-4/5" />
       <div className="flex items-center justify-between pt-2">
-        <div className="h-6 bg-gray-100 rounded w-16" />
-        <div className="h-9 bg-gray-100 rounded w-20" />
+        <div className="h-6 bg-hfz-violet/15 rounded w-16" />
+        <div className="h-9 bg-hfz-violet/15 rounded w-20" />
       </div>
     </div>
   );
 }
 
-// ── Inline notification banner (no toast library needed) ──────────────────────
+// ── Inline notification banner ────────────────────────────────────────────────
 
 type Notification = { type: 'success' | 'error'; text: string };
 
@@ -78,16 +78,24 @@ function NotificationBanner({ note, onDismiss }: { note: Notification; onDismiss
     return () => clearTimeout(t);
   }, [note, onDismiss]);
 
+  const isSuccess = note.type === 'success';
+
   return (
     <div
       role="status"
-      className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
-        note.type === 'success'
-          ? 'bg-green-600 text-white'
-          : 'bg-red-600 text-white'
-      }`}
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-hfz-md text-sm font-medium"
+      style={{
+        background: isSuccess ? 'rgba(16,245,160,0.12)' : 'rgba(239,68,68,0.12)',
+        border: `1px solid ${isSuccess ? 'rgba(16,245,160,0.4)' : 'rgba(239,68,68,0.4)'}`,
+        color: isSuccess ? 'var(--color-success-mint)' : 'var(--color-danger-red)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        boxShadow: isSuccess
+          ? '0 0 20px rgba(16,245,160,0.25)'
+          : '0 0 20px rgba(239,68,68,0.25)',
+      }}
     >
-      {note.type === 'success' ? '✓' : '✗'} {note.text}
+      {isSuccess ? '✓' : '⚠️'} {note.text}
     </div>
   );
 }
@@ -108,64 +116,95 @@ function ItemCard({ item, owned, balance, purchasing, onBuy }: ItemCardProps) {
   const shortfall = item.price_tokens - balance;
 
   let buttonContent: React.ReactNode;
-  let buttonClasses: string;
+  let buttonStyle: React.CSSProperties;
+  const baseBtnClass = 'px-4 py-2 rounded-hfz-sm text-sm font-semibold min-w-[80px] min-h-[40px] flex items-center justify-center gap-1.5 transition-all duration-hfz-fast ease-hfz-smooth';
 
   if (owned) {
     buttonContent = (
-      <span className="flex items-center gap-1.5">
+      <>
         <CheckCircle className="h-4 w-4" />
         Owned
-      </span>
+      </>
     );
-    buttonClasses = 'bg-green-50 text-green-700 border border-green-200 cursor-default';
+    buttonStyle = {
+      background: 'rgba(16,245,160,0.12)',
+      border: '1px solid rgba(16,245,160,0.4)',
+      color: 'var(--color-success-mint)',
+      cursor: 'default',
+    };
   } else if (purchasing) {
-    buttonContent = <Loader2 className="h-4 w-4 animate-spin mx-auto" />;
-    buttonClasses = 'bg-primary/70 text-white cursor-wait';
+    buttonContent = <Loader2 className="h-4 w-4 animate-spin" />;
+    buttonStyle = {
+      background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
+      color: '#fff',
+      border: 0,
+      opacity: 0.7,
+      cursor: 'wait',
+    };
   } else if (!canAfford) {
-    buttonContent = `Need ${shortfall.toLocaleString()} more`;
-    buttonClasses = 'bg-gray-100 text-gray-400 cursor-not-allowed';
+    buttonContent = `Need ${shortfall.toLocaleString()} more 🪙`;
+    buttonStyle = {
+      background: 'rgba(139,156,200,0.08)',
+      border: '1px solid rgba(139,156,200,0.15)',
+      color: 'var(--color-text-disabled)',
+      cursor: 'not-allowed',
+    };
   } else {
-    buttonContent = 'Buy';
-    buttonClasses = 'bg-primary text-white hover:bg-primary/90 transition-colors';
+    buttonContent = 'Buy →';
+    buttonStyle = {
+      background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
+      color: '#fff',
+      border: 0,
+      cursor: 'pointer',
+    };
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 flex flex-col gap-3 hover:border-primary/30 hover:shadow-sm transition-all">
-      {/* Category badge */}
+    <HVZCard padding={20} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {catConfig && (
-        <span className={`self-start text-xs font-semibold px-2 py-0.5 rounded-full ${catConfig.badgeClasses}`}>
-          {catConfig.heading.split(' ').slice(1).join(' ')}
-        </span>
+        <div className="self-start mb-3">
+          <HVZTag color={catConfig.tone}>
+            {catConfig.heading.split(' ').slice(1).join(' ')}
+          </HVZTag>
+        </div>
       )}
 
-      {/* Name + description */}
       <div className="flex-1">
-        <p className="font-bold text-gray-900 leading-snug">{item.name}</p>
-        <p className="text-sm text-gray-500 mt-1 leading-relaxed">{item.description}</p>
+        <p
+          className="font-display font-bold text-hfz-text-primary leading-snug text-base"
+          style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+        >
+          {item.name}
+        </p>
+        <p className="text-sm text-hfz-text-secondary mt-1.5 leading-relaxed">
+          {item.description}
+        </p>
       </div>
 
-      {/* Price + buy button */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex items-center justify-between gap-3 pt-4 mt-3 border-t border-hfz-border-violet">
         <div>
-          <span className="text-lg font-black text-gray-900">
-            {item.price_tokens.toLocaleString()} 🪙
+          <span className="font-display font-extrabold text-hfz-gold-light text-lg">
+            🪙 {item.price_tokens.toLocaleString()}
           </span>
           {item.price_gbp != null && (
-            <span className="text-xs text-gray-400 ml-1">
+            <span className="text-xs text-hfz-text-secondary ml-1.5">
               / £{Number(item.price_gbp).toFixed(2)}
             </span>
           )}
         </div>
         <button
+          type="button"
           onClick={() => !owned && canAfford && !purchasing && onBuy(item.id)}
           disabled={owned || !canAfford || purchasing}
+          aria-label={owned ? `${item.name} owned` : `Buy ${item.name}`}
           title={!canAfford && !owned ? `Need ${shortfall.toLocaleString()} more BROski$` : undefined}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold min-w-[72px] text-center ${buttonClasses}`}
+          className={baseBtnClass}
+          style={buttonStyle}
         >
           {buttonContent}
         </button>
       </div>
-    </div>
+    </HVZCard>
   );
 }
 
@@ -173,10 +212,10 @@ function ItemCard({ item, owned, balance, purchasing, onBuy }: ItemCardProps) {
 
 export default function ShopPage() {
   const { user, setUser } = useAuthStore();
-  const [items, setItems]         = useState<ShopItem[]>([]);
-  const [ownedIds, setOwnedIds]   = useState<Set<string>>(new Set());
-  const [tier, setTier]           = useState<LoyaltyTierRow | null>(null);
-  const [loading, setLoading]     = useState(true);
+  const [items, setItems] = useState<ShopItem[]>([]);
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+  const [tier, setTier] = useState<LoyaltyTierRow | null>(null);
+  const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
 
@@ -184,7 +223,6 @@ export default function ShopPage() {
 
   const dismissNotification = useCallback(() => setNotification(null), []);
 
-  // ── Fetch items, purchases, tier in parallel ─────────────────────────────
   useEffect(() => {
     if (!user) return;
 
@@ -207,7 +245,7 @@ export default function ShopPage() {
           .maybeSingle(),
       ]);
 
-      if (!itemsRes.error)    setItems(itemsRes.data ?? []);
+      if (!itemsRes.error) setItems(itemsRes.data ?? []);
       if (!purchasesRes.error) {
         setOwnedIds(new Set((purchasesRes.data ?? []).map((p: ShopPurchase) => p.item_id)));
       }
@@ -220,7 +258,6 @@ export default function ShopPage() {
     void fetchAll();
   }, [user]);
 
-  // ── Purchase handler ──────────────────────────────────────────────────────
   async function handleBuy(itemId: string) {
     if (!user || purchasingId) return;
     setPurchasingId(itemId);
@@ -231,121 +268,167 @@ export default function ShopPage() {
       });
 
       if (error || !data?.success) {
-        const text = data?.error ?? error?.message ?? 'Purchase failed — try again.';
+        const text = data?.error ?? error?.message ?? "Hmm, let's try that again 🔄";
         setNotification({ type: 'error', text });
         return;
       }
 
-      // Optimistically update owned set + balance in Zustand
       setOwnedIds((prev) => new Set([...prev, itemId]));
       setUser({ ...user, broski_tokens: data.new_balance });
 
       const itemName = items.find((i) => i.id === itemId)?.name ?? data.item_name;
       const notificationText = data.agent_access_pending
         ? `🤖 Agent access queued! Check Discord for your Mission Control link.`
-        : `🪙 Unlocked ${itemName}! -${data.spent_tokens.toLocaleString()} BROski$`;
+        : `🎉 NICE ONE BROski♾️ — unlocked ${itemName} (-${data.spent_tokens.toLocaleString()} 🪙)`;
 
       setNotification({ type: 'success', text: notificationText });
     } catch (err) {
       console.error('shop-purchase invoke failed:', err);
-      setNotification({ type: 'error', text: 'Something went wrong — try again.' });
+      setNotification({ type: 'error', text: "Hmm, let's try that again 🔄 — purchase didn't go through." });
     } finally {
       setPurchasingId(null);
     }
   }
 
-  // ── Group items by category in display order ──────────────────────────────
   const grouped = CATEGORY_ORDER.reduce<Record<string, ShopItem[]>>((acc, cat) => {
     const catItems = items.filter((i) => i.category === cat);
     if (catItems.length > 0) acc[cat] = catItems;
     return acc;
   }, {});
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10 space-y-10">
+    <div className="bg-hfz-space-black min-h-screen py-12 sm:py-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-12">
+        {notification && (
+          <NotificationBanner note={notification} onDismiss={dismissNotification} />
+        )}
 
-      {notification && (
-        <NotificationBanner note={notification} onDismiss={dismissNotification} />
-      )}
-
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <ShoppingBag className="h-8 w-8 text-primary flex-shrink-0" />
-          <div>
-            <h1 className="text-2xl font-black text-gray-900">BROski$ Shop</h1>
-            <p className="text-sm text-gray-500">Spend your tokens on real things</p>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div
+              className="h-14 w-14 rounded-hfz-md flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, rgba(123,47,190,0.25), rgba(0,212,255,0.18))',
+                border: '1px solid rgba(168,85,247,0.3)',
+              }}
+            >
+              <ShoppingBag className="h-7 w-7 text-hfz-cyan" aria-hidden />
+            </div>
+            <div>
+              <HVZTag color="gold">🛒 BROski$ Shop</HVZTag>
+              <h1
+                className="font-display font-extrabold text-2xl text-hfz-text-primary mt-2"
+                style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+              >
+                Spend your tokens on real things
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            {tier && <LoyaltyTierBadge tier={tier.tier} size="md" />}
+            <div
+              className="flex items-center gap-2 px-4 py-2 rounded-hfz-full font-bold font-mono"
+              style={{
+                background: 'rgba(245,158,11,0.12)',
+                border: '1px solid rgba(245,158,11,0.3)',
+                color: 'var(--color-gold-light)',
+                minHeight: 44,
+              }}
+            >
+              <span aria-hidden>🪙</span>
+              <span>{balance.toLocaleString()}</span>
+              <span className="text-xs font-semibold opacity-70">BROski$</span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {tier && <LoyaltyTierBadge tier={tier.tier} size="md" />}
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-50 border border-yellow-200 font-bold text-yellow-700">
-            <span>🪙</span>
-            <span>{balance.toLocaleString()} BROski$</span>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Items by category ───────────────────────────────────────────── */}
-      {loading ? (
-        <div className="space-y-10">
-          {CATEGORY_ORDER.map((cat) => (
-            <section key={cat}>
-              <div className="h-7 w-40 bg-gray-100 rounded animate-pulse mb-5" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(3)].map((_, i) => <SkeletonCard key={i} />)}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-20 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-4xl mb-3">🛒</p>
-          <p className="font-semibold text-gray-700">Shop coming soon</p>
-          <p className="text-sm text-gray-500 mt-1">New items drop regularly — check back soon!</p>
-        </div>
-      ) : (
-        <div className="space-y-10">
-          {Object.entries(grouped).map(([cat, catItems]) => {
-            const config = CATEGORY_CONFIG[cat];
-            return (
+        {/* Items by category */}
+        {loading ? (
+          <div className="flex flex-col gap-10">
+            {CATEGORY_ORDER.map((cat) => (
               <section key={cat}>
-                <h2 className="text-xl font-bold text-gray-900 mb-5">
-                  {config?.heading ?? cat}
-                </h2>
+                <div className="h-7 w-40 bg-hfz-violet/15 rounded animate-pulse mb-5" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {catItems.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      owned={ownedIds.has(item.id)}
-                      balance={balance}
-                      purchasing={purchasingId === item.id}
-                      onBuy={handleBuy}
-                    />
+                  {[...Array(3)].map((_, i) => (
+                    <SkeletonCard key={i} />
                   ))}
                 </div>
               </section>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Balance tip ─────────────────────────────────────────────────── */}
-      {!loading && (
-        <div className="rounded-xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 p-5 flex items-center gap-4">
-          <span className="text-3xl flex-shrink-0">💡</span>
-          <div>
-            <p className="font-semibold text-gray-800 text-sm">Earn more BROski$</p>
-            <p className="text-xs text-gray-600 mt-0.5">
-              Complete lessons (+10), finish modules (+50), hit a 7-day streak (+100),
-              or grab a token pack from the{' '}
-              <a href="/tokens" className="font-medium text-primary hover:underline">Tokens page</a>.
-            </p>
+            ))}
           </div>
-        </div>
-      )}
+        ) : items.length === 0 ? (
+          <HVZCard padding={40}>
+            <div className="text-center">
+              <p className="text-5xl mb-4" aria-hidden>🛒</p>
+              <p
+                className="font-display font-bold text-hfz-text-primary text-lg"
+                style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+              >
+                Shop coming soon
+              </p>
+              <p className="text-sm text-hfz-text-secondary mt-2">
+                Your power-ups will show up here — new drops regularly. 🎯
+              </p>
+            </div>
+          </HVZCard>
+        ) : (
+          <div className="flex flex-col gap-10">
+            {Object.entries(grouped).map(([cat, catItems]) => {
+              const config = CATEGORY_CONFIG[cat];
+              return (
+                <section key={cat}>
+                  <h2
+                    className="font-display font-bold text-hfz-h3 text-hfz-text-primary mb-5"
+                    style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                  >
+                    {config?.heading ?? cat}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {catItems.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        owned={ownedIds.has(item.id)}
+                        balance={balance}
+                        purchasing={purchasingId === item.id}
+                        onBuy={handleBuy}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Earn-more tip */}
+        {!loading && (
+          <HVZCard padding={20}>
+            <div className="flex items-center gap-4">
+              <span className="text-3xl flex-shrink-0" aria-hidden>💡</span>
+              <div>
+                <p
+                  className="font-display font-bold text-hfz-text-primary text-base"
+                  style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                >
+                  Earn more BROski$
+                </p>
+                <p className="text-sm text-hfz-text-secondary mt-1 leading-relaxed">
+                  Complete lessons (+10), finish modules (+50), hit a 7-day streak (+100), or grab a token pack from the{' '}
+                  <a
+                    href="/tokens"
+                    className="text-hfz-cyan hover:text-hfz-violet-light transition-colors font-semibold"
+                  >
+                    Tokens page
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          </HVZCard>
+        )}
+      </div>
     </div>
   );
 }

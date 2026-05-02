@@ -1,20 +1,60 @@
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
+import { HVZButton, HVZCard, HVZTag, Starfield } from '../components/ui/hvz';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <h1 className="text-9xl font-extrabold text-primary">404</h1>
-        <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Page not found</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Sorry, we couldn't find the page you're looking for.
-        </p>
-        <div className="mt-6">
-          <Link to="/">
-            <Button size="lg">Go back home</Button>
-          </Link>
-        </div>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-16 relative overflow-hidden"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% -10%, var(--color-deep-violet) 0%, var(--color-space-black) 70%)',
+      }}
+    >
+      <Starfield count={60} seed={404} />
+
+      <div className="relative z-10 w-full max-w-md text-center">
+        <HVZCard padding={40}>
+          <HVZTag color="pink">🌌 Lost in the Z0ne</HVZTag>
+
+          <h1
+            className="font-display font-extrabold mt-6"
+            style={{
+              fontSize: 'clamp(80px, 18vw, 140px)',
+              lineHeight: 1,
+              letterSpacing: '-0.04em',
+              background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            404
+          </h1>
+
+          <h2
+            className="font-display font-bold text-2xl text-hfz-text-primary mt-4 mb-3"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            This page hopped the portal, Bro.
+          </h2>
+
+          <p className="text-base text-hfz-text-secondary leading-relaxed mb-8 max-w-[40ch] mx-auto">
+            Either the link's stale or we shipped without it. Don't worry — the rest of the Z0ne's still online. 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link to="/" className="no-underline">
+              <HVZButton variant="primary" size="md" fullWidth>
+                ← Back to home
+              </HVZButton>
+            </Link>
+            <Link to="/courses" className="no-underline">
+              <HVZButton variant="ghost" size="md" fullWidth>
+                Browse quests
+              </HVZButton>
+            </Link>
+          </div>
+        </HVZCard>
       </div>
     </div>
   );

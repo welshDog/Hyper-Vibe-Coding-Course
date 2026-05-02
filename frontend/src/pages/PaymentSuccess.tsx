@@ -2,10 +2,56 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
-import { Button } from '../components/ui/Button';
-import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
+import { HVZButton, HVZCard, HVZTag } from '../components/ui/hvz';
+import { ArrowRight } from 'lucide-react';
 
 type Status = 'loading' | 'enrolled' | 'subscribed' | 'already_enrolled' | 'error';
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% -10%, var(--color-deep-violet) 0%, var(--color-space-black) 70%)',
+      }}
+    >
+      <div className="w-full max-w-md">{children}</div>
+    </div>
+  );
+}
+
+function SonarRing({ delay = 0 }: { delay?: number }) {
+  return (
+    <span
+      aria-hidden
+      className="absolute inset-0 rounded-full border-2 border-hfz-mint"
+      style={{
+        animation: `sonarPulse 2s ease-out ${delay}s infinite`,
+      }}
+    />
+  );
+}
+
+function MintCheck() {
+  return (
+    <div className="relative h-20 w-20 mx-auto mb-6">
+      <SonarRing delay={0} />
+      <SonarRing delay={0.5} />
+      <SonarRing delay={1} />
+      <div
+        className="relative h-20 w-20 rounded-full flex items-center justify-center text-4xl"
+        style={{
+          background: 'rgba(16,245,160,0.15)',
+          border: '2px solid var(--color-success-mint)',
+          boxShadow: 'var(--shadow-glow-mint, 0 0 20px rgba(16,245,160,0.4))',
+        }}
+      >
+        ✓
+      </div>
+    </div>
+  );
+}
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -15,13 +61,8 @@ export default function PaymentSuccess() {
   const [courseTitle, setCourseTitle] = useState<string>('');
 
   useEffect(() => {
-    if (!user) {
-      // Still waiting for auth to hydrate
-      return;
-    }
+    if (!user) return;
 
-    // ── Subscription purchase (no specific course) ────────────────────────────
-    // Enroll the user in all published courses so LessonPlayer grants access.
     if (!courseId) {
       async function enrollAllCourses() {
         try {
@@ -39,11 +80,11 @@ export default function PaymentSuccess() {
                   course_id: c.id,
                   progress_percentage: 0,
                 })),
-                { onConflict: 'user_id,course_id' }
+                { onConflict: 'user_id,course_id' },
               );
           }
         } catch {
-          // Non-fatal — user can still navigate to courses
+          // non-fatal
         }
         setStatus('subscribed');
       }
@@ -55,7 +96,6 @@ export default function PaymentSuccess() {
     const maxAttempts = 10;
 
     async function pollEnrollment() {
-      // Fetch course title for the success message
       if (!courseTitle) {
         const { data: course } = await supabase
           .from('courses')
@@ -79,13 +119,11 @@ export default function PaymentSuccess() {
 
       attempts++;
       if (attempts >= maxAttempts) {
-        // Webhook may have already run and enrollment exists — or it failed.
-        // Fall back to manual upsert so the student isn't blocked.
         const { error } = await supabase
           .from('enrollments')
           .upsert(
             { user_id: user!.id, course_id: courseId, progress_percentage: 0 },
-            { onConflict: 'user_id,course_id' }
+            { onConflict: 'user_id,course_id' },
           );
         setStatus(error ? 'error' : 'enrolled');
         return;
@@ -100,129 +138,173 @@ export default function PaymentSuccess() {
   // ── Not logged in ──
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-          <h2 className="text-2xl font-bold text-gray-900">Almost there!</h2>
-          <p className="mt-3 text-gray-500">
-            Log in to access your new course.
-          </p>
-          <Link to="/login" className="block mt-6">
-            <Button className="w-full">Log in to continue</Button>
-          </Link>
-        </div>
-      </div>
+      <Shell>
+        <HVZCard padding={32}>
+          <div className="text-center">
+            <h2
+              className="font-display font-bold text-2xl text-hfz-text-primary mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Almost there!
+            </h2>
+            <p className="text-base text-hfz-text-secondary leading-relaxed mb-6">
+              Log in to access your new course.
+            </p>
+            <Link to="/login" className="block no-underline">
+              <HVZButton variant="primary" size="md" fullWidth>
+                Log in to continue →
+              </HVZButton>
+            </Link>
+          </div>
+        </HVZCard>
+      </Shell>
     );
   }
 
   // ── Loading / polling ──
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <h2 className="mt-6 text-2xl font-bold text-gray-900">Confirming your enrollment…</h2>
-          <p className="mt-3 text-gray-500 text-sm">
-            Hang tight — we're unlocking your course. This takes just a moment.
-          </p>
-        </div>
-      </div>
+      <Shell>
+        <HVZCard padding={32}>
+          <div className="text-center">
+            <div className="text-5xl mb-4" aria-hidden>⚡</div>
+            <h2
+              className="font-display font-bold text-2xl text-hfz-text-primary mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Wiring up the Z0ne...
+            </h2>
+            <p className="text-sm text-hfz-text-secondary">
+              Hang tight, BROski♾️ — we're unlocking your course. This takes just a moment.
+            </p>
+          </div>
+        </HVZCard>
+      </Shell>
     );
   }
 
   // ── Subscription activated ──
   if (status === 'subscribed') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-          <div className="flex justify-center mb-6">
-            <div className="rounded-full bg-green-100 p-4">
-              <CheckCircle className="h-12 w-12 text-green-600" />
+      <Shell>
+        <HVZCard padding={32} glow="mint">
+          <div className="text-center">
+            <MintCheck />
+            <HVZTag color="mint">🎉 NICE ONE BROski♾️</HVZTag>
+            <h2
+              className="font-display font-bold text-2xl text-hfz-text-primary mt-4 mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              You're in! 🚀
+            </h2>
+            <p className="text-base text-hfz-text-primary/85 leading-relaxed mb-8">
+              Subscription activated. All courses are unlocked and waiting. Let's build something real.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link to="/courses" className="block no-underline">
+                <HVZButton variant="primary" size="md" fullWidth>
+                  Browse all courses
+                  <ArrowRight className="h-4 w-4" />
+                </HVZButton>
+              </Link>
+              <Link
+                to="/dashboard"
+                className="text-sm text-hfz-text-secondary hover:text-hfz-cyan transition-colors"
+              >
+                Go to Dashboard
+              </Link>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">You're in! 🎉</h2>
-          <p className="mt-3 text-gray-500">
-            Subscription activated. All courses are unlocked and waiting.
-            Let's build something real.
-          </p>
-          <div className="mt-8 flex flex-col gap-3">
-            <Link to="/courses">
-              <Button className="w-full text-base">
-                Browse all courses <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">
-              Go to Dashboard
-            </Link>
-          </div>
-        </div>
-      </div>
+        </HVZCard>
+      </Shell>
     );
   }
 
   // ── Error ──
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-          <div className="text-4xl mb-4">⚠️</div>
-          <h2 className="text-2xl font-bold text-gray-900">Something went wrong</h2>
-          <p className="mt-3 text-gray-500">
-            Your payment was processed, but we couldn't confirm your enrollment automatically.
-            Reach out and we'll sort it within the hour.
-          </p>
-          <div className="mt-6 flex flex-col gap-3">
-            <Link to="/dashboard">
-              <Button variant="outline" className="w-full">Go to Dashboard</Button>
-            </Link>
-            <a href="mailto:support@hypervibecourses.com" className="text-sm text-primary hover:underline">
-              Contact support
-            </a>
+      <Shell>
+        <HVZCard padding={32}>
+          <div className="text-center">
+            <div className="text-5xl mb-4" aria-hidden>🛟</div>
+            <HVZTag color="amber">⚠️ Needs a quick nudge</HVZTag>
+            <h2
+              className="font-display font-bold text-2xl text-hfz-text-primary mt-4 mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Hmm, let's get this sorted 🔄
+            </h2>
+            <p className="text-base text-hfz-text-secondary leading-relaxed mb-6">
+              Your payment went through, but we couldn't auto-confirm enrollment. Reach out and we'll fix it within the hour.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link to="/dashboard" className="block no-underline">
+                <HVZButton variant="ghost" size="md" fullWidth>
+                  Go to Dashboard
+                </HVZButton>
+              </Link>
+              <a
+                href="mailto:support@hypervibecourses.com"
+                className="text-sm text-hfz-cyan hover:text-hfz-violet-light transition-colors"
+              >
+                Contact support →
+              </a>
+            </div>
           </div>
-        </div>
-      </div>
+        </HVZCard>
+      </Shell>
     );
   }
 
-  // ── Success ──
+  // ── Enrolled (paid course) ──
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full text-center bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-        <div className="flex justify-center mb-6">
-          <div className="rounded-full bg-green-100 p-4">
-            <CheckCircle className="h-12 w-12 text-green-600" />
+    <Shell>
+      <HVZCard padding={32} glow="mint">
+        <div className="text-center">
+          <MintCheck />
+          <HVZTag color="mint">🎉 NICE ONE BROski♾️</HVZTag>
+          <h2
+            className="font-display font-bold text-2xl text-hfz-text-primary mt-4 mb-2"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            You're in! 🚀
+          </h2>
+
+          {courseTitle && (
+            <p className="font-display font-semibold text-hfz-cyan text-base mb-3">
+              {courseTitle}
+            </p>
+          )}
+
+          <p className="text-base text-hfz-text-primary/85 leading-relaxed mb-8">
+            Payment confirmed. Your course is unlocked and waiting. Let's build something real.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            {courseId ? (
+              <Link to={`/learn/${courseId}`} className="block no-underline">
+                <HVZButton variant="primary" size="md" fullWidth>
+                  Start learning now
+                  <ArrowRight className="h-4 w-4" />
+                </HVZButton>
+              </Link>
+            ) : (
+              <Link to="/dashboard" className="block no-underline">
+                <HVZButton variant="primary" size="md" fullWidth>
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </HVZButton>
+              </Link>
+            )}
+            <Link
+              to="/courses"
+              className="text-sm text-hfz-text-secondary hover:text-hfz-cyan transition-colors"
+            >
+              Browse more courses
+            </Link>
           </div>
         </div>
-
-        <h2 className="text-2xl font-bold text-gray-900">You're in! 🎉</h2>
-
-        {courseTitle && (
-          <p className="mt-2 text-primary font-semibold">{courseTitle}</p>
-        )}
-
-        <p className="mt-3 text-gray-500">
-          Payment confirmed. Your course is unlocked and waiting.
-          Let's build something real.
-        </p>
-
-        <div className="mt-8 flex flex-col gap-3">
-          {courseId ? (
-            <Link to={`/learn/${courseId}`}>
-              <Button className="w-full text-base">
-                Start learning now <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          ) : (
-            <Link to="/dashboard">
-              <Button className="w-full text-base">
-                Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          )}
-          <Link to="/courses" className="text-sm text-gray-400 hover:text-gray-600">
-            Browse more courses
-          </Link>
-        </div>
-      </div>
-    </div>
+      </HVZCard>
+    </Shell>
   );
 }
