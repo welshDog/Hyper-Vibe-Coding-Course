@@ -1,6 +1,6 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 1, 2026** — update this every session.
+> **Updated: May 2, 2026** — update this every session.
 
 ---
 
@@ -10,7 +10,9 @@
 |---|---|---|
 | HyperCode-V2.4 | Main platform — Docker, FastAPI, agents, infra | `H:\HyperStation zone\HyperCode\HyperCode-V2.4` |
 | HyperAgent-SDK | TypeScript SDK — agent spec, CLI, templates | `H:\HyperAgent-SDK` |
-| Hyper-Vibe-Coding-Course | Course frontend + Supabase + token shop | `H:\the hyper vibe coding hub` |
+| Hyper-Vibe-Coding-Course | Course frontend + Supabase + token shop | `H:\Hyper-Vibe-Coding-Course` ← **CORRECT PATH (May 2)** |
+
+> ⚠️ OLD path `H:\the hyper vibe coding hub` was the **archived typo repo** `Hyper-Vibe-Codeing-Hub` — do NOT use it
 
 ---
 
@@ -68,6 +70,7 @@
 - 7 courses seeded in Supabase (`price_pence`, `is_active`) ✅
 - RLS enabled — `security_invoker = on` on views ✅
 - **Site live at https://hyper-vibe-coding-course.vercel.app** ✅
+- **`CourseCatalog.tsx` null safety fix** ✅ ← **May 2** (commit `92ed5cb`) — `difficulty`, `description`, `thumbnail_url` all safe
 
 ### Supabase Edge Functions — ALL 4 FIXED + DEPLOYED ✅ ← **May 1, 2026**
 - `shop-purchase` (422.1kB) — fixed `esm.sh` → `npm:@supabase/supabase-js@2` ✅
@@ -131,8 +134,20 @@
 
 ---
 
+## 🔧 MAY 2 — VERCEL + REPO FIX SESSION
+- **Identified wrong repo** — was accidentally cloned from archived `Hyper-Vibe-Codeing-Hub` (typo!) ⚠️ FIXED ✅
+- **Correct repo cloned** to `H:\Hyper-Vibe-Coding-Course` ✅
+- **Vercel GitHub webhook wired** — now auto-deploys on every `git push` to main ✅
+- **`CourseCatalog.tsx` null safety fix** — `difficulty.charAt()` crash fixed (commit `92ed5cb`) ✅
+- **Vercel build error** — `vite: command not found` (exit 127) ⚠️ PENDING FIX
+  - Cause: `NODE_ENV=production` skips devDependencies including vite
+  - Fix: add `NODE_ENV=development` in Vercel env vars OR move `vite` to `dependencies`
+
+---
+
 ## 🔧 ONE-TIME MANUAL STEPS REMAINING
 
+- [ ] **Fix Vercel build** — add `NODE_ENV=development` in Vercel env vars (Settings → Environment Variables)
 - [ ] Register Supabase DB Webhook: `token_transactions` → INSERT → `sync-tokens-to-v24`
 - [ ] Set `COURSE_WEBHOOK_SECRET` in V2.4 `.env` AND Supabase Edge Function env vars
 - [ ] Fix `.env` file — rename any vars with `-` dashes to `_` underscores (PowerShell deploy fix)
@@ -146,13 +161,14 @@
 
 ## 🚀 NEXT UP (in order)
 
-1. **Fix `/register` — `Failed to fetch`** — check Supabase auth + API route
-2. **E2E test shop-purchase** — get JWT from logged-in session, run curl test
-3. **Blockers B1-B3** — Supabase DB webhook + Edge Function secrets + Stripe E2E re-verify
-4. **HyperAgent-SDK Phase 2** — validator UX, starter templates, npm 0.2.0
-5. **Fix GitHub Actions billing lock** — github.com/settings/billing
-6. **BROskiPets Phase 1** — mint first pet via BROski$
-7. **MERGE_ROADMAP Phase 3** — Agent sandbox access shop item
+1. **Fix Vercel build** — add `NODE_ENV=development` env var in Vercel dashboard → redeploy
+2. **Fix `/register` — `Failed to fetch`** — check Supabase auth + API route
+3. **E2E test shop-purchase** — get JWT from logged-in session, run curl test
+4. **Blockers B1-B3** — Supabase DB webhook + Edge Function secrets + Stripe E2E re-verify
+5. **HyperAgent-SDK Phase 2** — validator UX, starter templates, npm 0.2.0
+6. **Fix GitHub Actions billing lock** — github.com/settings/billing
+7. **BROskiPets Phase 1** — mint first pet via BROski$
+8. **MERGE_ROADMAP Phase 3** — Agent sandbox access shop item
 
 ---
 
@@ -173,6 +189,7 @@ broski-pets:     health → http://localhost:8098/health | MCP gateway → http:
 Supabase proj:   yhtmuibgdnxhbgboajhc (Hyper-Vibe-Coding-Course)
 Edge functions:  deployed via Supabase CLI v2.95.4 from WSL2
 Course site:     https://hyper-vibe-coding-course.vercel.app
+Correct repo:    H:\Hyper-Vibe-Coding-Course (NOT H:\the hyper vibe coding hub — that's the archived typo clone)
 ```
 
 ---
