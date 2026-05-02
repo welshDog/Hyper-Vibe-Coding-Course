@@ -51,7 +51,9 @@
       "Bash(dir \"H:\\\\the hyper vibe coding hub\")",
       "Read(//c/Users/Lyndz/**)",
       "Read(//mnt/c/Users/**)",
-      "Bash(npm.cmd run *)"
+      "Bash(npm.cmd run *)",
+      "Bash(npm view *)",
+      "Bash(npm ci *)"
     ]
   }
 }

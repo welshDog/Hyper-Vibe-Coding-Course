@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: May 2, 2026 — Vercel webhook fixed, correct repo path confirmed, vite build error pending fix.**
+> **Last updated: May 2, 2026 — Vercel build fixed (Root Directory must be `frontend/`, not repo root), correct repo path confirmed.**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -51,7 +51,7 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 ## ✅ CURRENT STATUS (May 2, 2026)
 
 > 🟢 ALL 29 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE 🦅🔥
-> ⚠️ Vercel build currently failing — `vite: command not found` — fix: add `NODE_ENV=development` in Vercel env vars
+> ✅ Vercel build fixed — Root Directory must be `frontend/` (not repo root). vite stays in `devDependencies`. No `NODE_ENV=development` override needed.
 
 ### 🏆 Full Phase Roadmap
 
@@ -132,7 +132,7 @@ rift_rider       = 75 XP
 
 | # | Task | Priority |
 |---|---|---|
-| 1 | **Fix Vercel build** — add `NODE_ENV=development` in Vercel env vars → redeploy | 🔴 NOW |
+| 1 | **Vercel** — set Root Directory = `frontend`, remove `NODE_ENV=development`, redeploy | 🔴 NOW |
 | 2 | Fix `/register` — `Failed to fetch` error | 🔴 Next |
 | 3 | E2E test shop-purchase with real JWT | 🟡 Soon |
 | 4 | Blockers B1-B3 — Supabase DB webhook + secrets + Stripe E2E | 🟡 Soon |

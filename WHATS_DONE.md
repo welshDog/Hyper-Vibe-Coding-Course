@@ -139,15 +139,17 @@
 - **Correct repo cloned** to `H:\Hyper-Vibe-Coding-Course` ✅
 - **Vercel GitHub webhook wired** — now auto-deploys on every `git push` to main ✅
 - **`CourseCatalog.tsx` null safety fix** — `difficulty.charAt()` crash fixed (commit `92ed5cb`) ✅
-- **Vercel build error** — `vite: command not found` (exit 127) ⚠️ PENDING FIX
-  - Cause: `NODE_ENV=production` skips devDependencies including vite
-  - Fix: add `NODE_ENV=development` in Vercel env vars OR move `vite` to `dependencies`
+- **Vercel build error fixed** — `vite: command not found` (exit 127) ✅ FIXED
+  - Real cause: Vercel **Root Directory was set to repo root**, not `frontend/`. `npm install` ran at root (no vite), then root `build` script called `npm --prefix frontend run build` against an empty `frontend/node_modules`.
+  - Secondary cause: commit `5d74e11` moved `vite` to `dependencies` but the lockfile still listed it under `devDependencies` → `npm ci` would fail on lockfile drift.
+  - Fix: reverted vite back to `devDependencies` (lockfile now in sync, verified with `npm ci`). **Set Vercel Root Directory = `frontend`** so Vercel auto-detects Vite and runs install + build inside the actual app dir.
+  - `NODE_ENV=development` workaround is no longer needed — remove it from Vercel env vars.
 
 ---
 
 ## 🔧 ONE-TIME MANUAL STEPS REMAINING
 
-- [ ] **Fix Vercel build** — add `NODE_ENV=development` in Vercel env vars (Settings → Environment Variables)
+- [ ] **Vercel: set Root Directory = `frontend`** (Project → Settings → General → Root Directory) and remove the `NODE_ENV=development` env var
 - [ ] Register Supabase DB Webhook: `token_transactions` → INSERT → `sync-tokens-to-v24`
 - [ ] Set `COURSE_WEBHOOK_SECRET` in V2.4 `.env` AND Supabase Edge Function env vars
 - [ ] Fix `.env` file — rename any vars with `-` dashes to `_` underscores (PowerShell deploy fix)
@@ -161,7 +163,7 @@
 
 ## 🚀 NEXT UP (in order)
 
-1. **Fix Vercel build** — add `NODE_ENV=development` env var in Vercel dashboard → redeploy
+1. **Vercel** — set Root Directory = `frontend`, remove `NODE_ENV=development`, redeploy
 2. **Fix `/register` — `Failed to fetch`** — check Supabase auth + API route
 3. **E2E test shop-purchase** — get JWT from logged-in session, run curl test
 4. **Blockers B1-B3** — Supabase DB webhook + Edge Function secrets + Stripe E2E re-verify
