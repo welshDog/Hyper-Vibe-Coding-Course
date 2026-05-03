@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
-import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { LoyaltyTierBadge } from '../components/LoyaltyTierBadge';
 import type { Enrollment, Course } from '../types/database';
 import { PlayCircle, CheckCircle, Award, ShoppingBag } from 'lucide-react';
+import {
+  HVZButton,
+  HVZCard,
+  HVZTag,
+  HVZProgress,
+} from '../components/ui/hvz';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,8 +39,16 @@ type ShopPurchaseWithItem = {
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
-function Avatar({ name, url, size = 'lg' }: { name: string; url?: string | null; size?: 'sm' | 'lg' }) {
-  const dim = size === 'lg' ? 'h-20 w-20 text-2xl' : 'h-10 w-10 text-sm';
+function Avatar({
+  name,
+  url,
+  size = 'lg',
+}: {
+  name: string;
+  url?: string | null;
+  size?: 'sm' | 'lg';
+}) {
+  const dim = size === 'lg' ? 'h-24 w-24 text-3xl' : 'h-10 w-10 text-sm';
   const initial = name?.charAt(0)?.toUpperCase() ?? '?';
 
   if (url) {
@@ -43,12 +56,23 @@ function Avatar({ name, url, size = 'lg' }: { name: string; url?: string | null;
       <img
         src={url}
         alt={name}
-        className={`${dim} rounded-full object-cover ring-4 ring-white shadow`}
+        className={`${dim} rounded-full object-cover`}
+        style={{
+          border: '2px solid var(--color-violet-lt)',
+          boxShadow: '0 0 0 4px rgba(168,85,247,0.15), 0 0 20px rgba(168,85,247,0.3)',
+        }}
       />
     );
   }
   return (
-    <div className={`${dim} rounded-full bg-primary flex items-center justify-center text-white font-bold ring-4 ring-white shadow`}>
+    <div
+      className={`${dim} rounded-full flex items-center justify-center font-display font-extrabold text-white`}
+      style={{
+        background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
+        border: '2px solid var(--color-violet-lt)',
+        boxShadow: '0 0 0 4px rgba(168,85,247,0.15), 0 0 20px rgba(168,85,247,0.3)',
+      }}
+    >
       {initial}
     </div>
   );
@@ -59,20 +83,17 @@ function Avatar({ name, url, size = 'lg' }: { name: string; url?: string | null;
 export default function Profile() {
   const { user, setUser } = useAuthStore();
 
-  // Edit form state
-  const [fullName, setFullName]   = useState(user?.full_name ?? '');
+  const [fullName, setFullName] = useState(user?.full_name ?? '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? '');
-  const [saving, setSaving]       = useState(false);
-  const [saveMsg, setSaveMsg]     = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // Related data
-  const [enrollments, setEnrollments]     = useState<EnrolledCourse[]>([]);
-  const [achievements, setAchievements]   = useState<Achievement[]>([]);
-  const [loyaltyTier, setLoyaltyTier]     = useState<LoyaltyTierRow | null>(null);
+  const [enrollments, setEnrollments] = useState<EnrolledCourse[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [loyaltyTier, setLoyaltyTier] = useState<LoyaltyTierRow | null>(null);
   const [shopPurchases, setShopPurchases] = useState<ShopPurchaseWithItem[]>([]);
-  const [loadingData, setLoadingData]     = useState(true);
+  const [loadingData, setLoadingData] = useState(true);
 
-  // Sync form when user loads
   useEffect(() => {
     const nextFullName = user?.full_name ?? '';
     const nextAvatarUrl = user?.avatar_url ?? '';
@@ -82,7 +103,6 @@ export default function Profile() {
     });
   }, [user?.id, user?.full_name, user?.avatar_url]);
 
-  // Fetch enrollments, achievements, loyalty tier, and shop purchases in parallel
   useEffect(() => {
     if (!user) return;
     async function fetchData() {
@@ -108,8 +128,8 @@ export default function Profile() {
           .eq('user_id', user!.id)
           .order('purchased_at', { ascending: false }),
       ]);
-      if (!enrollRes.error)    setEnrollments((enrollRes.data ?? []) as EnrolledCourse[]);
-      if (!achRes.error)       setAchievements(achRes.data ?? []);
+      if (!enrollRes.error) setEnrollments((enrollRes.data ?? []) as EnrolledCourse[]);
+      if (!achRes.error) setAchievements(achRes.data ?? []);
       if (!tierRes.error && tierRes.data) setLoyaltyTier(tierRes.data as LoyaltyTierRow);
       if (!purchasesRes.error) setShopPurchases((purchasesRes.data ?? []) as ShopPurchaseWithItem[]);
       setLoadingData(false);
@@ -117,7 +137,6 @@ export default function Profile() {
     void fetchData();
   }, [user]);
 
-  // ── Save profile ────────────────────────────────────────────────────────────
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -125,7 +144,7 @@ export default function Profile() {
     setSaveMsg(null);
 
     const updates = {
-      full_name:  fullName.trim() || null,
+      full_name: fullName.trim() || null,
       avatar_url: avatarUrl.trim() || null,
     };
 
@@ -137,11 +156,10 @@ export default function Profile() {
       .single();
 
     if (error) {
-      setSaveMsg({ ok: false, text: 'Could not save — try again.' });
+      setSaveMsg({ ok: false, text: "Hmm, let's try that again 🔄" });
     } else {
-      // Push updated user into Zustand so navbar + rest of app refresh instantly
       setUser({ ...user, ...data });
-      setSaveMsg({ ok: true, text: 'Profile updated!' });
+      setSaveMsg({ ok: true, text: 'Profile updated! 🎉' });
       setTimeout(() => setSaveMsg(null), 3000);
     }
     setSaving(false);
@@ -151,236 +169,338 @@ export default function Profile() {
 
   const displayName = user.full_name ?? user.email ?? 'You';
   const memberSince = new Date(user.created_at).toLocaleDateString('en-GB', {
-    month: 'long', year: 'numeric',
+    month: 'long',
+    year: 'numeric',
   });
 
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 space-y-10">
-
-      {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-6">
-        <Avatar name={displayName} url={user.avatar_url} size="lg" />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
-          <p className="text-sm text-gray-500">{user.email}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Member since {memberSince}</p>
-        </div>
-      </div>
-
-      {/* ── Stats strip ──────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-200 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-        <Link to="/tokens" className="flex flex-col items-center py-4 hover:bg-yellow-50 transition-colors">
-          <span className="text-2xl font-black text-yellow-500">
-            💰 {(user.broski_tokens ?? 0).toLocaleString()}
-          </span>
-          <span className="text-xs text-gray-500 mt-1">BROski$</span>
-        </Link>
-        <div className="flex flex-col items-center py-4">
-          <span className="text-2xl font-black text-primary">{enrollments.length}</span>
-          <span className="text-xs text-gray-500 mt-1">
-            {enrollments.length === 1 ? 'Course' : 'Courses'}
-          </span>
-        </div>
-        <div className="flex flex-col items-center py-4">
-          <span className="text-2xl font-black text-purple-600">{achievements.length}</span>
-          <span className="text-xs text-gray-500 mt-1">
-            {achievements.length === 1 ? 'Badge' : 'Badges'}
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center py-4 gap-1.5">
-          {loyaltyTier ? (
-            <LoyaltyTierBadge tier={loyaltyTier.tier} size="sm" />
-          ) : (
-            <span className="text-sm font-bold text-gray-400">—</span>
-          )}
-          <span className="text-xs text-gray-500">Tier</span>
-        </div>
-      </div>
-
-      {/* ── Edit form ────────────────────────────────────────────────────── */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Edit profile</h2>
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Display name
-            </label>
-            <Input
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your name"
-              required
-              maxLength={100}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Avatar URL <span className="text-gray-400 font-normal">(optional)</span>
-            </label>
-            <Input
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://..."
-              type="url"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Paste a direct image URL. Leave blank to use your initial.
+    <div className="bg-hfz-space-black min-h-screen py-12 sm:py-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-10">
+        {/* Hero */}
+        <div className="flex items-center gap-6 flex-wrap">
+          <Avatar name={displayName} url={user.avatar_url} size="lg" />
+          <div className="flex-1 min-w-0">
+            <HVZTag color="violet">👤 Your Z0ne</HVZTag>
+            <h1
+              className="font-display font-extrabold text-2xl sm:text-3xl text-hfz-text-primary mt-2 truncate"
+              style={{
+                background: 'none',
+                WebkitTextFillColor: 'unset',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {displayName}
+            </h1>
+            <p className="text-sm text-hfz-text-secondary mt-1 truncate">{user.email}</p>
+            <p className="text-xs text-hfz-text-disabled mt-1 font-mono uppercase tracking-hfz-label">
+              Member since {memberSince}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save changes'}
-            </Button>
-            {saveMsg && (
-              <p className={`text-sm font-medium ${saveMsg.ok ? 'text-green-600' : 'text-red-600'}`}>
-                {saveMsg.ok ? '✓' : '✗'} {saveMsg.text}
-              </p>
-            )}
-          </div>
-        </form>
-      </section>
+        </div>
 
-      {/* ── Enrolled courses ─────────────────────────────────────────────── */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">My courses</h2>
-        {loadingData ? (
-          <div className="space-y-3">
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
-            ))}
-          </div>
-        ) : enrollments.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-            <p className="text-gray-500 text-sm">No courses yet.</p>
-            <Link to="/courses" className="mt-2 inline-block text-sm font-medium text-primary hover:underline">
-              Browse the catalogue →
-            </Link>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {enrollments.map((enr) => {
-              const isComplete = enr.progress_percentage >= 100;
-              return (
-                <li key={enr.id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 hover:border-primary/40 transition-colors">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {isComplete
-                      ? <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                      : <PlayCircle  className="h-5 w-5 text-primary flex-shrink-0" />
-                    }
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {enr.courses.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-24 h-1.5 bg-gray-200 rounded-full">
-                          <div
-                            className="h-1.5 bg-primary rounded-full transition-all"
-                            style={{ width: `${enr.progress_percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {Math.round(enr.progress_percentage)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <Link to={`/learn/${enr.course_id}`}>
-                    <Button size="sm" variant={isComplete ? 'outline' : 'default'}>
-                      {isComplete ? 'Review' : 'Continue'}
-                    </Button>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {/* ── Badges ───────────────────────────────────────────────────────── */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Badges earned</h2>
-        {loadingData ? (
-          <div className="flex gap-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 w-16 bg-gray-100 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : achievements.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-            <Award className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 text-sm">Complete lessons to earn badges.</p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            {achievements.map((ach) => (
-              <div
-                key={ach.id}
-                title={`Earned ${new Date(ach.earned_at).toLocaleDateString('en-GB')}`}
-                className="flex flex-col items-center justify-center w-20 h-20 bg-purple-50 border border-purple-200 rounded-xl text-center px-1 hover:bg-purple-100 transition-colors"
-              >
-                <span className="text-2xl">🏅</span>
-                <span className="text-xs font-medium text-purple-700 leading-tight mt-1 truncate w-full text-center">
-                  {ach.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── My Purchases ─────────────────────────────────────────────────── */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-900 mb-4">My purchases</h2>
-        {loadingData ? (
-          <div className="space-y-2">
-            {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />
-            ))}
-          </div>
-        ) : shopPurchases.length === 0 ? (
-          <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-            <ShoppingBag className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 text-sm">No purchases yet — visit the Shop!</p>
+        {/* Stats strip */}
+        <HVZCard padding={0} style={{ overflow: 'hidden' }}>
+          <div className="grid grid-cols-2 sm:grid-cols-4">
             <Link
-              to="/shop"
-              className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+              to="/tokens"
+              className="flex flex-col items-center justify-center py-5 px-3 no-underline border-r border-hfz-border-violet hover:bg-hfz-gold/5 transition-colors"
             >
-              Browse the BROski$ Shop →
+              <span className="font-display font-extrabold text-2xl text-hfz-gold-light">
+                🪙 {(user.broski_tokens ?? 0).toLocaleString()}
+              </span>
+              <span className="text-xs text-hfz-text-secondary mt-1 font-mono uppercase tracking-hfz-label">
+                BROski$
+              </span>
             </Link>
+            <div className="flex flex-col items-center justify-center py-5 px-3 sm:border-r border-hfz-border-violet">
+              <span className="font-display font-extrabold text-2xl text-hfz-violet-light">
+                {enrollments.length}
+              </span>
+              <span className="text-xs text-hfz-text-secondary mt-1 font-mono uppercase tracking-hfz-label">
+                {enrollments.length === 1 ? 'Course' : 'Courses'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center py-5 px-3 border-t sm:border-t-0 border-r border-hfz-border-violet">
+              <span className="font-display font-extrabold text-2xl text-hfz-cyan">
+                {achievements.length}
+              </span>
+              <span className="text-xs text-hfz-text-secondary mt-1 font-mono uppercase tracking-hfz-label">
+                {achievements.length === 1 ? 'Badge' : 'Badges'}
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center py-5 px-3 gap-1.5 border-t sm:border-t-0 border-hfz-border-violet">
+              {loyaltyTier ? (
+                <LoyaltyTierBadge tier={loyaltyTier.tier} size="sm" />
+              ) : (
+                <span className="text-sm font-bold text-hfz-text-disabled">—</span>
+              )}
+              <span className="text-xs text-hfz-text-secondary font-mono uppercase tracking-hfz-label">
+                Tier
+              </span>
+            </div>
           </div>
-        ) : (
-          <div className="rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Item</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Spent</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {shopPurchases.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-800 font-medium">
-                      {p.shop_items?.[0]?.name ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-yellow-600 tabular-nums">
-                      -{p.spent_tokens.toLocaleString()} 🪙
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-500 hidden sm:table-cell">
-                      {new Date(p.purchased_at).toLocaleDateString('en-GB', {
-                        day: 'numeric', month: 'short', year: 'numeric',
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        </HVZCard>
 
+        {/* Edit form */}
+        <section>
+          <h2
+            className="font-display font-bold text-hfz-h3 text-hfz-text-primary mb-4"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            Edit profile
+          </h2>
+          <HVZCard padding={24}>
+            <form onSubmit={handleSave} className="flex flex-col gap-5">
+              <div>
+                <label
+                  htmlFor="fullName"
+                  className="block text-sm font-semibold text-hfz-text-primary mb-2"
+                >
+                  Display name
+                </label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="What should we call you?"
+                  required
+                  maxLength={100}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="avatarUrl"
+                  className="block text-sm font-semibold text-hfz-text-primary mb-2"
+                >
+                  Avatar URL{' '}
+                  <span className="text-hfz-text-secondary font-normal text-xs">(optional)</span>
+                </label>
+                <Input
+                  id="avatarUrl"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="https://..."
+                  type="url"
+                />
+                <p className="text-xs text-hfz-text-secondary mt-2">
+                  Paste a direct image URL. Leave blank to use your initial.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <HVZButton type="submit" variant="primary" size="md" disabled={saving}>
+                  {saving ? 'Wiring up...' : 'Save changes'}
+                </HVZButton>
+                {saveMsg && (
+                  <p
+                    role="status"
+                    className={`text-sm font-medium m-0 ${
+                      saveMsg.ok ? 'text-hfz-mint' : 'text-hfz-danger'
+                    }`}
+                  >
+                    {saveMsg.text}
+                  </p>
+                )}
+              </div>
+            </form>
+          </HVZCard>
+        </section>
+
+        {/* My courses */}
+        <section>
+          <h2
+            className="font-display font-bold text-hfz-h3 text-hfz-text-primary mb-4"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            My courses
+          </h2>
+          {loadingData ? (
+            <div className="flex flex-col gap-3">
+              {[...Array(2)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-16 rounded-hfz-md border border-hfz-border-violet bg-hfz-midnight animate-pulse"
+                />
+              ))}
+            </div>
+          ) : enrollments.length === 0 ? (
+            <HVZCard padding={32}>
+              <div className="text-center">
+                <p className="text-base text-hfz-text-secondary mb-3">
+                  Your courses will show up here — go pick one! 🎯
+                </p>
+                <Link to="/courses" className="no-underline">
+                  <HVZButton variant="ghost" size="sm">
+                    Browse the catalog →
+                  </HVZButton>
+                </Link>
+              </div>
+            </HVZCard>
+          ) : (
+            <ul className="list-none p-0 m-0 flex flex-col gap-3">
+              {enrollments.map((enr) => {
+                const isComplete = enr.progress_percentage >= 100;
+                return (
+                  <li key={enr.id}>
+                    <HVZCard padding={16} glow={isComplete ? 'mint' : false}>
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {isComplete ? (
+                            <CheckCircle className="h-5 w-5 text-hfz-mint flex-shrink-0" />
+                          ) : (
+                            <PlayCircle className="h-5 w-5 text-hfz-cyan flex-shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-hfz-text-primary truncate m-0">
+                              {enr.courses.title}
+                            </p>
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="w-24 sm:w-32">
+                                <HVZProgress
+                                  value={enr.progress_percentage}
+                                  max={100}
+                                  gradient={isComplete ? 'mint' : 'xp'}
+                                  height={6}
+                                />
+                              </div>
+                              <span className="text-xs text-hfz-text-secondary font-mono">
+                                {Math.round(enr.progress_percentage)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Link to={`/learn/${enr.course_id}`} className="no-underline">
+                          <HVZButton variant={isComplete ? 'ghost' : 'primary'} size="sm">
+                            {isComplete ? 'Review' : 'Continue →'}
+                          </HVZButton>
+                        </Link>
+                      </div>
+                    </HVZCard>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* Badges */}
+        <section>
+          <h2
+            className="font-display font-bold text-hfz-h3 text-hfz-text-primary mb-4"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            Badges earned
+          </h2>
+          {loadingData ? (
+            <div className="flex gap-3">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-20 w-20 rounded-hfz-md border border-hfz-border-violet bg-hfz-midnight animate-pulse"
+                />
+              ))}
+            </div>
+          ) : achievements.length === 0 ? (
+            <HVZCard padding={32}>
+              <div className="text-center">
+                <Award className="h-8 w-8 text-hfz-text-disabled mx-auto mb-3" aria-hidden />
+                <p className="text-base text-hfz-text-secondary m-0">
+                  Complete lessons to earn badges. 🏅
+                </p>
+              </div>
+            </HVZCard>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {achievements.map((ach) => (
+                <div
+                  key={ach.id}
+                  title={`Earned ${new Date(ach.earned_at).toLocaleDateString('en-GB')}`}
+                  className="flex flex-col items-center justify-center w-24 h-24 rounded-hfz-md text-center px-2 transition-all duration-hfz-fast hover:scale-105"
+                  style={{
+                    background: 'rgba(168,85,247,0.12)',
+                    border: '1px solid rgba(168,85,247,0.3)',
+                  }}
+                >
+                  <span className="text-2xl" aria-hidden>🏅</span>
+                  <span className="text-xs font-semibold text-hfz-violet-light leading-tight mt-1.5 truncate w-full text-center">
+                    {ach.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Purchases */}
+        <section>
+          <h2
+            className="font-display font-bold text-hfz-h3 text-hfz-text-primary mb-4"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            My purchases
+          </h2>
+          {loadingData ? (
+            <div className="flex flex-col gap-2">
+              {[...Array(2)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-14 rounded-hfz-md border border-hfz-border-violet bg-hfz-midnight animate-pulse"
+                />
+              ))}
+            </div>
+          ) : shopPurchases.length === 0 ? (
+            <HVZCard padding={32}>
+              <div className="text-center">
+                <ShoppingBag className="h-8 w-8 text-hfz-text-disabled mx-auto mb-3" aria-hidden />
+                <p className="text-base text-hfz-text-secondary mb-3">
+                  No purchases yet — visit the Shop! 🛒
+                </p>
+                <Link to="/shop" className="no-underline">
+                  <HVZButton variant="ghost" size="sm">
+                    Browse the BROski$ Shop →
+                  </HVZButton>
+                </Link>
+              </div>
+            </HVZCard>
+          ) : (
+            <HVZCard padding={0} style={{ overflow: 'hidden' }}>
+              <table className="w-full text-sm">
+                <thead className="border-b border-hfz-border-violet bg-hfz-violet/5">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-mono uppercase text-xs tracking-hfz-caps text-hfz-text-secondary">
+                      Item
+                    </th>
+                    <th className="text-right px-4 py-3 font-mono uppercase text-xs tracking-hfz-caps text-hfz-text-secondary">
+                      Spent
+                    </th>
+                    <th className="text-right px-4 py-3 font-mono uppercase text-xs tracking-hfz-caps text-hfz-text-secondary hidden sm:table-cell">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hfz-border-violet">
+                  {shopPurchases.map((p) => (
+                    <tr key={p.id} className="hover:bg-hfz-violet/5 transition-colors">
+                      <td className="px-4 py-3 text-hfz-text-primary font-medium">
+                        {p.shop_items?.[0]?.name ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-hfz-gold-light tabular-nums font-mono">
+                        -{p.spent_tokens.toLocaleString()} 🪙
+                      </td>
+                      <td className="px-4 py-3 text-right text-hfz-text-secondary hidden sm:table-cell font-mono text-xs">
+                        {new Date(p.purchased_at).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </HVZCard>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

@@ -3,8 +3,13 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Enrollment, Course } from '../types/database';
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
 import { PlayCircle, Coins, Award, Copy, Check, Users } from 'lucide-react';
+import {
+  HVZButton,
+  HVZCard,
+  HVZTag,
+  HVZProgress,
+} from '../components/ui/hvz';
 
 type EnrolledCourse = Enrollment & {
   courses?: Course | null;
@@ -26,10 +31,7 @@ export default function Dashboard() {
     async function fetchData() {
       const [{ data: enrollData, error: enrollErr }, { data: refCode }, { count: refCount }] =
         await Promise.all([
-          supabase
-            .from('enrollments')
-            .select('*, courses (*)')
-            .eq('user_id', user!.id),
+          supabase.from('enrollments').select('*, courses (*)').eq('user_id', user!.id),
           supabase.rpc('get_or_create_referral_code', { p_user_id: user!.id }),
           supabase
             .from('referrals')
@@ -59,19 +61,22 @@ export default function Dashboard() {
       .select('total_xp, level')
       .eq('user_id', user.id)
       .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) return;
-        if (!data) {
-          setXpTotal(0);
-          setXpLevel(1);
-          return;
-        }
-        setXpTotal(typeof data.total_xp === 'number' ? data.total_xp : 0);
-        setXpLevel(typeof data.level === 'number' ? data.level : 1);
-      }, () => {
-        if (cancelled) return;
-      });
+      .then(
+        ({ data, error }) => {
+          if (cancelled) return;
+          if (error) return;
+          if (!data) {
+            setXpTotal(0);
+            setXpLevel(1);
+            return;
+          }
+          setXpTotal(typeof data.total_xp === 'number' ? data.total_xp : 0);
+          setXpLevel(typeof data.level === 'number' ? data.level : 1);
+        },
+        () => {
+          if (cancelled) return;
+        },
+      );
 
     return () => {
       cancelled = true;
@@ -87,9 +92,6 @@ export default function Dashboard() {
   const safeTotal = Math.max(0, xpTotal ?? 0);
   const currentFloor = levelThresholds[safeLevel - 1] ?? 0;
   const nextFloor = safeLevel < 6 ? levelThresholds[safeLevel] ?? 2000 : null;
-  const intoLevel = safeTotal - currentFloor;
-  const levelSpan = nextFloor != null ? Math.max(1, nextFloor - currentFloor) : 1;
-  const progressPct = nextFloor == null ? 100 : Math.max(0, Math.min(100, (intoLevel / levelSpan) * 100));
 
   const handleCopy = async () => {
     if (!referralLink) return;
@@ -100,189 +102,303 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <p>Please log in to view your dashboard.</p>
-        <Link to="/login">
-          <Button className="mt-4">Log in</Button>
-        </Link>
+      <div className="bg-hfz-space-black min-h-screen flex flex-col items-center justify-center px-4 py-12">
+        <HVZCard padding={32} style={{ maxWidth: 420 }}>
+          <p className="text-base text-hfz-text-primary text-center mb-5">
+            Log in to see your Z0ne. 🚀
+          </p>
+          <Link to="/login" className="no-underline block">
+            <HVZButton variant="primary" size="md" fullWidth>
+              Log in →
+            </HVZButton>
+          </Link>
+        </HVZCard>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="md:flex md:items-center md:justify-between mb-8">
-        <div className="flex-1 min-w-0">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            Welcome back, {(user.full_name || user.email || 'there').split(' ')[0]}!
-          </h2>
+    <div className="bg-hfz-space-black min-h-screen py-12 sm:py-16">
+      <div className="max-w-hfz-page mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-8">
+        {/* Welcome */}
+        <div>
+          <HVZTag color="cyan">⚡ Mission Control</HVZTag>
+          <h1
+            className="font-display font-extrabold text-hfz-text-primary mt-3"
+            style={{
+              fontSize: 'clamp(28px, 4vw, 40px)',
+              lineHeight: 1.1,
+              letterSpacing: '-0.01em',
+              background: 'none',
+              WebkitTextFillColor: 'unset',
+            }}
+          >
+            Welcome back,{' '}
+            <span
+              style={{
+                background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {(user.full_name || user.email || 'BROski♾️').split(' ')[0]}
+            </span>
+          </h1>
         </div>
-      </div>
 
-      {typeof xpTotal === 'number' && typeof xpLevel === 'number' ? (
-        <div className="mb-8 bg-white border border-gray-200 rounded-xl px-6 py-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-sm font-bold text-purple-700">
-                Level {safeLevel}
-              </span>
-              <span className="text-sm text-gray-600">
-                {safeTotal.toLocaleString()} XP
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 font-medium">
-              {nextFloor == null
-                ? 'Max level'
-                : `${currentFloor.toLocaleString()} → ${nextFloor.toLocaleString()} XP`}
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-[width] duration-700 ease-out"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* ── BROski$ balance card ───────────────────────────────────────────── */}
-      <Link to="/tokens" className="block mb-8">
-        <div className="flex items-center gap-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl px-6 py-4 hover:border-yellow-400 transition-colors">
-          <Coins className="h-8 w-8 text-yellow-500 flex-shrink-0" />
-          <div>
-            <p className="text-2xl font-black text-yellow-600">
-              {(user.broski_tokens ?? 0).toLocaleString()} BROski$
-            </p>
-            <p className="text-sm text-gray-500">Your token balance — earn by learning, spend in the Shop</p>
-          </div>
-          <span className="ml-auto text-sm font-semibold text-yellow-600 hidden sm:block">
-            View &amp; top up →
-          </span>
-        </div>
-      </Link>
-
-      {/* ── Referral card ─────────────────────────────────────────────────────── */}
-      {referralCode && (
-        <div className="mb-8 bg-gradient-to-r from-indigo-50 to-violet-50 border border-violet-200 rounded-xl px-6 py-5">
-          <div className="flex items-start gap-4">
-            <Users className="h-6 w-6 text-violet-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 text-sm">Refer a friend — earn 100 BROski$</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Share your link. When they sign up, 100 BROski$ lands in your account instantly.
-                {referralCount > 0 && (
-                  <span className="ml-2 font-semibold text-violet-600">
-                    {referralCount} successful referral{referralCount !== 1 ? 's' : ''} so far! 🔥
-                  </span>
-                )}
-              </p>
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                <code className="text-xs bg-white border border-violet-200 rounded px-3 py-1.5 text-violet-700 font-mono truncate max-w-xs">
-                  {referralLink}
-                </code>
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-800 bg-white border border-violet-200 rounded px-3 py-1.5 transition-colors"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-3 h-3" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3 h-3" />
-                      Copy link
-                    </>
-                  )}
-                </button>
+        {/* XP card */}
+        {typeof xpTotal === 'number' && typeof xpLevel === 'number' ? (
+          <HVZCard padding={24}>
+            <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <HVZTag color="violet">⚡ Level {safeLevel}</HVZTag>
+                <span className="text-sm text-hfz-text-secondary font-mono">
+                  {safeTotal.toLocaleString()} XP
+                </span>
+              </div>
+              <div className="text-xs text-hfz-text-secondary font-mono">
+                {nextFloor == null
+                  ? '🏆 Max level — legend status'
+                  : `${currentFloor.toLocaleString()} → ${nextFloor.toLocaleString()} XP`}
               </div>
             </div>
-          </div>
-        </div>
-      )}
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-        <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            My Learning
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Continue where you left off.
-          </p>
-        </div>
-        <div className="border-t border-gray-200">
-          {loading ? (
-            <div className="px-4 py-5 sm:p-6 text-center">Loading...</div>
-          ) : enrollments.length === 0 ? (
-            <div className="px-4 py-12 sm:p-6 text-center">
-              <p className="text-gray-500 mb-4">You haven't enrolled in any courses yet.</p>
-              <Link to="/courses">
-                <Button>Browse Courses</Button>
-              </Link>
+            <HVZProgress
+              value={safeTotal - currentFloor}
+              max={nextFloor != null ? nextFloor - currentFloor : Math.max(safeTotal - currentFloor, 1)}
+              gradient="xp"
+            />
+          </HVZCard>
+        ) : null}
+
+        {/* BROski$ balance */}
+        <Link to="/tokens" className="block no-underline">
+          <HVZCard padding={20} glow="gold">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div
+                className="h-14 w-14 rounded-hfz-md flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: 'rgba(245,158,11,0.15)',
+                  border: '1px solid rgba(245,158,11,0.3)',
+                }}
+              >
+                <Coins className="h-7 w-7 text-hfz-gold-light" aria-hidden />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="font-display font-extrabold text-2xl text-hfz-gold-light"
+                  style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                >
+                  🪙 {(user.broski_tokens ?? 0).toLocaleString()} BROski$
+                </p>
+                <p className="text-sm text-hfz-text-secondary mt-0.5">
+                  Your token balance — earn by learning, spend in the Shop.
+                </p>
+              </div>
+              <span className="text-sm font-semibold text-hfz-gold-light hidden sm:block">
+                View &amp; top up →
+              </span>
             </div>
+          </HVZCard>
+        </Link>
+
+        {/* Referral */}
+        {referralCode && (
+          <HVZCard padding={24}>
+            <div className="flex items-start gap-4">
+              <div
+                className="h-12 w-12 rounded-hfz-md flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: 'rgba(168,85,247,0.15)',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                }}
+              >
+                <Users className="h-6 w-6 text-hfz-violet-light" aria-hidden />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="font-display font-bold text-base text-hfz-text-primary"
+                  style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                >
+                  Refer a friend — earn 100 BROski$ 🤝
+                </p>
+                <p className="text-sm text-hfz-text-secondary mt-1 leading-relaxed">
+                  Share your link. When they sign up, 100 BROski$ lands in your account instantly.
+                  {referralCount > 0 && (
+                    <>
+                      {' '}
+                      <span className="font-semibold text-hfz-violet-light">
+                        {referralCount} successful referral{referralCount !== 1 ? 's' : ''} so far! 🔥
+                      </span>
+                    </>
+                  )}
+                </p>
+                <div className="mt-4 flex items-center gap-2 flex-wrap">
+                  <code
+                    className="text-xs px-3 py-2 rounded-hfz-sm font-mono truncate max-w-xs"
+                    style={{
+                      background: 'rgba(0,212,255,0.08)',
+                      border: '1px solid rgba(0,212,255,0.2)',
+                      color: 'var(--color-neon-cyan)',
+                    }}
+                  >
+                    {referralLink}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    aria-label="Copy referral link"
+                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-hfz-sm transition-colors min-h-[36px]"
+                    style={{
+                      background: copied ? 'rgba(16,245,160,0.12)' : 'rgba(168,85,247,0.12)',
+                      border: `1px solid ${
+                        copied ? 'rgba(16,245,160,0.4)' : 'rgba(168,85,247,0.3)'
+                      }`,
+                      color: copied
+                        ? 'var(--color-success-mint)'
+                        : 'var(--color-violet-lt)',
+                    }}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy link
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </HVZCard>
+        )}
+
+        {/* My learning */}
+        <section>
+          <div className="mb-4">
+            <h2
+              className="font-display font-bold text-hfz-h3 text-hfz-text-primary"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              My learning
+            </h2>
+            <p className="text-sm text-hfz-text-secondary mt-1">
+              Continue where you left off.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col gap-3">
+              {[...Array(2)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-hfz-md border border-hfz-border-violet bg-hfz-midnight animate-pulse"
+                />
+              ))}
+            </div>
+          ) : enrollments.length === 0 ? (
+            <HVZCard padding={32}>
+              <div className="text-center">
+                <p className="text-base text-hfz-text-secondary mb-4">
+                  Your quests will show up here — go pick a course! 🎯
+                </p>
+                <Link to="/courses" className="no-underline">
+                  <HVZButton variant="primary" size="md">
+                    Browse courses →
+                  </HVZButton>
+                </Link>
+              </div>
+            </HVZCard>
           ) : (
-            <ul className="divide-y divide-gray-200">
-              {enrollments.map((enrollment) => (
-                <li key={enrollment.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 transition-colors">
-                  {(() => {
-                    const course = enrollment.courses ?? null;
-                    const courseTitle = course?.title ?? 'Course';
-                    const courseThumbnailUrl = course?.thumbnail_url ?? 'https://via.placeholder.com/150';
-                    return (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-16 w-16 bg-gray-200 rounded-md overflow-hidden">
-                        <img 
-                          src={courseThumbnailUrl}
-                          alt={courseTitle}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="ml-4">
-                        <h4 className="text-lg font-medium text-primary">
-                          {courseTitle}
-                        </h4>
-                        <div className="mt-1 flex items-center">
-                          <div className="w-32 h-2 bg-gray-200 rounded-full mr-2">
-                            <div 
-                              className="h-2 bg-green-500 rounded-full" 
-                              style={{ width: `${enrollment.progress_percentage}%` }}
-                            ></div>
+            <ul className="list-none p-0 m-0 flex flex-col gap-3">
+              {enrollments.map((enrollment) => {
+                const course = enrollment.courses ?? null;
+                const courseTitle = course?.title ?? 'Course';
+                const courseThumbnailUrl = course?.thumbnail_url;
+                const isComplete = enrollment.progress_percentage >= 100;
+
+                return (
+                  <li key={enrollment.id}>
+                    <HVZCard padding={16} glow={isComplete ? 'mint' : false}>
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div
+                            className="h-16 w-16 rounded-hfz-md overflow-hidden flex-shrink-0"
+                            style={{
+                              background:
+                                'linear-gradient(135deg, rgba(123,47,190,0.25), rgba(0,212,255,0.18))',
+                              border: '1px solid rgba(168,85,247,0.3)',
+                            }}
+                          >
+                            {courseThumbnailUrl ? (
+                              <img
+                                src={courseThumbnailUrl}
+                                alt={courseTitle}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center text-2xl">
+                                🎓
+                              </div>
+                            )}
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {enrollment.progress_percentage}% Complete
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <h3
+                              className="font-display font-bold text-base text-hfz-text-primary truncate m-0"
+                              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                            >
+                              {courseTitle}
+                            </h3>
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="w-24 sm:w-32">
+                                <HVZProgress
+                                  value={enrollment.progress_percentage}
+                                  max={100}
+                                  gradient={isComplete ? 'mint' : 'xp'}
+                                  height={6}
+                                />
+                              </div>
+                              <span className="text-xs text-hfz-text-secondary font-mono">
+                                {Math.round(enrollment.progress_percentage)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isComplete && (
+                            <Link
+                              to={`/certificate/${enrollment.course_id}`}
+                              className="no-underline"
+                            >
+                              <HVZButton variant="gold" size="sm">
+                                <Award className="h-4 w-4" />
+                                Certificate
+                              </HVZButton>
+                            </Link>
+                          )}
+                          <Link
+                            to={`/learn/${enrollment.course_id}`}
+                            className="no-underline"
+                          >
+                            <HVZButton variant={isComplete ? 'ghost' : 'primary'} size="sm">
+                              <PlayCircle className="h-4 w-4" />
+                              {isComplete ? 'Review' : 'Continue'}
+                            </HVZButton>
+                          </Link>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {enrollment.progress_percentage === 100 && (
-                        <Link to={`/certificate/${enrollment.course_id}`}>
-                          <Button size="sm" variant="outline" className="flex items-center gap-1 border-yellow-400 text-yellow-700 hover:bg-yellow-50">
-                            <Award className="h-4 w-4" />
-                            Certificate
-                          </Button>
-                        </Link>
-                      )}
-                      <Link to={`/learn/${enrollment.course_id}`}>
-                        <Button size="sm" className="flex items-center">
-                          <PlayCircle className="h-4 w-4 mr-2" />
-                          {enrollment.progress_percentage === 100 ? 'Review' : 'Continue'}
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                    );
-                  })()}
-                </li>
-              ))}
+                    </HVZCard>
+                  </li>
+                );
+              })}
             </ul>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
