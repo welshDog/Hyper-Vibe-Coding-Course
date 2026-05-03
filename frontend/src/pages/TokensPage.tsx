@@ -65,6 +65,59 @@ function MilestoneBanner({ balance }: { balance: number }) {
   );
 }
 
+// ── Referral card ─────────────────────────────────────────────────────────────
+function ReferralCard({ userId }: { userId: string }) {
+  const [broCode, setBroCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    async function fetchCode() {
+      const { data } = await supabase.rpc('get_or_create_referral_code', {
+        p_user_id: userId,
+      });
+      if (data) setBroCode(data as string);
+    }
+    void fetchCode();
+  }, [userId]);
+
+  const referralUrl = broCode
+    ? `${window.location.origin}/register?ref=${broCode}`
+    : null;
+
+  function handleCopy() {
+    if (!referralUrl) return;
+    void navigator.clipboard.writeText(referralUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <HVZCard padding={24} glow="violet">
+      <div className="flex items-start gap-4">
+        <span className="text-3xl flex-shrink-0" aria-hidden>🤝</span>
+        <div className="flex-1 min-w-0">
+          <HVZTag color="violet">Refer a friend — earn 100 BROski$</HVZTag>
+          <p className="text-sm text-hfz-text-secondary mt-2 mb-4">
+            Share your link. When a friend signs up, you both win instantly.
+          </p>
+          {referralUrl ? (
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs bg-hfz-midnight border border-hfz-border-violet rounded-hfz-sm px-3 py-2 text-hfz-cyan font-mono truncate">
+                {referralUrl}
+              </code>
+              <HVZButton variant="primary" size="sm" onClick={handleCopy}>
+                {copied ? '✅ Copied!' : '📋 Copy'}
+              </HVZButton>
+            </div>
+          ) : (
+            <div className="h-8 rounded-hfz-sm bg-hfz-midnight animate-pulse w-full" />
+          )}
+        </div>
+      </div>
+    </HVZCard>
+  );
+}
+
 // ── Token packs ───────────────────────────────────────────────────────────────
 const TOKEN_PACKS = [
   {
@@ -101,7 +154,7 @@ const EARN_WAYS = [
   { emoji: '📚', action: 'Complete a lesson', amount: '+10' },
   { emoji: '🏆', action: 'Finish a module', amount: '+50' },
   { emoji: '🔥', action: '7-day learning streak', amount: '+100' },
-  { emoji: '🤝', action: 'Refer a friend who buys', amount: '+200' },
+  { emoji: '🤝', action: 'Refer a friend who signs up', amount: '+100' },
   { emoji: '🎯', action: 'Submit a capstone project', amount: '+150' },
 ];
 
@@ -195,6 +248,9 @@ export default function TokensPage() {
         </div>
 
         <MilestoneBanner balance={balance} />
+
+        {/* Referral card */}
+        {user?.id && <ReferralCard userId={user.id} />}
 
         {/* Buy packs */}
         <section>
