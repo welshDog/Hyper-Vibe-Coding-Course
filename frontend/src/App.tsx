@@ -24,6 +24,8 @@ import Quests from './pages/Quests';
 import Courses from './pages/Courses';
 import CourseModule from './pages/CourseModule';
 import PetsPage from './pages/Pets';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
@@ -60,6 +62,8 @@ function App() {
             <Route path="catalog/:id" element={<CourseDetail />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="pets" element={<PetsPage />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route path="terms" element={<Terms />} />
             <Route
               path="quests"
               element={
