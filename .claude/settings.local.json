@@ -82,7 +82,8 @@
       "PowerShell(Test-Path *)",
       "PowerShell(Write-Host \"PWD=$PWD\"; Write-Host \"Exists=$\\(Test-Path 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1'\\)\")",
       "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Only 1 2>&1 | Select-Object -Last 60)",
-      "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Force -IncludeWelcome 2>&1 | Select-Object -Last 80)"
+      "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Force -IncludeWelcome 2>&1 | Select-Object -Last 80)",
+      "Bash(sort -k9)"
     ]
   }
 }
