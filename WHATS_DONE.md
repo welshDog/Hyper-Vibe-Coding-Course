@@ -1,6 +1,6 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 2, 2026** — update this every session.
+> **Updated: May 3, 2026** — update this every session.
 
 ---
 
@@ -27,7 +27,7 @@
 - `scripts/pre-build-check.sh` — disk + memory guard before any Docker build ✅ ← **April 17**
 - **OOM recovery completed April 17** — 34.4GB freed, 24/24 containers restored ✅
 - **Socket-proxy split** — main proxy read-only, new `docker-socket-proxy-healer` with CONTAINERS+POST+PING ✅ ← **April 19**
-- **Healer on obs-net** — can now reach Grafana/Prometheus for diagnostics ✅ ← **April 19**
+- **Healer on obs-net** — can reach Grafana/Prometheus for diagnostics ✅ ← **April 19**
 
 ### Observability
 - Prometheus 7/7 targets UP ✅
@@ -101,6 +101,10 @@
 - Trivy scanner running as container ✅
 - GitHub Actions CI — Trivy on every push/PR ✅ (**currently blocked — billing lock, fix at github.com/settings/billing**)
 - Stripe keys rotated + scrubbed from 218 commits ✅ ← **April 16**
+- **Supabase DB hardening migrations applied to production** ✅ ← **May 3**
+  - `fix_anon_execute_security_definer_functions`
+  - `fix_rls_initplan_and_missing_fk_indexes`
+  - `merge_duplicate_permissive_policies`
 
 ### HyperAgent-SDK
 - Published to npm: `@w3lshdog/hyper-agent@0.1.7` ✅
@@ -130,7 +134,6 @@
 - Installed `jq` on WSL2 ✅
 - Deployed all 4 functions to `yhtmuibgdnxhbgboajhc` ✅
 - `.env` dash-in-variable-name issue identified (PowerShell deploy blocker) ⚠️
-- `/register` page shows `Failed to fetch` — needs investigation ⚠️
 
 ---
 
@@ -147,30 +150,42 @@
 
 ---
 
+## 🔒 MAY 3 — AUTH FIX + SUPABASE HARDENING SESSION
+- **Fixed `/register` `Failed to fetch` production bug** ✅
+  - Root cause: Vercel frontend env vars were missing/incorrect
+  - Fix: set correct `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` in Vercel project settings
+  - Production redeploy triggered — status: **READY** ✅
+- **Auth wiring confirmed** — frontend uses `supabase.auth.signUp()` directly from browser, NOT via FastAPI
+  - If auth breaks in production, check Vercel env vars FIRST before backend routes
+- **Supabase DB hardening migrations applied** ✅
+  - `fix_anon_execute_security_definer_functions`
+  - `fix_rls_initplan_and_missing_fk_indexes`
+  - `merge_duplicate_permissive_policies`
+- **CLAUDE.md updated** with Vercel + Supabase security headers + perf notes ✅
+
+---
+
 ## 🔧 ONE-TIME MANUAL STEPS REMAINING
 
-- [ ] **Vercel: set Root Directory = `frontend`** (Project → Settings → General → Root Directory) and remove the `NODE_ENV=development` env var
 - [ ] Register Supabase DB Webhook: `token_transactions` → INSERT → `sync-tokens-to-v24`
 - [ ] Set `COURSE_WEBHOOK_SECRET` in V2.4 `.env` AND Supabase Edge Function env vars
 - [ ] Fix `.env` file — rename any vars with `-` dashes to `_` underscores (PowerShell deploy fix)
-- [ ] Fix `/register` page — `Failed to fetch` error on sign-up form
 - [ ] Fix frontend hooks: any hardcoded port 8081 → 8000
 - [ ] `VITE_STRIPE_PAYMENT_LINK_URL` — set in `.env.local` + Vercel
 - [ ] Add `DISCORD_USER_ID=<your_id>` to `.env` for `make calm` token awards
 - [ ] E2E test `shop-purchase` with real JWT (user needs to be logged in on site first)
+- [ ] **Optional hardening:** Enable leaked-password protection in Supabase Auth dashboard (Pro plan only)
 
 ---
 
 ## 🚀 NEXT UP (in order)
 
-1. **Vercel** — set Root Directory = `frontend`, remove `NODE_ENV=development`, redeploy
-2. **Fix `/register` — `Failed to fetch`** — check Supabase auth + API route
-3. **E2E test shop-purchase** — get JWT from logged-in session, run curl test
-4. **Blockers B1-B3** — Supabase DB webhook + Edge Function secrets + Stripe E2E re-verify
-5. **HyperAgent-SDK Phase 2** — validator UX, starter templates, npm 0.2.0
-6. **Fix GitHub Actions billing lock** — github.com/settings/billing
-7. **BROskiPets Phase 1** — mint first pet via BROski$
-8. **MERGE_ROADMAP Phase 3** — Agent sandbox access shop item
+1. **E2E test shop-purchase** — get JWT from logged-in session, run curl test
+2. **Blockers B1-B3** — Supabase DB webhook + Edge Function secrets + Stripe E2E re-verify
+3. **HyperAgent-SDK Phase 2** — validator UX, starter templates, npm 0.2.0
+4. **Fix GitHub Actions billing lock** — github.com/settings/billing
+5. **BROskiPets Phase 1** — mint first pet via BROski$
+6. **MERGE_ROADMAP Phase 3** — Agent sandbox access shop item
 
 ---
 
@@ -192,6 +207,7 @@ Supabase proj:   yhtmuibgdnxhbgboajhc (Hyper-Vibe-Coding-Course)
 Edge functions:  deployed via Supabase CLI v2.95.4 from WSL2
 Course site:     https://hyper-vibe-coding-course.vercel.app
 Correct repo:    H:\Hyper-Vibe-Coding-Course (NOT H:\the hyper vibe coding hub — that's the archived typo clone)
+Frontend auth:   VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY must be set in Vercel env vars
 ```
 
 ---

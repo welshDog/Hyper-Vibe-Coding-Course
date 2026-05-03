@@ -1,6 +1,6 @@
 # 🤖 BROski Ecosystem — Claude Context Handoff (ALL REPOS SYNCED)
 > Read this first. Every word. Then start the mission.
-> **Last synced: April 15, 2026 — Frontend payment flow COMPLETE ✅ | Pricing + TokensPage + Dashboard all wired 💳**
+> **Last synced: May 3, 2026 — Auth env fix + Supabase hardening + production deploy READY ✅**
 
 ---
 
@@ -20,13 +20,30 @@ Hyper-Vibe-Coding-Course     ──── manifest.json ────▶    Hyper
 github.com/welshDog/             (hyper-agent-spec)       github.com/welshDog/
 Hyper-Vibe-Coding-Course                                  HyperCode-V2.4
 (Supabase + Vercel)                    │                  (Docker, 29 containers)
-Path: H:\the hyper vibe coding hub     │                  Path: H:\HyperStation zone\
+Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStation zone\
                                        │                       HyperCode\HyperCode-V2.4
                               HyperAgent-SDK
                           github.com/welshDog/HyperAgent-SDK
                           npm: @w3lshdog/hyper-agent@0.1.7
                           Path: H:\HyperAgent-SDK
 ```
+
+> ⚠️ OLD path `H:\the hyper vibe coding hub` = archived typo repo `Hyper-Vibe-Codeing-Hub` — **never use it**
+
+---
+
+## 🔑 Auth + Env Wiring (CRITICAL — read before debugging auth)
+
+- Frontend auth is **100% client-side** — uses Supabase directly from `frontend/src/lib/supabase.ts`
+- `/register` calls `supabase.auth.signUp()` directly from the browser — **does NOT go through FastAPI**
+- Required Vercel frontend env vars (must have `VITE_` prefix for Vite to expose them):
+  ```
+  VITE_SUPABASE_URL=https://yhtmuibgdnxhbgboajhc.supabase.co
+  VITE_SUPABASE_ANON_KEY=<your anon key>
+  ```
+- If either var is missing or wrong → Supabase client fails on init → **`Failed to fetch`** on any auth call
+- **Debugging rule:** auth broken in production? Check Vercel env vars FIRST before touching backend routes
+- Supabase also supports newer publishable keys (`sb_publishable_...`) but this codebase uses `VITE_SUPABASE_ANON_KEY`
 
 ---
 
@@ -236,9 +253,9 @@ RUN pip install --upgrade --no-cache-dir \
 - **Stripe dev mode:** Missing `STRIPE_WEBHOOK_SECRET` = signature check skipped (local only)
 - **Conventional commits:** `feat:` `fix:` `docs:` `chore:`
 - **Windows PowerShell first**, bash second
-- **`apps/web/`:** Archived, never migrate
 - **Redis DB split:** DB 1 = cache (`@cache_response`), DB 2 = rate limits — NEVER mix
 - **Circuit breakers:** 3 active (llm-router, crew-orchestrator, stripe-api) — check via `GET /api/v1/health`
+- **Frontend auth debug:** Vercel env vars FIRST (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) before touching backend
 
 ---
 
@@ -251,9 +268,9 @@ cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4"
 # HyperAgent-SDK
 cd "H:\HyperAgent-SDK"
 
-# HyperCode V2.4
-cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4"
-cd "H:\HyperStation zone\HyperCode\HyperCode-V2.4\backend"
+# Hyper-Vibe-Coding-Course
+cd "H:\Hyper-Vibe-Coding-Course"
+cd "H:\Hyper-Vibe-Coding-Course\frontend"
 
 # Docker
 docker compose up -d
@@ -308,17 +325,19 @@ pytest backend/tests/test_stripe.py -v
 
 ---
 
-## 📦 This Repo — HyperCode V2.4 Specifics
+## 📦 This Repo — Hyper-Vibe-Coding-Course Specifics
 
-- Stack: Next.js + Supabase + Vercel
+- Stack: Vite + React + Supabase + Vercel
 - Supabase Edge Functions in `supabase/functions/`
-- Frontend in `frontend/`
+- Frontend in `frontend/` (Vercel Root Directory must be set to `frontend`)
 - Discord bot cogs in `discord-bot/`
 - Course shop triggers AccessProvision flow → V2.4 via webhook
 - **Stripe Checkout backend LIVE** (Phase 10F ✅ — in HyperCode-V2.4)
 - **Pricing page wired** ✅ — 3 tiers (Free/Pro £9/Hyper £29), calls `createCheckoutSession()` — April 15, 2026
 - **TokensPage wired** ✅ — correct prices (200/£5, 800/£15, 2500/£35), calls `createCheckoutSession()` — April 15, 2026
 - **Dashboard balance card** ✅ — BROski$ shown from auth store, links to `/tokens` — April 15, 2026
+- **Production deploy READY** ✅ — May 3, 2026 (auth env fix applied)
+- **Supabase DB hardening migrations applied** ✅ — May 3, 2026
 
 ---
 
