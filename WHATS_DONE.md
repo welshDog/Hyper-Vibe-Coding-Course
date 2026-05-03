@@ -14,6 +14,17 @@
 
 ---
 
+## 🎙️ MAY 4 — NOTEBOOKLM MODULE TRANSCRIPTS GENERATED ✅
+- Installed `ffmpeg` (scoop) + `faster-whisper` (pip) — both reusable for future transcription jobs
+- New: `scripts/transcribe_module.py` (Python helper, utf-8 stdout) + `scripts/Transcribe-Modules.ps1` (orchestrator)
+- Mapped 11 NotebookLM videos in `Hyper Vibe Course  Idea Data/Hyper vibe Course MP4/` → `scripts/M{N}-*.md`:
+  - `M0-welcome.md` (8s — intro animation, no narration), `M1-your-first-vibe.md`, `M2-prompt-like-a-pro.md`, `M3-build-your-app.md`, `M4-full-stack-vibe.md`, `M5-hypercode-the-hyper-way.md`, `M6-agent-architecture.md`, `M7-soulful-entities.md`, `M8-architecting-on-chain-souls.md`, `M9-sre-observability.md`, `M10-ship-scale-graduate.md`
+- Total: ~6-8KB per file, full NotebookLM narration captured (no paraphrasing). 24.6 min on CPU `base.en`.
+- ⚠️ Existing `scripts/M1-M12-*.md` stubs left in place (different slugs) — NotebookLM numbering is offset from the old stub numbering. Decide later which set is canonical.
+- Re-run any time: `pwsh ./scripts/Transcribe-Modules.ps1 -Force -IncludeWelcome` (or `-Only 1,2,5` for subset, `-Model small.en` for higher quality).
+
+---
+
 ## 🛡️ MAY 3 — VERCEL SECURITY HEADERS REGRESSION FIXED 🔴→✅
 - Live audit: only `Strict-Transport-Security` was firing on production. Other 5 headers from `vercel.json` (X-Frame-Options, X-Content-Type-Options, X-DNS-Prefetch-Control, Referrer-Policy, Permissions-Policy) were absent.
 - **Root cause**: Vercel project's Root Directory = `frontend/`, so Vercel reads `frontend/vercel.json` — which didn't exist. Repo-root `vercel.json` was effectively dead code.
