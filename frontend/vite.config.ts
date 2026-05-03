@@ -18,10 +18,16 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          supabase: ['@supabase/supabase-js'],
-          router: ['react-router-dom'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'vendor'
+          }
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase'
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'router'
+          }
         },
       },
     },
