@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import LandingPage from './pages/LandingPage';
+import Welcome from './pages/Welcome';
 import { Login, Register } from './pages/Auth';
 import CourseCatalog from './pages/CourseCatalog';
 import CourseDetail from './pages/CourseDetail';
@@ -52,6 +53,15 @@ function App() {
         <Routes>
           {/* Public marketing landing — own dark chrome, skips light Layout */}
           <Route path="/" element={<LandingPage />} />
+          {/* First-login onboarding — full-bleed, skips Layout */}
+          <Route
+            path="/welcome"
+            element={
+              <PrivateRoute>
+                <Welcome />
+              </PrivateRoute>
+            }
+          />
           <Route element={<Layout />}>
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />

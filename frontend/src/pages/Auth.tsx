@@ -65,7 +65,8 @@ export function Login() {
           name: data.user.user_metadata?.full_name as string | undefined,
         });
       }
-      navigate('/dashboard');
+      const onboardedAt = data.user?.user_metadata?.onboarded_at as string | undefined;
+      navigate(onboardedAt ? '/dashboard' : '/welcome');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

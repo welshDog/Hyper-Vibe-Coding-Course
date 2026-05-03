@@ -4,6 +4,50 @@
 
 ---
 
+## 🛒 MAY 3 — E2E SHOP-PURCHASE TEST PASSED ✅
+- New script: `scripts/Test-ShopPurchase.ps1`
+- Creates temp test user via Auth admin API → awards BROski$ → signs in for real JWT → POSTs `shop-purchase` edge function → verifies row + balance + duplicate guard → cleans up
+- Tested against production Supabase project `yhtmuibgdnxhbgboajhc`
+- Default target item: `Agent Sandbox Access` (300 BROski$, agent_access)
+- `agent_access_pending:true` correctly returned when no `discord_id` linked
+- Run: `pwsh ./scripts/Test-ShopPurchase.ps1` (use `-KeepUser` to skip cleanup)
+
+---
+
+## 🛡️ MAY 3 — VERCEL SECURITY HEADERS REGRESSION FIXED 🔴→✅
+- Live audit: only `Strict-Transport-Security` was firing on production. Other 5 headers from `vercel.json` (X-Frame-Options, X-Content-Type-Options, X-DNS-Prefetch-Control, Referrer-Policy, Permissions-Policy) were absent.
+- **Root cause**: Vercel project's Root Directory = `frontend/`, so Vercel reads `frontend/vercel.json` — which didn't exist. Repo-root `vercel.json` was effectively dead code.
+- **Fix**: created `frontend/vercel.json` mirroring the repo-root config (headers + cache rules).
+- **Action needed**: commit + push so Vercel auto-deploys + the headers go live.
+- Repo-root `vercel.json` left in place to avoid surprise — consider deleting later to dedupe.
+- Latest production deploy `dpl_F2tFuZa1KJz9VLMTv3xiMjEvo4nF` is otherwise healthy (state: READY, no runtime errors).
+
+---
+
+## 🚀 MAY 3 — HERO ONBOARDING PAGE LIVE ✅
+- New page: `frontend/src/pages/Welcome.tsx` at `/welcome`
+- Own dark chrome (skips `<Layout/>`) — Starfield, hero greeting with first name, 3 perk cards (XP / BROski$ / Pets), starter quest CTAs, referral copy block
+- First-login redirect: `Auth.tsx` checks `user.user_metadata.onboarded_at` — missing → `/welcome`, present → `/dashboard`
+- "Enter Mission Control" + "Skip the tour" both call `supabase.auth.updateUser({ data: { onboarded_at } })` so it shows once
+- HFZ-compliant: dark only, ≥16px text, no pill primaries, single primary CTA, generous spacing, dyslexia-friendly chunking
+- ✅ `npx tsc --noEmit` clean, ✅ `eslint --max-warnings=0` clean, ✅ `npm run build` clean (1845 modules, 0 errors)
+- ⚠️ UI not yet verified in browser — spin up `npm run dev` and visit `/welcome`
+
+---
+
+## 🔌 MAY 3 — BLOCKERS B1-B3 ALL CONFIRMED RESOLVED ✅
+- **B1 DB Webhook** ✅ — Trigger `sync_tokens_to_v24` AFTER INSERT on `public.token_transactions`
+  - Function `sync_tokens_to_v24_fn()` uses `net.http_post` (pg_net) to call edge function
+  - Pre-resolves `discord_id` from `discord_links` and injects into payload
+  - Live calls in `net._http_response` returning 200 (skipped where appropriate)
+- **B2 Edge Function Secrets** ✅ — `supabase secrets list` confirms all wired:
+  - `COURSE_SYNC_SECRET`, `COURSE_WEBHOOK_SECRET`, `SHOP_SYNC_SECRET`, `V24_API_URL`
+  - All Stripe keys + Supabase service role
+- **B3 Stripe E2E loop** ✅ — Already PROVED April 25
+- ⚠️ Outstanding-but-not-blocking: actual live V2.4 forwarding hasn't been observed (only 1 discord_link exists, pg_net retention is short). Needs Bro to confirm `V24_API_URL` points to publicly reachable V2.4.
+
+---
+
 ## 🏗️ THE 3 REPOS
 
 | Repo | What it is | Where |

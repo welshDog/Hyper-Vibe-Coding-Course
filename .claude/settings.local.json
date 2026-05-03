@@ -54,7 +54,20 @@
       "Bash(npm.cmd run *)",
       "Bash(npm view *)",
       "Bash(npm ci *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "PowerShell(pwsh -NoProfile -File ./scripts/Test-ShopPurchase.ps1)",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "PowerShell(supabase *)",
+      "PowerShell(npx --prefix frontend tsc --noEmit -p frontend; if \\($LASTEXITCODE -eq 0\\) { 'TYPECHECK OK' } else { \"TYPECHECK FAILED \\($LASTEXITCODE\\)\" })",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(npx eslint *)",
+      "Bash(npm install *)",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__list_deployments",
+      "Bash(curl -sIL --max-time 15 https://hyper-vibe-coding-course.vercel.app/)",
+      "Bash(curl -sIL --max-time 15 -H \"Cache-Control: no-cache\" \"https://hyper-vibe-coding-course.vercel.app/?_=$\\(date +%s\\)\")",
+      "Bash(curl -sIL --max-time 15 https://hyper-vibe-coding-course.vercel.app/welcome)"
     ]
   }
 }
