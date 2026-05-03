@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { setupErrorTracking } from './utils/errorHandler'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 // Initialize error tracking
 setupErrorTracking();
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
+      <SpeedInsights />
     </ErrorBoundary>
   </StrictMode>,
 )
