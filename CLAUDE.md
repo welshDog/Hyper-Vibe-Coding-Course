@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: May 2, 2026 — Vercel build fixed (Root Directory must be `frontend/`, not repo root), correct repo path confirmed.**
+> **Last updated: May 3, 2026 — Supabase DB hardened + Vercel security headers + LCP/TTFB perf fixes**
 > **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
 
 ---
@@ -48,10 +48,12 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 
 ---
 
-## ✅ CURRENT STATUS (May 2, 2026)
+## ✅ CURRENT STATUS (May 3, 2026)
 
 > 🟢 ALL 29 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE 🦅🔥
-> ✅ Vercel build fixed — Root Directory must be `frontend/` (not repo root). vite stays in `devDependencies`. No `NODE_ENV=development` override needed.
+> ✅ Vercel build fixed — Root Directory must be `frontend/` (not repo root). vite stays in `devDependencies`.
+> ✅ Supabase DB fully hardened — May 3, 2026
+> ✅ Vercel security headers + perf fixes live — May 3, 2026
 
 ### 🏆 Full Phase Roadmap
 
@@ -72,7 +74,51 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 | 12A–12F | Leaderboard, Quests, Admin Rift Panel, Navbar links, Migrations | ✅ DONE — April 26, 2026 |
 | Edge Fns | All 4 Supabase edge functions fixed + deployed | ✅ DONE — May 1, 2026 |
 | Vercel | GitHub webhook wired, auto-deploy on push | ✅ DONE — May 2, 2026 |
-| CourseCatalog | Null safety fix on difficulty/description/thumbnail | ✅ DONE — May 2, 2026 (`92ed5cb`) |
+| CourseCatalog | Null safety fix on difficulty/description/thumbnail | ✅ DONE — May 2, 2026 |
+| DB Hardening | RLS init plan, FK indexes, duplicate policies fixed | ✅ DONE — May 3, 2026 |
+| Vercel Perf | Security headers, chunk splitting, LCP preload, WebP hero | ✅ DONE — May 3, 2026 |
+
+---
+
+## 🔐 SUPABASE DB HEALTH (May 3, 2026)
+
+> ✅ All performance + security fixes applied
+
+| Fix | Status | Migration |
+|---|---|---|
+| RLS Init Plan (auth.uid → SELECT auth.uid()) | ✅ Fixed | `fix_rls_init_plan_and_fk_indexes` |
+| FK indexes (7 missing indexes added) | ✅ Fixed | `fix_rls_init_plan_and_fk_indexes` |
+| Duplicate permissive policies merged | ✅ Fixed | `merge_duplicate_permissive_policies` |
+| Leaked password protection | 🟡 Needs Pro plan | Manual — Supabase Auth settings |
+
+### Tables with RLS Init Plan fixed:
+- `module_completions`, `users`, `token_transactions`, `enrollments`
+
+### FK Indexes added:
+- `idx_certificates_course_id`, `idx_module_completions_module_id`
+- `idx_pending_enrollments_course_id`, `idx_referrals_referred_user_id`
+- `idx_rifts_created_by`, `idx_shop_purchases_item_id`, `idx_user_quests_quest_id`
+
+---
+
+## 🚀 VERCEL HEALTH (May 3, 2026)
+
+> ✅ Production deployment healthy — 0 runtime errors
+
+| Fix | Status |
+|---|---|
+| Security headers (6 headers) | ✅ Live in `vercel.json` |
+| `/assets/*` immutable cache (1 year) | ✅ Live |
+| `/index.html` no-cache | ✅ Live |
+| Bundle chunk splitting (Vite 8 function syntax) | ✅ Live |
+| LCP hero image preload | ✅ Live in `index.html` |
+| Supabase DNS prefetch + preconnect | ✅ Live in `index.html` |
+| Hero image → WebP | ✅ Done manually |
+| Speed Insights | ✅ Live (PR #3) |
+
+### ⚠️ Vite 8 / Rolldown note:
+- `manualChunks` MUST be a **function**, not an object — Rolldown rejects the object form
+- Correct syntax: `manualChunks(id) { if (id.includes(...)) return 'chunk-name' }`
 
 ---
 
@@ -97,24 +143,10 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 | `frontend/src/pages/LeaderboardPage.tsx` | ✅ LIVE | Public `/leaderboard` route |
 | `frontend/src/pages/QuestPage.tsx` | ✅ LIVE | Private `/quests` route |
 | `frontend/src/pages/Dashboard.tsx` | ✅ FIXED | Resilient if enrollment.courses missing |
-| `frontend/src/pages/CourseCatalog.tsx` | ✅ FIXED | Null-safe difficulty/description/thumbnail (May 2) |
+| `frontend/src/pages/CourseCatalog.tsx` | ✅ FIXED | Null-safe difficulty/description/thumbnail |
 | `frontend/src/App.tsx` | ✅ LIVE | All routes registered incl. leaderboard + quests |
 | `api/xp_events.py` | ⚠️ MOCK | Legacy — frontend does NOT call this |
 | `api/rifts.py` | ⚠️ MOCK | Legacy — admin CLI only, frontend uses Supabase |
-
-### Supabase: All Tables Live
-
-```
-migration 20260426162000 — user_xp, xp_events, rifts (+ RLS + indices)
-migration 20260426180000 — public_profiles view, leaderboard view,
-                            quests, user_quests, complete_quest() RPC,
-                            admin write policy on rifts
-```
-
-**Important DB notes:**
-- `users` table has NO `avatar_url` column — leaderboard view returns `null` for avatar
-- `complete_quest(uuid)` is a SECURITY DEFINER RPC — atomic
-- `leaderboard` view is public — do NOT add RLS that blocks anon
 
 ### XP Award Values
 ```
@@ -128,16 +160,17 @@ rift_rider       = 75 XP
 
 ---
 
-## 🗺️ NEXT UP (May 2, 2026)
+## 🗺️ NEXT UP (May 3, 2026)
 
 | # | Task | Priority |
 |---|---|---|
-| 1 | **Vercel** — set Root Directory = `frontend`, remove `NODE_ENV=development`, redeploy | 🔴 NOW |
-| 2 | Fix `/register` — `Failed to fetch` error | 🔴 Next |
+| 1 | Fix `/register` — `Failed to fetch` error | 🔴 Next |
+| 2 | Leaked password protection — enable when Pro plan active | 🟡 Soon |
 | 3 | E2E test shop-purchase with real JWT | 🟡 Soon |
 | 4 | Blockers B1-B3 — Supabase DB webhook + secrets + Stripe E2E | 🟡 Soon |
 | 5 | Course content — generate expanded scripts M1–M12 via NotebookLM | 🟡 Soon |
 | 6 | Hero onboarding page + invite first real student | 🟡 Soon |
+| 7 | Monitor Speed Insights — LCP/TTFB targets: <2.5s / <0.8s | 🟡 Watch |
 
 ---
 
@@ -145,30 +178,19 @@ rift_rider       = 75 XP
 
 ```
 Hyper-Vibe-Coding-Course/
-├── frontend/src/
-│   ├── components/
-│   │   ├── HUD.tsx                  ✅ LIVE
-│   │   ├── XPToast.tsx              ✅ LIVE
-│   │   ├── RiftBanner.tsx           ✅ LIVE
-│   │   ├── AdminRiftPanel.tsx       ✅ LIVE
-│   │   ├── Layout.tsx               ✅ LIVE
-│   │   └── Navbar.tsx               ✅ LIVE
-│   ├── context/HUDContext.tsx       ✅ LIVE
-│   ├── hooks/useHUD.ts              ✅ LIVE
-│   ├── hooks/useRift.ts             ✅ LIVE
-│   ├── pages/
-│   │   ├── LeaderboardPage.tsx      ✅ LIVE
-│   │   ├── QuestPage.tsx            ✅ LIVE
-│   │   ├── CourseCatalog.tsx        ✅ FIXED (null safety May 2)
-│   │   ├── Admin.tsx                ✅ LIVE
-│   │   └── Dashboard.tsx            ✅ FIXED
-│   └── App.tsx                      ✅ LIVE
-├── api/
-│   ├── xp_events.py             ⚠️ MOCK
-│   └── rifts.py                 ⚠️ MOCK
+├── frontend/
+│   ├── index.html               ✅ LCP preload + Supabase preconnect
+│   ├── vite.config.ts           ✅ Vite 8 chunk splitting (function syntax)
+│   └── src/
+│       ├── assets/hero.webp     ✅ WebP hero image
+│       ├── components/          ✅ All gamification components live
+│       ├── context/             ✅ HUDContext live
+│       ├── hooks/               ✅ useHUD + useRift live
+│       └── pages/               ✅ All pages live
+├── vercel.json                  ✅ Security headers + cache rules
 ├── supabase/
-│   ├── migrations/              ✅ both pushed
-│   └── functions/               ✅ all 4 deployed (May 1)
+│   ├── migrations/              ✅ All pushed incl. May 3 hardening
+│   └── functions/               ✅ All 4 deployed
 └── CLAUDE.md                    ← you are here
 ```
 
@@ -210,7 +232,8 @@ Webhook: `vibe-hook` — `brilliant-triumph` = duplicate, delete it
 
 ## 🔑 Key Technical Rules (never re-debate)
 - **Correct repo path:** `H:\Hyper-Vibe-Coding-Course` — NOT `H:\the hyper vibe coding hub` (archived typo clone)
-- **Vercel build:** requires `NODE_ENV=development` OR move `vite` to `dependencies` in `frontend/package.json`
+- **Vercel build:** Root Directory = `frontend/`, vite in `devDependencies`
+- **Vite 8 / Rolldown:** `manualChunks` MUST be a function, not an object
 - **HUD data:** Reads `user_xp` + `rifts` from Supabase directly
 - **Legacy API:** `api/xp_events.py` + `api/rifts.py` are MOCK ONLY
 - **complete_quest RPC:** SECURITY DEFINER, atomic
@@ -229,14 +252,14 @@ Webhook: `vibe-hook` — `brilliant-triumph` = duplicate, delete it
 
 ## ⚠️ Known Issues & Gotchas
 
-1. **Vercel build failing** — `vite: command not found` exit 127 — add `NODE_ENV=development` in Vercel env vars
-2. **`/register` page** — `Failed to fetch` on sign-up form — needs investigation
-3. **`.env` dash vars** — PowerShell deploy blocker — rename `-` to `_` in var names
-4. **GitHub Actions billing lock** — fix at github.com/settings/billing
-5. **HUDContext lint** — `react-refresh/only-export-components` — known + acceptable
-6. **Migration history** — `supabase db push --linked --yes --include-all` if history mismatch
-7. **POSTGRES_PASSWORD** — Plain in `.env`, quoted if special chars
-8. **hypercode-core memory** — alert if > 1.2 GiB
+1. **`/register` page** — `Failed to fetch` on sign-up form — needs investigation
+2. **`.env` dash vars** — PowerShell deploy blocker — rename `-` to `_` in var names
+3. **GitHub Actions billing lock** — fix at github.com/settings/billing
+4. **HUDContext lint** — `react-refresh/only-export-components` — known + acceptable
+5. **Migration history** — `supabase db push --linked --yes --include-all` if history mismatch
+6. **POSTGRES_PASSWORD** — Plain in `.env`, quoted if special chars
+7. **hypercode-core memory** — alert if > 1.2 GiB
+8. **Leaked password protection** — disabled, needs Supabase Pro plan
 
 ---
 
