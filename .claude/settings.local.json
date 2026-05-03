@@ -67,7 +67,22 @@
       "mcp__claude_ai_Vercel__list_deployments",
       "Bash(curl -sIL --max-time 15 https://hyper-vibe-coding-course.vercel.app/)",
       "Bash(curl -sIL --max-time 15 -H \"Cache-Control: no-cache\" \"https://hyper-vibe-coding-course.vercel.app/?_=$\\(date +%s\\)\")",
-      "Bash(curl -sIL --max-time 15 https://hyper-vibe-coding-course.vercel.app/welcome)"
+      "Bash(curl -sIL --max-time 15 https://hyper-vibe-coding-course.vercel.app/welcome)",
+      "Bash(whisper --help)",
+      "Bash(ffmpeg -version)",
+      "Bash(python -c \"import whisper; print\\('whisper py:', whisper.__file__\\)\")",
+      "Bash(python -c \"import faster_whisper; print\\('faster-whisper:', faster_whisper.__file__\\)\")",
+      "Bash(pip --version)",
+      "Bash(scoop list *)",
+      "Bash(scoop install *)",
+      "Bash(pip install *)",
+      "Bash(python -c \"import faster_whisper; print\\('faster-whisper:', faster_whisper.__version__\\)\")",
+      "PowerShell(pwsh -NoProfile -File ./scripts/Transcribe-Modules.ps1 -Only 1 2>&1 | Select-Object -Last 30)",
+      "PowerShell(& ./scripts/Transcribe-Modules.ps1 -Only 1 2>&1 | Select-Object -Last 50)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Write-Host \"PWD=$PWD\"; Write-Host \"Exists=$\\(Test-Path 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1'\\)\")",
+      "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Only 1 2>&1 | Select-Object -Last 60)",
+      "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Force -IncludeWelcome 2>&1 | Select-Object -Last 80)"
     ]
   }
 }
