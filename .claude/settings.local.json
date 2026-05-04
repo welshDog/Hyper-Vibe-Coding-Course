@@ -98,7 +98,13 @@
       "Bash(git -C \"/h/dNFTpet\" status --short)",
       "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" remote -v)",
       "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" log --oneline -10)",
-      "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" branch --show-current)"
+      "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" branch --show-current)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"5173 root: %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"5173 /welcome: %{http_code}\\\\n\" http://localhost:5173/welcome)",
+      "Bash(curl -s -o /dev/null -w \"5174 root: %{http_code}\\\\n\" http://localhost:5174/)",
+      "Bash(curl -s -o /dev/null -w \"5174 /welcome: %{http_code}\\\\n\" http://localhost:5174/welcome)",
+      "Bash(curl -s http://localhost:5174/welcome)"
     ]
   }
 }
