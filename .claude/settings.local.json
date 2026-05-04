@@ -89,7 +89,16 @@
       "Bash(git fetch *)",
       "Bash(curl -sIL --max-time 15 \"https://hyper-vibe-coding-course.vercel.app/welcome?_=$\\(date +%s\\)\")",
       "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' --max-time 10 'https://hyper-vibe-coding-course.vercel.app__TRACKED_VAR__?_=__CMDSUB_OUTPUT__')",
-      "Bash(curl -sI https://hyper-vibe-coding-course.vercel.app/)"
+      "Bash(curl -sI https://hyper-vibe-coding-course.vercel.app/)",
+      "Bash(ls -d /h/BROski* /h/broski* /h/HyperStation*/*BROski* /h/HyperStation*/*broski*)",
+      "Read(//h//**)",
+      "Bash(git -C \"/h/dNFTpet\" remote -v)",
+      "Bash(git -C \"/h/dNFTpet\" log --oneline -10)",
+      "Bash(git -C \"/h/dNFTpet\" branch --show-current)",
+      "Bash(git -C \"/h/dNFTpet\" status --short)",
+      "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" remote -v)",
+      "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" log --oneline -10)",
+      "Bash(git -C \"/h/dNFTpet/BROskiPets-LLM-dNFT\" branch --show-current)"
     ]
   }
 }

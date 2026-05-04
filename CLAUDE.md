@@ -3,8 +3,8 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: May 3, 2026 — Supabase DB hardened + Vercel security headers + LCP/TTFB perf fixes**
-> **Single source of truth — merged from CLAUDE.md + CLAUDE_CONTEXT.md**
+> **Last updated: May 4, 2026 — 4-repo master plan refresh ([HYPER_ECOSYSTEM_PLAN_MAY4.md](./HYPER_ECOSYSTEM_PLAN_MAY4.md))**
+> **Single source of truth for the sprint = `HYPER_ECOSYSTEM_PLAN_MAY4.md` Section B**
 
 ---
 
@@ -36,7 +36,7 @@
 Hyper-Vibe-Coding-Course     ──── manifest.json ────▶    HyperCode V2.4
 github.com/welshDog/             (hyper-agent-spec)       github.com/welshDog/
 Hyper-Vibe-Coding-Course                                  HyperCode-V2.4
-(Supabase + Vercel)                    │                  (Docker, 29 containers)
+(Supabase + Vercel)                    │                  (Docker, 32 containers)
 Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStation zone\
 ⚠️ NOT H:\the hyper vibe coding hub    │                       HyperCode\HyperCode-V2.4
    (that = archived typo repo)         │
@@ -44,6 +44,11 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
                           github.com/welshDog/HyperAgent-SDK
                           npm: @w3lshdog/hyper-agent@0.1.7
                           Path: H:\HyperAgent-SDK
+                                       │
+                              BROskiPets-LLM-dNFT  ◀── 4th repo (May 4, 2026)
+                          github.com/welshDog/BROskiPets-LLM-dNFT
+                          Path: H:\dNFTpet\BROskiPets-LLM-dNFT
+                          (Pets · dNFT · 78 EEPs · port 8098)
 ```
 
 ---
@@ -160,17 +165,23 @@ rift_rider       = 75 XP
 
 ---
 
-## 🗺️ NEXT UP (May 3, 2026)
+## 🗺️ NEXT UP — 2-Week Sprint (May 4 → May 18, 2026)
 
-| # | Task | Priority |
-|---|---|---|
-| 1 | Fix `/register` — `Failed to fetch` error | 🔴 Next |
-| 2 | Leaked password protection — enable when Pro plan active | 🟡 Soon |
-| 3 | E2E test shop-purchase with real JWT | 🟡 Soon |
-| 4 | Blockers B1-B3 — Supabase DB webhook + secrets + Stripe E2E | 🟡 Soon |
-| 5 | Course content — generate expanded scripts M1–M12 via NotebookLM | 🟡 Soon |
-| 6 | Hero onboarding page + invite first real student | 🟡 Soon |
-| 7 | Monitor Speed Insights — LCP/TTFB targets: <2.5s / <0.8s | 🟡 Watch |
+> Mirrors [HYPER_ECOSYSTEM_PLAN_MAY4.md](./HYPER_ECOSYSTEM_PLAN_MAY4.md) Section B. Single source of truth for the sprint lives in that doc.
+
+| # | Task | Repo | Priority |
+|---|---|---|---|
+| 1 | Browser-verify `/welcome` page in dev (`localhost:5173/welcome`) | Hyper-Vibe | 🔴 Today |
+| 2 | Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` | Hyper-Vibe | 🔴 Today |
+| 3 | Decide: add CSP header to `frontend/vercel.json`? | Hyper-Vibe | 🔴 Today |
+| 4 | First real student invite (after #1) | Hyper-Vibe | 🟡 This week |
+| 5 | Stripe live E2E — payment → webhook → token → enrolled | Hyper-Vibe + V2.4 | 🟡 This week |
+| 6 | GitHub Actions billing unlock | All | 🟡 This week |
+| 7 | **BROskiPets Phase 1** — mint first pet via BROski$ | BROskiPets + Hyper-Vibe | 🟡 This week |
+| 8 | HyperAgent-SDK 0.2.0 prep — validator UX + 2 templates | HyperAgent-SDK | 🟡 This week |
+| 9 | Speed Insights monitoring — LCP <2.5s, TTFB <0.8s | Hyper-Vibe | 🟢 Watch |
+| 10 | Anthropic credit top-up if running thin | All | 🟢 Bg |
+| 11 | Leaked-password protection (needs Supabase Pro) | Hyper-Vibe | 🟢 Bg |
 
 ---
 

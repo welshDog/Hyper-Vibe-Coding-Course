@@ -1,6 +1,16 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 3, 2026** — update this every session.
+> **Updated: May 4, 2026** — update this every session.
+
+---
+
+## 🗺️ MAY 4 — 4-REPO MASTER PLAN REFRESH ✅
+- New canonical doc: **[HYPER_ECOSYSTEM_PLAN_MAY4.md](./HYPER_ECOSYSTEM_PLAN_MAY4.md)** — supersedes the May 3 ecosystem report
+- Layered structure: 4-repo health snapshot → 2-week sprint (Section B) → Phase 1-6 strategic → cross-repo bridges → next-session starters
+- 4th repo **BROskiPets-LLM-dNFT** promoted to first-class — `H:\dNFTpet\BROskiPets-LLM-dNFT` (github.com/welshDog/BROskiPets-LLM-dNFT)
+- `CLAUDE.md` NEXT UP table + ecosystem diagram refreshed to mirror Section B
+- `WHATS_DONE.md` NEXT UP block (bottom) refreshed to mirror Section B
+- The 3 docs are now in lockstep — drift is the enemy
 
 ---
 
@@ -233,14 +243,26 @@
 
 ---
 
-## 🚀 NEXT UP (in order)
+## 🚀 NEXT UP — 2-Week Sprint (May 4 → May 18)
 
-1. **E2E test shop-purchase** — get JWT from logged-in session, run curl test
-2. **Blockers B1-B3** — Supabase DB webhook + Edge Function secrets + Stripe E2E re-verify
-3. **HyperAgent-SDK Phase 2** — validator UX, starter templates, npm 0.2.0
-4. **Fix GitHub Actions billing lock** — github.com/settings/billing
-5. **BROskiPets Phase 1** — mint first pet via BROski$
-6. **MERGE_ROADMAP Phase 3** — Agent sandbox access shop item
+> Mirrors [HYPER_ECOSYSTEM_PLAN_MAY4.md](./HYPER_ECOSYSTEM_PLAN_MAY4.md) Section B. That doc is the single source of truth.
+
+**🔴 Today (close-out flags from May 3)**
+1. Browser-verify `/welcome` page (`http://localhost:5173/welcome`)
+2. Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` (keep NotebookLM set canonical)
+3. Decide: add `Content-Security-Policy` to `frontend/vercel.json`?
+
+**🟡 This week**
+4. First real student invite (after #1 verified)
+5. Stripe live E2E — payment → webhook → token award → enrolled
+6. GitHub Actions billing unlock — github.com/settings/billing
+7. **BROskiPets Phase 1** — mint first pet via BROski$ (cross-repo wiring)
+8. HyperAgent-SDK 0.2.0 prep — validator UX + 2 starter templates
+
+**🟢 Background**
+9. Speed Insights monitoring — LCP <2.5s, TTFB <0.8s
+10. Anthropic credit top-up if running thin
+11. Leaked-password protection (needs Supabase Pro)
 
 ---
 
