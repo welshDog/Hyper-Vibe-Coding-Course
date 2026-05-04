@@ -83,7 +83,12 @@
       "PowerShell(Write-Host \"PWD=$PWD\"; Write-Host \"Exists=$\\(Test-Path 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1'\\)\")",
       "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Only 1 2>&1 | Select-Object -Last 60)",
       "PowerShell(& 'H:\\\\Hyper-Vibe-Coding-Course\\\\scripts\\\\Transcribe-Modules.ps1' -Force -IncludeWelcome 2>&1 | Select-Object -Last 80)",
-      "Bash(sort -k9)"
+      "Bash(sort -k9)",
+      "Bash(git status *)",
+      "Bash(git check-ignore *)",
+      "Bash(git fetch *)",
+      "Bash(curl -sIL --max-time 15 \"https://hyper-vibe-coding-course.vercel.app/welcome?_=$\\(date +%s\\)\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' --max-time 10 'https://hyper-vibe-coding-course.vercel.app__TRACKED_VAR__?_=__CMDSUB_OUTPUT__')"
     ]
   }
 }
