@@ -116,7 +116,7 @@ export default function Pricing() {
             </span>
           </h1>
           <p className="mt-5 text-hfz-body-lg text-hfz-text-secondary leading-[1.8] max-w-[55ch] mx-auto">
-            Simple, transparent pricing. Cancel anytime. No subscription traps.
+            Simple, transparent pricing. Month-to-month, cancel anytime — no annual lock-in.
           </p>
         </div>
 
