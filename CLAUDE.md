@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: May 5, 2026 — register fix, Vercel env vars, BUSINESS_PLAN.md added**
+> **Last updated: May 5, 2026 (PM) — BUSINESS_PLAN v1.1, /pricing copy fix, Stripe E2E runbook, dead-asset cleanup**
 > **Single source of truth for the sprint = `HYPER_ECOSYSTEM_PLAN_MAY4.md` Section B**
 
 ---
@@ -56,9 +56,13 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 ## ✅ CURRENT STATUS (May 5, 2026)
 
 > 🟢 ALL 29 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE 🦅🔥
-> ✅ Vercel env vars fixed — VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set on ALL 3 environments (Production + Preview + Development)
+> ✅ BUSINESS_PLAN.md → v1.1 — corrected pricing (£9 Pro / £29 Hyper), hiring-pipeline section, risks, two-scenario projections — May 5 PM
+> ✅ `/pricing` copy fixed — "Month-to-month, cancel anytime — no annual lock-in" (no more "no subscription traps" contradiction) — May 5 PM
+> ✅ Stripe E2E runbook scaffolded at `scripts/STRIPE_E2E_RUNBOOK.md` — May 5 PM
+> ✅ Phantom `hero-bg.webp` preload removed from `index.html` (file never existed in `public/`) — May 5 PM
+> ✅ Dead `frontend/src/assets/hero.webp` deleted (zero imports) — May 5 PM
+> ✅ Vercel env vars fixed — VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY set on ALL 3 environments
 > ✅ /register `Failed to fetch` bug ROOT CAUSE FIXED — May 5, 2026
-> ✅ BUSINESS_PLAN.md added to repo — May 4, 2026
 > ✅ Supabase DB fully hardened — May 3, 2026
 > ✅ Vercel security headers + perf fixes live — May 3, 2026
 
@@ -84,8 +88,12 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 | CourseCatalog | Null safety fix on difficulty/description/thumbnail | ✅ DONE — May 2, 2026 |
 | DB Hardening | RLS init plan, FK indexes, duplicate policies fixed | ✅ DONE — May 3, 2026 |
 | Vercel Perf | Security headers, chunk splitting, LCP preload, WebP hero | ✅ DONE — May 3, 2026 |
-| BUSINESS_PLAN.md | Sponsor-ready business plan added to repo | ✅ DONE — May 4, 2026 |
+| BUSINESS_PLAN.md v1.0 | Sponsor-ready business plan added to repo | ✅ DONE — May 4, 2026 |
 | Vercel Env Vars | VITE_ keys set on all 3 Vercel environments | ✅ DONE — May 5, 2026 |
+| BUSINESS_PLAN.md v1.1 | Pricing align + hiring section + risks + Discord live link | ✅ DONE — May 5 PM |
+| Pricing.tsx copy fix | Removed "no subscription traps" contradiction | ✅ DONE — May 5 PM |
+| Stripe E2E runbook | `scripts/STRIPE_E2E_RUNBOOK.md` — Path A local + Path B prod | ✅ DONE — May 5 PM |
+| Dead asset cleanup | Phantom preload + unused `hero.webp` removed | ✅ DONE — May 5 PM |
 
 ---
 
@@ -184,18 +192,20 @@ rift_rider       = 75 XP
 | # | Task | Repo | Priority |
 |---|---|---|---|
 | 1 | ✅ DONE — Vercel env vars set on all 3 environments | Hyper-Vibe | ✅ |
-| 2 | ✅ DONE — BUSINESS_PLAN.md pushed to repo | Hyper-Vibe | ✅ |
-| 3 | **Self-test full user journey** — register → quest → XP → leaderboard (incognito) | Hyper-Vibe | 🔴 NOW |
-| 4 | **Stripe live E2E** — `stripe trigger checkout.session.completed` → webhook fires | Hyper-Vibe + V2.4 | 🔴 This week |
-| 5 | **First real student invite** — DM 5 people, "HYPER VIBE" offer ends Friday | Hyper-Vibe | 🔴 This week |
-| 6 | Screenshot full quest journey for launch content | Hyper-Vibe | 🟡 This week |
-| 7 | Fix hero-bg.webp preload warning in `index.html` | Hyper-Vibe | 🟡 This week |
-| 8 | Fix zustand deprecated default export warning | Hyper-Vibe | 🟡 This week |
-| 9 | GitHub Actions billing unlock | All | 🟡 This week |
-| 10 | BROskiPets Phase 1 — mint first pet via BROski$ | BROskiPets + Hyper-Vibe | 🟡 This week |
-| 11 | HyperAgent-SDK 0.2.0 prep — validator UX + 2 templates | HyperAgent-SDK | 🟡 This week |
-| 12 | Leaked-password protection (needs Supabase Pro) | Hyper-Vibe | 🟢 Bg |
-| 13 | Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` | Hyper-Vibe | 🟢 Bg |
+| 2 | ✅ DONE — BUSINESS_PLAN.md v1.1 (pricing align + hiring + risks) | Hyper-Vibe | ✅ |
+| 3 | ✅ DONE — `/pricing` copy contradiction fixed | Hyper-Vibe | ✅ |
+| 4 | ✅ DONE — Stripe E2E runbook scaffolded (`scripts/STRIPE_E2E_RUNBOOK.md`) | Hyper-Vibe | ✅ |
+| 5 | ✅ DONE — phantom preload + dead `hero.webp` removed | Hyper-Vibe | ✅ |
+| 6 | **Self-test full user journey** — register → quest → XP → leaderboard (incognito) | Hyper-Vibe | 🔴 NOW |
+| 7 | **Stripe live E2E** — get `sk_test_` key + register test-mode webhook → run runbook | Hyper-Vibe + V2.4 | 🔴 This week |
+| 8 | **Decide:** make `/welcome` public? (currently auth-gated, sponsors clicking from BUSINESS_PLAN hit `/login`) | Hyper-Vibe | 🔴 This week |
+| 9 | **First real student invite** — DM 5 people, "HYPER VIBE" offer ends Friday | Hyper-Vibe | 🔴 This week |
+| 10 | Screenshot full quest journey for launch content | Hyper-Vibe | 🟡 This week |
+| 11 | GitHub Actions billing unlock | All | 🟡 This week |
+| 12 | BROskiPets Phase 1 — mint first pet via BROski$ | BROskiPets + Hyper-Vibe | 🟡 This week |
+| 13 | HyperAgent-SDK 0.2.0 prep — validator UX + 2 templates | HyperAgent-SDK | 🟡 This week |
+| 14 | Leaked-password protection (needs Supabase Pro) | Hyper-Vibe | 🟢 Bg |
+| 15 | Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` | Hyper-Vibe | 🟢 Bg |
 
 ---
 
@@ -292,15 +302,17 @@ stripe trigger checkout.session.completed
 ## ⚠️ Known Issues & Gotchas
 
 1. ~~**`/register` page** — `Failed to fetch`~~ ✅ **FIXED May 5** — was missing Vercel env vars on all 3 environments
-2. **hero-bg.webp preload warning** — preloaded but not used within load window — fix `as` value in `index.html`
-3. **zustand deprecated default export** — update to `import { create } from 'zustand'`
-4. **`.env` dash vars** — PowerShell deploy blocker — rename `-` to `_` in var names
-5. **GitHub Actions billing lock** — fix at github.com/settings/billing
-6. **HUDContext lint** — `react-refresh/only-export-components` — known + acceptable
-7. **Migration history** — `supabase db push --linked --yes --include-all` if history mismatch
-8. **POSTGRES_PASSWORD** — Plain in `.env`, quoted if special chars
-9. **hypercode-core memory** — alert if > 1.2 GiB
-10. **Leaked password protection** — disabled, needs Supabase Pro plan
+2. ~~**hero-bg.webp preload warning**~~ ✅ **FIXED May 5 PM** — root cause was *phantom file* (never existed in `public/`), not wrong `as` attr — preload tag deleted
+3. ~~**zustand deprecated default export**~~ ✅ **NOOP May 5 PM** — already on v5 with named import (`src/context/auth.ts:1`); warning was stale
+4. **`/welcome` is auth-gated** — sponsors clicking the link from BUSINESS_PLAN.md hit `/login`. Open call: make it public or accept it.
+5. **`.env` dash vars** — PowerShell deploy blocker — rename `-` to `_` in var names
+6. **GitHub Actions billing lock** — fix at github.com/settings/billing
+7. **HUDContext lint** — `react-refresh/only-export-components` — known + acceptable
+8. **Migration history** — `supabase db push --linked --yes --include-all` if history mismatch
+9. **POSTGRES_PASSWORD** — Plain in `.env`, quoted if special chars
+10. **hypercode-core memory** — alert if > 1.2 GiB
+11. **Leaked password protection** — disabled, needs Supabase Pro plan
+12. **Stripe CLI in live mode only** — set `STRIPE_API_KEY=sk_test_...` before running `stripe trigger`. See `scripts/STRIPE_E2E_RUNBOOK.md`.
 
 ---
 

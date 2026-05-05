@@ -1,6 +1,21 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 4, 2026** — update this every session.
+> **Updated: May 5, 2026 (PM)** — update this every session.
+
+---
+
+## 🧹 MAY 5 PM — DOC SYNC + STRIPE SCAFFOLD SESSION ✅
+
+- **`BUSINESS_PLAN.md` → v1.1** — corrected pricing (Pro £12 → **£9**, Hyper £35 → **£29**) to match live `/pricing` page; rebuilt 12-month projections with two scenarios (3% conservative / 5% target); added cost math for Stripe fees + Anthropic AI; promoted **"Neurodivergent Hiring Pipeline"** to its own headline section above sponsor tiers; added **"Risks & Mitigations"** 6-row table; deleted empty testimonials block; swapped in live Discord invite (`discord.gg/PSBHyvx86T`); marked `/welcome` as `LIVE (auth)`.
+- **`/pricing` copy fix** (`Pricing.tsx:119`) — replaced contradictory "Cancel anytime. No subscription traps." with **"Month-to-month, cancel anytime — no annual lock-in"**. Stripe wiring is monthly subs (`pro_monthly` / `hyper_monthly` price keys).
+- **Phantom preload nuked** — `index.html` was preloading `/assets/hero-bg.webp` which never existed in `public/` AND wasn't imported anywhere. Removed the `<link rel="preload">` tag (root cause was *phantom file*, not wrong `as` attr as CLAUDE.md previously claimed).
+- **Zustand warning closed as NOOP** — only usage in `src/context/auth.ts:1` already uses named import (`import { create } from 'zustand'`); zustand@5.0.11 dropped the default export entirely. Stale CLAUDE.md note.
+- **Dead asset deleted** — `frontend/src/assets/hero.webp` (zero imports across the repo).
+- **`scripts/STRIPE_E2E_RUNBOOK.md` created** — covers Path A (local `supabase functions serve` + `stripe listen` — recommended) and Path B (live deployed function via test-mode webhook). Includes pre-flight checklist, verification SQL, cleanup SQL, and pass/fail signal table.
+- **Auth gating audit** — confirmed `App.tsx` route table. Cold-visitor leak found: `/welcome` is wrapped in `PrivateRoute` (line 60) — sponsors clicking the link from BUSINESS_PLAN.md hit `/login`. Doc updated to `LIVE (auth)`; product call to make it public is open.
+- **Welcome page browser-verify** ✅ — dev server up at `http://localhost:5173/welcome`, route registered at `App.tsx:58`, `Auth.tsx:69` first-login redirect wired (`onboarded_at` missing → `/welcome`).
+- **Commit landed:** `eb5a26f` — `docs+fix: BUSINESS_PLAN v1.1, pricing copy clarity, kill dead asset` (3 files, 99 inserts, 54 deletes; `.claude/settings.local.json` intentionally excluded).
+- **🟡 Open from this session:** Bro to decide on (a) make `/welcome` public, (b) get `sk_test_` Stripe key + register test-mode webhook in Stripe Dashboard pointing at the deployed Supabase function URL.
 
 ---
 
@@ -243,26 +258,34 @@
 
 ---
 
-## 🚀 NEXT UP — 2-Week Sprint (May 4 → May 18)
+## 🚀 NEXT UP — Sprint (May 5 PM → May 18)
 
-> Mirrors [HYPER_ECOSYSTEM_PLAN_MAY4.md](./HYPER_ECOSYSTEM_PLAN_MAY4.md) Section B. That doc is the single source of truth.
+> Mirrors [HYPER_ECOSYSTEM_PLAN_MAY4.md](./HYPER_ECOSYSTEM_PLAN_MAY4.md) Section B + `CLAUDE.md` NEXT UP table.
 
-**🔴 Today (close-out flags from May 3)**
-1. Browser-verify `/welcome` page (`http://localhost:5173/welcome`)
-2. Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` (keep NotebookLM set canonical)
-3. Decide: add `Content-Security-Policy` to `frontend/vercel.json`?
+**🔴 Now**
+1. ✅ Browser-verify `/welcome` (route + wiring confirmed; auth-gated finding flagged)
+2. ✅ BUSINESS_PLAN v1.1 — pricing align, hiring pipeline, risks
+3. ✅ `/pricing` copy contradiction fixed
+4. ✅ Stripe E2E runbook scaffolded (`scripts/STRIPE_E2E_RUNBOOK.md`)
+5. ✅ Phantom preload + dead `hero.webp` removed
+6. **Self-test full user journey** — register → quest → XP → leaderboard (incognito)
+7. **Decide:** make `/welcome` public? (currently auth-gated)
+8. **Stripe live E2E** — get `sk_test_` key + register test-mode webhook → run Path A from runbook
+
+**🔴 This week (commercial)**
+9. First real student invite — DM 5 people, "HYPER VIBE" offer ends Friday
 
 **🟡 This week**
-4. First real student invite (after #1 verified)
-5. Stripe live E2E — payment → webhook → token award → enrolled
-6. GitHub Actions billing unlock — github.com/settings/billing
-7. **BROskiPets Phase 1** — mint first pet via BROski$ (cross-repo wiring)
-8. HyperAgent-SDK 0.2.0 prep — validator UX + 2 starter templates
+10. Screenshot full quest journey for launch content
+11. GitHub Actions billing unlock — github.com/settings/billing
+12. **BROskiPets Phase 1** — mint first pet via BROski$ (cross-repo wiring)
+13. HyperAgent-SDK 0.2.0 prep — validator UX + 2 starter templates
 
 **🟢 Background**
-9. Speed Insights monitoring — LCP <2.5s, TTFB <0.8s
-10. Anthropic credit top-up if running thin
-11. Leaked-password protection (needs Supabase Pro)
+14. Speed Insights monitoring — LCP <2.5s, TTFB <0.8s
+15. Anthropic credit top-up if running thin
+16. Leaked-password protection (needs Supabase Pro)
+17. Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/`
 
 ---
 

@@ -37,32 +37,44 @@
 
 > Punch list. Ordered by leverage. **Always start at #1.** This block is mirrored in `CLAUDE.md` + `WHATS_DONE.md` — keep all three in sync.
 
-### 🔴 Today (close-out flags from May 3)
+### ✅ Closed-out May 5 PM
+
+| # | Task | Outcome |
+|---|---|---|
+| 1 | Browser-verify `/welcome` | ✅ Route + wiring confirmed (`App.tsx:58`, `Auth.tsx:69`). Finding: page is auth-gated by `PrivateRoute` — see new #4 below |
+| 2 | Header parity check | ✅ done May 4 — 6/6 headers fire |
+| BP | BUSINESS_PLAN.md v1.1 | ✅ Prices aligned to live `/pricing` (£9 / £29), hiring-pipeline section, risks table, two-scenario projections, live Discord link |
+| PC | `/pricing` copy fix | ✅ "Month-to-month, cancel anytime — no annual lock-in" replaces "no subscription traps" contradiction |
+| SR | Stripe E2E runbook | ✅ `scripts/STRIPE_E2E_RUNBOOK.md` — Path A (local) + Path B (live) with verification SQL |
+| HC | Dead-asset cleanup | ✅ Phantom `hero-bg.webp` preload + unused `hero.webp` deleted |
+
+### 🔴 Now (open close-outs)
 
 | # | Task | Repo | Est | Notes |
 |---|---|---|---|---|
-| 1 | Browser-verify `/welcome` page in dev (`http://localhost:5173/welcome`) | Hyper-Vibe | 10m | Code shipped + clean compile, but never opened in a browser |
-| 2 | Confirm header parity in prod — `curl -I https://hyper-vibe-coding-course.vercel.app/` | Hyper-Vibe | 2m | ✅ done May 4 — 6/6 headers fire (CSP not configured — see #4) |
 | 3 | Move old `scripts/M*-*.md` stubs to `scripts/_old-stubs/` | Hyper-Vibe | 5m | Keep NotebookLM set as canonical M0-M10 |
-| 4 | **Decide:** add `Content-Security-Policy` to `frontend/vercel.json`? | Hyper-Vibe | 30m | Not currently configured. Worth 30 min if going public |
+| 4 | **Decide:** make `/welcome` public? | Hyper-Vibe | 5m | Cold sponsors clicking the link from BUSINESS_PLAN.md hit `/login`. Marketing-friendly content; just unwrap `PrivateRoute` in `App.tsx:60` if going public |
+| 5 | **Decide:** add `Content-Security-Policy` to `frontend/vercel.json`? | Hyper-Vibe | 30m | Not currently configured. Worth 30 min if going public |
 
 ### 🟡 This week
 
 | # | Task | Repo | Est | Notes |
 |---|---|---|---|---|
-| 5 | **First real student invite** | Hyper-Vibe | — | Only after #1 verified |
-| 6 | Stripe live E2E — payment → webhook → token award → enrolled course | Hyper-Vibe + V2.4 | 1h | Last manual gap. `stripe listen --forward-to localhost:8000/api/stripe/webhook`, test card `4242 4242 4242 4242` |
-| 7 | GitHub Actions billing unlock | All | 5m | github.com/settings/billing → unblocks Trivy CI |
-| 8 | **BROskiPets Phase 1** — mint first pet via BROski$ | BROskiPets + Hyper-Vibe | 3d | Wire `shop-purchase` Edge Fn → BROskiPets contract. Idempotent on `source_id`. `discord_id` join key |
-| 9 | HyperAgent-SDK 0.2.0 prep — validator UX + 2 starter templates | HyperAgent-SDK | 1d | Towards Phase 2 publish |
+| 6 | **Self-test full user journey** | Hyper-Vibe | 30m | Incognito: register → quest → XP → leaderboard. Pre-req before #7 |
+| 7 | **First real student invite** | Hyper-Vibe | — | Only after #6 verified. "HYPER VIBE" offer ends Friday |
+| 8 | Stripe live E2E — run runbook Path A | Hyper-Vibe + V2.4 | 1h | Pre-reqs: `sk_test_` key (config only has live), test-mode webhook registered in Stripe Dashboard. Steps: `scripts/STRIPE_E2E_RUNBOOK.md` |
+| 9 | GitHub Actions billing unlock | All | 5m | github.com/settings/billing → unblocks Trivy CI |
+| 10 | **BROskiPets Phase 1** — mint first pet via BROski$ | BROskiPets + Hyper-Vibe | 3d | Wire `shop-purchase` Edge Fn → BROskiPets contract. Idempotent on `source_id`. `discord_id` join key |
+| 11 | HyperAgent-SDK 0.2.0 prep — validator UX + 2 starter templates | HyperAgent-SDK | 1d | Towards Phase 2 publish |
 
 ### 🟢 Background / nice-to-have
 
 | # | Task | Repo | Est | Notes |
 |---|---|---|---|---|
-| 10 | Speed Insights monitoring | Hyper-Vibe | — | Targets: LCP <2.5s, TTFB <0.8s |
-| 11 | Anthropic credit top-up | All | 5m | console.anthropic.com/billing — only if running thin |
-| 12 | Leaked-password protection | Hyper-Vibe (Supabase) | — | Needs Pro plan upgrade first |
+| 12 | Speed Insights monitoring | Hyper-Vibe | — | Targets: LCP <2.5s, TTFB <0.8s |
+| 13 | Anthropic credit top-up | All | 5m | console.anthropic.com/billing — only if running thin |
+| 14 | Leaked-password protection | Hyper-Vibe (Supabase) | — | Needs Pro plan upgrade first |
+| 15 | Screenshot full quest journey for launch content | Hyper-Vibe | — | Reusable for Discord drops + sponsor pitches |
 
 ---
 
