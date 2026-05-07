@@ -3,9 +3,10 @@
 // Image paths point at /public/pets/{species}.png (copied from
 // H:/dNFTpet/BROskiPets-LLM-dNFT/broski_pets/{species}/{species}_evo1.png).
 //
-// `babyMetadataCid` is currently a placeholder until pinata_upload_all.py runs.
-// MintPetButton refuses to mint while the CID still starts with "PLACEHOLDER_"
-// so users can never burn 100 BROski$ on a broken CID.
+// `babyMetadataCid` values are real Pinata v3 CIDs (uploaded 2026-05-07,
+// group BROski_pets_dNFTs / 2aedcf70-d4bb-4e13-94c9-ef6098d49aca).
+// MintPetButton still refuses to mint if a CID starts with "PLACEHOLDER_"
+// so any future species added without pinning can't burn user BROski$.
 
 export type SpeciesId =
   | 'apex_dragon'
@@ -29,16 +30,16 @@ export type SpeciesConfig = {
 }
 
 export const SPECIES: readonly SpeciesConfig[] = [
-  { id: 'apex_dragon',         displayName: 'Apex Dragon',         emoji: '🐲', imageUrl: '/pets/apex_dragon.png',         babyMetadataCid: 'PLACEHOLDER_APEX_DRAGON_BABY_CID' },
-  { id: 'blizzard_lizard',     displayName: 'Blizzard Lizard',     emoji: '❄️', imageUrl: '/pets/blizzard_lizard.png',     babyMetadataCid: 'PLACEHOLDER_BLIZZARD_LIZARD_BABY_CID' },
-  { id: 'chaos_cat',           displayName: 'Chaos Cat',           emoji: '🐈', imageUrl: '/pets/chaos_cat.png',           babyMetadataCid: 'PLACEHOLDER_CHAOS_CAT_BABY_CID' },
-  { id: 'cyber_fox',           displayName: 'Cyber Fox',           emoji: '🦊', imageUrl: '/pets/cyber_fox.png',           babyMetadataCid: 'PLACEHOLDER_CYBER_FOX_BABY_CID' },
-  { id: 'gigabyte_guinea_pig', displayName: 'Gigabyte Guinea Pig', emoji: '🐹', imageUrl: '/pets/gigabyte_guinea_pig.png', babyMetadataCid: 'PLACEHOLDER_GIGABYTE_GUINEA_PIG_BABY_CID' },
-  { id: 'hyper_beam_bunny',    displayName: 'Hyper Beam Bunny',    emoji: '🐰', imageUrl: '/pets/hyper_beam_bunny.png',    babyMetadataCid: 'PLACEHOLDER_HYPER_BEAM_BUNNY_BABY_CID' },
-  { id: 'hyper_hamster',       displayName: 'Hyper Hamster',       emoji: '🐭', imageUrl: '/pets/hyper_hamster.png',       babyMetadataCid: 'PLACEHOLDER_HYPER_HAMSTER_BABY_CID' },
-  { id: 'hyperfocus_horse',    displayName: 'Hyperfocus Horse',    emoji: '🐴', imageUrl: '/pets/hyperfocus_horse.png',    babyMetadataCid: 'PLACEHOLDER_HYPERFOCUS_HORSE_BABY_CID' },
-  { id: 'power_pup',           displayName: 'Power Pup',           emoji: '🐶', imageUrl: '/pets/power_pup.png',           babyMetadataCid: 'PLACEHOLDER_POWER_PUP_BABY_CID' },
-  { id: 'sonic_spider',        displayName: 'Sonic Spider',        emoji: '🕷️', imageUrl: '/pets/sonic_spider.png',        babyMetadataCid: 'PLACEHOLDER_SONIC_SPIDER_BABY_CID' },
+  { id: 'apex_dragon',         displayName: 'Apex Dragon',         emoji: '🐲', imageUrl: '/pets/apex_dragon.png',         babyMetadataCid: 'bafkreifmbfuzdcy3rmaqywbymt4y23tfqx3fcu2bgv4n3vtbuj77yqqzte' },
+  { id: 'blizzard_lizard',     displayName: 'Blizzard Lizard',     emoji: '❄️', imageUrl: '/pets/blizzard_lizard.png',     babyMetadataCid: 'bafkreib4w5w6rnyufxkbywxspb266r74lwbumjdhlnzzp2netkkdkfdft4' },
+  { id: 'chaos_cat',           displayName: 'Chaos Cat',           emoji: '🐈', imageUrl: '/pets/chaos_cat.png',           babyMetadataCid: 'bafkreiayrp3n742qr7p6z74ibtt27meaklik4iyhdhr7rq42vrqknpdndy' },
+  { id: 'cyber_fox',           displayName: 'Cyber Fox',           emoji: '🦊', imageUrl: '/pets/cyber_fox.png',           babyMetadataCid: 'bafkreigyzfipicwnwllxfkll55mbaztfhqehw3os5vmiezksntpxe7iaua' },
+  { id: 'gigabyte_guinea_pig', displayName: 'Gigabyte Guinea Pig', emoji: '🐹', imageUrl: '/pets/gigabyte_guinea_pig.png', babyMetadataCid: 'bafkreigwuuqfqq2ikfpufms26d5ykwed6fozmr5c44uvx4ok7bcsk7ioy4' },
+  { id: 'hyper_beam_bunny',    displayName: 'Hyper Beam Bunny',    emoji: '🐰', imageUrl: '/pets/hyper_beam_bunny.png',    babyMetadataCid: 'bafkreihanpom3j4kqztxqiqoxpmg54vup4obcgwp5e2rq5tposlvantl4y' },
+  { id: 'hyper_hamster',       displayName: 'Hyper Hamster',       emoji: '🐭', imageUrl: '/pets/hyper_hamster.png',       babyMetadataCid: 'bafkreihh6bswkdwnhgbvf37tqbv3z4wgmftx5n6jcsfz2nldyolbm2lgwe' },
+  { id: 'hyperfocus_horse',    displayName: 'Hyperfocus Horse',    emoji: '🐴', imageUrl: '/pets/hyperfocus_horse.png',    babyMetadataCid: 'bafkreib6pnkjhzzwbrmrefulglijgelhbwt7sbmommdtm2etrdp44v2zay' },
+  { id: 'power_pup',           displayName: 'Power Pup',           emoji: '🐶', imageUrl: '/pets/power_pup.png',           babyMetadataCid: 'bafkreigh4tin25yi7peyfk5r2lma34wgvrrws5biailihc3nbckdrgypdy' },
+  { id: 'sonic_spider',        displayName: 'Sonic Spider',        emoji: '🕷️', imageUrl: '/pets/sonic_spider.png',        babyMetadataCid: 'bafkreihtyvnywbollf5w47ovsjw7cbgs6scpacajrkrjp2fstydjqmdlna' },
 ] as const
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary'
