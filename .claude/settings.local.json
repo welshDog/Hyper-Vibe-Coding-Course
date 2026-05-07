@@ -133,7 +133,11 @@
       "Bash(python broski_pet_metadata.py --name \"Sparkle\" --species cyber_fox --rarity uncommon --pet-id 1 --dry-run)",
       "Bash(xargs -I {} ls -la \"H:/dNFTpet/BROskiPets-LLM-dNFT/broski_pets/cyber_fox/{}\")",
       "mcp__claude_ai_Supabase__get_edge_function",
-      "mcp__claude_ai_Supabase__deploy_edge_function"
+      "mcp__claude_ai_Supabase__deploy_edge_function",
+      "mcp__claude_ai_Supabase__list_migrations",
+      "mcp__claude_ai_Supabase__get_advisors",
+      "PowerShell(New-Item *)",
+      "Bash(npx --no-install eslint src/lib/species.ts src/components/pets/SpeciesPicker.tsx src/components/pets/MintPetButton.tsx src/pages/Pets.tsx)"
     ]
   }
 }
