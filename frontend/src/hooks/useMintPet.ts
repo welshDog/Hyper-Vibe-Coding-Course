@@ -1,0 +1,197 @@
+// useMintPet — orchestrates the BROskiPet mint flow.
+//
+// Two-step transaction:
+//   1. Call the `mint-pet-auth` Edge Function — it deducts BROski$, issues
+//      a single-use nonce, and signs an EIP-712 MintAuth.
+//   2. Submit `mintWithAuth(auth, signature)` from the user's wallet.
+//
+// The Edge Function is the trust boundary. Anything it returns is already
+// authorized — the on-chain contract verifies the signature came from a
+// wallet holding BACKEND_SIGNER_ROLE.
+
+import { useCallback, useMemo, useState } from 'react'
+import { useAccount, useChainId, useSwitchChain, useWriteContract } from 'wagmi'
+
+import { useAuthStore } from '../context/auth'
+import {
+  BROSKIPET_ABI,
+  BROSKIPET_CHAIN_ID,
+  BROSKIPET_CONTRACT_ADDRESS,
+  type MintPetAuthResponse,
+} from '../lib/contracts/broskiPet'
+import { supabase } from '../lib/supabase'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+
+type MintPetParams = {
+  /** Display name supplied by the user. Must match the metadata JSON. */
+  petName: string
+  /** IPFS CID of the rendered Baby-stage metadata. Backend validates length. */
+  ipfsCid: string
+}
+
+type MintPetState = 'idle' | 'authorizing' | 'awaiting-signature' | 'mining' | 'success' | 'error'
+
+export type MintPetError = {
+  code: 'not-connected' | 'wrong-chain' | 'auth-failed' | 'tx-rejected' | 'unknown'
+  message: string
+  /** HTTP status from the Edge Function, if applicable. */
+  status?: number
+  cause?: unknown
+}
+
+export function useMintPet() {
+  const user = useAuthStore((s) => s.user)
+  const { address, isConnected } = useAccount()
+  const currentChainId = useChainId()
+  const { switchChainAsync } = useSwitchChain()
+  const { writeContractAsync } = useWriteContract()
+
+  const [state, setState] = useState<MintPetState>('idle')
+  const [error, setError] = useState<MintPetError | null>(null)
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+
+  const isContractConfigured = useMemo(
+    () => Boolean(BROSKIPET_CONTRACT_ADDRESS),
+    [],
+  )
+
+  const mintPet = useCallback(
+    async ({ petName, ipfsCid }: MintPetParams) => {
+      setError(null)
+      setTxHash(null)
+
+      if (!user) {
+        const err: MintPetError = { code: 'not-connected', message: 'Sign in first.' }
+        setError(err); setState('error'); throw err
+      }
+      if (!isConnected || !address) {
+        const err: MintPetError = { code: 'not-connected', message: 'Connect your wallet first.' }
+        setError(err); setState('error'); throw err
+      }
+      if (!isContractConfigured) {
+        const err: MintPetError = {
+          code: 'unknown',
+          message: 'BROskiPet contract address is not configured (VITE_BROSKIPET_CONTRACT_ADDRESS).',
+        }
+        setError(err); setState('error'); throw err
+      }
+
+      // Auto-switch to the BROskiPet chain if the wallet is on the wrong network.
+      if (currentChainId !== BROSKIPET_CHAIN_ID) {
+        try {
+          await switchChainAsync({ chainId: BROSKIPET_CHAIN_ID })
+        } catch (cause) {
+          const err: MintPetError = {
+            code: 'wrong-chain',
+            message: `Please switch your wallet to chain ${BROSKIPET_CHAIN_ID}.`,
+            cause,
+          }
+          setError(err); setState('error'); throw err
+        }
+      }
+
+      // ── 1. Authorize via Edge Function ────────────────────────────────────
+      setState('authorizing')
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) {
+        const err: MintPetError = { code: 'not-connected', message: 'Session expired — sign in again.' }
+        setError(err); setState('error'); throw err
+      }
+
+      const authResp = await fetch(`${SUPABASE_URL}/functions/v1/mint-pet-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          wallet_address: address,
+          ipfs_cid: ipfsCid,
+          pet_name: petName,
+        }),
+      })
+
+      if (!authResp.ok) {
+        let message = `Mint authorization failed (${authResp.status})`
+        try {
+          const body = (await authResp.json()) as { message?: string; error?: string }
+          message = body.message ?? body.error ?? message
+        } catch { /* keep default */ }
+        const err: MintPetError = {
+          code: 'auth-failed',
+          message,
+          status: authResp.status,
+        }
+        setError(err); setState('error'); throw err
+      }
+
+      const payload = (await authResp.json()) as MintPetAuthResponse
+
+      // Sanity-check: the Edge Function must point at the same contract the
+      // frontend is configured for, otherwise the signature won't verify.
+      if (
+        payload.contract.toLowerCase() !== BROSKIPET_CONTRACT_ADDRESS.toLowerCase() ||
+        payload.chain_id !== BROSKIPET_CHAIN_ID
+      ) {
+        const err: MintPetError = {
+          code: 'auth-failed',
+          message: 'Backend / frontend contract mismatch — contact support.',
+        }
+        setError(err); setState('error'); throw err
+      }
+
+      // ── 2. Send the on-chain transaction ──────────────────────────────────
+      setState('awaiting-signature')
+
+      try {
+        const hash = await writeContractAsync({
+          address: BROSKIPET_CONTRACT_ADDRESS,
+          abi: BROSKIPET_ABI,
+          functionName: 'mintWithAuth',
+          args: [
+            {
+              to: payload.auth.to,
+              petId: payload.auth.petId,
+              ipfsCID: payload.auth.ipfsCID,
+              nonce: BigInt(payload.auth.nonce),
+              expiry: BigInt(payload.auth.expiry),
+            },
+            payload.signature,
+          ],
+          chainId: BROSKIPET_CHAIN_ID,
+        })
+
+        setTxHash(hash)
+        setState('mining')
+        return { hash, costPaid: payload.cost_paid }
+      } catch (cause) {
+        const err: MintPetError = {
+          code: 'tx-rejected',
+          message: cause instanceof Error ? cause.message : 'Wallet rejected the transaction.',
+          cause,
+        }
+        setError(err); setState('error'); throw err
+      }
+    },
+    [
+      address, currentChainId, isConnected, isContractConfigured,
+      switchChainAsync, user, writeContractAsync,
+    ],
+  )
+
+  const reset = useCallback(() => {
+    setState('idle'); setError(null); setTxHash(null)
+  }, [])
+
+  return {
+    mintPet,
+    reset,
+    state,
+    error,
+    txHash,
+    isReady: isConnected && isContractConfigured,
+  }
+}

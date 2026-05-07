@@ -23,15 +23,16 @@ export function Navbar() {
   const { user, signOut } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // Derive isMenuOpen from pathname so route changes auto-close the drawer
+  // without a setState-in-effect. See React 19 react-hooks/set-state-in-effect rule.
+  const [openedAtPath, setOpenedAtPath] = useState<string | null>(null);
+  const isMenuOpen = openedAtPath === location.pathname;
+  const toggleMenu = () =>
+    setOpenedAtPath((prev) => (prev === location.pathname ? null : location.pathname));
+
   const [tier, setTier] = useState<'bronze' | 'silver' | 'gold' | 'hyper' | null>(null);
   const [broskiTokens, setBroskiTokens] = useState<number | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  // Close drawer when route changes
-  useEffect(() => {
-    setIsMenuOpen(false);
-  }, [location.pathname]);
 
   useEffect(() => {
     const userId = user?.id;
@@ -171,7 +172,7 @@ export function Navbar() {
           <div className="sm:hidden -mr-2 flex items-center">
             <button
               type="button"
-              onClick={() => setIsMenuOpen((v) => !v)}
+              onClick={toggleMenu}
               aria-expanded={isMenuOpen}
               aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
               className="p-2 rounded-hfz-sm text-hfz-text-secondary hover:text-hfz-cyan hover:bg-hfz-violet/10 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"

@@ -7,26 +7,28 @@ export type PaymentLinkOptions = {
 }
 
 function resolveHypercodeApiUrl(): string {
-  const configured = import.meta.env.VITE_HYPERCODE_API_URL as string | undefined
-  const apiUrl = configured?.trim() || 'http://localhost:8000'
-
+  const configured = (import.meta.env.VITE_HYPERCODE_API_URL as string | undefined)?.trim()
   const originHost = window.location.hostname
   const isLocalOrigin = originHost === 'localhost' || originHost === '127.0.0.1'
-  if (isLocalOrigin) return apiUrl
+
+  if (!configured) {
+    if (isLocalOrigin) return 'http://localhost:8000'
+    throw new Error('VITE_HYPERCODE_API_URL must be set in production')
+  }
 
   let apiHost: string
   try {
-    apiHost = new URL(apiUrl).hostname
+    apiHost = new URL(configured).hostname
   } catch {
     throw new Error('Invalid VITE_HYPERCODE_API_URL')
   }
 
   const isLocalApi = apiHost === 'localhost' || apiHost === '127.0.0.1'
-  if (isLocalApi) {
-    throw new Error('VITE_HYPERCODE_API_URL must be set in production')
+  if (isLocalApi && !isLocalOrigin) {
+    throw new Error('VITE_HYPERCODE_API_URL points to localhost but app is on a prod origin')
   }
 
-  return apiUrl
+  return configured
 }
 
 /**
