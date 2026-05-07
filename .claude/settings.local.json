@@ -137,7 +137,8 @@
       "mcp__claude_ai_Supabase__list_migrations",
       "mcp__claude_ai_Supabase__get_advisors",
       "PowerShell(New-Item *)",
-      "Bash(npx --no-install eslint src/lib/species.ts src/components/pets/SpeciesPicker.tsx src/components/pets/MintPetButton.tsx src/pages/Pets.tsx)"
+      "Bash(npx --no-install eslint src/lib/species.ts src/components/pets/SpeciesPicker.tsx src/components/pets/MintPetButton.tsx src/pages/Pets.tsx)",
+      "Bash(python pinata_upload_all.py --dry-run --species cyber_fox power_pup)"
     ]
   }
 }
