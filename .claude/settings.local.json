@@ -141,7 +141,10 @@
       "Bash(python pinata_upload_all.py --dry-run --species cyber_fox power_pup)",
       "Read(//h/BROski-Obsidian-Brain-for-HyperFocus-z0ne/HYPERFOCUS_ZONE/**)",
       "Bash(git -C \"H:/BROski-Obsidian-Brain-for-HyperFocus-z0ne\" log --oneline -8)",
-      "Bash(git -C \"H:/BROski-Obsidian-Brain-for-HyperFocus-z0ne\" show --stat 9a3fc13)"
+      "Bash(git -C \"H:/BROski-Obsidian-Brain-for-HyperFocus-z0ne\" show --stat 9a3fc13)",
+      "Bash(curl -s http://localhost:8100/openapi.json)",
+      "Bash(docker exec *)",
+      "Bash(MSYS_NO_PATHCONV=1 docker exec hyper-brain *)"
     ]
   }
 }
