@@ -144,7 +144,9 @@
       "Bash(git -C \"H:/BROski-Obsidian-Brain-for-HyperFocus-z0ne\" show --stat 9a3fc13)",
       "Bash(curl -s http://localhost:8100/openapi.json)",
       "Bash(docker exec *)",
-      "Bash(MSYS_NO_PATHCONV=1 docker exec hyper-brain *)"
+      "Bash(MSYS_NO_PATHCONV=1 docker exec hyper-brain *)",
+      "WebFetch(domain:hyper-vibe-coding-course.vercel.app)",
+      "mcp__claude_ai_Supabase__get_logs"
     ]
   }
 }
