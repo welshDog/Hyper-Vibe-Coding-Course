@@ -17,9 +17,11 @@ import { HVZCard, HVZButton } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
 import { PetCard } from '../components/pets/PetCard'
+import { PetCardSkeleton } from '../components/pets/PetCardSkeleton'
 import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { PetSquadRow } from '../components/pets/PetSquadRow'
 import { useMyPets } from '../hooks/useMyPets'
+import { useAuthStore } from '../context/auth'
 import {
   RARITIES,
   RARITY_LABELS,
@@ -36,7 +38,9 @@ export default function Pets() {
   const [justMintedTx, setJustMintedTx] = useState<`0x${string}` | null>(null)
 
   const { pets, loading: petsLoading, error: petsError, refetch } = useMyPets()
+  const userId = useAuthStore((s) => s.user?.id)
   const species = speciesId ? getSpecies(speciesId) : null
+  const showEmptyState = !!userId && !petsLoading && !petsError && pets.length === 0
 
   const handleMinted = ({ txHash }: { txHash: `0x${string}`; petName: string; species: string }) => {
     setJustMintedTx(txHash)
@@ -69,14 +73,18 @@ export default function Pets() {
       </header>
 
       {/* Section 0 — Your Pets (persistent collection) */}
-      {(pets.length > 0 || petsLoading) && (
+      {(pets.length > 0 || petsLoading || showEmptyState) && (
         <section aria-labelledby="my-pets" className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 id="my-pets" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-              {petsLoading && pets.length === 0 ? 'Loading your pets…' : `Your pets (${pets.length})`}
+              {petsLoading && pets.length === 0
+                ? 'Loading your pets…'
+                : pets.length === 0
+                ? 'Your pets'
+                : `Your pets (${pets.length})`}
             </h2>
             {awaitingSync && (
-              <span className="text-[11px] text-hfz-text-secondary animate-pulse">
+              <span className="text-[11px] text-hfz-text-secondary motion-safe:animate-pulse">
                 Syncing fresh mint…
               </span>
             )}
@@ -90,11 +98,44 @@ export default function Pets() {
                 </HVZButton>
               </div>
             </HVZCard>
+          ) : petsLoading && pets.length === 0 ? (
+            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3" aria-label="Loading your pets">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <li
+                  key={i}
+                  className="motion-safe:animate-fade-in-up"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <PetCardSkeleton />
+                </li>
+              ))}
+            </ul>
+          ) : pets.length === 0 ? (
+            <HVZCard>
+              <div className="flex items-center gap-4">
+                <span className="text-3xl shrink-0" aria-hidden>🐣</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-hfz-text-primary">
+                    No pets yet — your first companion lands here.
+                  </p>
+                  <p className="text-xs text-hfz-text-secondary mt-1">
+                    Pick a species below, name it, and mint. Your collection persists across reloads.
+                  </p>
+                </div>
+              </div>
+            </HVZCard>
           ) : (
             <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {pets.map((p) => (
-                <li key={p.id}>
-                  <PetCard pet={p} />
+              {pets.map((p, i) => (
+                <li
+                  key={p.id}
+                  className="motion-safe:animate-fade-in-up"
+                  style={{ animationDelay: `${Math.min(i, 5) * 50}ms` }}
+                >
+                  <PetCard
+                    pet={p}
+                    freshMint={p.mint_tx_hash === justMintedTx}
+                  />
                 </li>
               ))}
             </ul>

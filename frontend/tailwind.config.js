@@ -201,6 +201,19 @@ export default {
           '0%':   { transform: 'translateY(0)' },
           '100%': { transform: 'translateY(-20px)' },
         },
+        shimmer: {
+          '0%':   { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)'  },
+        },
+        goldSweep: {
+          '0%':   { transform: 'translateX(-100%)', opacity: '0' },
+          '40%':  { opacity: '1' },
+          '100%': { transform: 'translateX(120%)',  opacity: '0' },
+        },
+        fadeInUp: {
+          '0%':   { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         twinkle:      'twinkle 3s ease-in-out infinite',
@@ -211,6 +224,9 @@ export default {
         'liquid-fill': 'liquidFill 1.2s cubic-bezier(0.34,1.56,0.64,1) forwards',
         'level-burst': 'levelBurst 0.5s ease-out forwards',
         drift:        'drift 60s linear infinite',
+        shimmer:      'shimmer 1.5s linear infinite',
+        'gold-sweep': 'goldSweep 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'fade-in-up': 'fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
       },
 
       // ---------- BACKDROP BLUR ----------

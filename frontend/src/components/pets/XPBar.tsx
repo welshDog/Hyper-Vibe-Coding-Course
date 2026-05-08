@@ -41,7 +41,7 @@ export function XPBar({ xp, isEvolving = false }: Props) {
 
   return (
     <div
-      className={isEvolving ? 'rounded-full ring-2 ring-hfz-violet-light/50 motion-safe:animate-pulse' : undefined}
+      className={isEvolving ? 'rounded-full ring-2 ring-hfz-violet-light/60 shadow-hfz-glow-violet motion-safe:animate-border-pulse' : undefined}
     >
       <HVZProgress
         value={atMax ? 100 : Math.round(renderedPct)}

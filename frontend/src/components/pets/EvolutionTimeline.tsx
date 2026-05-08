@@ -51,15 +51,16 @@ export function EvolutionTimeline({ xpOverride }: Props) {
               <div
                 aria-current={isCurrent ? 'step' : undefined}
                 className={[
-                  'flex flex-col items-center text-center gap-1.5 rounded-hfz-md border p-3 h-full transition-colors duration-300',
+                  'flex flex-col items-center text-center gap-1.5 rounded-hfz-md border p-3 h-full transition-colors duration-300 motion-safe:animate-fade-in-up',
                   isCurrent
-                    ? 'border-hfz-violet-light bg-hfz-violet-light/10 shadow-hfz-glow-violet motion-safe:animate-pulse'
+                    ? 'border-hfz-violet-light bg-hfz-violet-light/10 shadow-hfz-glow-violet motion-safe:animate-border-pulse'
                     : isLegend
                     ? 'border-hfz-gold/40 bg-hfz-gold/5'
                     : reached
                     ? 'border-hfz-border-violet bg-hfz-space-black/40'
                     : 'border-hfz-border-violet/40 bg-hfz-space-black/20 opacity-50',
                 ].join(' ')}
+                style={{ animationDelay: `${i * 50}ms` }}
               >
                 <span className="text-2xl leading-none" aria-hidden>
                   {s.emoji}

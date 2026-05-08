@@ -13,6 +13,7 @@ import {
   type Rarity,
 } from '../../lib/species'
 import { STAGE_BY_KEY } from '../../lib/evolution'
+import { PetCardSkeleton } from './PetCardSkeleton'
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
   common:    'cyan',
@@ -28,9 +29,21 @@ export function PetSquadRow() {
 
   if (loading) {
     return (
-      <HVZCard>
-        <p className="text-sm text-hfz-text-secondary">Loading top evolvers…</p>
-      </HVZCard>
+      <ul
+        role="list"
+        aria-label="Loading top evolvers"
+        className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 lg:grid lg:grid-cols-4 lg:gap-3 lg:overflow-visible"
+      >
+        {Array.from({ length: 4 }).map((_, i) => (
+          <li
+            key={i}
+            className="shrink-0 w-[220px] lg:w-auto motion-safe:animate-fade-in-up"
+            style={{ animationDelay: `${i * 60}ms` }}
+          >
+            <PetCardSkeleton size="mini" />
+          </li>
+        ))}
+      </ul>
     )
   }
 

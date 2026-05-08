@@ -42,6 +42,8 @@ type Props = {
   xpOverride?: number
   size?:       'full' | 'mini'
   onClick?:    () => void
+  /** Pet was minted this session — play the gold shimmer sweep once. */
+  freshMint?:  boolean
 }
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
@@ -51,7 +53,7 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
   legendary: 'gold',
 }
 
-export function PetCard({ pet, xpOverride, size = 'full', onClick }: Props) {
+export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false }: Props) {
   const species = getSpecies(pet.species_id)
   const hud = useHUD()
   const xp = xpOverride ?? hud?.xp ?? 0
@@ -63,6 +65,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick }: Props) {
     return (
       <HVZCard
         onClick={onClick}
+        padding={16}
         style={{ minWidth: 220 }}
       >
         <div className="flex items-center gap-3">
@@ -92,12 +95,23 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick }: Props) {
       onClick={onClick}
       glow={isLegend ? 'gold' : undefined}
     >
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative shrink-0">
+      <div className="relative flex flex-col sm:flex-row gap-4">
+        {freshMint && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 overflow-hidden rounded-hfz-md"
+          >
+            <div className="absolute inset-y-0 -left-1/3 w-1/3 motion-safe:animate-gold-sweep bg-gradient-to-r from-transparent via-hfz-gold/30 to-transparent" />
+          </div>
+        )}
+
+        <div
+          className={`relative shrink-0 rounded-hfz-md ${isEvolving ? 'motion-safe:animate-border-pulse' : ''}`}
+        >
           <img
             src={species.imageUrl}
             alt={species.displayName}
-            className={`h-20 w-20 rounded-hfz-md object-cover ${isEvolving ? 'motion-safe:animate-pulse' : ''}`}
+            className="h-20 w-20 rounded-hfz-md object-cover"
             loading="lazy"
           />
           {isLegend && (
@@ -114,7 +128,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick }: Props) {
         <div className="flex-1 min-w-0">
           <header className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-bold text-hfz-text-primary truncate">{pet.pet_name}</h3>
+              <h3 className="text-lg font-bold tracking-tight text-hfz-text-primary truncate">{pet.pet_name}</h3>
               <p className="text-xs text-hfz-text-secondary">
                 <span className="font-mono">{pet.pet_id}</span>
                 <span className="opacity-60"> · </span>
