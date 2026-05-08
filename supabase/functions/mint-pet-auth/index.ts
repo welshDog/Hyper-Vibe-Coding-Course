@@ -1,26 +1,37 @@
 // supabase/functions/mint-pet-auth/index.ts
 //
-// v2 — corrected EIP-712 signing for the BROskiPet contract.
+// v3 — Path A gas sponsorship: optional backend relay.
 //
-// What v2 fixes vs v1:
-//   1. Typehash now matches the contract: `string petId, string ipfsCID`
-//      (v1 declared uint256/bytes32 — sig recover would always fail).
-//   2. EIP-712 encoding delegated to viem instead of hand-rolled encodeAbiPacked
-//      (v1 packed address as 20 bytes; abi.encode requires 32-byte left-pad —
-//      both the domain separator and the struct hash were wrong).
-//   3. Refund-on-failure now wraps every post-spend error path
-//      (v1 only refunded on nonce-insert failure → leaked tokens on petId
-//      allocation or signing failures).
-//   4. petId returned as a string ("broski_<seq>") — matches contract semantics.
+// What v3 adds vs v2:
+//   - Optional `relay: true` flag in request body. When set, the Edge Function
+//     submits the mintWithAuth tx itself instead of returning the signature
+//     for the user to broadcast. Users no longer need ETH to mint.
+//   - Refund-on-relay-failure: if the on-chain tx revert/throws, BROski$
+//     are returned. Same refund path as v2 signing failures.
+//   - Backwards compatible: omit `relay` (or set false) → identical v2 behavior.
+//
+// What v2 fixed vs v1:
+//   1. Typehash matches the contract: `string petId, string ipfsCID`.
+//   2. EIP-712 encoding delegated to viem.
+//   3. Refund-on-failure wraps every post-spend error path.
+//   4. petId returned as a string ("broski_<seq>").
 //
 // Trust boundary:
 //   Anything signed here is treated as authorized by the on-chain contract.
 //   The signing wallet (BACKEND_SIGNER_PRIVATE_KEY) must hold BACKEND_SIGNER_ROLE
 //   on the deployed BROskiPet contract.
+//
+// Relay funding:
+//   The relayer wallet pays gas. Defaults to BACKEND_SIGNER_PRIVATE_KEY (same
+//   wallet signs auth and submits tx). Override via RELAYER_PRIVATE_KEY env if
+//   you want to separate the signing wallet (no ETH) from the relayer (holds ETH).
+//   The relayer wallet must have funds on the target chain.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { privateKeyToAccount } from "npm:viem@2.21.0/accounts";
+import { createWalletClient, http, parseAbi } from "npm:viem@2.21.0";
+import { baseSepolia, base } from "npm:viem@2.21.0/chains";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const MINT_COST_TOKENS    = 100;
@@ -71,10 +82,11 @@ Deno.serve(async (req: Request) => {
   if (userErr || !user) return json({ error: "Unauthorized" }, 401);
 
   // 2. Parse + validate body
-  let body: { wallet_address?: string; ipfs_cid?: string; pet_name?: string };
+  let body: { wallet_address?: string; ipfs_cid?: string; pet_name?: string; relay?: boolean };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
-  const { wallet_address, ipfs_cid, pet_name } = body;
+  const { wallet_address, ipfs_cid, pet_name, relay } = body;
+  const wantsRelay = relay === true;
   if (!wallet_address || !ipfs_cid) {
     return json({ error: "wallet_address and ipfs_cid are required" }, 400);
   }
@@ -180,7 +192,59 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Signing failed" }, 500);
   }
 
-  // 8. Return signed payload to client
+  // 8. Optional Path A relay — submit the on-chain tx ourselves.
+  //    Users skip the wallet-signature step and don't need to hold ETH.
+  let txHash: `0x${string}` | undefined;
+  if (wantsRelay) {
+    const relayerKeyRaw = Deno.env.get("RELAYER_PRIVATE_KEY") ?? signerKeyRaw;
+    const relayerKey = (relayerKeyRaw.startsWith("0x") ? relayerKeyRaw : `0x${relayerKeyRaw}`) as `0x${string}`;
+    if (!/^0x[0-9a-fA-F]{64}$/.test(relayerKey)) {
+      console.error("[mint-pet-auth] Invalid relayer key");
+      await refund("relayer key invalid");
+      return json({ error: "Service misconfigured — contact admin" }, 503);
+    }
+
+    const rpcUrl = Deno.env.get("MINT_RPC_URL")
+      ?? (CHAIN_ID === 8453 ? "https://mainnet.base.org" : "https://sepolia.base.org");
+    const chain = CHAIN_ID === 8453 ? base : baseSepolia;
+
+    const mintAbi = parseAbi([
+      "function mintWithAuth((address to, string petId, string ipfsCID, uint256 nonce, uint256 expiry) auth, bytes signature) external",
+    ]);
+
+    try {
+      const relayer = privateKeyToAccount(relayerKey);
+      const wallet = createWalletClient({ account: relayer, chain, transport: http(rpcUrl) });
+
+      txHash = await wallet.writeContract({
+        address:      contractAddress as `0x${string}`,
+        abi:          mintAbi,
+        functionName: "mintWithAuth",
+        args: [
+          {
+            to:      wallet_address as `0x${string}`,
+            petId,
+            ipfsCID: ipfs_cid,
+            nonce,
+            expiry,
+          },
+          signature,
+        ],
+      });
+    } catch (e) {
+      console.error("[mint-pet-auth] Relay submit failed:", e);
+      await refund("relay submit failed");
+      const msg = e instanceof Error ? e.message : String(e);
+      // Surface insufficient-funds clearly so ops can refill the relayer wallet
+      const isFunding = /insufficient funds|gas required exceeds/i.test(msg);
+      return json(
+        { error: isFunding ? "Relayer out of gas — contact admin" : "Mint relay failed" },
+        isFunding ? 503 : 500,
+      );
+    }
+  }
+
+  // 9. Return — adds tx_hash when relayed; v2 clients ignore unknown fields.
   return json({
     auth: {
       to:      wallet_address,
@@ -193,6 +257,8 @@ Deno.serve(async (req: Request) => {
     cost_paid: MINT_COST_TOKENS,
     chain_id:  CHAIN_ID,
     contract:  contractAddress,
+    relayed:   wantsRelay,
+    ...(txHash ? { tx_hash: txHash } : {}),
   }, 200);
 });
 

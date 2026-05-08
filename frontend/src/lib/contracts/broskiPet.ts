@@ -99,4 +99,8 @@ export type MintPetAuthResponse = {
   cost_paid: number
   chain_id: number
   contract: `0x${string}`
+  /** True when the Edge Function relayed the on-chain tx itself (Path A gas sponsorship). */
+  relayed?: boolean
+  /** Present only when `relayed` is true. The hash of the submitted mintWithAuth tx. */
+  tx_hash?: `0x${string}`
 }

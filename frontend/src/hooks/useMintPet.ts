@@ -1,13 +1,19 @@
 // useMintPet — orchestrates the BROskiPet mint flow.
 //
-// Two-step transaction:
-//   1. Call the `mint-pet-auth` Edge Function — it deducts BROski$, issues
-//      a single-use nonce, and signs an EIP-712 MintAuth.
-//   2. Submit `mintWithAuth(auth, signature)` from the user's wallet.
+// Two modes:
+//   A) Wallet-signed (default — VITE_MINT_VIA_RELAY unset/false):
+//        1. POST /mint-pet-auth — Edge Function deducts BROski$, issues nonce,
+//           signs an EIP-712 MintAuth.
+//        2. User submits mintWithAuth(auth, signature) — pays gas.
 //
-// The Edge Function is the trust boundary. Anything it returns is already
-// authorized — the on-chain contract verifies the signature came from a
-// wallet holding BACKEND_SIGNER_ROLE.
+//   B) Backend-relayed (VITE_MINT_VIA_RELAY=true):
+//        1. POST /mint-pet-auth with { relay: true } — Edge Function deducts
+//           BROski$, signs the auth, AND submits the on-chain tx itself.
+//           User's wallet is never asked to sign a tx (no gas needed).
+//        2. Hook receives tx_hash directly from the response.
+//
+// The Edge Function is the trust boundary. Anything it signs is treated as
+// authorized by the contract, which verifies BACKEND_SIGNER_ROLE.
 
 import { useCallback, useMemo, useState } from 'react'
 import { useAccount, useChainId, useSwitchChain, useWriteContract } from 'wagmi'
@@ -21,7 +27,8 @@ import {
 } from '../lib/contracts/broskiPet'
 import { supabase } from '../lib/supabase'
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
+const MINT_VIA_RELAY  = String(import.meta.env.VITE_MINT_VIA_RELAY ?? '').toLowerCase() === 'true'
 
 type MintPetParams = {
   /** Display name supplied by the user. Must match the metadata JSON. */
@@ -77,8 +84,10 @@ export function useMintPet() {
         setError(err); setState('error'); throw err
       }
 
-      // Auto-switch to the BROskiPet chain if the wallet is on the wrong network.
-      if (currentChainId !== BROSKIPET_CHAIN_ID) {
+      // Auto-switch to the BROskiPet chain — only relevant when the user has
+      // to sign the tx themselves (mode A). In relay mode the user never
+      // submits anything on-chain, so chain switching is a no-op.
+      if (!MINT_VIA_RELAY && currentChainId !== BROSKIPET_CHAIN_ID) {
         try {
           await switchChainAsync({ chainId: BROSKIPET_CHAIN_ID })
         } catch (cause) {
@@ -111,6 +120,7 @@ export function useMintPet() {
           wallet_address: address,
           ipfs_cid: ipfsCid,
           pet_name: petName,
+          relay: MINT_VIA_RELAY,
         }),
       })
 
@@ -143,7 +153,22 @@ export function useMintPet() {
         setError(err); setState('error'); throw err
       }
 
-      // ── 2. Send the on-chain transaction ──────────────────────────────────
+      // ── 2. On-chain submit ────────────────────────────────────────────────
+      // Mode B (relayed): backend already submitted the tx. Use its hash.
+      if (MINT_VIA_RELAY) {
+        if (!payload.tx_hash) {
+          const err: MintPetError = {
+            code: 'auth-failed',
+            message: 'Relay mode requested but backend did not return a tx hash. Check Edge Function config.',
+          }
+          setError(err); setState('error'); throw err
+        }
+        setTxHash(payload.tx_hash)
+        setState('mining')
+        return { hash: payload.tx_hash, costPaid: payload.cost_paid }
+      }
+
+      // Mode A (wallet-signed): user submits the tx themselves and pays gas.
       setState('awaiting-signature')
 
       try {
