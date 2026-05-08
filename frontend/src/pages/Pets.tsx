@@ -18,6 +18,7 @@ import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
 import { PetCard } from '../components/pets/PetCard'
 import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
+import { PetSquadRow } from '../components/pets/PetSquadRow'
 import { useMyPets } from '../hooks/useMyPets'
 import {
   RARITIES,
@@ -181,6 +182,60 @@ export default function Pets() {
           Evolution path
         </h2>
         <EvolutionTimeline />
+      </section>
+
+      {/* Section 5 — Top evolvers across the squad (public squad row) */}
+      <section aria-labelledby="top-evolvers" className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="top-evolvers" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+            Top evolvers
+          </h2>
+          <p className="text-[11px] text-hfz-text-secondary">
+            Most-evolved BROskiPets across the squad
+          </p>
+        </div>
+        <PetSquadRow />
+      </section>
+
+      {/* Section 6 — How XP feeds your pet (3-column education) */}
+      <section aria-labelledby="how-xp" className="flex flex-col gap-3">
+        <h2 id="how-xp" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+          How XP feeds your pet
+        </h2>
+        <HVZCard>
+          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <li className="flex flex-col gap-1.5">
+              <span className="text-2xl leading-none" aria-hidden>🎯</span>
+              <p className="text-sm font-bold text-hfz-text-primary">
+                1. Earn XP
+              </p>
+              <p className="text-xs text-hfz-text-secondary leading-relaxed">
+                Quests, course modules, and rift events drop XP into your HUD.
+                Daily logins keep your streak alive.
+              </p>
+            </li>
+            <li className="flex flex-col gap-1.5">
+              <span className="text-2xl leading-none" aria-hidden>📈</span>
+              <p className="text-sm font-bold text-hfz-text-primary">
+                2. Pet evolves
+              </p>
+              <p className="text-xs text-hfz-text-secondary leading-relaxed">
+                Hit a stage threshold and your pet automatically levels up:
+                Baby → Learner → Builder → Shipper → HyperFocus God → Legend.
+              </p>
+            </li>
+            <li className="flex flex-col gap-1.5">
+              <span className="text-2xl leading-none" aria-hidden>🏆</span>
+              <p className="text-sm font-bold text-hfz-text-primary">
+                3. Bigger rewards
+              </p>
+              <p className="text-xs text-hfz-text-secondary leading-relaxed">
+                Higher-stage pets unlock squad clout, future drops, and
+                multiplied BROski$ on quests. Legend = forever bragging rights.
+              </p>
+            </li>
+          </ol>
+        </HVZCard>
       </section>
     </div>
   )
