@@ -17,6 +17,7 @@ import { HVZCard, HVZButton } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
 import { PetCard } from '../components/pets/PetCard'
+import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { useMyPets } from '../hooks/useMyPets'
 import {
   RARITIES,
@@ -173,6 +174,14 @@ export default function Pets() {
           </HVZCard>
         </section>
       )}
+
+      {/* Section 4 — Evolution Path (always visible, educational) */}
+      <section aria-labelledby="evolution-path" className="flex flex-col gap-3">
+        <h2 id="evolution-path" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+          Evolution path
+        </h2>
+        <EvolutionTimeline />
+      </section>
     </div>
   )
 }
