@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: May 8, 2026 — Phase 2A SHIPPED: pet collection persistence + Edge Fn v4 deployed 🔥**
+> **Last updated: May 9, 2026 — Phase 2B + 2C + 2D + 2A.5 SHIPPED: full /pets UX + wallet-signed persistence 🔥**
 > **Single source of truth for the sprint = `HYPER_ECOSYSTEM_PLAN_MAY4.md` Section B**
 
 ---
@@ -59,11 +59,40 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 
 ---
 
-## ✅ CURRENT STATUS (May 8, 2026)
+## ✅ CURRENT STATUS (May 9, 2026)
 
-> 🟢 48 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE + BROSKIPETS WEB3 MINT LIVE + PET COLLECTION PERSISTENCE LIVE 🦅🔥
+> 🟢 48 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE + BROSKIPETS WEB3 MINT LIVE + PET COLLECTION PERSISTENCE LIVE + PHASE 2B/2C/2D/2A.5 SHIPPED 🦅🔥
 
-### What went live TODAY (May 8) — Phase 2A: Persistent Pet Collection
+### What went live TODAY (May 9) — Phase 2B + 2C + 2D + 2A.5
+
+**Phase 2B — Evolution Timeline (Section 4)**
+- ✅ `frontend/src/components/pets/EvolutionTimeline.tsx` — 6-stage grid (2/3/6 cols), violet glow current, gold border legend, mint ✓ unlocked, dimmed locked
+- ✅ Section 4 wired below mint flow in `Pets.tsx` — always visible, educational
+- ✅ Reads XP from `useHUD()` (Option A — 1 user XP, all pets share)
+
+**Phase 2C — Squad row + How XP feeds your pet (Sections 5 + 6)**
+- ✅ `frontend/src/hooks/useTopPets.ts` — anon-readable `top_pets` view, column-restricted (no wallet/user leakage)
+- ✅ `frontend/src/components/pets/PetSquadRow.tsx` — horizontal snap on mobile, 4-col grid on `lg`, defensively filters unknown species
+- ✅ Section 5 (Top evolvers) + Section 6 (How XP feeds your pet — 🎯 → 📈 → 🏆) wired in `Pets.tsx`
+
+**Phase 2D — Polish pass (after `design-brain` audit, score 7→8.5/10)**
+- ✅ `frontend/src/components/pets/PetCardSkeleton.tsx` — full + mini, shape-matched, shimmer sweep
+- ✅ 3× `motion-safe:animate-pulse` on static elements → `motion-safe:animate-border-pulse` (PetCard image, XPBar evolving ring, EvolutionTimeline current tile)
+- ✅ `freshMint` prop on PetCard + one-shot gold-sweep keyframe → just-minted celebration moment
+- ✅ Empty state for Section 0 — 🐣 "No pets yet — your first companion lands here"
+- ✅ Pet name `font-bold` → `text-lg font-bold tracking-tight` + PetCard mini `padding={16}`
+- ✅ Stagger entrance — `motion-safe:animate-fade-in-up` on collection (capped 6) + Timeline tiles + Squad skeletons
+- ✅ Tailwind keyframes added: `shimmer`, `goldSweep`, `fadeInUp`
+
+**Phase 2A.5 — Wallet-signed mint persistence**
+- ✅ `supabase/functions/mint-pet-confirm/index.ts` — verifies receipt server-side via Base RPC, idempotent INSERT into `pets`
+- ✅ 3-layer verification: status===success + tx.to===contract + decoded `PetMinted` event with matching `petId` AND `owner===wallet_address`
+- ✅ `useMintPet` extended with `confirmMint(txHash)` — stashes mint context in a ref, no-ops in relay mode
+- ✅ `MintPetButton` wired — fires `confirmMint` before `onMinted` on receipt confirm, with 1.2s retry on `425 Too Early` (RPC lag)
+- ✅ Closes the relay-only persistence gap — wallet-signed mints now persist too
+- ⏳ **Needs deploy:** `supabase functions deploy mint-pet-confirm`
+
+### What went live yesterday (May 8) — Phase 2A: Persistent Pet Collection
 - ✅ **`pets` table + RLS + `top_pets` view** — migration `20260508120000_broskipets_persistence` applied
 - ✅ **`mint-pet-auth` Edge Fn v4 DEPLOYED** — accepts `species_id` + `rarity`, INSERTs row to `pets` after relay tx
 - ✅ **`useMyPets` hook** — `frontend/src/hooks/useMyPets.ts` — RLS-safe fetch + refetch
@@ -140,12 +169,16 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 | Dead asset cleanup | Phantom preload + unused `hero.webp` removed | ✅ DONE — May 5 PM |
 | **BROskiPets Web3 Mint** | RainbowKit + wagmi + Base Sepolia + mint UI | ✅ **LIVE — May 7** 🔥 |
 | **BROskiPets Phase 2A** | `pets` table + Edge Fn v4 + `useMyPets` + `PetCard` persistent collection | ✅ **LIVE — May 8** 🔥 (gated on `VITE_MINT_VIA_RELAY=true`) |
+| **BROskiPets Phase 2B** | `EvolutionTimeline` Section 4 + 6-stage grid + current highlight | ✅ **LIVE — May 9** 🔥 |
+| **BROskiPets Phase 2C** | `PetSquadRow` + Section 5/6 + `useTopPets` + how-XP-feeds-pet | ✅ **LIVE — May 9** 🔥 |
+| **BROskiPets Phase 2D** | Polish pass: skeletons, gold sweep, border-pulse, empty state, fade-in-up | ✅ **LIVE — May 9** 🔥 |
+| **BROskiPets Phase 2A.5** | `mint-pet-confirm` Edge Fn — wallet-signed persistence (relay-mode parity) | ✅ **CODE LIVE — May 9** 🔥 (needs `supabase functions deploy mint-pet-confirm`) |
 
 ---
 
-## 🐾 BROskiPets Web3 — Full Detail (May 8, 2026)
+## 🐾 BROskiPets Web3 — Full Detail (May 9, 2026)
 
-> Claude: **The Web3 mint stack + persistent collection are LIVE. Do NOT suggest rebuilding any part of it.**
+> Claude: **The Web3 mint stack + persistent collection + Phase 2 UX are LIVE. Do NOT suggest rebuilding any part of it.**
 
 ### What's built
 | File / Feature | Status | Notes |
@@ -154,20 +187,25 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 | `@tanstack/react-query` | ✅ LIVE May 7 | Required by wagmi |
 | Base Sepolia testnet config | ✅ LIVE May 7 | Test minting live |
 | Base mainnet config | ✅ LIVE May 7 | Production ready |
-| `useMintPet` hook | ✅ LIVE May 7 (updated May 8) | Two modes: wallet-signed + relay |
+| `useMintPet` hook | ✅ LIVE May 7 (updated May 8 + 9) | Two modes + `confirmMint` for 2A.5 |
 | Edge Fn: mint auth v4 | ✅ DEPLOYED May 8 | Auth + sign + relay + INSERT pets row |
+| **Edge Fn: mint-pet-confirm** | ✅ **CODE READY May 9** | Wallet-signed persistence — needs deploy |
 | Edge Fn: pet balance | ✅ LIVE May 7 | Checks BROski$ before mint |
 | DB migration: `mint_nonces` | ✅ LIVE May 7 | Replay protection |
 | DB migration: pet ID sequence | ✅ LIVE May 7 | Sequential pet IDs |
-| **DB migration: `pets` + `top_pets` view** | ✅ **LIVE May 8** | Persistent collection cache |
+| DB migration: `pets` + `top_pets` view | ✅ LIVE May 8 | Persistent collection cache |
 | CSP headers update | ✅ LIVE May 7 | WalletConnect + RPC endpoints allowed |
 | 10 species images + catalogue | ✅ LIVE May 7 | Metadata per species + Pinata CIDs |
 | `SpeciesPicker` component | ✅ LIVE May 7 | Visual picker UI |
-| `MintPetButton` component | ✅ LIVE May 7 (updated May 8) | Forwards species_id + rarity |
-| Pets page (3-step UI + Section 0) | ✅ LIVE May 7 (extended May 8) | Collection above mint flow |
-| **`PetCard` + `XPBar` + `MoodBadge`** | ✅ **LIVE May 8** | Reusable hvz-styled |
-| **`useMyPets` hook** | ✅ **LIVE May 8** | RLS-safe collection fetch |
-| **`lib/evolution.ts`** | ✅ **LIVE May 8** | 6 stages, progress helpers |
+| `MintPetButton` component | ✅ LIVE May 7 (updated May 8 + 9) | confirmMint wired before onMinted |
+| Pets page (Sections 0 → 6) | ✅ LIVE May 7 (extended May 8 + 9) | Full Phase 2 UX |
+| `PetCard` + `XPBar` + `MoodBadge` | ✅ LIVE May 8 (polished May 9) | hvz-styled, freshMint sweep, border-pulse |
+| `PetCardSkeleton` | ✅ **LIVE May 9** | Shape-matched, shimmer sweep |
+| **`EvolutionTimeline`** | ✅ **LIVE May 9** | 6-stage grid Section 4 |
+| **`PetSquadRow` + `useTopPets`** | ✅ **LIVE May 9** | Public squad row Section 5 |
+| `useMyPets` hook | ✅ LIVE May 8 | RLS-safe collection fetch |
+| `lib/evolution.ts` | ✅ LIVE May 8 | 6 stages, progress helpers |
+| Tailwind keyframes (shimmer, goldSweep, fadeInUp) | ✅ **LIVE May 9** | Pure-additive, used by skeletons + freshMint + stagger |
 | Pinata dry-run scripts | ✅ LIVE May 7 | In Claude settings |
 
 ### ⚠️ Open question for V2.4
@@ -175,11 +213,11 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 - `pets` + `mint_nonces` tables are in Supabase — does V2.4 need syncing?
 - Check before building any on-chain confirmation listener.
 
-### ⚠️ Phase 2A relay-mode dependency
+### ⚠️ Phase 2A relay-mode dependency (resolved by 2A.5 once deployed)
 - v4 Edge Fn ONLY persists pets when `relay: true` was sent
 - Frontend sets `relay: true` when `VITE_MINT_VIA_RELAY=true` is set at build time
 - **If env var is missing → no pets row gets inserted** even though mints succeed on-chain
-- Phase 2A.5 follow-up: add `mint-pet-confirm` endpoint to verify wallet-signed tx receipts and INSERT after the fact
+- ✅ **Phase 2A.5 SHIPPED May 9** — `mint-pet-confirm` Edge Fn verifies wallet-signed tx receipts and INSERTs after the fact. Closes the gap. Needs `supabase functions deploy mint-pet-confirm` to go live.
 
 ### Mint flow (relay mode — Phase 2A path)
 ```
@@ -194,12 +232,20 @@ User picks species → SpeciesPicker
   → useMyPets refetch → PetCard renders → 🐾 persistent
 ```
 
-### Mint flow (wallet-signed mode — fallback)
+### Mint flow (wallet-signed mode — Phase 2A.5)
 ```
 ... (same up to Edge Fn signing)
   → Edge Fn returns signature only (no tx_hash)
   → Frontend wagmi writeContract — user pays gas + signs
-  → ⚠️ NO pets row inserted (Phase 2A.5 will handle this via mint-pet-confirm)
+  → useMintPet stashes mint context (petId, species, rarity, ipfs_cid, …) in a ref
+  → wagmi useWaitForTransactionReceipt confirms tx mined
+  → MintPetButton calls confirmMint(txHash)
+  → POST /mint-pet-confirm — server-side verifies receipt:
+      • status === 'success'
+      • tx.to === BROskiPet contract
+      • PetMinted event with matching petId + owner
+  → Edge Fn idempotently INSERTs pets row
+  → onMinted fires → Pets.tsx refetch → 🐾 persistent
 ```
 
 ---
@@ -302,27 +348,36 @@ rift_rider       = 75 XP
 
 ---
 
-## 🗺️ NEXT UP — Sprint (May 8 → May 18, 2026)
+## 🗺️ NEXT UP — Sprint (May 9 → May 18, 2026)
 
 | # | Task | Repo | Priority |
 |---|---|---|---|
 | 1 | ✅ DONE — BROskiPets Web3 Mint live (May 7) | Hyper-Vibe | ✅ |
 | 2 | ✅ DONE — Phase 2A pet persistence shipped (May 8) | Hyper-Vibe | ✅ |
-| 3 | **Set `VITE_MINT_VIA_RELAY=true` on Vercel** + fund relayer wallet with ETH | Hyper-Vibe | 🔴 NOW |
-| 4 | **BROskiPets E2E test** — mint on Base Sepolia → verify row in `pets` table → reload check | Hyper-Vibe | 🔴 NOW |
-| 5 | **`design-brain` audit** on new `PetCard` before user-facing launch | Hyper-Vibe | 🔴 This week |
-| 6 | **Stripe live E2E** — `stripe listen` + card `4242 4242 4242 4242` | Hyper-Vibe + V2.4 | 🔴 This week |
-| 7 | **Self-test full user journey** — register → quest → XP → leaderboard (incognito) | Hyper-Vibe | 🔴 This week |
-| 8 | **Decide:** make `/welcome` public? (sponsors hit `/login` from BUSINESS_PLAN) | Hyper-Vibe | 🔴 This week |
-| 9 | **First real student invite** — DM 5 people | Hyper-Vibe | 🔴 This week |
-| 10 | **Phase 2A.5** — `mint-pet-confirm` Edge Fn for wallet-signed persistence | Hyper-Vibe | 🟡 This week |
-| 11 | **Phase 2B** — Evolution Timeline + Squad row + reconciliation cron | Hyper-Vibe | 🟡 This week |
-| 12 | **V2.4 open question** — does `pets` / `mint_nonces` need a backend endpoint in V2.4? | V2.4 | 🟡 This week |
-| 13 | **SDK v0.4.0** — add Web3/dNFT types to `hyper-agent-spec.json` | HyperAgent-SDK | 🟡 This week |
-| 14 | Fix GitHub Actions billing lock | All | 🟡 This week |
-| 15 | Screenshot full quest + mint journey for launch content | Hyper-Vibe | 🟡 This week |
-| 16 | Leaked-password protection (needs Supabase Pro) | Hyper-Vibe | 🟢 Bg |
-| 17 | Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` | Hyper-Vibe | 🟢 Bg |
+| 3 | ✅ DONE — Phase 2B + 2C + 2D shipped (May 9) | Hyper-Vibe | ✅ |
+| 4 | ✅ DONE — Phase 2A.5 `mint-pet-confirm` Edge Fn coded (May 9) | Hyper-Vibe | ✅ |
+| 5 | **Deploy `mint-pet-confirm`** — `supabase functions deploy mint-pet-confirm` | Hyper-Vibe | 🔴 NOW |
+| 6 | **Set `VITE_MINT_VIA_RELAY=true` on Vercel** + fund relayer wallet with ETH | Hyper-Vibe | 🔴 NOW |
+| 7 | **BROskiPets E2E test** — mint on Base Sepolia (BOTH relay + wallet-signed) → verify rows in `pets` table → reload check | Hyper-Vibe | 🔴 NOW |
+| 8 | **Stripe live E2E** — `stripe listen` + card `4242 4242 4242 4242` | Hyper-Vibe + V2.4 | 🔴 This week |
+| 9 | **Self-test full user journey** — register → quest → XP → leaderboard (incognito) | Hyper-Vibe | 🔴 This week |
+| 10 | **Decide:** make `/welcome` public? (sponsors hit `/login` from BUSINESS_PLAN) | Hyper-Vibe | 🔴 This week |
+| 11 | **First real student invite** — DM 5 people | Hyper-Vibe | 🔴 This week |
+| 12 | **Reduced-motion full sweep** — verify all `motion-safe:` paths on a `prefers-reduced-motion` browser | Hyper-Vibe | 🟡 This week |
+| 13 | **Mobile QA at 375px** — Pets page Sections 0–6 | Hyper-Vibe | 🟡 This week |
+| 14 | **V2.4 open question** — does `pets` / `mint_nonces` need a backend endpoint in V2.4? | V2.4 | 🟡 This week |
+| 15 | **SDK v0.4.0** — add Web3/dNFT types to `hyper-agent-spec.json` | HyperAgent-SDK | 🟡 This week |
+| 16 | Fix GitHub Actions billing lock | All | 🟡 This week |
+| 17 | Screenshot full quest + mint journey for launch content | Hyper-Vibe | 🟡 This week |
+| 18 | **Phase 3** — On-chain evolve transactions + reconciliation cron | Hyper-Vibe | 🟢 Next sprint |
+| 19 | Leaked-password protection (needs Supabase Pro) | Hyper-Vibe | 🟢 Bg |
+| 20 | Move old `scripts/M*-*.md` stubs → `scripts/_old-stubs/` | Hyper-Vibe | 🟢 Bg |
+
+### 💡 Elevation Ideas (parked from `design-brain` audit, score 7→8.5/10 — pushes to 9+)
+- Asymmetric Timeline — current stage `lg:col-span-2` + connector line through unlocked tiles → grid becomes a path
+- Trading-card tilt on PetCard hover — `perspective(1000px) rotateY(2deg) rotateX(-1deg)` 250ms ease-out → holographic feel
+- #1 squad hero card — first `PetSquadRow` card spans 2 cols on `lg`, larger image, "🥇 Top evolver" tag
+- BROski$ earn micro-celebration — confetti burst + counter tween (anti-slop: token undercelebration)
 
 ---
 
@@ -351,13 +406,19 @@ Hyper-Vibe-Coding-Course/
 │       │   ├── evolution.ts     ✅ 6 stages + helpers (May 8)
 │       │   ├── wagmi.ts         ✅ Base config
 │       │   └── contracts/       ✅ broskiPet ABI
+│       ├── components/pets/
+│       │   ├── EvolutionTimeline.tsx  ✅ Section 4, 6-stage path (May 9)
+│       │   ├── PetSquadRow.tsx        ✅ Section 5, public squad row (May 9)
+│       │   └── PetCardSkeleton.tsx    ✅ Shimmer-sweep skeleton (May 9)
 │       └── pages/
-│           └── Pets.tsx         ✅ Section 0 collection + 3-step mint (May 7+8)
+│           └── Pets.tsx         ✅ Sections 0–6 (May 7+8+9)
 ├── vercel.json                  ✅ Security headers + cache rules + Web3 CSP
 ├── BUSINESS_PLAN.md             ✅ Sponsor-ready plan v1.1 (May 5, 2026)
 ├── supabase/
 │   ├── migrations/              ✅ Latest: 20260508120000_broskipets_persistence
-│   └── functions/               ✅ mint-pet-auth v4 deployed May 8
+│   └── functions/
+│       ├── mint-pet-auth/       ✅ v4 deployed May 8
+│       └── mint-pet-confirm/    ✅ Code ready May 9 — needs deploy
 ├── pets_page_deepdive_plan.md   ✅ Phase 2 master plan (rewritten May 8)
 ├── pets_phase_2a_spec.md        ✅ Phase 2A build spec (May 8)
 └── CLAUDE.md                    ← you are here
@@ -449,8 +510,9 @@ stripe trigger checkout.session.completed
 11. **Leaked password protection** — disabled, needs Supabase Pro plan
 12. **Stripe CLI in live mode only** — set `STRIPE_API_KEY=sk_test_...` before running `stripe trigger`. See `scripts/STRIPE_E2E_RUNBOOK.md`.
 13. **Web3 mint — V2.4 open question** — `pets` + `mint_nonces` are in Supabase only. Check if V2.4 needs a sync endpoint before building on-chain confirmation listener.
-14. **Phase 2A persistence is relay-mode-only** — until `VITE_MINT_VIA_RELAY=true` is on Vercel, mints succeed on-chain but no `pets` row is created. Wallet-signed mode persistence is Phase 2A.5 (`mint-pet-confirm` Edge Fn).
+14. **Phase 2A persistence is relay-mode-only** — until `VITE_MINT_VIA_RELAY=true` is on Vercel, mints succeed on-chain but no `pets` row is created. ✅ Phase 2A.5 (`mint-pet-confirm` Edge Fn) closes the wallet-signed gap — once deployed, persistence works in BOTH modes.
 15. **Edge Fn deployed v4 ≠ Supabase version 3** — Supabase increments deploy versions independently from our v-numbers. The deployed function is what we call v4 (Phase 2A); Supabase shows it as version 3 in dashboard.
+16. **Phase 2A.5 deploy required** — `mint-pet-confirm` is coded but not yet deployed. Run `supabase functions deploy mint-pet-confirm`. It reads `BROSKIPET_CONTRACT_ADDRESS` and (optionally) `MINT_RPC_URL` from the same secret pool as `mint-pet-auth`.
 
 ---
 
