@@ -150,7 +150,8 @@
       "Bash(echo \"exit=$?\")",
       "Bash(echo \"tsc=$?\")",
       "mcp__claude_ai_Vercel__get_project",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(deno check *)"
     ]
   }
 }

@@ -15,7 +15,7 @@
 // The Edge Function is the trust boundary. Anything it signs is treated as
 // authorized by the contract, which verifies BACKEND_SIGNER_ROLE.
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useAccount, useChainId, useSwitchChain, useWriteContract } from 'wagmi'
 
 import { useAuthStore } from '../context/auth'
@@ -46,11 +46,22 @@ type MintPetParams = {
 type MintPetState = 'idle' | 'authorizing' | 'awaiting-signature' | 'mining' | 'success' | 'error'
 
 export type MintPetError = {
-  code: 'not-connected' | 'wrong-chain' | 'auth-failed' | 'tx-rejected' | 'unknown'
+  code: 'not-connected' | 'wrong-chain' | 'auth-failed' | 'tx-rejected' | 'confirm-failed' | 'unknown'
   message: string
   /** HTTP status from the Edge Function, if applicable. */
   status?: number
   cause?: unknown
+}
+
+/** Captured at mintPet() time so confirmMint(txHash) can persist after the
+ *  receipt confirms in wallet-signed mode. Cleared on reset(). */
+type MintContext = {
+  petId:         string
+  petName:       string
+  speciesId:     string
+  rarity:        string
+  ipfsCid:       string
+  walletAddress: `0x${string}`
 }
 
 export function useMintPet() {
@@ -63,6 +74,8 @@ export function useMintPet() {
   const [state, setState] = useState<MintPetState>('idle')
   const [error, setError] = useState<MintPetError | null>(null)
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+  const lastContext = useRef<MintContext | null>(null)
+  const confirmedTxHashes = useRef<Set<string>>(new Set())
 
   const isContractConfigured = useMemo(
     () => Boolean(BROSKIPET_CONTRACT_ADDRESS),
@@ -148,6 +161,17 @@ export function useMintPet() {
 
       const payload = (await authResp.json()) as MintPetAuthResponse
 
+      // Stash context so confirmMint() can persist the row in wallet-signed
+      // mode once the receipt confirms.
+      lastContext.current = {
+        petId:         payload.auth.petId,
+        petName,
+        speciesId,
+        rarity,
+        ipfsCid,
+        walletAddress: address,
+      }
+
       // Sanity-check: the Edge Function must point at the same contract the
       // frontend is configured for, otherwise the signature won't verify.
       if (
@@ -217,10 +241,84 @@ export function useMintPet() {
 
   const reset = useCallback(() => {
     setState('idle'); setError(null); setTxHash(null)
+    lastContext.current = null
+    confirmedTxHashes.current.clear()
   }, [])
+
+  /**
+   * Phase 2A.5 — wallet-signed persistence.
+   *
+   * Call once a wallet-signed mintWithAuth tx confirms on-chain. Verifies the
+   * receipt server-side and INSERTs into public.pets. Idempotent: safe to call
+   * with the same hash twice. No-op in relay mode (mint-pet-auth already
+   * persisted).
+   */
+  const confirmMint = useCallback(
+    async (confirmedHash: `0x${string}`) => {
+      if (MINT_VIA_RELAY) {
+        // Relay mode persists inside mint-pet-auth — nothing to do here.
+        return { persisted: true, alreadyByRelay: true as const }
+      }
+      if (confirmedTxHashes.current.has(confirmedHash)) {
+        return { persisted: true, alreadyByConfirm: true as const }
+      }
+      const ctx = lastContext.current
+      if (!ctx) {
+        return { persisted: false, reason: 'no-context' as const }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
+      if (!accessToken) {
+        return { persisted: false, reason: 'no-session' as const }
+      }
+
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/mint-pet-confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          tx_hash:        confirmedHash,
+          pet_id:         ctx.petId,
+          wallet_address: ctx.walletAddress,
+          species_id:     ctx.speciesId,
+          rarity:         ctx.rarity,
+          pet_name:       ctx.petName,
+          ipfs_cid:       ctx.ipfsCid,
+        }),
+      })
+
+      if (resp.ok) {
+        confirmedTxHashes.current.add(confirmedHash)
+        return { persisted: true } as const
+      }
+
+      // 425 Too Early — receipt not mined yet. Caller should retry shortly.
+      if (resp.status === 425) {
+        return { persisted: false, reason: 'too-early' as const }
+      }
+
+      let message = `Confirm failed (${resp.status})`
+      try {
+        const body = (await resp.json()) as { error?: string }
+        if (body.error) message = body.error
+      } catch { /* keep default */ }
+      const err: MintPetError = {
+        code: 'confirm-failed',
+        message,
+        status: resp.status,
+      }
+      setError(err)
+      return { persisted: false, reason: 'failed' as const, error: err }
+    },
+    [],
+  )
 
   return {
     mintPet,
+    confirmMint,
     reset,
     state,
     error,

@@ -41,7 +41,7 @@ const STEP_TRAIL: StepLabel[] = [
 
 export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   const { isConnected, address } = useAccount()
-  const { mintPet, state, error, txHash, isReady, reset } = useMintPet()
+  const { mintPet, confirmMint, state, error, txHash, isReady, reset } = useMintPet()
 
   // Wait for on-chain receipt — flips to confirmed once mined.
   const {
@@ -78,12 +78,35 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
     // re-fetch on connect + when a mint goes through state transitions
   }, [address, state])
 
-  // Fire onMinted exactly once when receipt confirms.
+  // Fire confirmMint once the receipt confirms (Phase 2A.5 — wallet-signed
+  // persistence). Then fire onMinted so Pets.tsx refetches a collection that
+  // already has the row in it. Relay mode short-circuits inside confirmMint.
+  // We only retry once on "too-early" (RPC lag between wagmi receipt and our
+  // server-side getTransactionReceipt) — Pets.tsx already does a follow-up
+  // refetch 1.5s later that catches the rest.
   useEffect(() => {
-    if (receiptConfirmed && txHash) {
-      onMinted?.({ txHash, petName, species: species.id })
+    if (!(receiptConfirmed && txHash)) return
+    let cancelled = false
+
+    const persistThenNotify = async () => {
+      try {
+        const result = await confirmMint(txHash)
+        if (!cancelled && !result.persisted && 'reason' in result && result.reason === 'too-early') {
+          await new Promise((r) => setTimeout(r, 1200))
+          if (!cancelled) await confirmMint(txHash)
+        }
+      } catch {
+        // Persistence failure is non-fatal for the user — the on-chain mint
+        // succeeded and Pets.tsx's belt-and-braces refetch + future
+        // reconciliation job will pick it up.
+      } finally {
+        if (!cancelled) onMinted?.({ txHash, petName, species: species.id })
+      }
     }
-  }, [receiptConfirmed, txHash, onMinted, petName, species.id])
+
+    void persistThenNotify()
+    return () => { cancelled = true }
+  }, [receiptConfirmed, txHash, confirmMint, onMinted, petName, species.id])
 
   const cidIsReal     = isRealCid(species.babyMetadataCid)
   const canAfford     = (balance ?? 0) >= MINT_COST
