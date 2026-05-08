@@ -1,8 +1,19 @@
 // supabase/functions/mint-pet-auth/index.ts
 //
-// v3 — Path A gas sponsorship: optional backend relay.
+// v4 — Phase 2A persistence: writes the pet row to public.pets after a
+// successful relay mint so the UI can show the user's collection on reload.
 //
-// What v3 adds vs v2:
+// What v4 adds vs v3:
+//   - Accepts optional `species_id` + `rarity` in the request body. Validated
+//     server-side against the canonical 10-species list and 4-rarity list.
+//   - After a successful relay tx, INSERTs into public.pets. Failures are
+//     logged but do NOT refund — the on-chain tx already succeeded, and a
+//     reconciliation job (Phase 2B) can backfill from PetMinted events.
+//   - Wallet-signed mode (relay !== true) does NOT insert here. Phase 2A.5
+//     will introduce a `mint-pet-confirm` endpoint that verifies the user's
+//     tx receipt before inserting.
+//
+// What v3 added vs v2:
 //   - Optional `relay: true` flag in request body. When set, the Edge Function
 //     submits the mintWithAuth tx itself instead of returning the signature
 //     for the user to broadcast. Users no longer need ETH to mint.
@@ -39,6 +50,15 @@ const SIG_EXPIRY_SECONDS  = 300;          // 5-minute signature window
 const CHAIN_ID            = 84532;        // Base Sepolia. Mainnet = 8453.
 const DOMAIN_NAME         = "BROskiPet";
 const DOMAIN_VERSION      = "1";
+
+// Mirror of frontend/src/lib/species.ts — kept in lockstep manually. If a new
+// species is added there, add it here too or the Edge Fn will reject mints.
+const VALID_SPECIES = new Set([
+  "apex_dragon", "blizzard_lizard", "chaos_cat", "cyber_fox",
+  "gigabyte_guinea_pig", "hyper_beam_bunny", "hyper_hamster",
+  "hyperfocus_horse", "power_pup", "sonic_spider",
+]);
+const VALID_RARITIES = new Set(["common", "uncommon", "rare", "legendary"]);
 
 const EIP712_TYPES = {
   MintAuth: [
@@ -82,10 +102,17 @@ Deno.serve(async (req: Request) => {
   if (userErr || !user) return json({ error: "Unauthorized" }, 401);
 
   // 2. Parse + validate body
-  let body: { wallet_address?: string; ipfs_cid?: string; pet_name?: string; relay?: boolean };
+  let body: {
+    wallet_address?: string;
+    ipfs_cid?:       string;
+    pet_name?:       string;
+    relay?:          boolean;
+    species_id?:     string;
+    rarity?:         string;
+  };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
-  const { wallet_address, ipfs_cid, pet_name, relay } = body;
+  const { wallet_address, ipfs_cid, pet_name, relay, species_id, rarity } = body;
   const wantsRelay = relay === true;
   if (!wallet_address || !ipfs_cid) {
     return json({ error: "wallet_address and ipfs_cid are required" }, 400);
@@ -96,6 +123,24 @@ Deno.serve(async (req: Request) => {
   if (typeof ipfs_cid !== "string" || ipfs_cid.length < 10 || ipfs_cid.length > 100) {
     return json({ error: "Invalid IPFS CID" }, 400);
   }
+
+  // Optional fields — required for the post-mint pets row in relay mode.
+  // We don't hard-fail on missing values for older clients; we just skip the
+  // INSERT and log so the operator can see it. New clients should always
+  // send these.
+  const speciesValid = typeof species_id === "string" && VALID_SPECIES.has(species_id);
+  const rarityValid  = typeof rarity     === "string" && VALID_RARITIES.has(rarity);
+  if (species_id && !speciesValid) {
+    return json({ error: "Invalid species_id" }, 400);
+  }
+  if (rarity && !rarityValid) {
+    return json({ error: "Invalid rarity" }, 400);
+  }
+  // Names must fit the public.pets CHECK constraint.
+  const safePetName =
+    typeof pet_name === "string" && pet_name.trim().length >= 1 && pet_name.trim().length <= 32
+      ? pet_name.trim()
+      : null;
 
   // 3. Secrets check
   const signerKeyRaw     = Deno.env.get("BACKEND_SIGNER_PRIVATE_KEY");
@@ -240,6 +285,40 @@ Deno.serve(async (req: Request) => {
       return json(
         { error: isFunding ? "Relayer out of gas — contact admin" : "Mint relay failed" },
         isFunding ? 503 : 500,
+      );
+    }
+
+    // ── 8b. Persist the pet row ──────────────────────────────────────────────
+    // Only runs in relay mode (we have full trust in the tx because we
+    // submitted it). Wallet-signed mode handles persistence in a future
+    // mint-pet-confirm endpoint that verifies the user's tx receipt.
+    //
+    // Failure here does NOT refund — the tx is already on-chain. A
+    // reconciliation job (Phase 2B) can backfill from PetMinted events.
+    if (txHash && speciesValid && rarityValid && safePetName) {
+      const { error: petInsertErr } = await adminClient
+        .from("pets")
+        .insert({
+          user_id:        user.id,
+          wallet_address: wallet_address,
+          pet_id:         petId,
+          species_id:     species_id,
+          pet_name:       safePetName,
+          rarity:         rarity,
+          mint_tx_hash:   txHash,
+          ipfs_cid:       ipfs_cid,
+          chain_id:       CHAIN_ID,
+        });
+      if (petInsertErr) {
+        console.error(
+          `[mint-pet-auth] pets INSERT failed (tx ${txHash} succeeded — needs backfill):`,
+          petInsertErr,
+        );
+      }
+    } else if (txHash) {
+      console.warn(
+        `[mint-pet-auth] Skipping pets INSERT for tx ${txHash} — missing species_id/rarity/pet_name. ` +
+        `Update the client to send these fields. petId=${petId}`,
       );
     }
   }

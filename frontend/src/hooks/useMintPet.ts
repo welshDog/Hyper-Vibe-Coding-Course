@@ -35,6 +35,12 @@ type MintPetParams = {
   petName: string
   /** IPFS CID of the rendered Baby-stage metadata. Backend validates length. */
   ipfsCid: string
+  /** Species id (matches lib/species.ts SpeciesId). Used by the Edge Fn to
+   *  populate the pets row in relay mode. */
+  speciesId: string
+  /** Rarity tier (common | uncommon | rare | legendary). Used by the Edge Fn
+   *  to populate the pets row in relay mode. */
+  rarity: string
 }
 
 type MintPetState = 'idle' | 'authorizing' | 'awaiting-signature' | 'mining' | 'success' | 'error'
@@ -64,7 +70,7 @@ export function useMintPet() {
   )
 
   const mintPet = useCallback(
-    async ({ petName, ipfsCid }: MintPetParams) => {
+    async ({ petName, ipfsCid, speciesId, rarity }: MintPetParams) => {
       setError(null)
       setTxHash(null)
 
@@ -118,9 +124,11 @@ export function useMintPet() {
         },
         body: JSON.stringify({
           wallet_address: address,
-          ipfs_cid: ipfsCid,
-          pet_name: petName,
-          relay: MINT_VIA_RELAY,
+          ipfs_cid:       ipfsCid,
+          pet_name:       petName,
+          species_id:     speciesId,
+          rarity,
+          relay:          MINT_VIA_RELAY,
         }),
       })
 

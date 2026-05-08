@@ -1,18 +1,23 @@
-// /pets — BROskiPet minting page.
+// /pets — BROskiPet collection + minting page.
 //
-// Three-step flow:
+// Section 0 (top): your persistent pet collection — comes from public.pets
+// via useMyPets, populated by mint-pet-auth Edge Fn after a successful relay
+// mint. Reloads survive.
+//
+// Steps 1–3: the live mint flow (unchanged from May 7 ship).
 //   1. Pick a species (SpeciesPicker)
 //   2. Name your pet + choose rarity
 //   3. Mint (MintPetButton — handles wallet connect, balance gate, on-chain tx)
 //
-// `mintedPets` keeps a session-local list of just-minted pets. A future
-// version should hydrate this from on-chain `PetMinted` events keyed by
-// the connected wallet so the user sees their full collection.
+// After a mint confirms we refetch useMyPets — Edge Fn INSERT may take a
+// beat to land, so we retry once with a small delay.
 
-import { useState } from 'react'
-import { HVZCard, HVZTag, HVZButton } from '../components/ui/hvz'
+import { useEffect, useState } from 'react'
+import { HVZCard, HVZButton } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
+import { PetCard } from '../components/pets/PetCard'
+import { useMyPets } from '../hooks/useMyPets'
 import {
   RARITIES,
   RARITY_LABELS,
@@ -22,30 +27,33 @@ import {
   type SpeciesId,
 } from '../lib/species'
 
-type MintedPet = {
-  txHash:    `0x${string}`
-  petName:   string
-  speciesId: SpeciesId
-  rarity:    Rarity
-  mintedAt:  number
-}
-
 export default function Pets() {
   const [speciesId, setSpeciesId] = useState<SpeciesId | null>(null)
   const [petName,   setPetName]   = useState('')
   const [rarity,    setRarity]    = useState<Rarity>('common')
-  const [minted,    setMinted]    = useState<MintedPet[]>([])
+  const [justMintedTx, setJustMintedTx] = useState<`0x${string}` | null>(null)
 
+  const { pets, loading: petsLoading, error: petsError, refetch } = useMyPets()
   const species = speciesId ? getSpecies(speciesId) : null
 
-  const handleMinted = ({ txHash, petName, species: id }: { txHash: `0x${string}`; petName: string; species: string }) => {
-    setMinted((prev) => [
-      { txHash, petName, speciesId: id as SpeciesId, rarity, mintedAt: Date.now() },
-      ...prev,
-    ])
+  const handleMinted = ({ txHash }: { txHash: `0x${string}`; petName: string; species: string }) => {
+    setJustMintedTx(txHash)
     setPetName('')
     setSpeciesId(null)
+    // Edge Fn INSERT may not have landed yet — refetch now and again shortly.
+    void refetch()
   }
+
+  // Belt-and-braces refetch in case the Edge Fn INSERT trails the on-chain
+  // confirmation. The "syncing" UI below derives from the same predicate, so
+  // we don't need to clear justMintedTx — it just stays at the most recent
+  // tx and gets overwritten by the next mint.
+  const awaitingSync = justMintedTx !== null && !pets.some((p) => p.mint_tx_hash === justMintedTx)
+  useEffect(() => {
+    if (!awaitingSync) return
+    const timer = setTimeout(() => { void refetch() }, 1500)
+    return () => clearTimeout(timer)
+  }, [awaitingSync, refetch])
 
   return (
     <div className="mx-auto max-w-hfz-page px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
@@ -58,10 +66,44 @@ export default function Pets() {
         </p>
       </header>
 
+      {/* Section 0 — Your Pets (persistent collection) */}
+      {(pets.length > 0 || petsLoading) && (
+        <section aria-labelledby="my-pets" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 id="my-pets" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+              {petsLoading && pets.length === 0 ? 'Loading your pets…' : `Your pets (${pets.length})`}
+            </h2>
+            {awaitingSync && (
+              <span className="text-[11px] text-hfz-text-secondary animate-pulse">
+                Syncing fresh mint…
+              </span>
+            )}
+          </div>
+          {petsError ? (
+            <HVZCard>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-red-300">Couldn’t load your pets: {petsError.message}</p>
+                <HVZButton variant="ghost" size="sm" onClick={() => { void refetch() }}>
+                  Retry
+                </HVZButton>
+              </div>
+            </HVZCard>
+          ) : (
+            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {pets.map((p) => (
+                <li key={p.id}>
+                  <PetCard pet={p} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       {/* Step 1 — pick species */}
       <section aria-labelledby="step1" className="flex flex-col gap-3">
         <h2 id="step1" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-          Step 1 — Pick a species ({SPECIES.length} available)
+          {pets.length > 0 ? 'Mint another' : `Step 1 — Pick a species (${SPECIES.length} available)`}
         </h2>
         <HVZCard>
           <SpeciesPicker selected={speciesId} onSelect={setSpeciesId} />
@@ -129,35 +171,6 @@ export default function Pets() {
               onMinted={handleMinted}
             />
           </HVZCard>
-        </section>
-      )}
-
-      {/* Just-minted collection */}
-      {minted.length > 0 && (
-        <section aria-labelledby="minted" className="flex flex-col gap-3">
-          <h2 id="minted" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-            Your fresh mints this session
-          </h2>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {minted.map((m) => {
-              const sp = getSpecies(m.speciesId)
-              return (
-                <HVZCard key={m.txHash} as="li">
-                  <div className="flex items-center gap-3">
-                    <img src={sp.imageUrl} alt="" className="h-14 w-14 rounded-hfz-sm object-cover" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-hfz-text-primary truncate">{m.petName}</p>
-                      <p className="text-xs text-hfz-text-secondary">{sp.displayName}</p>
-                      <div className="mt-1 flex items-center gap-1.5">
-                        <HVZTag color="violet">{m.rarity}</HVZTag>
-                        <HVZTag color="cyan">Baby</HVZTag>
-                      </div>
-                    </div>
-                  </div>
-                </HVZCard>
-              )
-            })}
-          </ul>
         </section>
       )}
     </div>

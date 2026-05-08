@@ -142,7 +142,12 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
         variant="primary"
         size="lg"
         fullWidth
-        onClick={() => mintPet({ petName: petName.trim(), ipfsCid: species.babyMetadataCid })}
+        onClick={() => mintPet({
+          petName:   petName.trim(),
+          ipfsCid:   species.babyMetadataCid,
+          speciesId: species.id,
+          rarity,
+        })}
         disabled={!isReady || !canAfford || !cidIsReal || !nameValid || isWorking || isDone}
       >
         {!nameValid       ? 'Enter a pet name'
