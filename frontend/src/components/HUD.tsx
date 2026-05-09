@@ -42,9 +42,9 @@ export function HUD() {
           {/* Token Balance */}
           <div
             className={[
-              'flex items-center gap-1.5 bg-yellow-500/10 border rounded-full px-3 py-1 transition-all duration-500',
+              'flex items-center gap-1.5 bg-yellow-500/10 border rounded-full px-3 py-1 motion-safe:transition-all motion-safe:duration-500',
               isEarning
-                ? 'border-yellow-400 shadow-hfz-glow-gold scale-105'
+                ? 'border-yellow-400 shadow-hfz-glow-gold motion-safe:scale-105'
                 : 'border-yellow-500/30',
             ].join(' ')}
           >

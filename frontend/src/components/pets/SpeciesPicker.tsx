@@ -50,7 +50,7 @@ function SpeciesCard({
       aria-label={`Choose ${species.displayName}`}
       className={`
         group relative flex flex-col items-center gap-2 p-3 rounded-hfz-md
-        border transition-all duration-hfz-fast text-left
+        border motion-safe:transition-all motion-safe:duration-hfz-fast text-left
         ${isSelected
           ? 'border-hfz-violet-light bg-hfz-violet/15 ring-2 ring-hfz-violet-light shadow-[0_0_24px_rgba(167,139,250,0.4)]'
           : 'border-hfz-border-violet bg-hfz-space-black/60 hover:border-hfz-violet-light hover:bg-hfz-violet/10'}
@@ -66,7 +66,7 @@ function SpeciesCard({
             alt=""
             loading="lazy"
             onError={() => setImgFailed(true)}
-            className="h-full w-full object-cover transition-transform duration-hfz-base group-hover:scale-105"
+            className="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-hfz-base motion-safe:group-hover:scale-105"
           />
         )}
       </div>

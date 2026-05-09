@@ -60,8 +60,13 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
 }
 
 export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false }: Props) {
+  // ⚠️  All hooks declared up top — Rules of Hooks. Even though `tilt` only
+  // matters for the full variant, useState/usePrefersReducedMotion must be
+  // called on every render regardless of `size`.
   const species = getSpecies(pet.species_id)
   const hud = useHUD()
+  const reduceMotion = usePrefersReducedMotion()
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50, active: false })
   const xp = xpOverride ?? hud?.xp ?? 0
   const stageInfo = STAGE_BY_KEY[pet.stage]
   const isLegend = pet.stage === 'legend'
@@ -96,9 +101,6 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
   }
 
   // Full size — hero card on the Pets page.
-  const reduceMotion = usePrefersReducedMotion()
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50, active: false })
-
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (reduceMotion) return
     const r = e.currentTarget.getBoundingClientRect()

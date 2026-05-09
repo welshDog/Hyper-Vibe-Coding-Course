@@ -13,8 +13,9 @@ export function useCounterTween(target: number, durationMs: number = 600): numbe
   const fromRef = useRef<number>(target)
 
   useEffect(() => {
+    // Reduce-motion: keep our anchor in sync but don't tween or call
+    // setState. The component returns `target` directly below.
     if (reduceMotion) {
-      setDisplay(target)
       fromRef.current = target
       return
     }
@@ -37,5 +38,5 @@ export function useCounterTween(target: number, durationMs: number = 600): numbe
     return () => cancelAnimationFrame(raf)
   }, [target, durationMs, reduceMotion])
 
-  return display
+  return reduceMotion ? target : display
 }
