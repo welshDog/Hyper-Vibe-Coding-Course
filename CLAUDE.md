@@ -3,7 +3,7 @@
 
 > This file is auto-read by Claude AI when analysing this repository.
 > It provides essential project context, conventions, and guidance.
-> **Last updated: May 9, 2026 — Phase 2B + 2C + 2D + 2A.5 SHIPPED: full /pets UX + wallet-signed persistence 🔥**
+> **Last updated: May 9, 2026 PM — DESIGN-BRAIN ELEVATION PASS SHIPPED (5/5 upgrades, score 8.5 → 9.5/10) + cross-repo: EEPVengers 78/78 minted on Sepolia 🏆**
 > **Single source of truth for the sprint = `HYPER_ECOSYSTEM_PLAN_MAY4.md` Section B**
 
 ---
@@ -61,9 +61,63 @@ Path: H:\Hyper-Vibe-Coding-Course      │                  Path: H:\HyperStatio
 
 ## ✅ CURRENT STATUS (May 9, 2026)
 
-> 🟢 48 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE + BROSKIPETS WEB3 MINT LIVE + PET COLLECTION PERSISTENCE LIVE + PHASE 2B/2C/2D/2A.5 SHIPPED 🦅🔥
+> 🟢 48 CONTAINERS HEALTHY + FULL GAMIFICATION STACK LIVE + BROSKIPETS WEB3 MINT LIVE + PET COLLECTION PERSISTENCE LIVE + PHASE 2B/2C/2D/2A.5 SHIPPED + DESIGN-BRAIN ELEVATION PASS LIVE + EEPVENGERS 78/78 MINTED 🦅🔥🏆
 
-### What went live TODAY (May 9) — Phase 2B + 2C + 2D + 2A.5
+### What went live TODAY (May 9 PM) — Design-Brain Elevation Pass (5/5 upgrades)
+
+> Triggered the `design-brain` skill (Taste + Emil Kowalski + Impeccable layers) to push the /pets page from the May 8 audit score of 8.5/10 to 9.5/10. All 5 upgrades verified clean: TypeScript ✅, ESLint ✅, Vite production build ✅ (9.93s).
+
+**#1 — Trading-card tilt + holographic sheen on PetCard**
+- ✅ `frontend/src/components/pets/PetCard.tsx` — pointer-tracked 3D tilt (perspective 1000px, max ±6°, 80ms tracking / 350ms spring reset)
+- ✅ Holographic radial-gradient sheen layer follows cursor at 35% opacity with `mix-blend-overlay`
+- ✅ `frontend/src/hooks/usePrefersReducedMotion.ts` — live media-query hook, JS-gates inline transforms (Tailwind `motion-reduce:` can't override inline `style`)
+- ✅ Mini variant intentionally untouched (squad row tilt = chaos)
+- ✅ HVZCard primitive untouched — tilt composes inside it
+
+**#2 — Asymmetric Evolution Timeline**
+- ✅ `frontend/src/components/pets/EvolutionTimeline.tsx` — `lg:grid-cols-7` (was `lg:grid-cols-6`), current stage tile gets `lg:col-span-2` for visual weight
+- ✅ Two new connector layers behind tiles (lg only): dim base trajectory full-width + lit `bg-hfz-bg-xp` gradient up to current stage center `(currentIdx + 1) / 7 × 100%`
+- ✅ `motion-safe:transition-[width] duration-700 ease-out` — line **extends** when user evolves = satisfaction frame
+- ✅ Mobile/tablet untouched (multi-row grids can't have one continuous line)
+
+**#3 — Podium squad row (#1 hero treatment)**
+- ✅ `frontend/src/components/pets/PetSquadRow.tsx` — `useTopPets(12)` → `useTopPets(11)` for clean 3-row layout (1 hero col-span-2 + 10 minis = 12 col-equivalents in 4-col grid)
+- ✅ Hero variant: `lg:col-span-2`, `padding={20}`, `h-20 w-20` image (vs `h-12`), `ring-2 ring-hfz-gold/40`, "🥇 Top evolver" gold tag, evolution-count promoted to gold mono
+- ✅ Reads as a podium row (top 3 share row 1) rather than "one big card on top"
+- ✅ Mobile horizontal scroll: hero card 260px (vs 220px) — asymmetry preserved across breakpoints
+- ✅ Skeleton's first item gets `lg:col-span-2` so layout doesn't shift on data load
+
+**#4 — BROski$ earn celebration micro-interaction**
+- ✅ `frontend/src/context/HUDContext.tsx` — added `awardTokens(amount)` callback + `pendingTokens` state + delta-watcher useEffect (any positive jump in `tokens` from any source — poll, edge fn, manual setTokens — fires the celebration; negative deltas intentionally silent)
+- ✅ `frontend/src/components/TokenBurst.tsx` — fixed top-right overlay: gold "+N BROski$" callout (springy entrance + drift-up exit) + 6 emoji particles (🪙 ✨ 💫) burst outward in a fan with deterministic mulberry32 PRNG vectors per amount
+- ✅ `frontend/src/hooks/useCounterTween.ts` — RAF-driven counter tween (600ms ease-out cubic), reduced-motion snaps instantly via derived return value (no setState-in-effect anti-pattern)
+- ✅ `frontend/src/components/HUD.tsx` — token pill glows in `shadow-hfz-glow-gold` + `scale-105` on earn, balance number runs through `useCounterTween` so it scrolls visibly, `<TokenBurst />` mounted next to existing `<XPToast />`
+- ✅ `frontend/tailwind.config.js` — added `tokenPop` + `tokenParticle` keyframes (uses CSS vars `--dx --dy --rot` for per-particle vectors)
+- ✅ Fires on EVERY BROski$ event source — quest completion, mint, shop refund, polling refresh after server-side award. Not just pet-related.
+
+**#5 — Reduced-motion sweep (final lap)**
+- ✅ Audited every animation path across pets components + new code
+- ✅ Fixed `SpeciesPicker.tsx:53` — `transition-all duration-hfz-fast` → `motion-safe:transition-all motion-safe:duration-hfz-fast`
+- ✅ Fixed `SpeciesPicker.tsx:69` — `transition-transform group-hover:scale-105` → `motion-safe:transition-transform motion-safe:group-hover:scale-105`
+- ✅ Fixed `HUD.tsx` token pill — `transition-all duration-500 ... scale-105` → all motion-safe gated
+- ✅ Coverage now 100% on transform-based animations (color/opacity transitions intentionally left ungated per W3C spec — they're not motion)
+
+**🐛 2 bugs caught + fixed by the post-build audit:**
+1. **PetCard Rules-of-Hooks violation** 🚨 Critical — `useState` + `usePrefersReducedMotion` were declared AFTER the `if (size === 'mini') return` early bail. React would have crashed when both sizes rendered in the same tree. Fixed by moving hooks above the early return.
+2. **useCounterTween setState-in-effect** ⚠️ Performance — reduce-motion path called `setDisplay(target)` synchronously in `useEffect`. Fixed by deriving `reduceMotion ? target : display` at return + only syncing `fromRef` in the effect.
+
+### 🏴󠁧󠁢󠁷󠁬󠁳󠁿 Cross-repo win (May 9 AM) — EEPVengers 78/78 minted on Sepolia
+
+> Different repo (`H:\dNFTpet\BROskiPets-LLM-dNFT`), same dev session. Worth flagging here because it's the other half of the BROski Pets ecosystem.
+
+- ✅ All 78 EEPs minted to Ethereum Sepolia — `totalMinted() == MAX_SUPPLY == 78`
+- ✅ Built `scripts/mint_all_eeps.py` — idempotent (reads on-chain `petId(tokenId)` to skip), resumable (manifest file), EIP-1559, manual nonce mgmt with resync on failure
+- ✅ Validated: `MINT_LIMIT=1` (VenomEep #2) → `MINT_LIMIT=10` (Iron–Bear, #3–#12) → full batch (66 remaining)
+- ✅ 0 failures across 77 mints, all 182,694 gas (rock-steady), Block range 10820695 → 10820781 (~17 mins wall-clock)
+- ✅ Manifest at `H:\dNFTpet\BROskiPets-LLM-dNFT\scripts\mint_all_manifest.json` — canonical pet_id → token_id from on-chain `petId()`
+- ⏳ Next: generate art for the 78 EEPs → pin to IPFS → set `IMAGES_ROOT_CID` → evolve all 78 to swap placeholder → real art
+
+### What went live earlier on May 9 — Phase 2B + 2C + 2D + 2A.5
 
 **Phase 2B — Evolution Timeline (Section 4)**
 - ✅ `frontend/src/components/pets/EvolutionTimeline.tsx` — 6-stage grid (2/3/6 cols), violet glow current, gold border legend, mint ✓ unlocked, dimmed locked
