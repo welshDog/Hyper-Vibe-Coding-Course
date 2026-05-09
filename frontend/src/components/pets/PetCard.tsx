@@ -8,8 +8,10 @@
 // from the HUD — see Phase 2A spec, "Option A". Per-pet XP becomes possible
 // when the pets table grows an `xp` column in a future migration.
 
+import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { HVZCard, HVZTag, type TagColor } from '../ui/hvz'
 import { useHUD } from '../../hooks/useHUD'
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { getSpecies, RARITY_LABELS, type Rarity, type SpeciesId } from '../../lib/species'
 import {
   baseScanTxUrl,
@@ -19,6 +21,10 @@ import {
 } from '../../lib/evolution'
 import { MoodBadge } from './MoodBadge'
 import { XPBar } from './XPBar'
+
+// Pointer-tracked tilt — Pokémon-card holo feel without the gaudy.
+// Capped at ~6° so it stays elegant; perspective 1000px keeps the depth shallow.
+const MAX_TILT_DEG = 6
 
 export type Pet = {
   id:              string
@@ -90,12 +96,57 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
   }
 
   // Full size — hero card on the Pets page.
+  const reduceMotion = usePrefersReducedMotion()
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50, active: false })
+
+  const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (reduceMotion) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width   // 0..1
+    const y = (e.clientY - r.top) / r.height   // 0..1
+    setTilt({
+      rx: (0.5 - y) * MAX_TILT_DEG,            // tilt forward when cursor low
+      ry: (x - 0.5) * MAX_TILT_DEG,            // tilt right when cursor right
+      mx: x * 100,
+      my: y * 100,
+      active: true,
+    })
+  }
+  const handlePointerLeave = () => setTilt({ rx: 0, ry: 0, mx: 50, my: 50, active: false })
+
+  const tiltStyle = reduceMotion
+    ? undefined
+    : {
+        transform: `perspective(1000px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+        transformStyle: 'preserve-3d' as const,
+        transition: tilt.active
+          ? 'transform 80ms linear'                                  // tracks cursor tightly
+          : 'transform 350ms cubic-bezier(0.16, 1, 0.3, 1)',         // springy reset
+      }
+
   return (
     <HVZCard
       onClick={onClick}
       glow={isLegend ? 'gold' : undefined}
     >
-      <div className="relative flex flex-col sm:flex-row gap-4">
+      <div
+        className="relative flex flex-col sm:flex-row gap-4"
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        style={tiltStyle}
+      >
+        {/* Holographic sheen — radial gradient follows the cursor, fades on leave. */}
+        {!reduceMotion && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-hfz-md mix-blend-overlay transition-opacity duration-300"
+            style={{
+              opacity: tilt.active ? 0.35 : 0,
+              background: `radial-gradient(circle at ${tilt.mx}% ${tilt.my}%, rgba(255,255,255,0.6) 0%, rgba(168,85,247,0.15) 30%, transparent 60%)`,
+            }}
+          />
+        )}
+
         {freshMint && (
           <div
             aria-hidden

@@ -1,11 +1,15 @@
 import { useHUD } from '../hooks/useHUD';
+import { useCounterTween } from '../hooks/useCounterTween';
 import { XPToast } from './XPToast';
+import { TokenBurst } from './TokenBurst';
 import { RiftBanner } from './RiftBanner';
 
 export function HUD() {
-  const { xp, maxXP, tokens, streak, pendingXP } = useHUD();
+  const { xp, maxXP, tokens, streak, pendingXP, pendingTokens } = useHUD();
+  const tokensDisplay = useCounterTween(tokens);
 
   const xpPercent = Math.min((xp / maxXP) * 100, 100);
+  const isEarning = pendingTokens !== null;
 
   return (
     <>
@@ -36,9 +40,16 @@ export function HUD() {
           </div>
 
           {/* Token Balance */}
-          <div className="flex items-center gap-1.5 bg-yellow-500/10 border border-yellow-500/30 rounded-full px-3 py-1">
+          <div
+            className={[
+              'flex items-center gap-1.5 bg-yellow-500/10 border rounded-full px-3 py-1 transition-all duration-500',
+              isEarning
+                ? 'border-yellow-400 shadow-hfz-glow-gold scale-105'
+                : 'border-yellow-500/30',
+            ].join(' ')}
+          >
             <span className="text-yellow-400 text-sm">🪙</span>
-            <span className="text-yellow-300 font-bold text-sm">{tokens.toLocaleString()}</span>
+            <span className="text-yellow-300 font-bold text-sm font-mono">{tokensDisplay.toLocaleString()}</span>
             <span className="text-yellow-500/60 text-xs">BROski$</span>
           </div>
 
@@ -52,6 +63,9 @@ export function HUD() {
 
       {/* XP Toast Popup */}
       {pendingXP && <XPToast amount={pendingXP} />}
+
+      {/* BROski$ earn celebration */}
+      <TokenBurst />
 
       {/* Spacer so content isn't hidden under HUD */}
       <div className="h-14" />

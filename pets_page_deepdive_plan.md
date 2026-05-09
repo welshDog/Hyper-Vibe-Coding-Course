@@ -2,8 +2,29 @@
 
 > **Repo:** `Hyper-Vibe-Coding-Course` (Vite + React, NOT Next.js)
 > **Page:** `frontend/src/pages/Pets.tsx`
-> **Status:** Mint flow LIVE (May 7, 2026). This plan layers the **post-mint companion UX** ON TOP — no rebuild of the working mint.
+> **Status:** ✅ **PHASES 2A → 2D + 2A.5 COMPLETE** (verified on disk 2026-05-09). This file is now a historical record of the plan that shipped.
 > **Owner:** Lyndz Williams — @welshDog 🏴󠁧󠁢󠁷󠁬󠁳󠁿
+
+---
+
+## 🏁 What Shipped (verified 2026-05-09)
+
+| Phase | Status | Evidence on disk |
+|---|---|---|
+| 2A — Persistent Collection | ✅ Done | `migrations/20260508120000_broskipets_persistence.sql`, `hooks/useMyPets.ts`, `components/pets/PetCard.tsx` + `XPBar.tsx` + `MoodBadge.tsx` |
+| 2A.5 — Wallet-signed persistence | ✅ Done | `supabase/functions/mint-pet-confirm/index.ts` (verifies tx receipt + idempotent INSERT), wired into `hooks/useMintPet.ts` |
+| 2B — Evolution Path | ✅ Done | `components/pets/EvolutionTimeline.tsx` |
+| 2C — Social + Education | ✅ Done | `components/pets/PetSquadRow.tsx`, `hooks/useTopPets.ts` |
+| 2D — Polish | ✅ Done | `components/pets/PetCardSkeleton.tsx` + Tailwind `shimmer`/`goldSweep`/`fadeInUp` keyframes |
+
+**What's actually NEXT** (not in this file's original scope):
+- 🟠 Phase 3 — on-chain `evolve()` transactions (needs contract method + agent key wiring)
+- 🟠 V2.4 sync question — does V2.4 need a `pets`/`mint_nonces` sync endpoint?
+- 🟡 Elevation ideas from design-brain audit (Asymmetric Timeline, Trading-card tilt, #1 squad hero, BROski$ celebration micros, reduced-motion sweep)
+
+---
+
+## 📜 Original Plan (preserved below — for reference only)
 
 ---
 

@@ -40,14 +40,36 @@ export function EvolutionTimeline({ xpOverride }: Props) {
         </p>
       </header>
 
-      <ol className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+      {/*
+        Asymmetric grid:
+          mobile: 2 cols, sm: 3 cols (no col-span — current stays normal width)
+          lg: 7 cols total (5 stages × 1 col + current × 2 cols) so current has visual weight
+        Connector line sits behind tiles at lg only; lit portion ends at the
+        center of the current tile — `(currentIdx + 1) / 7 × 100%`.
+      */}
+      <ol className="relative grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
+        {/* Dim base trajectory — full width */}
+        <div
+          aria-hidden
+          className="hidden lg:block absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-hfz-border-violet/40 z-0"
+        />
+        {/* Lit XP-gradient trajectory — up to current stage center */}
+        <div
+          aria-hidden
+          className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-hfz-bg-xp shadow-hfz-glow-violet z-0 motion-safe:transition-[width] motion-safe:duration-700 motion-safe:ease-out"
+          style={{ width: `${atMax ? 100 : ((currentIdx + 1) / 7) * 100}%` }}
+        />
+
         {EVOLUTION_STAGES.map((s, i) => {
           const reached = i <= currentIdx
           const isCurrent = i === currentIdx
           const isLegend = s.key === 'legend' && reached
 
           return (
-            <li key={s.key}>
+            <li
+              key={s.key}
+              className={`relative z-10 ${isCurrent ? 'lg:col-span-2' : ''}`}
+            >
               <div
                 aria-current={isCurrent ? 'step' : undefined}
                 className={[
@@ -62,10 +84,10 @@ export function EvolutionTimeline({ xpOverride }: Props) {
                 ].join(' ')}
                 style={{ animationDelay: `${i * 50}ms` }}
               >
-                <span className="text-2xl leading-none" aria-hidden>
+                <span className={`leading-none ${isCurrent ? 'text-3xl lg:text-4xl' : 'text-2xl'}`} aria-hidden>
                   {s.emoji}
                 </span>
-                <p className="text-xs font-bold text-hfz-text-primary">
+                <p className={`font-bold text-hfz-text-primary ${isCurrent ? 'text-sm' : 'text-xs'}`}>
                   {s.label}
                 </p>
                 <p className="text-[10px] uppercase tracking-wider text-hfz-text-secondary font-mono">

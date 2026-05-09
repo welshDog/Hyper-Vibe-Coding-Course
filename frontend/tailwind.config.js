@@ -214,6 +214,20 @@ export default {
           '0%':   { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // BROski$ earn callout — pop in (springy), hover, then drift up + fade out.
+        tokenPop: {
+          '0%':   { opacity: '0', transform: 'translateY(0) scale(0.6)' },
+          '15%':  { opacity: '1', transform: 'translateY(-4px) scale(1.08)' },
+          '30%':  { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '70%':  { opacity: '1', transform: 'translateY(-2px) scale(1)' },
+          '100%': { opacity: '0', transform: 'translateY(-32px) scale(0.94)' },
+        },
+        // BROski$ earn particle — burst outward to (var(--dx), var(--dy)) with rotation.
+        tokenParticle: {
+          '0%':   { opacity: '0', transform: 'translate(0,0) rotate(0) scale(0.4)' },
+          '15%':  { opacity: '1', transform: 'translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(calc(var(--rot) * 0.3)) scale(1)' },
+          '100%': { opacity: '0', transform: 'translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.7)' },
+        },
       },
       animation: {
         twinkle:      'twinkle 3s ease-in-out infinite',
