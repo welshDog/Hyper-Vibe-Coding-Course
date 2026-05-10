@@ -161,11 +161,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       return new Response('OK — unregistered buyer', { status: 200 });
     }
 
+    // FIX: customer:null — safely resolve payment_intent to string before passing
+    const paymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : (session.payment_intent as Stripe.PaymentIntent | null)?.id ?? session.id;
+
     const { error } = await supabaseAdmin.rpc('award_tokens', {
       p_user_id: userId,
       p_amount: tokenAmount,
       p_reason: 'stripe_purchase',
-      p_stripe_payment_intent_id: session.payment_intent as string ?? session.id,
+      p_stripe_payment_intent_id: paymentIntentId,
     });
 
     if (error) {
