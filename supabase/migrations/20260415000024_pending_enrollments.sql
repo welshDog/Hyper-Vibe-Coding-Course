@@ -22,7 +22,7 @@
 CREATE TABLE IF NOT EXISTS public.pending_enrollments (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   email               TEXT        NOT NULL,
-  course_id           TEXT        NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+  course_id           UUID        NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
   stripe_session_id   TEXT        UNIQUE NOT NULL,
   created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(email, course_id)
