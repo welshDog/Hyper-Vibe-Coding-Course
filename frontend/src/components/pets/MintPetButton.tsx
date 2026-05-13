@@ -57,7 +57,6 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   const [balanceLoading, setBalanceLoading] = useState(false)
 
   useEffect(() => {
-    if (!address) { setBalance(null); return }
     let cancelled = false
     setBalanceLoading(true)
     ;(async () => {
@@ -76,7 +75,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
     })()
     return () => { cancelled = true }
     // re-fetch on connect + when a mint goes through state transitions
-  }, [address, state])
+  }, [isConnected, state])
 
   // Fire confirmMint once the receipt confirms (Phase 2A.5 — wallet-signed
   // persistence). Then fire onMinted so Pets.tsx refetches a collection that
@@ -129,10 +128,18 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   const isWorking     = state === 'authorizing' || state === 'awaiting-signature' || state === 'mining' || receiptPending
   const isDone        = state === 'mining' && receiptConfirmed
 
-  // ── Not connected: show RainbowKit connect button ────────────────────────
   if (!isConnected) {
+    const canAfford = (balance ?? 0) >= MINT_COST
     return (
       <div className="flex flex-col items-center gap-3 w-full">
+        <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
+          <span className="text-hfz-text-secondary">Your BROski$</span>
+          <span className={`font-mono font-bold ${canAfford ? 'text-hfz-gold-light' : 'text-red-400'}`}>
+            {balanceLoading
+              ? '...'
+              : `${balance ?? 0} / ${MINT_COST} needed`}
+          </span>
+        </div>
         <ConnectButton.Custom>
           {({ openConnectModal, mounted }) => (
             <HVZButton
