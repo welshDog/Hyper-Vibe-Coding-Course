@@ -13,8 +13,10 @@ import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useNavigate } from 'react-router-dom'
 
 import { useMintPet } from '../../hooks/useMintPet'
+import { useAuthStore } from '../../context/auth'
 import { supabase } from '../../lib/supabase'
 import { isRealCid, type SpeciesConfig, type Rarity } from '../../lib/species'
 import { ACTIVE_CHAIN } from '../../lib/wagmi'
@@ -40,6 +42,10 @@ const STEP_TRAIL: StepLabel[] = [
 ]
 
 export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
+  const navigate = useNavigate()
+  const userId = useAuthStore((s) => s.user?.id)
+  const hasSession = !!userId
+
   const { isConnected, address } = useAccount()
   const { mintPet, confirmMint, state, error, txHash, isReady, reset } = useMintPet()
 
@@ -58,6 +64,11 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
 
   useEffect(() => {
     let cancelled = false
+    if (!hasSession) {
+      setBalance(null)
+      setBalanceLoading(false)
+      return () => { cancelled = true }
+    }
     setBalanceLoading(true)
     ;(async () => {
       try {
@@ -71,7 +82,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
     })()
     return () => { cancelled = true }
     // re-fetch on connect + when a mint goes through state transitions
-  }, [isConnected, state])
+  }, [hasSession, state])
 
   // Fire confirmMint once the receipt confirms (Phase 2A.5 — wallet-signed
   // persistence). Then fire onMinted so Pets.tsx refetches a collection that
@@ -119,21 +130,75 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   }, [receiptConfirmed, txHash, confirmMint, onMinted, petName, species.id])
 
   const cidIsReal     = isRealCid(species.babyMetadataCid)
-  const canAfford     = (balance ?? 0) >= MINT_COST
+  const canAfford     = balance != null && balance >= MINT_COST
   const nameValid     = petName.trim().length >= 1 && petName.trim().length <= 32
   const isWorking     = state === 'authorizing' || state === 'awaiting-signature' || state === 'mining' || receiptPending
   const isDone        = state === 'mining' && receiptConfirmed
 
-  if (!isConnected) {
-    const canAfford = (balance ?? 0) >= MINT_COST
+  if (!hasSession) {
     return (
       <div className="flex flex-col items-center gap-3 w-full">
         <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
           <span className="text-hfz-text-secondary">Your BROski$</span>
-          <span className={`font-mono font-bold ${canAfford ? 'text-hfz-gold-light' : 'text-red-400'}`}>
+          <span className="font-mono font-bold text-hfz-text-secondary">
+            Sign in
+          </span>
+        </div>
+        <p className="text-xs text-hfz-text-secondary text-center">
+          Sign in to check your BROski$ balance
+        </p>
+        <HVZButton
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={() => navigate('/login')}
+        >
+          Sign in to unlock mint
+        </HVZButton>
+        <HVZButton
+          variant="ghost"
+          size="lg"
+          fullWidth
+          disabled
+          aria-disabled="true"
+        >
+          Connect wallet (unlock first)
+        </HVZButton>
+      </div>
+    )
+  }
+
+  if (!canAfford) {
+    return (
+      <div className="flex flex-col items-center gap-3 w-full">
+        <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
+          <span className="text-hfz-text-secondary">Your BROski$</span>
+          <span className="font-mono font-bold text-red-400">
             {balanceLoading
               ? '...'
-              : `${balance ?? 0} / ${MINT_COST} needed`}
+              : balance == null ? `— / ${MINT_COST} needed` : `${balance} / ${MINT_COST} needed`}
+          </span>
+        </div>
+        <HVZButton
+          variant="ghost"
+          size="lg"
+          fullWidth
+          disabled
+          aria-disabled="true"
+        >
+          Need {MINT_COST} BROski$ to unlock
+        </HVZButton>
+      </div>
+    )
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="flex flex-col items-center gap-3 w-full">
+        <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
+          <span className="text-hfz-text-secondary">Your BROski$</span>
+          <span className="font-mono font-bold text-hfz-gold-light">
+            {balanceLoading ? '...' : `${balance} / ${MINT_COST} needed`}
           </span>
         </div>
         <ConnectButton.Custom>
@@ -149,9 +214,6 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
             </HVZButton>
           )}
         </ConnectButton.Custom>
-        <p className="text-xs text-hfz-text-secondary text-center">
-          MetaMask, Coinbase Wallet, Rainbow, WalletConnect — anything EVM
-        </p>
       </div>
     )
   }
@@ -162,10 +224,10 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
       {/* Balance bar */}
       <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm">
         <span className="text-hfz-text-secondary">Your BROski$</span>
-        <span className={`font-mono font-bold ${canAfford ? 'text-hfz-gold-light' : 'text-red-400'}`}>
+        <span className="font-mono font-bold text-hfz-gold-light">
           {balanceLoading
             ? '...'
-            : balance == null ? `— / ${MINT_COST} needed` : `${balance} / ${MINT_COST} needed`}
+            : `${balance} / ${MINT_COST} needed`}
         </span>
       </div>
 
