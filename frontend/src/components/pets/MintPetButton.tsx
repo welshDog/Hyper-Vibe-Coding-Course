@@ -9,7 +9,7 @@
 // Refuses to mint if the species CID is still a placeholder — protects users
 // from spending 100 BROski$ on a CID the contract would later treat as junk.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useAccount } from 'wagmi'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -40,6 +40,28 @@ const STEP_TRAIL: StepLabel[] = [
   { label: 'Mine',          emoji: '⛓️' },
   { label: 'Confirm',       emoji: '🎉' },
 ]
+
+function LockedGlass({
+  children,
+}: {
+  children: ReactNode
+}) {
+  return (
+    <div className="relative w-full overflow-hidden rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/55 px-4 py-3">
+      <div className="absolute inset-0 bg-hfz-space-black/20 backdrop-blur-md" />
+      <div className="absolute -inset-16 rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <span
+        aria-label="Mint locked"
+        className="absolute right-3 top-3 rounded-hfz-full border border-hfz-border-violet bg-hfz-space-black/70 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-hfz-text-secondary"
+      >
+        🔒 Locked
+      </span>
+      <div className="relative z-10 opacity-70">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   const navigate = useNavigate()
@@ -155,15 +177,17 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
         >
           Sign in to unlock mint
         </HVZButton>
-        <HVZButton
-          variant="ghost"
-          size="lg"
-          fullWidth
-          disabled
-          aria-disabled="true"
-        >
-          Connect wallet (unlock first)
-        </HVZButton>
+        <LockedGlass>
+          <HVZButton
+            variant="ghost"
+            size="lg"
+            fullWidth
+            disabled
+            aria-disabled="true"
+          >
+            Connect wallet (unlock first)
+          </HVZButton>
+        </LockedGlass>
       </div>
     )
   }
@@ -179,15 +203,17 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
               : balance == null ? `— / ${MINT_COST} needed` : `${balance} / ${MINT_COST} needed`}
           </span>
         </div>
-        <HVZButton
-          variant="ghost"
-          size="lg"
-          fullWidth
-          disabled
-          aria-disabled="true"
-        >
-          Need {MINT_COST} BROski$ to unlock
-        </HVZButton>
+        <LockedGlass>
+          <HVZButton
+            variant="ghost"
+            size="lg"
+            fullWidth
+            disabled
+            aria-disabled="true"
+          >
+            Need {MINT_COST} BROski$ to unlock
+          </HVZButton>
+        </LockedGlass>
       </div>
     )
   }
