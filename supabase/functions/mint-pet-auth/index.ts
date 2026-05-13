@@ -38,16 +38,18 @@
 //   you want to separate the signing wallet (no ETH) from the relayer (holds ETH).
 //   The relayer wallet must have funds on the target chain.
 
+import "../deno-shims.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { privateKeyToAccount } from "npm:viem@2.21.0/accounts";
-import { createWalletClient, http, parseAbi } from "npm:viem@2.21.0";
+import { concatHex, createWalletClient, encodeFunctionData, http, parseAbi } from "npm:viem@2.21.0";
 import { baseSepolia, base } from "npm:viem@2.21.0/chains";
+import { Attribution } from "npm:ox@0.14.20/erc8021";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const MINT_COST_TOKENS    = 100;
 const SIG_EXPIRY_SECONDS  = 300;          // 5-minute signature window
-const CHAIN_ID            = 84532;        // Base Sepolia. Mainnet = 8453.
+const CHAIN_ID: number    = 84532;        // Base Sepolia. Mainnet = 8453.
 const DOMAIN_NAME         = "BROskiPet";
 const DOMAIN_VERSION      = "1";
 
@@ -261,13 +263,25 @@ Deno.serve(async (req: Request) => {
       const relayer = privateKeyToAccount(relayerKey);
       const wallet = createWalletClient({ account: relayer, chain, transport: http(rpcUrl) });
 
-      txHash = await wallet.writeContract({
-        address:      contractAddress as `0x${string}`,
-        abi:          mintAbi,
+      const builderCodeRaw = (Deno.env.get("BUILDER_CODE") ?? "").trim();
+      let dataSuffix: `0x${string}` | null = null;
+      if (builderCodeRaw) {
+        try {
+          dataSuffix = Attribution.toDataSuffix({ codes: [builderCodeRaw] }) as `0x${string}`;
+        } catch (e) {
+          console.warn("[mint-pet-auth] Failed to encode ERC-8021 suffix; continuing without suffix:", e);
+          dataSuffix = null;
+        }
+      } else {
+        console.warn("[mint-pet-auth] BUILDER_CODE not set; continuing without ERC-8021 suffix");
+      }
+
+      const callData = encodeFunctionData({
+        abi: mintAbi,
         functionName: "mintWithAuth",
         args: [
           {
-            to:      wallet_address as `0x${string}`,
+            to: wallet_address as `0x${string}`,
             petId,
             ipfsCID: ipfs_cid,
             nonce,
@@ -275,6 +289,12 @@ Deno.serve(async (req: Request) => {
           },
           signature,
         ],
+      });
+
+      const data = dataSuffix ? concatHex([callData, dataSuffix]) : callData;
+      txHash = await wallet.sendTransaction({
+        to: contractAddress as `0x${string}`,
+        data,
       });
     } catch (e) {
       console.error("[mint-pet-auth] Relay submit failed:", e);

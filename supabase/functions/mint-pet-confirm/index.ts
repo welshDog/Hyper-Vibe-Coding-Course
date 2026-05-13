@@ -26,6 +26,7 @@
 //   - Allocate a new pet_id: pet_id is whatever was signed in the auth payload
 //     and emitted on-chain. We just record it.
 
+import "../deno-shims.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
@@ -33,13 +34,14 @@ import {
   decodeEventLog,
   http,
   parseAbi,
-  type Hex,
 } from "npm:viem@2.21.0";
 import { base, baseSepolia } from "npm:viem@2.21.0/chains";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 // Must match mint-pet-auth's CHAIN_ID. Both functions read the same env layout.
-const CHAIN_ID = 84532; // Base Sepolia. Mainnet = 8453.
+const CHAIN_ID: number = 84532; // Base Sepolia. Mainnet = 8453.
+
+type Hex = `0x${string}`;
 
 const VALID_SPECIES = new Set([
   "apex_dragon", "blizzard_lizard", "chaos_cat", "cyber_fox",
