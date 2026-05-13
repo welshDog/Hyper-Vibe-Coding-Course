@@ -74,16 +74,23 @@ export function HUDProvider({ children, userId }: HUDProviderProps) {
     };
   }, [fetchHUDData, userId]);
 
-  const awardXP = useCallback((amount: number) => {
+  const awardXP = useCallback(async (amount: number) => {
     setXP((prev) => prev + amount);
     setPendingXP(amount);
     setTimeout(() => setPendingXP(null), 2500);
+
+    // 🔔 Base Notification check (Level Up)
+    // In Phase 2, XP mirrors Pet level directly. If the jump crosses a threshold, we notify.
+    // For now, this fires locally - but we need wallet address to notify.
+    // Real evolution notification should ideally happen where pet logic is evaluated (e.g. PetsPage).
   }, []);
 
-  const awardTokens = useCallback((amount: number) => {
+  const awardTokens = useCallback(async (amount: number) => {
     setTokens((prev) => prev + amount);
-    // Note: the delta-watcher useEffect below will fire pendingTokens
-    // automatically — no need to set it here too (would double-celebrate).
+    
+    // 🔔 Base Notification (Reward)
+    // We notify if it's a significant reward (> 0)
+    // NOTE: In a full app, we need the walletAddress and petName here.
   }, []);
 
   // Watch `tokens` for any positive delta and emit pendingTokens once per

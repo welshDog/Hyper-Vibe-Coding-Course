@@ -100,7 +100,22 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
         // succeeded and Pets.tsx's belt-and-braces refetch + future
         // reconciliation job will pick it up.
       } finally {
-        if (!cancelled) onMinted?.({ txHash, petName, species: species.id })
+        if (!cancelled) {
+          onMinted?.({ txHash, petName, species: species.id })
+          
+          // 🔔 Base Notification: Fire on successful mint!
+          try {
+            const { sendPetNotification } = await import('../../lib/baseNotifications')
+            await sendPetNotification({
+              walletAddress: address as string,
+              petName: petName,
+              type: 'level_up', // Mint counts as first level/stage
+              detail: `Baby Stage (Level 1)`,
+            })
+          } catch (err) {
+            console.error('Base notification failed on mint:', err)
+          }
+        }
       }
     }
 
