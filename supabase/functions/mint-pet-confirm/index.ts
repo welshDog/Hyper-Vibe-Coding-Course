@@ -26,7 +26,7 @@
 //   - Allocate a new pet_id: pet_id is whatever was signed in the auth payload
 //     and emitted on-chain. We just record it.
 
-import "../deno-shims.ts";
+import "../deno-shims.d.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {

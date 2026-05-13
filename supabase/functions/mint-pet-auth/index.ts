@@ -38,7 +38,7 @@
 //   you want to separate the signing wallet (no ETH) from the relayer (holds ETH).
 //   The relayer wallet must have funds on the target chain.
 
-import "../deno-shims.ts";
+import "../deno-shims.d.ts";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { privateKeyToAccount } from "npm:viem@2.21.0/accounts";
