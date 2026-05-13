@@ -61,14 +61,10 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
     setBalanceLoading(true)
     ;(async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.access_token) { if (!cancelled) setBalance(null); return }
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/get-pet-balance`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-        if (!res.ok) { if (!cancelled) setBalance(null); return }
-        const body = await res.json() as { broski_tokens?: number }
-        if (!cancelled) setBalance(typeof body.broski_tokens === 'number' ? body.broski_tokens : null)
+        const { data, error } = await supabase.functions.invoke('get-pet-balance')
+        if (error) { if (!cancelled) setBalance(null); return }
+        const body = data as { broski_tokens?: number } | null
+        if (!cancelled) setBalance(typeof body?.broski_tokens === 'number' ? body.broski_tokens : null)
       } finally {
         if (!cancelled) setBalanceLoading(false)
       }
@@ -169,7 +165,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
         <span className={`font-mono font-bold ${canAfford ? 'text-hfz-gold-light' : 'text-red-400'}`}>
           {balanceLoading
             ? '...'
-            : `${balance ?? 0} / ${MINT_COST} needed`}
+            : balance == null ? `— / ${MINT_COST} needed` : `${balance} / ${MINT_COST} needed`}
         </span>
       </div>
 
