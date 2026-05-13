@@ -26,6 +26,7 @@ import {
   type MintPetAuthResponse,
 } from '../lib/contracts/broskiPet'
 import { supabase } from '../lib/supabase'
+import { ERC_8021_SUFFIX } from '../lib/builderCode'
 
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
 const MINT_VIA_RELAY  = String(import.meta.env.VITE_MINT_VIA_RELAY ?? '').toLowerCase() === 'true'
@@ -219,6 +220,7 @@ export function useMintPet() {
             payload.signature,
           ],
           chainId: BROSKIPET_CHAIN_ID,
+          dataSuffix: ERC_8021_SUFFIX,
         })
 
         setTxHash(hash)
