@@ -4,7 +4,28 @@ This guide defines the core Claude skills and prompt patterns used across the HY
 
 ---
 
+## 0. Project Skills Map (this repo)
+
+This repo contains local, project-specific SKILL.md files you can load into your agent toolchain.
+
+**Agent skills (repo-local):**
+- `.agents/skills/e2e-broskipets/SKILL.md`
+- `.agents/skills/mint-via-relay/SKILL.md`
+- `.agents/skills/supabase/SKILL.md`
+- `.agents/skills/supabase-postgres-best-practices/SKILL.md`
+
+**Claude-style skills (repo-local):**
+- `.claude/skills/hyper-vibe-course/SKILL.md`
+- `.claude/skills/frontend-auth-debug/SKILL.md`
+- `.claude/skills/supabase-edge-functions/SKILL.md`
+- `.claude/skills/stripe-checkout-frontend/SKILL.md`
+- `.claude/skills/vercel-vite-deploy/SKILL.md`
+- `.claude/skills/course-content-cms/SKILL.md`
+- `.claude/skills/extracted/hyper-vibe-video-skill/SKILL.md`
+
 ## 1. Claude Usage Principles
+
+1. **Role → Context → Task → Taste**
 
 1. **Role → Context → Task → Taste**
    - Always set a clear role (e.g., "You are a senior front-end engineer…").

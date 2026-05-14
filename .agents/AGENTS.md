@@ -45,6 +45,8 @@ BROski-Obsidian-Brain (meta-layer / living knowledge vault)
 |-------|----------|---------|
 | `mint-via-relay` | `.agents/skills/mint-via-relay/` | Enable + validate Phase 2A relay minting flag |
 | `e2e-broskipets` | `.agents/skills/e2e-broskipets/` | Run E2E tests for mint flow + Stripe checkout |
+| `supabase` | `.agents/skills/supabase/` | Supabase workflows (Auth, DB, Edge Functions, CLI) |
+| `supabase-postgres-best-practices` | `.agents/skills/supabase-postgres-best-practices/` | Postgres performance + RLS best practices |
 
 > Add new skills to `.agents/skills/<skill-name>/SKILL.md`
 
