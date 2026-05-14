@@ -257,7 +257,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
           : state === 'awaiting-signature' ? 'Confirm in your wallet…'
           : state === 'mining' && receiptPending ? 'Minting onchain…'
           : isDone        ? 'Pet minted! 🎉'
-          : 'Mint Your Pet$'}
+          : `Mint Your Pet$ (${MINT_COST} BROski$)`}
       </HVZButton>
 
       {/* Step trail */}
