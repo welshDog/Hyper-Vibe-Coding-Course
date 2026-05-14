@@ -3,9 +3,12 @@ import { useCounterTween } from '../hooks/useCounterTween';
 import { XPToast } from './XPToast';
 import { TokenBurst } from './TokenBurst';
 import { RiftBanner } from './RiftBanner';
+import { useAuthStore } from '../context/auth';
 
 export function HUD() {
   const { xp, maxXP, tokens, streak, pendingXP, pendingTokens } = useHUD();
+  const userId = useAuthStore((s) => s.user?.id);
+  const hasSession = !!userId;
   const tokensDisplay = useCounterTween(tokens);
 
   const xpPercent = Math.min((xp / maxXP) * 100, 100);
@@ -26,7 +29,7 @@ export function HUD() {
           </div>
 
           {/* XP Bar */}
-          <div className="flex-1 max-w-md">
+          <div className="flex-1 max-w-md" aria-hidden={!hasSession}>
             <div className="flex justify-between text-xs text-gray-400 mb-1">
               <span className="text-purple-300 font-semibold">XP</span>
               <span>{xp.toLocaleString()} / {maxXP.toLocaleString()}</span>
@@ -49,12 +52,17 @@ export function HUD() {
             ].join(' ')}
           >
             <span className="text-yellow-400 text-sm">🪙</span>
-            <span className="text-yellow-300 font-bold text-sm font-mono">{tokensDisplay.toLocaleString()}</span>
+            <span
+              data-hud-broski
+              className={`font-bold text-sm font-mono ${hasSession ? 'text-yellow-300' : 'text-yellow-500/60'}`}
+            >
+              {hasSession ? tokensDisplay.toLocaleString() : '—'}
+            </span>
             <span className="text-yellow-500/60 text-xs">BROski$</span>
           </div>
 
           {/* Streak */}
-          <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/30 rounded-full px-3 py-1 shrink-0">
+          <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/30 rounded-full px-3 py-1 shrink-0" aria-hidden={!hasSession}>
             <span className="text-lg leading-none">{streak > 0 ? '🔥' : '❄️'}</span>
             <span className="text-orange-300 font-bold text-sm">{streak}-day streak</span>
           </div>

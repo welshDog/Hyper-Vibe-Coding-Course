@@ -3,7 +3,6 @@
 // Composition:
 //   - useMintPet()              → state machine: idle → authorizing → awaiting-signature → mining
 //   - useWaitForTransactionReceipt → flips local "mined" once the tx confirms
-//   - get-pet-balance Edge Fn  → live BROski$ balance gate
 //   - RainbowKit ConnectButton → wallet connect (MetaMask + Coinbase + WC mobile + more)
 //
 // Refuses to mint if the species CID is still a placeholder — protects users
@@ -17,12 +16,11 @@ import { useNavigate } from 'react-router-dom'
 
 import { useMintPet } from '../../hooks/useMintPet'
 import { useAuthStore } from '../../context/auth'
-import { supabase } from '../../lib/supabase'
+import { useHUD } from '../../hooks/useHUD'
 import { isRealCid, type SpeciesConfig, type Rarity } from '../../lib/species'
 import { ACTIVE_CHAIN } from '../../lib/wagmi'
 import { HVZButton } from '../ui/hvz'
 
-const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
 const MINT_COST       = 100
 
 type Props = {
@@ -68,6 +66,8 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   const userId = useAuthStore((s) => s.user?.id)
   const hasSession = !!userId
 
+  const { tokens, tokensLoading, refreshHUD } = useHUD()
+
   const { isConnected, address } = useAccount()
   const { mintPet, confirmMint, state, error, txHash, isReady, reset } = useMintPet()
 
@@ -79,32 +79,6 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
     hash: txHash ?? undefined,
     chainId: ACTIVE_CHAIN.id,
   })
-
-  // Live balance via Edge Function. Re-fetched on connect + after mint state changes.
-  const [balance, setBalance]               = useState<number | null>(null)
-  const [balanceLoading, setBalanceLoading] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    if (!hasSession) {
-      setBalance(null)
-      setBalanceLoading(false)
-      return () => { cancelled = true }
-    }
-    setBalanceLoading(true)
-    ;(async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-pet-balance')
-        if (error) { if (!cancelled) setBalance(null); return }
-        const body = data as { broski_tokens?: number } | null
-        if (!cancelled) setBalance(typeof body?.broski_tokens === 'number' ? body.broski_tokens : null)
-      } finally {
-        if (!cancelled) setBalanceLoading(false)
-      }
-    })()
-    return () => { cancelled = true }
-    // re-fetch on connect + when a mint goes through state transitions
-  }, [hasSession, state])
 
   // Fire confirmMint once the receipt confirms (Phase 2A.5 — wallet-signed
   // persistence). Then fire onMinted so Pets.tsx refetches a collection that
@@ -130,6 +104,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
       } finally {
         if (!cancelled) {
           onMinted?.({ txHash, petName, species: species.id })
+          void refreshHUD()
           
           // 🔔 Base Notification: Fire on successful mint!
           try {
@@ -149,10 +124,10 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
 
     void persistThenNotify()
     return () => { cancelled = true }
-  }, [receiptConfirmed, txHash, confirmMint, onMinted, petName, species.id])
+  }, [receiptConfirmed, txHash, confirmMint, onMinted, petName, species.id, refreshHUD, address])
 
   const cidIsReal     = isRealCid(species.babyMetadataCid)
-  const canAfford     = balance != null && balance >= MINT_COST
+  const canAfford     = !tokensLoading && tokens >= MINT_COST
   const nameValid     = petName.trim().length >= 1 && petName.trim().length <= 32
   const isWorking     = state === 'authorizing' || state === 'awaiting-signature' || state === 'mining' || receiptPending
   const isDone        = state === 'mining' && receiptConfirmed
@@ -198,9 +173,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
         <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
           <span className="text-hfz-text-secondary">Your BROski$</span>
           <span className="font-mono font-bold text-red-400">
-            {balanceLoading
-              ? '...'
-              : balance == null ? `— / ${MINT_COST} needed` : `${balance} / ${MINT_COST} needed`}
+            {tokensLoading ? '...' : `${tokens} / ${MINT_COST} needed`}
           </span>
         </div>
         <LockedGlass>
@@ -224,7 +197,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
         <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
           <span className="text-hfz-text-secondary">Your BROski$</span>
           <span className="font-mono font-bold text-hfz-gold-light">
-            {balanceLoading ? '...' : `${balance} / ${MINT_COST} needed`}
+            {tokensLoading ? '...' : `${tokens} / ${MINT_COST} needed`}
           </span>
         </div>
         <ConnectButton.Custom>
@@ -251,9 +224,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
       <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm">
         <span className="text-hfz-text-secondary">Your BROski$</span>
         <span className="font-mono font-bold text-hfz-gold-light">
-          {balanceLoading
-            ? '...'
-            : `${balance} / ${MINT_COST} needed`}
+          {tokensLoading ? '...' : `${tokens} / ${MINT_COST} needed`}
         </span>
       </div>
 

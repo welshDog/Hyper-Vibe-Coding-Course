@@ -23,6 +23,7 @@ import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { PetSquadRow } from '../components/pets/PetSquadRow'
 import { useMyPets } from '../hooks/useMyPets'
 import { useAuthStore } from '../context/auth'
+import { useHUD } from '../hooks/useHUD'
 import {
   RARITIES,
   RARITY_LABELS,
@@ -39,6 +40,8 @@ export default function Pets() {
   const [petName,   setPetName]   = useState('')
   const [rarity,    setRarity]    = useState<Rarity>('common')
   const [justMintedTx, setJustMintedTx] = useState<`0x${string}` | null>(null)
+
+  const { tokens } = useHUD()
 
   const { pets, loading: petsLoading, error: petsError, refetch } = useMyPets()
   const userId = useAuthStore((s) => s.user?.id)
@@ -232,7 +235,11 @@ export default function Pets() {
       {species && (
         <section aria-labelledby="step3" className="flex flex-col gap-3">
           <h2 id="step3" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-            Step 3 — Mint
+            Step 3 — Mint · Your BROski${' '}
+            <span data-mint-broski className="font-mono font-bold">
+              {userId ? tokens.toLocaleString() : '—'}
+            </span>{' '}
+            / 100 needed
           </h2>
           <HVZCard>
             <MintPetButton

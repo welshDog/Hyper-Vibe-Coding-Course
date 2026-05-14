@@ -5,11 +5,13 @@ interface HUDState {
   xp: number;
   maxXP: number;
   tokens: number;
+  tokensLoading: boolean;
   streak: number;
   pendingXP: number | null;
   pendingTokens: number | null;
   awardXP: (amount: number) => void;
   awardTokens: (amount: number) => void;
+  refreshHUD: () => Promise<void>;
 }
 
 export const HUDContext = createContext<HUDState | null>(null);
@@ -23,6 +25,7 @@ export function HUDProvider({ children, userId }: HUDProviderProps) {
   const [xp, setXP] = useState(0);
   const [maxXP] = useState(1000);
   const [tokens, setTokens] = useState(0);
+  const [tokensLoading, setTokensLoading] = useState(false);
   const [streak, setStreak] = useState(0);
   const [pendingXP, setPendingXP] = useState<number | null>(null);
   const [pendingTokens, setPendingTokens] = useState<number | null>(null);
@@ -34,6 +37,7 @@ export function HUDProvider({ children, userId }: HUDProviderProps) {
 
   const fetchHUDData = useCallback(async () => {
     if (!userId) return;
+    setTokensLoading(true);
     try {
       const [{ data: userXp }, { data: userProfile }] = await Promise.all([
         supabase
@@ -58,6 +62,8 @@ export function HUDProvider({ children, userId }: HUDProviderProps) {
       setTokens(userProfile?.broski_tokens ?? 0);
     } catch {
       // silently fail — HUD still renders with cached state
+    } finally {
+      setTokensLoading(false);
     }
   }, [userId]);
 
@@ -117,11 +123,13 @@ export function HUDProvider({ children, userId }: HUDProviderProps) {
         xp,
         maxXP,
         tokens,
+        tokensLoading,
         streak,
         pendingXP,
         pendingTokens,
         awardXP,
         awardTokens,
+        refreshHUD: fetchHUDData,
       }}
     >
       {children}
