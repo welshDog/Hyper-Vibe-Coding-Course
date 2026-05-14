@@ -73,6 +73,92 @@ function timeAgo(iso: string): string {
   return `${Math.floor(secs / 86400)}d ago`;
 }
 
+type ServiceState =
+  | { status: 'not_configured' }
+  | { status: 'checking'; lastCheckedIso?: string }
+  | { status: 'up'; lastCheckedIso: string }
+  | { status: 'down'; lastCheckedIso: string; detail?: string };
+
+type ControlTile = {
+  id: string;
+  label: string;
+  href: string | null;
+  healthUrl?: string | null;
+  group: 'course' | 'hypercode';
+};
+
+function isLocalOrigin(): boolean {
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1';
+}
+
+function normalizeBaseUrl(raw: string | undefined | null): string | null {
+  const value = (raw ?? '').trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.toString().replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+function resolveHypercodeApiUrl(): string | null {
+  const configured = normalizeBaseUrl(import.meta.env.VITE_HYPERCODE_API_URL as string | undefined);
+  if (configured) return configured;
+  if (isLocalOrigin()) return 'http://localhost:8000';
+  return null;
+}
+
+function resolveCourseApiUrl(): string | null {
+  const configured = normalizeBaseUrl(import.meta.env.VITE_COURSE_API_URL as string | undefined);
+  if (configured) return configured;
+  if (isLocalOrigin()) return 'http://localhost:4000';
+  return null;
+}
+
+function resolveCoursePrismaStudioUrl(): string | null {
+  const configured = normalizeBaseUrl(
+    import.meta.env.VITE_COURSE_PRISMA_STUDIO_URL as string | undefined,
+  );
+  if (configured) return configured;
+  if (isLocalOrigin()) return 'http://localhost:5555';
+  return null;
+}
+
+function resolveMissionControlUrl(): string | null {
+  const configured = normalizeBaseUrl(
+    import.meta.env.VITE_HYPERCODE_MISSION_CONTROL_URL as string | undefined,
+  );
+  if (configured) return configured;
+  if (isLocalOrigin()) return 'http://localhost:8088';
+  return null;
+}
+
+function resolveMissionUiUrl(): string | null {
+  const configured = normalizeBaseUrl(
+    import.meta.env.VITE_HYPERCODE_MISSION_UI_URL as string | undefined,
+  );
+  if (configured) return configured;
+  if (isLocalOrigin()) return 'http://localhost:8099';
+  return null;
+}
+
+async function pingHealth(url: string, timeoutMs: number): Promise<{ ok: boolean; detail?: string }> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) return { ok: false, detail: `HTTP ${res.status}` };
+    return { ok: true };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return { ok: false, detail: message };
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -99,6 +185,9 @@ export default function Admin() {
   const { user, loading: authLoading } = useAuthStore();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [data, setData] = useState<AdminData>({ waitlist: [], playtest: [], enrollments: [], payments: [], totalTokensInCirculation: 0 });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [serviceStates, setServiceStates] = useState<Record<string, ServiceState>>({});
+  const [copyStatus, setCopyStatus] = useState<string>('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -161,6 +250,93 @@ export default function Admin() {
     load().catch(() => setLoadState('error'));
   }, [user, authLoading]);
 
+  useEffect(() => {
+    if (loadState !== 'ready') return;
+
+    const hypercodeApi = resolveHypercodeApiUrl();
+    const courseApi = resolveCourseApiUrl();
+    const tiles: ControlTile[] = [
+      {
+        id: 'course-api',
+        label: 'Course API',
+        href: courseApi,
+        healthUrl: courseApi ? `${courseApi}/health` : null,
+        group: 'course',
+      },
+      {
+        id: 'course-prisma',
+        label: 'Prisma Studio',
+        href: resolveCoursePrismaStudioUrl(),
+        group: 'course',
+      },
+      {
+        id: 'hypercode-core',
+        label: 'HyperCode Core',
+        href: hypercodeApi,
+        healthUrl: hypercodeApi ? `${hypercodeApi}/health` : null,
+        group: 'hypercode',
+      },
+      {
+        id: 'hypercode-mission-control',
+        label: 'Mission Control',
+        href: resolveMissionControlUrl(),
+        group: 'hypercode',
+      },
+      {
+        id: 'hypercode-mission-ui',
+        label: 'Mission UI',
+        href: resolveMissionUiUrl(),
+        group: 'hypercode',
+      },
+    ];
+
+    setServiceStates((prev) => {
+      const next: Record<string, ServiceState> = { ...prev };
+      for (const tile of tiles) {
+        if (!tile.href) next[tile.id] = { status: 'not_configured' };
+        else if (tile.healthUrl) next[tile.id] = { status: 'checking' };
+        else next[tile.id] = { status: 'up', lastCheckedIso: new Date().toISOString() };
+      }
+      return next;
+    });
+
+    const checks = tiles
+      .filter((t) => t.healthUrl)
+      .map(async (tile) => {
+        const url = tile.healthUrl as string;
+        const res = await pingHealth(url, 2500);
+        const now = new Date().toISOString();
+        setServiceStates((prev) => ({
+          ...prev,
+          [tile.id]: res.ok
+            ? { status: 'up', lastCheckedIso: now }
+            : { status: 'down', lastCheckedIso: now, detail: res.detail },
+        }));
+      });
+
+    void Promise.all(checks);
+  }, [loadState, refreshKey]);
+
+  async function copyToClipboard(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyStatus('Copied');
+      window.setTimeout(() => setCopyStatus(''), 1200);
+    } catch {
+      setCopyStatus('Copy failed');
+      window.setTimeout(() => setCopyStatus(''), 1200);
+    }
+  }
+
+  function statusBadge(state: ServiceState | undefined) {
+    const s = state?.status ?? 'checking';
+    const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs border';
+    if (s === 'up') return <span className={cn(base, 'bg-green-500/10 text-green-300 border-green-500/30')}>Up</span>;
+    if (s === 'down') return <span className={cn(base, 'bg-red-500/10 text-red-300 border-red-500/30')}>Down</span>;
+    if (s === 'not_configured') return <span className={cn(base, 'bg-gray-500/10 text-gray-400 border-gray-700')}>Not set</span>;
+    return <span className={cn(base, 'bg-amber-500/10 text-amber-300 border-amber-500/30')}>Checking</span>;
+  }
+
   // ── Guards ─────────────────────────────────────────────────────────────────
   if (authLoading || loadState === 'loading') {
     return (
@@ -221,6 +397,112 @@ export default function Admin() {
             sub="total held across all students — engagement proxy"
           />
         </div>
+
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <SectionHeader>Stack Control Panel</SectionHeader>
+            <div className="flex items-center gap-3">
+              {copyStatus && <span className="text-xs text-gray-500">{copyStatus}</span>}
+              <button
+                type="button"
+                onClick={() => setRefreshKey((k) => k + 1)}
+                className="text-xs px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-200 hover:bg-gray-800"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-gray-200 font-semibold">Course Stack</p>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard('docker compose up -d')}
+                  className="text-xs px-2 py-1 rounded-md bg-gray-950 border border-gray-800 text-gray-300 hover:bg-gray-900"
+                >
+                  Copy start
+                </button>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { id: 'course-api', label: 'API', href: resolveCourseApiUrl() },
+                  { id: 'course-prisma', label: 'Prisma Studio', href: resolveCoursePrismaStudioUrl() },
+                ].map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-white">{t.label}</p>
+                      <p className="text-xs text-gray-500 truncate">{t.href ?? 'Not configured'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {statusBadge(serviceStates[t.id])}
+                      {t.href && (
+                        <a
+                          href={t.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs px-2 py-1 rounded-md bg-gray-950 border border-gray-800 text-gray-300 hover:bg-gray-900"
+                        >
+                          Open
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-white">Postgres</p>
+                    <p className="text-xs text-gray-500 truncate">Via API only</p>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-md bg-gray-950 border border-gray-800 text-gray-400">
+                    Hidden
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-gray-200 font-semibold">HyperCode Stack</p>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard('docker compose --profile mission up -d')}
+                  className="text-xs px-2 py-1 rounded-md bg-gray-950 border border-gray-800 text-gray-300 hover:bg-gray-900"
+                >
+                  Copy start
+                </button>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { id: 'hypercode-core', label: 'Core API', href: resolveHypercodeApiUrl() },
+                  { id: 'hypercode-mission-control', label: 'Mission Control', href: resolveMissionControlUrl() },
+                  { id: 'hypercode-mission-ui', label: 'Mission UI', href: resolveMissionUiUrl() },
+                ].map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-white">{t.label}</p>
+                      <p className="text-xs text-gray-500 truncate">{t.href ?? 'Not configured'}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {statusBadge(serviceStates[t.id])}
+                      {t.href && (
+                        <a
+                          href={t.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs px-2 py-1 rounded-md bg-gray-950 border border-gray-800 text-gray-300 hover:bg-gray-900"
+                        >
+                          Open
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <AdminRiftPanel />
 
