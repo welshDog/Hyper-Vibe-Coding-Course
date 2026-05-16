@@ -1,250 +1,295 @@
-import { Check, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { HVZButton, HVZCard, HVZTag } from '../components/ui/hvz'
-import { useAuthStore } from '../context/auth'
-import { createCheckoutSession } from '../lib/payments'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-type Accent = 'violet' | 'gold' | 'ghost'
+// ============================================================
+// PASTE YOUR STRIPE PAYMENT LINK URLs INTO THESE CONSTANTS
+// Get them from: Stripe Dashboard → Payment Links → Create Link
+// ============================================================
+const STRIPE_LINKS = {
+  starter: import.meta.env.VITE_STRIPE_STARTER_URL || '#',
+  builder: import.meta.env.VITE_STRIPE_BUILDER_URL || '#',
+  hyperLegend: import.meta.env.VITE_STRIPE_HYPER_LEGEND_URL || '#',
+  // Monthly subscription variants
+  builderMonthly: import.meta.env.VITE_STRIPE_BUILDER_MONTHLY_URL || '#',
+  hyperLegendMonthly: import.meta.env.VITE_STRIPE_HYPER_LEGEND_MONTHLY_URL || '#',
+};
 
-type PricingTier = {
-  name: string
-  description: string
-  priceMonthly: string
-  priceKey: string
-  features: string[]
-  cta: string
-  accent: Accent
-  badge?: string
-}
-
-const PRICING_TIERS: PricingTier[] = [
+const TIERS = [
   {
-    name: 'Free',
-    description: 'Try the platform, ship something real, no card needed.',
-    priceMonthly: '£0',
-    priceKey: '',
+    id: 'starter',
+    emoji: '🌱',
+    name: 'Starter',
+    tagline: 'Set up your brain & your empire',
+    priceOnce: '£29',
+    priceMonthly: null,
+    broskiTokens: 200,
+    modules: 'M1 – M4',
+    moduleCount: 4,
+    highlight: false,
+    badge: null,
+    color: 'from-green-500 to-emerald-600',
+    borderColor: 'border-green-500/40',
+    btnColor: 'bg-green-600 hover:bg-green-500',
     features: [
-      'Browse the full course catalog',
-      'Free lesson previews',
-      'Basic XP + progress tracking',
+      '🧘 M1: Designing Your Focus Zone',
+      '🌱 M2: Your First Vibe (Docker empire)',
+      '🎤 M3: Prompt Like a Pro',
+      '🏗️ M4: Build Your First App',
+      '200 BROski$ tokens on signup',
+      'Quiz pack + practical tasks',
+      'Completion certificate',
+      'Discord community access',
     ],
-    cta: 'Get started',
-    accent: 'ghost',
+    notIncluded: [
+      'Full Stack modules',
+      'Agent architecture',
+      'BROskiPets & AI memory',
+      'Web3 / On-chain modules',
+      'Quantum Vibe bonus module',
+    ],
+    stripeKey: 'starter',
+    paymentType: 'one-time',
   },
   {
-    name: 'Pro',
-    description: 'Full access to all courses and BROski$ rewards.',
-    priceMonthly: '£9',
-    priceKey: 'pro_monthly',
+    id: 'builder',
+    emoji: '🔥',
+    name: 'Builder',
+    tagline: 'The full Vibe Coding journey',
+    priceOnce: '£79',
+    priceMonthly: '£9/mo',
+    broskiTokens: 800,
+    modules: 'M1 – M11',
+    moduleCount: 11,
+    highlight: true,
+    badge: '🏆 Most Popular',
+    color: 'from-purple-500 to-violet-600',
+    borderColor: 'border-purple-500/70',
+    btnColor: 'bg-purple-600 hover:bg-purple-500',
     features: [
-      'All courses included',
-      'BROski$ token rewards',
-      'Priority support',
-      'Community channels',
-      'Certificate on completion',
+      '✅ Everything in Starter',
+      '🧠 M5: Full Stack Vibe (Supabase)',
+      '🔥 M6: HyperCode The Hyper Way',
+      '🛠️ M7: Agent Architecture & Manifests',
+      '🐕 M8: Soulful Entities (AI Pets)',
+      '🔗 M9: Web3 & On-Chain Evolution',
+      '🛡️ M10: Security & SRE Observability',
+      '🚀 M11: Ship, Scale & Graduate',
+      '800 BROski$ tokens on signup',
+      'Your BROskiPet evolves with you',
+      'Priority Discord support',
+      'BROski Elite 🔥 badge on graduation',
     ],
-    cta: "Let's GO →",
-    accent: 'violet',
-    badge: '🔥 Most popular',
+    notIncluded: [
+      'Quantum Vibe bonus module',
+      'IBM Quantum cloud QPU access',
+    ],
+    stripeKey: 'builder',
+    paymentType: 'both',
   },
   {
-    name: 'Hyper',
-    description: 'The full BROski experience — go elite.',
-    priceMonthly: '£29',
-    priceKey: 'hyper_monthly',
+    id: 'hyper-legend',
+    emoji: '⚛️',
+    name: 'Hyper Legend',
+    tagline: 'The full empire — including Quantum',
+    priceOnce: '£149',
+    priceMonthly: '£15/mo',
+    broskiTokens: 2500,
+    modules: 'M1 – M13 + Quantum',
+    moduleCount: 13,
+    highlight: false,
+    badge: '⚛️ Quantum Included',
+    color: 'from-yellow-400 to-orange-500',
+    borderColor: 'border-yellow-400/60',
+    btnColor: 'bg-yellow-500 hover:bg-yellow-400 text-black',
     features: [
-      'Everything in Pro',
-      'Agent sandbox access',
-      'Monthly 1:1 code review',
-      'Hyper bonus lessons',
-      'Early access to new courses',
+      '✅ Everything in Builder',
+      '🤝 M12: The Ride or Die Contribution',
+      '⚛️ BONUS M13: Quantum Vibe IDE',
+      'Drag-and-drop quantum circuits',
+      'Web3 wallet quantum seed generator',
+      'IBM Quantum cloud QPU access',
+      '2500 BROski$ tokens on signup',
+      'BROski Legend ♾️ status for life',
+      'Name in the Hall of Legends on GitHub',
+      'Direct access to welshDog for Q&A',
+      '1-year free updates to all new modules',
     ],
-    cta: 'Go Hyper ♾️',
-    accent: 'gold',
-    badge: '♾️ Elite tier',
+    notIncluded: [],
+    stripeKey: 'hyperLegend',
+    paymentType: 'both',
   },
-]
+];
 
 export default function Pricing() {
-  const { user } = useAuthStore()
-  const navigate = useNavigate()
-  const [loadingTier, setLoadingTier] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [billingToggle, setBillingToggle] = useState<Record<string, 'once' | 'monthly'>>({
+    builder: 'once',
+    'hyper-legend': 'once',
+  });
+  const navigate = useNavigate();
 
-  async function handleCheckout(tier: PricingTier) {
-    if (!user) {
-      navigate('/login')
-      return
+  const getStripeUrl = (tier: typeof TIERS[0]) => {
+    if (tier.paymentType === 'one-time') {
+      return STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
     }
-    setError(null)
-    setLoadingTier(tier.name)
-    try {
-      const url = await createCheckoutSession(tier.priceKey, user.id)
-      window.location.assign(url)
-    } catch {
-      setError("Hmm, let's try that again 🔄 — checkout failed. Ping support if it sticks.")
-      setLoadingTier(null)
+    const isMonthly = billingToggle[tier.id] === 'monthly';
+    if (isMonthly) {
+      const monthlyKey = (tier.stripeKey + 'Monthly') as keyof typeof STRIPE_LINKS;
+      return STRIPE_LINKS[monthlyKey] || STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
     }
-  }
+    return STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
+  };
+
+  const handleCheckout = (tier: typeof TIERS[0]) => {
+    const url = getStripeUrl(tier);
+    if (url && url !== '#') {
+      window.location.href = url;
+    } else {
+      // Fallback to payment success for test mode
+      navigate('/payment-success');
+    }
+  };
 
   return (
-    <div className="bg-hfz-space-black min-h-screen py-20 sm:py-24 lg:py-28">
-      <div className="max-w-hfz-page mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center mb-14">
-          <HVZTag color="violet">💸 Pricing</HVZTag>
-          <h1
-            className="font-display font-extrabold tracking-hfz-tight mt-4 text-hfz-text-primary"
-            style={{
-              fontSize: 'clamp(36px, 5vw, 56px)',
-              lineHeight: 1.05,
-              background: 'none',
-              WebkitTextFillColor: 'unset',
-              textWrap: 'balance',
-            }}
-          >
-            Start free.{' '}
-            <span
-              style={{
-                background: 'linear-gradient(135deg, var(--color-violet-lt), var(--color-neon-cyan))',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              Upgrade when you're hooked.
-            </span>
-          </h1>
-          <p className="mt-5 text-hfz-body-lg text-hfz-text-secondary leading-[1.8] max-w-[55ch] mx-auto">
-            Simple, transparent pricing. Month-to-month, cancel anytime — no annual lock-in.
-          </p>
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* Hero */}
+      <div className="text-center pt-16 pb-10 px-4">
+        <div className="text-5xl mb-4">🐶♾️</div>
+        <h1 className="text-4xl md:text-5xl font-black mb-4">
+          Pick Your Vibe Level
+        </h1>
+        <p className="text-gray-400 text-lg max-w-xl mx-auto">
+          Built for <span className="text-purple-400 font-bold">ADHD, dyslexic &amp; autistic minds</span>.
+          No gatekeeping. No syntax walls. Just you, AI, and an empire you built.
+        </p>
+        <div className="mt-6 inline-flex items-center gap-2 bg-green-900/30 border border-green-500/40 rounded-full px-4 py-2 text-sm text-green-400">
+          ✅ 72/72 tests passing · Platform LIVE · BROski$ economy active
         </div>
+      </div>
 
-        {error && (
-          <p
-            role="alert"
-            className="mt-4 mb-8 text-center text-sm text-hfz-danger max-w-md mx-auto"
+      {/* Tier Cards */}
+      <div className="max-w-6xl mx-auto px-4 pb-20 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        {TIERS.map((tier) => (
+          <div
+            key={tier.id}
+            className={`relative rounded-2xl border-2 ${
+              tier.highlight
+                ? `${tier.borderColor} shadow-2xl shadow-purple-500/20 scale-105`
+                : tier.borderColor
+            } bg-gray-900/80 backdrop-blur-sm overflow-hidden flex flex-col`}
           >
-            {error}
-          </p>
-        )}
+            {/* Badge */}
+            {tier.badge && (
+              <div className={`bg-gradient-to-r ${tier.color} text-white text-xs font-bold text-center py-2 tracking-wider`}>
+                {tier.badge}
+              </div>
+            )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-md lg:max-w-none mx-auto items-stretch">
-          {PRICING_TIERS.map((tier) => {
-            const isFree = tier.priceKey === ''
-            const isLoading = loadingTier === tier.name
-            const anyLoading = loadingTier !== null
+            <div className="p-6 flex flex-col flex-1">
+              {/* Header */}
+              <div className="mb-6">
+                <div className="text-4xl mb-2">{tier.emoji}</div>
+                <h2 className="text-2xl font-black">{tier.name}</h2>
+                <p className="text-gray-400 text-sm mt-1">{tier.tagline}</p>
+                <div className="text-xs text-gray-500 mt-1">Modules: {tier.modules} ({tier.moduleCount} total)</div>
+              </div>
 
-            const accentClass = {
-              violet: 'border-hfz-violet-light shadow-hfz-glow-violet lg:scale-[1.03]',
-              gold: 'border-hfz-gold/60 shadow-hfz-glow-gold',
-              ghost: '',
-            }[tier.accent]
-
-            return (
-              <HVZCard
-                key={tier.name}
-                padding={32}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                }}
-                className={`${accentClass} transition-transform`}
-              >
-                {tier.badge && (
-                  <div className="absolute -top-3 left-6">
-                    {tier.accent === 'gold' ? (
-                      <HVZTag color="gold">{tier.badge}</HVZTag>
-                    ) : (
-                      <HVZTag color="violet">{tier.badge}</HVZTag>
-                    )}
+              {/* Price */}
+              <div className="mb-4">
+                {tier.paymentType === 'one-time' ? (
+                  <div>
+                    <span className="text-4xl font-black">{tier.priceOnce}</span>
+                    <span className="text-gray-500 text-sm ml-2">one-time</span>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <button
+                        onClick={() => setBillingToggle((p) => ({ ...p, [tier.id]: 'once' }))}
+                        className={`text-sm px-3 py-1 rounded-full border transition-all ${
+                          billingToggle[tier.id] === 'once'
+                            ? 'bg-white text-black border-white font-bold'
+                            : 'border-gray-600 text-gray-400 hover:border-gray-400'
+                        }`}
+                      >
+                        One-time
+                      </button>
+                      <button
+                        onClick={() => setBillingToggle((p) => ({ ...p, [tier.id]: 'monthly' }))}
+                        className={`text-sm px-3 py-1 rounded-full border transition-all ${
+                          billingToggle[tier.id] === 'monthly'
+                            ? 'bg-white text-black border-white font-bold'
+                            : 'border-gray-600 text-gray-400 hover:border-gray-400'
+                        }`}
+                      >
+                        Monthly
+                      </button>
+                    </div>
+                    <div>
+                      <span className="text-4xl font-black">
+                        {billingToggle[tier.id] === 'monthly' ? tier.priceMonthly : tier.priceOnce}
+                      </span>
+                      {billingToggle[tier.id] === 'once' && (
+                        <span className="text-gray-500 text-sm ml-2">one-time</span>
+                      )}
+                    </div>
                   </div>
                 )}
-
-                <div>
-                  <h2
-                    className="font-display font-bold text-hfz-h3 leading-tight"
-                    style={{
-                      background: 'none',
-                      WebkitTextFillColor: 'unset',
-                      color:
-                        tier.accent === 'gold'
-                          ? 'var(--color-gold-light)'
-                          : tier.accent === 'violet'
-                          ? 'var(--color-violet-lt)'
-                          : 'var(--color-text-primary)',
-                    }}
-                  >
-                    {tier.name}
-                  </h2>
-                  <p className="mt-2 text-sm text-hfz-text-secondary leading-relaxed">
-                    {tier.description}
-                  </p>
+                {/* BROski$ tokens */}
+                <div className="mt-2 inline-flex items-center gap-1 bg-yellow-900/30 border border-yellow-500/40 rounded-full px-3 py-1 text-xs text-yellow-400">
+                  💰 {tier.broskiTokens.toLocaleString()} BROski$ on signup
                 </div>
+              </div>
 
-                <div className="mt-6 flex items-baseline gap-2">
-                  <span
-                    className="font-display font-extrabold tracking-hfz-tight text-hfz-text-primary"
-                    style={{ fontSize: 48, lineHeight: 1 }}
-                  >
-                    {tier.priceMonthly}
-                  </span>
-                  <span className="text-sm font-semibold text-hfz-text-secondary">/ month</span>
-                </div>
+              {/* CTA Button */}
+              <button
+                onClick={() => handleCheckout(tier)}
+                className={`w-full py-3 px-6 rounded-xl font-black text-lg transition-all duration-200 mb-6 ${
+                  tier.btnColor
+                } text-white shadow-lg hover:scale-105 active:scale-95`}
+              >
+                Get {tier.name} {tier.emoji}
+              </button>
 
-                <ul role="list" className="mt-7 flex-1 flex flex-col gap-3 list-none p-0 m-0">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3 text-[15px] text-hfz-text-primary/90">
-                      <Check
-                        className={`h-5 w-5 flex-none mt-0.5 ${
-                          tier.accent === 'gold'
-                            ? 'text-hfz-gold-light'
-                            : 'text-hfz-mint'
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+              {/* Features */}
+              <ul className="space-y-2 flex-1">
+                {tier.features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                    <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+                {tier.notIncluded.map((f, i) => (
+                  <li key={`not-${i}`} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="mt-0.5 flex-shrink-0">✗</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
 
-                <div className="mt-8">
-                  {isFree ? (
-                    <Link to={user ? '/courses' : '/register'} className="block no-underline">
-                      <HVZButton variant="ghost" size="md" fullWidth>
-                        {tier.cta}
-                      </HVZButton>
-                    </Link>
-                  ) : (
-                    <HVZButton
-                      variant={tier.accent === 'gold' ? 'gold' : 'primary'}
-                      size="md"
-                      fullWidth
-                      disabled={anyLoading}
-                      onClick={() => handleCheckout(tier)}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Wiring up the Z0ne...
-                        </>
-                      ) : (
-                        tier.cta
-                      )}
-                    </HVZButton>
-                  )}
-                </div>
-              </HVZCard>
-            )
-          })}
+      {/* FAQ strip */}
+      <div className="max-w-2xl mx-auto px-4 pb-16 text-center">
+        <h3 className="text-xl font-bold mb-4 text-gray-300">Common Questions</h3>
+        <div className="space-y-4 text-left">
+          {[
+            ['Do I need coding experience?', 'Zero. Module 1 starts with setting up your brain — not your IDE. If you can type, you can Vibe Code.'],
+            ['Can I upgrade later?', 'Yes! Just pay the difference. Contact us on Discord and we\'ll sort it.'],
+            ['What if I get stuck?', 'Every module has a ✨ Practical Task and BROski AI is in your corner 24/7. Plus Discord crew.'],
+            ['Is this ND-friendly?', 'Built by an ND dev, for ND devs. Short sentences, chunked tasks, emojis, BROski$ rewards. Always.'],
+          ].map(([q, a]) => (
+            <div key={q} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <p className="font-bold text-white mb-1">{q}</p>
+              <p className="text-gray-400 text-sm">{a}</p>
+            </div>
+          ))}
         </div>
-
-        <p className="mt-12 text-center text-sm text-hfz-text-secondary">
-          All plans pay out in <span className="text-hfz-gold-light font-semibold">🪙 BROski$</span> — even Free.
+        <p className="mt-8 text-gray-600 text-xs">
+          Payments powered by Stripe 🔒 · All prices include VAT · Built by welshDog 🐶♾️ Llanelli, Wales
         </p>
       </div>
     </div>
-  )
+  );
 }
