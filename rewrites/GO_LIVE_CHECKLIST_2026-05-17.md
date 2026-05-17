@@ -43,10 +43,12 @@ Owner tags: **[LYNDZ]** = dashboard/manual (Claude can't) · **[CLAUDE]** = I ca
 
 ## 🟡 Pre-prod hardening
 
-- [ ] **[CLAUDE]** Add meta description + OpenGraph + Twitter card tags to `frontend/index.html` — **currently MISSING entirely** (verified: zero og/twitter/description tags). Needed for shareable links / launch content
-- [ ] **[VERIFY]** `ErrorBoundary.tsx` exists — confirm it wraps the app in `main.tsx`
-- [ ] **[VERIFY]** `NotFound.tsx` exists — confirm it's the `path="*"` catch-all in `App.tsx`
-- [ ] **[VERIFY]** No 500/white-screen on a thrown render error (ErrorBoundary fallback shows)
+- [x] **[CLAUDE]** ✅ DONE — meta description + OpenGraph + Twitter card tags added to `frontend/index.html` (also fixed broken `/vite.svg` favicon → `/favicon.svg`, added `theme-color` + `canonical`). Confirmed in `dist/index.html`
+- [x] **[VERIFY]** ✅ PASS — `ErrorBoundary` wraps the whole app (`main.tsx:36`) + `setupErrorTracking()` runs
+- [x] **[VERIFY]** ✅ PASS — `NotFound` is the `path="*"` catch-all (`App.tsx:133`)
+- [ ] **[LYNDZ]** Confirm the production domain — tags assume **`https://hypervibecourses.com`** (inferred from `support@hypervibecourses.com`). Update `og:url`/`canonical`/`og:image` if the real domain differs
+- [ ] **[LYNDZ/DESIGN]** Create the social share image **`frontend/public/og-image.png` — 1200×630** (referenced by OG/Twitter tags; until it exists, link previews fall back to text-only — not broken, just plain)
+- [ ] **[VERIFY]** Smoke: thrown render error shows the ErrorBoundary fallback (no white screen); a bad URL shows the 404 page
 - [ ] **[LYNDZ]** GitHub Actions billing lock (CLAUDE.md known issue) — resolve if CI gating launch
 - [ ] **[CLAUDE]** (optional) Quests page: surface the 7-quest catalogue, not just the user's own rows (UX gap noted in #6)
 
