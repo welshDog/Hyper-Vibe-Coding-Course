@@ -75,11 +75,11 @@ All files: https://github.com/welshDog/Hyper-Vibe-Coding-Course/tree/main/rewrit
 
 | # | Task | Status |
 |---|---|---|
-| 1 | NotebookLM sync | 🔵 Still parked |
+| 1 | **NotebookLM sync** — Master Pack built (`rewrites/NOTEBOOKLM_MASTER_PACK.md`, 22 sources) | 🟢 **Pack ready — awaiting manual upload** |
 | 2 | **Video scripts** — all 11 (M1–M10 + M5B), 3-min spoken, M4 template | ✅ **DONE + pushed** |
 | 3 | **Supabase sync** | ✅ **DONE** — see correction ⚠️ below |
 | 4 | Vercel deploy → preview | 🔵 Still parked |
-| 5 | BROski$ XP config | 🟡 Coins aligned; **XP review still open** (see below) |
+| 5 | **BROski$ XP config** | ✅ **DONE** — XP rebalanced by Lyndz |
 | 6 | Claude Code handoff (auto-draft scripts) | ✅ **DONE** |
 
 ### 🎬 Video scripts — shipped
@@ -94,11 +94,11 @@ There is **NO `module_content` table** — that name in task #3 was wrong. The r
 - `hv_quizzes`: **regenerated** — 12 stale April quizzes wiped, 11 fresh `claude-auto` v1 quizzes authored from the new rewrites (3 multiple-choice + 1 true/false + 1 practical each). FK-safe, 0 orphans, all well-formed.
 - 0 `module_completions` anywhere → zero learner impact.
 
-### 🟡 Still open — BROski$ XP review
-`coin_reward` is aligned to rewrite tiers. But `xp_reward` for **M1 (50), M4 (50), M5 (75), M5B (30)** was carried over from the old reused rows and may want rebalancing vs the new reward tiers. M2 (150) + M3 (200) set from rewrites. Decision needed.
+### ✅ Resolved — BROski$ XP
+Coins aligned to rewrite tiers during the Supabase restructure; XP rebalanced by Lyndz post-restructure. Closed.
 
 ### 📌 Remaining Phase 2
-NotebookLM sync · Vercel preview deploy · XP rebalance decision.
+NotebookLM Master Pack upload (manual, ~2 min — see `rewrites/NOTEBOOKLM_MASTER_PACK.md`) · Vercel preview deploy.
 
 ---
 
