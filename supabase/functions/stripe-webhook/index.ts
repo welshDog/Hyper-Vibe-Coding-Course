@@ -49,9 +49,17 @@ serve(async (req: Request) => {
     const customerEmail = session.customer_details?.email ?? (session as any).receipt_email;
     const priceId = (session as any).line_items?.data?.[0]?.price?.id
       ?? (session as any).metadata?.price_id;
+    // courseId is buyer-supplied but Stripe echoes it back on the SIGNED
+    // event (signature already verified above), so it's trustworthy here.
+    const courseId = (session as any).client_reference_id
+      ?? (session as any).metadata?.course_id
+      ?? null;
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId);
+    } else if (customerEmail && courseId) {
+      // Single-course purchase (no tier mapping) — still enroll the verified buyer
+      await enrollVerifiedBuyer(supabase, customerEmail, courseId);
     }
   }
 
@@ -62,7 +70,8 @@ serve(async (req: Request) => {
     const priceId = invoice.lines?.data?.[0]?.price?.id;
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId);
+      // Subscription = full access; no single course id → all active courses
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, null);
     }
   }
 
@@ -77,7 +86,8 @@ serve(async (req: Request) => {
 async function awardTokensAndUnlock(
   supabase: ReturnType<typeof createClient>,
   email: string,
-  priceId: string
+  priceId: string,
+  courseId: string | null
 ) {
   const config = PRICE_TO_TIER[priceId];
   if (!config) return;
@@ -125,5 +135,62 @@ async function awardTokensAndUnlock(
     created_at: new Date().toISOString(),
   });
 
+  // 4️⃣ Enroll the buyer so the enrollments-gated course pages unlock.
+  //    This is the ONLY trusted enrollment path — the frontend success
+  //    page no longer self-grants. A specific courseId enrolls just that
+  //    course; null (tier/subscription) enrolls all active courses.
+  await enrollUser(supabase, userId, courseId);
+
   console.log(`✅ Awarded ${config.tokens} BROski$ to ${email} | Tier: ${config.tier} | Modules: ${config.modules.join(', ')}`);
+}
+
+// =============================================================
+// Enrollment — the single trusted grant path (post payment-verify)
+// =============================================================
+async function resolveCourseIds(
+  supabase: ReturnType<typeof createClient>,
+  courseId: string | null
+): Promise<string[]> {
+  if (courseId) return [courseId];
+  const { data: courses } = await supabase
+    .from('courses')
+    .select('id')
+    .eq('is_active', true);
+  return (courses ?? []).map((c: { id: string }) => c.id);
+}
+
+async function enrollUser(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  courseId: string | null
+) {
+  const ids = await resolveCourseIds(supabase, courseId);
+  if (ids.length === 0) return;
+
+  const { error } = await supabase.from('enrollments').upsert(
+    ids.map((cid) => ({ user_id: userId, course_id: cid, progress_percentage: 0 })),
+    { onConflict: 'user_id,course_id' }
+  );
+  if (error) console.error('❌ Failed to upsert enrollments:', error);
+  else console.log(`✅ Enrolled user ${userId} in ${ids.length} course(s)`);
+}
+
+// Verified single-course purchase that has no tier mapping in PRICE_TO_TIER
+async function enrollVerifiedBuyer(
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+  courseId: string
+) {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (error || !profile) {
+    console.error('❌ Profile not found for email:', email);
+    return;
+  }
+
+  await enrollUser(supabase, profile.id, courseId);
 }

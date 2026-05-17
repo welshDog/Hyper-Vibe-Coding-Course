@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 // ============================================================
 // PASTE YOUR STRIPE PAYMENT LINK URLs INTO THESE CONSTANTS
@@ -125,8 +124,7 @@ export default function Pricing() {
     builder: 'once',
     'hyper-legend': 'once',
   });
-  const navigate = useNavigate();
-
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const getStripeUrl = (tier: typeof TIERS[0]) => {
     if (tier.paymentType === 'one-time') {
       return STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
@@ -142,11 +140,16 @@ export default function Pricing() {
   const handleCheckout = (tier: typeof TIERS[0]) => {
     const url = getStripeUrl(tier);
     if (url && url !== '#') {
+      setCheckoutError(null);
       window.location.href = url;
-    } else {
-      // Fallback to payment success for test mode
-      navigate('/payment-success');
+      return;
     }
+    // SECURITY: never route to /payment-success without a real Stripe payment.
+    // If the Stripe link isn't configured, surface an error instead of
+    // unlocking the course for free.
+    setCheckoutError(
+      `Checkout for ${tier.name} is temporarily unavailable. Please try again shortly or reach out on Discord — your access will be sorted.`,
+    );
   };
 
   return (
@@ -165,6 +168,17 @@ export default function Pricing() {
           ✅ 72/72 tests passing · Platform LIVE · BROski$ economy active
         </div>
       </div>
+
+      {checkoutError && (
+        <div className="max-w-2xl mx-auto px-4 mb-6">
+          <div
+            role="alert"
+            className="rounded-xl bg-amber-900/30 border border-amber-500/40 px-5 py-4 text-amber-200 text-sm text-center"
+          >
+            ⚠️ {checkoutError}
+          </div>
+        </div>
+      )}
 
       {/* Tier Cards */}
       <div className="max-w-6xl mx-auto px-4 pb-20 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">

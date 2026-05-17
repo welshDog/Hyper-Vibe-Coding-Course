@@ -60,79 +60,74 @@ export default function PaymentSuccess() {
   const [status, setStatus] = useState<Status>('loading');
   const [courseTitle, setCourseTitle] = useState<string>('');
 
+  // DISPLAY-ONLY: this page NEVER writes enrollments. The Stripe webhook
+  // (signature-verified, server-side) is the single source of truth that
+  // grants access after a confirmed payment. Here we only poll read-only
+  // to show the correct message — no self-granting.
   useEffect(() => {
     if (!user) return;
 
-    if (!courseId) {
-      async function enrollAllCourses() {
-        try {
-          const { data: courses } = await supabase
-            .from('courses')
-            .select('id')
-            .eq('is_active', true);
-
-          if (courses && courses.length > 0) {
-            await supabase
-              .from('enrollments')
-              .upsert(
-                courses.map((c) => ({
-                  user_id: user!.id,
-                  course_id: c.id,
-                  progress_percentage: 0,
-                })),
-                { onConflict: 'user_id,course_id' },
-              );
-          }
-        } catch {
-          // non-fatal
-        }
-        setStatus('subscribed');
-      }
-      void enrollAllCourses();
-      return;
-    }
-
+    let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 15; // ~15s — give the verified webhook time to land
 
-    async function pollEnrollment() {
-      if (!courseTitle) {
-        const { data: course } = await supabase
-          .from('courses')
-          .select('title')
-          .eq('id', courseId)
-          .single();
-        if (course) setCourseTitle(course.title);
-      }
+    async function poll() {
+      if (cancelled) return;
 
-      const { data: enrollment } = await supabase
-        .from('enrollments')
-        .select('id')
-        .eq('user_id', user!.id)
-        .eq('course_id', courseId)
-        .maybeSingle();
+      if (courseId) {
+        if (!courseTitle) {
+          const { data: course } = await supabase
+            .from('courses')
+            .select('title')
+            .eq('id', courseId)
+            .maybeSingle();
+          if (course && !cancelled) setCourseTitle(course.title);
+        }
 
-      if (enrollment) {
-        setStatus('enrolled');
-        return;
-      }
-
-      attempts++;
-      if (attempts >= maxAttempts) {
-        const { error } = await supabase
+        const { data: enrollment } = await supabase
           .from('enrollments')
-          .upsert(
-            { user_id: user!.id, course_id: courseId, progress_percentage: 0 },
-            { onConflict: 'user_id,course_id' },
-          );
-        setStatus(error ? 'error' : 'enrolled');
+          .select('id')
+          .eq('user_id', user!.id)
+          .eq('course_id', courseId)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (enrollment) {
+          setStatus('enrolled');
+          return;
+        }
+      } else {
+        // Subscription / tier purchase — confirm the webhook granted access
+        // by checking the buyer now has at least one enrollment.
+        const { data: anyEnrollment } = await supabase
+          .from('enrollments')
+          .select('id')
+          .eq('user_id', user!.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (cancelled) return;
+        if (anyEnrollment) {
+          setStatus('subscribed');
+          return;
+        }
+      }
+
+      attempts += 1;
+      if (attempts >= maxAttempts) {
+        // Payment likely succeeded but the webhook hasn't landed yet.
+        // Show the support path — we DO NOT self-grant access here.
+        setStatus('error');
         return;
       }
 
-      setTimeout(pollEnrollment, 1000);
+      setTimeout(poll, 1000);
     }
 
-    void pollEnrollment();
+    void poll();
+    return () => {
+      cancelled = true;
+    };
   }, [user, courseId, courseTitle]);
 
   // ── Not logged in ──
