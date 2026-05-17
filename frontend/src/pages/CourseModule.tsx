@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
 import { useHUD } from '../hooks/useHUD';
@@ -44,217 +46,28 @@ function isQuizPayload(value: unknown): value is HvQuizPayload {
   return true;
 }
 
-function renderInlineMarkdown(text: string): Array<string | { type: 'code'; value: string } | { type: 'strong'; value: string } | { type: 'em'; value: string }> {
-  const tokens: Array<string | { type: 'code'; value: string } | { type: 'strong'; value: string } | { type: 'em'; value: string }> = [];
-  let i = 0;
-  while (i < text.length) {
-    const codeStart = text.indexOf('`', i);
-    const strongStart = text.indexOf('**', i);
-    const emStart = text.indexOf('*', i);
-
-    const candidates = [
-      { type: 'code' as const, idx: codeStart },
-      { type: 'strong' as const, idx: strongStart },
-      { type: 'em' as const, idx: emStart },
-    ].filter((c) => c.idx >= 0);
-
-    if (candidates.length === 0) {
-      tokens.push(text.slice(i));
-      break;
-    }
-
-    candidates.sort((a, b) => a.idx - b.idx);
-    const next = candidates[0];
-    if (next.idx > i) tokens.push(text.slice(i, next.idx));
-
-    if (next.type === 'code') {
-      const end = text.indexOf('`', next.idx + 1);
-      if (end > next.idx) {
-        tokens.push({ type: 'code', value: text.slice(next.idx + 1, end) });
-        i = end + 1;
-        continue;
-      }
-    }
-
-    if (next.type === 'strong') {
-      const end = text.indexOf('**', next.idx + 2);
-      if (end > next.idx) {
-        tokens.push({ type: 'strong', value: text.slice(next.idx + 2, end) });
-        i = end + 2;
-        continue;
-      }
-    }
-
-    if (next.type === 'em') {
-      const end = text.indexOf('*', next.idx + 1);
-      if (end > next.idx) {
-        tokens.push({ type: 'em', value: text.slice(next.idx + 1, end) });
-        i = end + 1;
-        continue;
-      }
-    }
-
-    tokens.push(text.slice(next.idx, next.idx + 1));
-    i = next.idx + 1;
-  }
-  return tokens;
+// ── Markdown rendering ──────────────────────────────────────────
+// react-markdown + remark-gfm renders the rewrite docs in full:
+// tables, blockquote callouts, fenced code, links, nested lists.
+// Styling is applied on the wrapping <article> via Tailwind
+// arbitrary variants — no typography plugin, no custom node map
+// (keeps it type-safe and avoids the `node` DOM-prop warning).
+function Markdown({ content }: { content: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+  );
 }
 
-function Markdown({ content }: { content: string }) {
-  const blocks = useMemo(() => {
-    const lines = content.replace(/\r\n/g, '\n').split('\n');
-    const out: Array<
-      | { type: 'h1' | 'h2' | 'h3'; text: string }
-      | { type: 'p'; text: string }
-      | { type: 'ul'; items: string[] }
-      | { type: 'code'; language: string | null; code: string }
-    > = [];
-
-    let i = 0;
-    while (i < lines.length) {
-      const raw = lines[i] ?? '';
-      const line = raw.trimEnd();
-
-      if (line.trim() === '') {
-        i += 1;
-        continue;
-      }
-
-      if (line.startsWith('```')) {
-        const language = line.slice(3).trim() || null;
-        i += 1;
-        const codeLines: string[] = [];
-        while (i < lines.length && !(lines[i] ?? '').startsWith('```')) {
-          codeLines.push(lines[i] ?? '');
-          i += 1;
-        }
-        i += 1;
-        out.push({ type: 'code', language, code: codeLines.join('\n') });
-        continue;
-      }
-
-      if (line.startsWith('# ')) {
-        out.push({ type: 'h1', text: line.slice(2).trim() });
-        i += 1;
-        continue;
-      }
-      if (line.startsWith('## ')) {
-        out.push({ type: 'h2', text: line.slice(3).trim() });
-        i += 1;
-        continue;
-      }
-      if (line.startsWith('### ')) {
-        out.push({ type: 'h3', text: line.slice(4).trim() });
-        i += 1;
-        continue;
-      }
-
-      if (/^[-*]\s+/.test(line)) {
-        const items: string[] = [];
-        while (i < lines.length) {
-          const current = (lines[i] ?? '').trimEnd();
-          if (!/^[-*]\s+/.test(current)) break;
-          items.push(current.replace(/^[-*]\s+/, ''));
-          i += 1;
-        }
-        out.push({ type: 'ul', items });
-        continue;
-      }
-
-      const para: string[] = [line.trim()];
-      i += 1;
-      while (i < lines.length) {
-        const next = (lines[i] ?? '').trimEnd();
-        if (next.trim() === '') break;
-        if (next.startsWith('#') || next.startsWith('```') || /^[-*]\s+/.test(next)) break;
-        para.push(next.trim());
-        i += 1;
-      }
-      out.push({ type: 'p', text: para.join(' ') });
-    }
-
-    return out;
-  }, [content]);
-
+function ContentSkeleton() {
   return (
-    <div className="space-y-4">
-      {blocks.map((block, idx) => {
-        if (block.type === 'h1') {
-          return (
-            <h2 key={idx} className="text-2xl font-bold text-white">
-              {block.text}
-            </h2>
-          );
-        }
-        if (block.type === 'h2') {
-          return (
-            <h3 key={idx} className="text-xl font-bold text-white">
-              {block.text}
-            </h3>
-          );
-        }
-        if (block.type === 'h3') {
-          return (
-            <h4 key={idx} className="text-lg font-semibold text-white">
-              {block.text}
-            </h4>
-          );
-        }
-        if (block.type === 'ul') {
-          return (
-            <ul key={idx} className="list-disc pl-5 space-y-1 text-gray-200">
-              {block.items.map((item, itemIdx) => (
-                <li key={itemIdx}>
-                  {renderInlineMarkdown(item).map((t, tIdx) => {
-                    if (typeof t === 'string') return <span key={tIdx}>{t}</span>;
-                    if (t.type === 'code') {
-                      return (
-                        <code
-                          key={tIdx}
-                          className="px-1 py-0.5 rounded bg-white/10 border border-white/10 text-purple-100"
-                        >
-                          {t.value}
-                        </code>
-                      );
-                    }
-                    if (t.type === 'strong') return <strong key={tIdx}>{t.value}</strong>;
-                    return <em key={tIdx}>{t.value}</em>;
-                  })}
-                </li>
-              ))}
-            </ul>
-          );
-        }
-        if (block.type === 'code') {
-          return (
-            <pre
-              key={idx}
-              className="rounded-xl bg-black/50 border border-white/10 p-4 overflow-x-auto text-sm text-gray-100"
-            >
-              <code>{block.code}</code>
-            </pre>
-          );
-        }
-        return (
-          <p key={idx} className="text-gray-200 leading-relaxed">
-            {renderInlineMarkdown(block.text).map((t, tIdx) => {
-              if (typeof t === 'string') return <span key={tIdx}>{t}</span>;
-              if (t.type === 'code') {
-                return (
-                  <code
-                    key={tIdx}
-                    className="px-1 py-0.5 rounded bg-white/10 border border-white/10 text-purple-100"
-                  >
-                    {t.value}
-                  </code>
-                );
-              }
-              if (t.type === 'strong') return <strong key={tIdx}>{t.value}</strong>;
-              return <em key={tIdx}>{t.value}</em>;
-            })}
-          </p>
-        );
-      })}
+    <div className="space-y-3 motion-safe:animate-pulse" aria-hidden>
+      <div className="h-7 w-2/3 rounded bg-white/10" />
+      <div className="h-4 w-full rounded bg-white/5" />
+      <div className="h-4 w-11/12 rounded bg-white/5" />
+      <div className="h-4 w-4/5 rounded bg-white/5" />
+      <div className="h-24 w-full rounded-xl bg-white/5 mt-4" />
+      <div className="h-4 w-3/4 rounded bg-white/5 mt-4" />
+      <div className="h-4 w-5/6 rounded bg-white/5" />
     </div>
   );
 }
@@ -410,7 +223,11 @@ export default function CourseModule() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
-        <div className="text-gray-300">Loading module...</div>
+        <div className="h-4 w-28 rounded bg-white/10 motion-safe:animate-pulse" />
+        <div className="mt-6 h-9 w-3/4 rounded bg-white/10 motion-safe:animate-pulse" />
+        <div className="mt-8 rounded-2xl bg-white/5 border border-white/10 p-6">
+          <ContentSkeleton />
+        </div>
       </div>
     );
   }
@@ -473,11 +290,39 @@ export default function CourseModule() {
       </div>
 
       <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
-        {content ? (
-          <Markdown content={content} />
+        {content && content.trim().length > 0 ? (
+          <article
+            className={[
+              'text-gray-200 leading-relaxed break-words',
+              '[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-white [&_h1]:mt-8 [&_h1]:mb-3',
+              '[&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-7 [&_h2]:mb-3',
+              '[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-white [&_h3]:mt-6 [&_h3]:mb-2',
+              '[&_h4]:text-base [&_h4]:font-semibold [&_h4]:text-purple-200 [&_h4]:mt-5 [&_h4]:mb-2',
+              '[&_p]:my-3',
+              '[&_a]:text-purple-300 [&_a]:underline [&_a:hover]:text-purple-200',
+              '[&_strong]:text-white [&_strong]:font-semibold [&_em]:italic',
+              '[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-3 [&_ul]:space-y-1',
+              '[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-3 [&_ol]:space-y-1',
+              '[&_hr]:border-white/10 [&_hr]:my-6',
+              '[&_blockquote]:border-l-4 [&_blockquote]:border-purple-500/50 [&_blockquote]:bg-white/5 [&_blockquote]:pl-4 [&_blockquote]:pr-3 [&_blockquote]:py-2 [&_blockquote]:my-4 [&_blockquote]:text-purple-100 [&_blockquote]:rounded-r-lg',
+              '[&_code]:bg-white/10 [&_code]:border [&_code]:border-white/10 [&_code]:text-purple-100 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[0.85em]',
+              '[&_pre]:bg-black/50 [&_pre]:border [&_pre]:border-white/10 [&_pre]:rounded-xl [&_pre]:p-4 [&_pre]:overflow-x-auto [&_pre]:my-4 [&_pre]:text-sm',
+              '[&_pre_code]:bg-transparent [&_pre_code]:border-0 [&_pre_code]:p-0 [&_pre_code]:text-gray-100',
+              '[&_table]:w-full [&_table]:text-sm [&_table]:my-4 [&_table]:border-collapse',
+              '[&_th]:border [&_th]:border-white/10 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-white [&_th]:bg-white/5',
+              '[&_td]:border [&_td]:border-white/10 [&_td]:px-3 [&_td]:py-2 [&_td]:align-top',
+              '[&_img]:rounded-lg [&_img]:my-3 [&_img]:max-w-full',
+            ].join(' ')}
+          >
+            <Markdown content={content} />
+          </article>
         ) : (
-          <div className="text-gray-300">
-            Module content not available yet.
+          <div className="text-center py-8">
+            <div className="text-3xl mb-3" aria-hidden>📝</div>
+            <p className="text-gray-200 font-semibold">Content loading — check back soon</p>
+            <p className="text-gray-400 text-sm mt-1">
+              This module's lesson is being wired up. The quiz below still works.
+            </p>
           </div>
         )}
       </div>
