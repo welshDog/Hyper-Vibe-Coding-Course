@@ -119,8 +119,8 @@
 |---|---|---|
 | ✅ 1 | **DONE** — payment-success bypass closed (see Fix Log) | `/payment-success` + Stripe webhook |
 | ✅ 2 | **DONE** — module content wired (see Fix Log) | `hv_modules` + course pages |
-| 🟡 3 | Fix Pet$ display + mint config | `/pets` |
-| 🟡 4 | Make rarity random/weighted server-side | `/pets` + mint logic |
+| ✅ 3 | **DONE** — Pet$ copy fixed; mint = env-var (your action, see Fix Log) | `/pets` |
+| ✅ 4 | **DONE** — rarity rolled server-side, weighted (see Fix Log) | `/pets` + mint logic |
 | 🔵 5 | Verify leaderboard data + sort | `/leaderboard` |
 | 🔵 6 | Verify quests progress + rewards | `/quests` |
 | 🔵 7 | Wire shop products + checkout | `/shop` |
@@ -159,6 +159,27 @@
 - `CourseModule.tsx` — renders `row.content` via **react-markdown + remark-gfm** (tables, blockquotes, fenced code now render — the hand-rolled renderer mangled them); dark-theme styling via Tailwind arbitrary variants (no typography plugin); skeleton loading; friendly *"Content loading — check back soon"* empty state (never a blank box).
 
 **Cost/flag:** main JS chunk grew ~180KB (react-markdown). Acceptable; pre-existing chunk-size warning is project-wide. `/learn/:id` dead link in `PaymentSuccess` still cosmetic (unchanged).
+
+---
+
+### 🟡 #3 — Pets mint + Pet$ — FIXED/CLARIFIED (May 17, commit `b1de41a`)
+
+**"Pet$ missing" was a misread.** There is no Pet$ token — the reviewer saw the button copy `Mint Your Pet$` and assumed a balance. The displayed balance is **BROski$** (`useHUD`, shows when signed in — correct). Fix = killed the confusing copy → `Mint Your Pet`.
+
+**"Mint not configured" is an ENV gap, not a code bug** — the mint stack is fully built. `MintPetButton` shows that label when `VITE_BROSKIPET_CONTRACT_ADDRESS` is unset. 🔴 **Your action — set on Vercel (all 3 envs):**
+- `VITE_BROSKIPET_CONTRACT_ADDRESS` = deployed BROskiPet contract `0x…`
+- `VITE_MINT_VIA_RELAY=true` (relay mode → gasless + persistence)
+- Supabase Edge secrets (verify set): `BROSKIPET_CONTRACT_ADDRESS`, `BACKEND_SIGNER_PRIVATE_KEY`, optional `RELAYER_PRIVATE_KEY`/`MINT_RPC_URL`/`BUILDER_CODE`
+
+### 🔴 #4 — Rarity user-selectable — FIXED (May 17, commit `b1de41a`)
+
+Confirmed exploit: `Pets.tsx` had a rarity picker → flowed to `mint-pet-auth` which stored the client's choice. Free legendaries.
+
+**Shipped:**
+- `mint-pet-auth` (redeployed **v10**, `verify_jwt` preserved): rarity rolled **server-side**, crypto-weighted — **Common 60 / Uncommon 25 / Rare 12 / Legendary 3**. Client value ignored entirely; server value returned in the response + persisted. Also dropped the fragile cross-dir `../deno-shims.d.ts` import so repo == deployed.
+- Frontend: rarity picker removed; rarity is now a **post-mint reveal** (loot-box feel). `useMintPet` trusts only the server-returned rarity (also flows to `mint-pet-confirm` for wallet-signed).
+
+⚠️ **Report discrepancy:** the brief said tiers *Common/Rare/Epic/Legendary* — the codebase has **no "epic"**; real tiers are `common|uncommon|rare|legendary`. Used real tiers, kept the distribution shape.
 
 ---
 
