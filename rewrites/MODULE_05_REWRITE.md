@@ -1,27 +1,23 @@
-# 🧠 MODULE 5 — Build Your Agent Crew
-> **Rewrite v1 — May 16, 2026**
+# 🎬 MODULE 5 — Build Your Agent Crew
+> **Rewrite v1 — May 16, 2026 · Split into M5 (crew) + M5B (observability) — May 17**
 > Status: 🟡 Draft — ready for review
 > Original: "HyperCode The Hyper Way — Commanding the Self-Healing Swarm"
-> Rewrite goal: Split agents core + observability into two digestible parts. One big win each.
+> Rewrite goal: Agents core as its own digestible module. One big win. Observability moved to M5B.
 
 ---
 
 ## 🎯 Module Goal
 
-By the end of Part A you will have:
+By the end of this module you will have:
 - ✅ Met your Agent Crew — Agent X, the Orchestrator, the Healer
 - ✅ Activated your first agent and watched it respond
 - ✅ Understood what a self-healing swarm actually means
 - ✅ Directed your first mission using natural language
 
-By the end of Part B you will have:
-- ✅ Prometheus collecting live health data from your empire
-- ✅ Grafana showing a real dashboard of your system
-- ✅ The Healer agent wired to auto-fix broken services
-- ✅ Your empire watching itself so you don't have to
-
-**Time:** Part A = 20 mins | Part B = 20 mins
+**Time:** 20 minutes
 **Vibe:** You stop writing code. You start directing a crew. 🎬
+
+> 📺 **Pairs with Module 5B — Wire Up the Watchers.** This module builds the crew; M5B gives your empire eyes.
 
 ---
 
@@ -48,8 +44,6 @@ Three crew members you're about to meet:
 | **The Healer** | Auto-Recovery | Watches for failures and fixes them while you sleep |
 
 ---
-
-# 🅰️ PART A — Meet Your Crew
 
 ## ⚡ Step 1 — Start the Agent Swarm
 
@@ -175,7 +169,7 @@ Returns:
 
 ---
 
-## 🏆 Part A Win Moment
+## 🏆 Your Win Moment
 
 | What the tech says | What actually happened |
 |---|---|
@@ -192,119 +186,6 @@ Returns:
 
 ---
 
-# 🅱️ PART B — Wire Up the Watchers
-
-## 💡 Before Part B — Why Observability Matters
-
-Your crew is running. But how do you KNOW it's running well?
-
-> 📹 **Grafana is your CCTV system.**
-> Prometheus is the security camera recording everything.
-> Grafana is the monitor screen where you watch the footage.
-
-Without this, you're flying blind. With it, you see everything.
-
----
-
-## 📊 Step 5 — Check Prometheus is Collecting Data
-
-> ⏱️ **Time: 3 minutes**
-
-```bash
-# Prometheus should already be running
-curl http://localhost:9090/-/healthy
-# Returns: Prometheus is Healthy.
-```
-
-Open the Prometheus UI:
-```
-http://localhost:9090
-```
-
-In the search box type:
-```
-up
-```
-
-You'll see a list of all your services with `1` (healthy) or `0` (down) next to them.
-
-> 🧠 **Plain English:** Prometheus is silently recording the heartbeat of every service, every 15 seconds, 24/7. Like a doctor checking your pulse constantly but never disturbing you.
-
----
-
-## 📈 Step 6 — Open Your Grafana Dashboard
-
-> ⏱️ **Time: 5 minutes**
-
-```
-http://localhost:3001
-Username: admin
-Password: broski123
-```
-
-1. Click **Dashboards → Browse**
-2. Open **"HyperCode Empire Overview"**
-
-You'll see live panels showing:
-- ✅ All services up/down
-- ✅ Requests per second
-- ✅ Memory usage per agent
-- ✅ Error rate over last hour
-
-> 🎉 **This is your empire's control room.**
-> Netflix has dashboards like this. Spotify has dashboards like this.
-> Now you do too.
-
----
-
-## 🩹 Step 7 — Wire Healer to Auto-Recover
-
-> ⏱️ **Time: 5 minutes**
-
-Now we connect the Healer to Prometheus so it acts on what it sees:
-
-```bash
-# Tell the Healer to watch Prometheus metrics
-curl -X POST http://localhost:8008/configure \
-  -H "Content-Type: application/json" \
-  -d '{
-    "watch_prometheus": true,
-    "recovery_threshold": 3,
-    "alert_discord": true
-  }'
-```
-
-Returns:
-```json
-{
-  "status": "configured",
-  "message": "🩹 Healer now watching Prometheus. Auto-recovery active. Discord alerts on."
-}
-```
-
-> 💬 **Now the loop is complete:**
-> Prometheus watches everything → Healer reads Prometheus → Healer fixes failures automatically → Discord pings you if something needs human attention.
-> **Your empire runs itself.**
-
----
-
-## 🏆 Part B Win Moment
-
-| What the tech says | What actually happened |
-|---|---|
-| "Prometheus scraping metrics" | Every service has a live heartbeat monitor |
-| "Grafana dashboard loading" | You have a real-time control room for your empire |
-| "Healer watching Prometheus" | Auto-repair is wired to live health data |
-| "Discord alerts on" | You'll know about problems before your users do |
-
-> 🔥 **Your empire now runs, monitors, and repairs itself.**
-> You built something self-healing. That's not a student project.
-> That's production-grade infrastructure. Yours. Owned by you.
-
-**Claim your reward: +175 BROski$ — "System Sovereign" badge unlocked 📊**
-
----
-
 ## 🛑 Something Went Wrong?
 
 **Problem: Agent X not responding at localhost:8001**
@@ -313,11 +194,10 @@ docker-compose restart agent-x
 docker-compose logs agent-x --tail=20
 ```
 
-**Problem: Grafana showing "No Data"**
+**Problem: Orchestrator pipeline empty after a mission**
 ```bash
-# Check Prometheus is scraping
-curl http://localhost:9090/api/v1/targets
-# Look for "health": "up" on your services
+# Re-send the mission, then re-check
+curl http://localhost:8007/pipeline
 ```
 
 **Problem: Healer showing services as down when they're up**
@@ -332,34 +212,22 @@ docker-compose restart healer
 
 ## ✅ Module 5 Complete Checklist
 
-**Part A — Agent Crew**
 - [ ] Agent X, Orchestrator, Healer all showing "Up"
 - [ ] First mission sent to Agent X in plain English
 - [ ] Orchestrator pipeline visible
 - [ ] Healer confirmed watching all services
-- [ ] +175 BROski$ claimed — "Agent Architect" badge
-
-**Part B — Observability**
-- [ ] Prometheus returning healthy status
-- [ ] Grafana dashboard open and showing live data
-- [ ] Healer wired to Prometheus for auto-recovery
-- [ ] Discord alerts configured
-- [ ] +175 BROski$ claimed — "System Sovereign" badge
-
-**🏆 Total M5 reward: +350 BROski$ | Two badges | Empire is self-healing**
+- [ ] 🪙 **+175 BROski$ claimed — "Agent Architect" badge** 🧠
 
 ---
 
-## 🔮 What's Next — Module 6
+## 🔮 What's Next — Module 5B
 
-Your crew is assembled. Your empire watches itself.
+Your crew is assembled and running. But how do you *know* it's running well?
 
-Module 6 is where we take everything off your local machine and **deploy it to the world.**
+**Module 5B — Wire Up the Watchers** gives your empire eyes: Prometheus, Grafana, and a Healer wired to act on what it sees.
 
-Real domain. Real users. Real empire. 🌍
-
-**Let's ship it.** 🐶♾️
+**Let's watch it.** 📊
 
 ---
 
-> 📝 *Rewrite notes: Split original M5 into two clear parts (A = agents, B = observability). Each part has its own win moment and XP reward. Film director analogy replaces "Meta-Architect" abstract concept. Prometheus/Grafana/Healer introduced one at a time instead of simultaneously. Removed cognitive overload of 4 monitoring tools at once. Total XP kept the same (350 BROski$) split across two wins.*
+> 📝 *Rewrite notes: Original M5 split into M5 (this — agent crew core) + M5B (observability). Film-director analogy kept as the spine. One clean win (+175, Agent Architect). Troubleshooting trimmed to crew-relevant items. Hands off to M5B.*
