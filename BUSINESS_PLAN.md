@@ -198,3 +198,4 @@ Year 1:  ~5k signups → 150 Pro + 30 Hyper → £2,220 MRR (conservative)
 ---
 
 *Last updated: May 5, 2026 | v1.1 | by @welshDog*
+DREAM IT. VIBE IT. HYPERFOCUS z0ne
