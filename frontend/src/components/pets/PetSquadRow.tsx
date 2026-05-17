@@ -6,7 +6,9 @@
 // future species roll-out doesn't crash the row.
 
 import { HVZCard, HVZTag, type TagColor } from '../ui/hvz'
-import { useTopPets } from '../../hooks/useTopPets'
+import { useTopPets, type TopPet } from '../../hooks/useTopPets'
+import { usePetCosmeticArt } from '../../hooks/usePetCosmeticArt'
+import { PET_SLOTS } from '../../hooks/useOwnedCosmetics'
 import {
   RARITY_LABELS,
   SPECIES,
@@ -14,6 +16,7 @@ import {
 } from '../../lib/species'
 import { STAGE_BY_KEY } from '../../lib/evolution'
 import { PetCardSkeleton } from './PetCardSkeleton'
+import { PetPortrait, type EquippedCosmetics } from './PetPortrait'
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
   common:    'cyan',
@@ -28,6 +31,25 @@ export function PetSquadRow() {
   // 11 = 1 hero (col-span-2 on lg) + 2 minis on row 1 (the "podium") + 2 clean
   // rows of 4 below. Fits a 4-col grid as 3 perfectly balanced rows.
   const { topPets, loading, error } = useTopPets(11)
+
+  // Resolve every equipped cosmetic UUID across the squad → its art, in one
+  // anon-safe shop_items read. Called unconditionally (Rules of Hooks) — it
+  // no-ops to {} while topPets is still empty.
+  const cosmeticIds = topPets.flatMap((p) =>
+    p.cosmetics ? Object.values(p.cosmetics).filter(Boolean) : [],
+  )
+  const artById = usePetCosmeticArt(cosmeticIds)
+
+  const resolveEquipped = (pet: TopPet): EquippedCosmetics => {
+    const c = pet.cosmetics ?? {}
+    const out: EquippedCosmetics = {}
+    for (const slot of PET_SLOTS) {
+      const id = c[slot]
+      const art = id ? artById[id] : undefined
+      if (art) out[slot] = { image_url: art.image_url, name: art.name }
+    }
+    return out
+  }
 
   if (loading) {
     return (
@@ -73,6 +95,7 @@ export function PetSquadRow() {
         const stageInfo = STAGE_BY_KEY[p.stage]
         const isLegend = p.stage === 'legend'
         const isHero = i === 0
+        const equipped = resolveEquipped(p)
         return (
           <li
             key={p.pet_id}
@@ -82,11 +105,12 @@ export function PetSquadRow() {
               {isHero ? (
                 // Hero variant — bigger image, top-evolver tag, breathing room.
                 <div className="flex items-start gap-4">
-                  <img
-                    src={species.imageUrl}
-                    alt=""
-                    loading="lazy"
-                    className="h-20 w-20 rounded-hfz-md object-cover shrink-0 ring-2 ring-hfz-gold/40"
+                  <PetPortrait
+                    imageUrl={species.imageUrl}
+                    alt={species.displayName}
+                    size="lg"
+                    equipped={equipped}
+                    className="ring-2 ring-hfz-gold/40"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
@@ -118,14 +142,14 @@ export function PetSquadRow() {
                   </div>
                 </div>
               ) : (
-                // Mini variant — unchanged behaviour.
+                // Mini variant — now cosmetic-aware.
                 <>
                   <div className="flex items-center gap-3">
-                    <img
-                      src={species.imageUrl}
-                      alt=""
-                      loading="lazy"
-                      className="h-12 w-12 rounded-hfz-sm object-cover shrink-0"
+                    <PetPortrait
+                      imageUrl={species.imageUrl}
+                      alt={species.displayName}
+                      size="sm"
+                      equipped={equipped}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-hfz-text-primary truncate">

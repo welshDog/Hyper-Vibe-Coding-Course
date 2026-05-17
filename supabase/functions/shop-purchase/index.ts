@@ -71,6 +71,7 @@ type ShopItemMetadata = {
   type?: string;       // 'agent_access' triggers V2.4 provisioning
   v24_tier?: string;   // 'sandbox' | 'level4'
   content_url?: string;
+  consumable?: boolean; // true → re-buyable, no one-per-user guard
 };
 
 type ShopItem = {
@@ -185,20 +186,26 @@ Deno.serve(async (req: Request) => {
     return jsonAppError("This item isn't available right now.");
   }
 
-  // ── 4. Guard: already purchased ───────────────────────────────────────────
-  const { data: existing, error: purchaseCheckError } = await supabaseAdmin
-    .from('shop_purchases')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('item_id', itemId)
-    .maybeSingle();
+  // Consumables (snacks / treats / boosters / toys / hygiene) are re-buyable;
+  // everything else is one-per-user (enforced by the partial unique index).
+  const isConsumable = shopItem.metadata?.consumable === true;
 
-  if (purchaseCheckError) {
-    console.error('Ownership check failed:', purchaseCheckError.message);
-    return jsonAppError('Could not verify ownership — try again.');
-  }
-  if (existing) {
-    return jsonAppError('You already own this item!');
+  // ── 4. Guard: already purchased (non-consumables only) ────────────────────
+  if (!isConsumable) {
+    const { data: existing, error: purchaseCheckError } = await supabaseAdmin
+      .from('shop_purchases')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('item_id', itemId)
+      .maybeSingle();
+
+    if (purchaseCheckError) {
+      console.error('Ownership check failed:', purchaseCheckError.message);
+      return jsonAppError('Could not verify ownership — try again.');
+    }
+    if (existing) {
+      return jsonAppError('You already own this item!');
+    }
   }
 
   // ── 4b. Apply loyalty-tier discount (server-authoritative) ────────────────
@@ -248,9 +255,10 @@ Deno.serve(async (req: Request) => {
   const { data: purchaseRow, error: insertError } = await supabaseAdmin
     .from('shop_purchases')
     .insert({
-      user_id:      userId,
-      item_id:      itemId,
-      spent_tokens: chargeTokens,
+      user_id:       userId,
+      item_id:       itemId,
+      spent_tokens:  chargeTokens,
+      is_consumable: isConsumable,
     })
     .select('id')
     .single();

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { PetStage } from '../lib/evolution'
 import type { Rarity, SpeciesId } from '../lib/species'
+import type { PetCosmeticSlot } from '../components/pets/PetPortrait'
 
 export type TopPet = {
   pet_id:          string
@@ -18,6 +19,8 @@ export type TopPet = {
   stage:           PetStage
   evolution_count: number
   created_at:      string
+  /** Equipped cosmetics by slot → shop_item uuid (from migration 000033). */
+  cosmetics?:      Partial<Record<PetCosmeticSlot, string>>
 }
 
 type Result = {

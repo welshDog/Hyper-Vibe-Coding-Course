@@ -8,10 +8,11 @@ import { HVZCard, HVZTag, type TagColor } from '../components/ui/hvz';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ShopItemMetadata = {
-  type?: string;        // 'agent_access' triggers V2.4 provisioning
-  v24_tier?: string;    // 'sandbox' | 'level4'
-  content_url?: string; // direct download / access URL for content items
-  cosmetic?: string;    // cosmetic id this purchase equips (e.g. 'gold_frame')
+  type?: string;         // 'agent_access' triggers V2.4 provisioning
+  v24_tier?: string;     // 'sandbox' | 'level4'
+  content_url?: string;  // direct download / access URL for content items
+  cosmetic?: string;     // cosmetic id this purchase equips (e.g. 'gold_frame')
+  consumable?: boolean;  // true → re-buyable, never locks to "Owned"
 };
 
 type ShopItem = {
@@ -23,6 +24,7 @@ type ShopItem = {
   category: string;
   is_available: boolean;
   created_at: string;
+  image_url: string | null;
   metadata: ShopItemMetadata | null;
 };
 
@@ -58,17 +60,41 @@ type PurchaseResult = {
 // ── Category config ───────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<string, { heading: string; tone: TagColor }> = {
-  agent_access:  { heading: '🤖 Agent Access',       tone: 'cyan' },
-  prompt_pack:   { heading: '🧠 Prompt Packs',       tone: 'violet' },
-  bonus_content: { heading: '🎬 Bonus Content',      tone: 'pink' },
-  coaching:      { heading: '🎯 Coaching & Feedback', tone: 'amber' },
-  cosmetic:      { heading: '✨ Cosmetic Upgrades',  tone: 'pink' },
+  agent_access:   { heading: '🤖 Agent Access',        tone: 'cyan' },
+  prompt_pack:    { heading: '🧠 Prompt Packs',        tone: 'violet' },
+  bonus_content:  { heading: '🎬 Bonus Content',       tone: 'pink' },
+  coaching:       { heading: '🎯 Coaching & Feedback', tone: 'amber' },
+  cosmetic:       { heading: '✨ Cosmetic Upgrades',   tone: 'pink' },
+  pet_boost:      { heading: '⚡ Pet Boosters',        tone: 'amber' },
+  pet_care:       { heading: '🐾 Pet Care',            tone: 'cyan' },
+  pet_aura:       { heading: '🌀 Pet Auras',           tone: 'violet' },
+  pet_frame:      { heading: '🖼️ Pet Frames',          tone: 'pink' },
+  pet_badge:      { heading: '🎖️ Pet Badges',          tone: 'gold' },
+  pet_background: { heading: '🌌 Pet Backgrounds',     tone: 'cyan' },
+  food:           { heading: '🍔 Snacks & Fuel',       tone: 'amber' },
+  toys:           { heading: '🎾 Toys & Gadgets',      tone: 'pink' },
+  hygiene:        { heading: '🧼 Clean & Tidy',        tone: 'mint' },
+  sacred:         { heading: '🔮 Sacred Relics',       tone: 'violet' },
 };
 
-const CATEGORY_ORDER = ['agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic'];
+const CATEGORY_ORDER = [
+  'agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic',
+  'pet_boost', 'pet_care', 'pet_aura', 'pet_frame', 'pet_badge', 'pet_background',
+  'food', 'toys', 'hygiene', 'sacred',
+];
 
 // Categories whose deliverable is a direct content URL.
 const CONTENT_CATEGORIES = new Set(['prompt_pack', 'bonus_content']);
+
+// Collectibles: owning them IS the deliverable (art in your stash / on your
+// BROskiPet). No offline fulfillment, no Discord promise — just confirm it.
+const PET_COSMETIC_CATEGORIES = new Set([
+  'pet_aura', 'pet_frame', 'pet_badge', 'pet_background',
+]);
+const COLLECTIBLE_CATEGORIES = new Set([
+  ...PET_COSMETIC_CATEGORIES,
+  'pet_boost', 'pet_care', 'food', 'toys', 'hygiene', 'sacred',
+]);
 
 // ── Loyalty tier discounts ────────────────────────────────────────────────────
 // UI preview only — the shop-purchase Edge Function is the source of truth and
@@ -408,6 +434,41 @@ function FulfillmentBlock({
     );
   }
 
+  // ── Collectibles — owning it IS the delivery (art in your stash) ────────────
+  if (COLLECTIBLE_CATEGORIES.has(item.category)) {
+    // Pet cosmetics now have a real home — link straight to the equip panel.
+    if (PET_COSMETIC_CATEGORIES.has(item.category)) {
+      return (
+        <a
+          href="/pets"
+          className={DELIVERY_LINK_CLASS}
+          style={{
+            background: 'rgba(16,245,160,0.12)',
+            border: '1px solid rgba(16,245,160,0.4)',
+            color: 'var(--color-success-mint)',
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Sparkles className="h-4 w-4" />
+          Equip on your BROskiPet →
+        </a>
+      );
+    }
+    return (
+      <p
+        className="text-sm font-medium rounded-hfz-sm px-3 py-2.5 leading-relaxed flex items-center gap-2"
+        style={{
+          background: 'rgba(16,245,160,0.1)',
+          border: '1px solid rgba(16,245,160,0.3)',
+          color: 'var(--color-success-mint)',
+        }}
+      >
+        <Sparkles className="h-4 w-4 flex-shrink-0" />
+        Added to your collection ✨
+      </p>
+    );
+  }
+
   // ── Everything else (e.g. coaching) — owned, fulfilled offline ──────────────
   return (
     <p
@@ -429,6 +490,8 @@ function FulfillmentBlock({
 interface ItemCardProps {
   item: ShopItem;
   owned: boolean;
+  consumable: boolean;
+  ownedCount: number;
   purchase: ShopPurchase | undefined;
   balance: number;
   tier: string;
@@ -437,7 +500,7 @@ interface ItemCardProps {
   onBuy: (itemId: string) => void;
 }
 
-function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasing, onBuy }: ItemCardProps) {
+function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier, discountPct, purchasing, onBuy }: ItemCardProps) {
   const catConfig = CATEGORY_CONFIG[item.category];
   const effectivePrice = discountedPrice(item.price_tokens, tier);
   const hasDiscount = discountPct > 0 && effectivePrice < item.price_tokens;
@@ -466,7 +529,7 @@ function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasin
       cursor: 'not-allowed',
     };
   } else {
-    buttonContent = 'Buy →';
+    buttonContent = consumable && ownedCount > 0 ? 'Buy again →' : 'Buy →';
     buttonStyle = {
       background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
       color: '#fff',
@@ -477,6 +540,27 @@ function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasin
 
   return (
     <HVZCard padding={20} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {item.image_url && (
+        <div
+          className="-mx-1 -mt-1 mb-4 rounded-hfz-sm overflow-hidden flex items-center justify-center"
+          style={{
+            aspectRatio: '4 / 3',
+            background:
+              'radial-gradient(circle at 50% 40%, rgba(123,47,190,0.18), rgba(15,27,53,0.6))',
+            border: '1px solid rgba(168,85,247,0.18)',
+          }}
+        >
+          <img
+            src={item.image_url}
+            alt={item.name}
+            loading="lazy"
+            className="h-full w-full object-contain p-3 transition-transform duration-hfz-base ease-hfz-smooth hover:scale-[1.04]"
+            onError={(e) => {
+              (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+            }}
+          />
+        </div>
+      )}
       <div className="flex items-center gap-2 flex-wrap self-start mb-3">
         {catConfig && (
           <HVZTag color={catConfig.tone}>
@@ -486,6 +570,11 @@ function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasin
         {owned && (
           <HVZTag color="mint">
             <CheckCircle className="h-3 w-3" /> Owned
+          </HVZTag>
+        )}
+        {consumable && ownedCount > 0 && (
+          <HVZTag color="mint">
+            <CheckCircle className="h-3 w-3" /> {ownedCount} owned
           </HVZTag>
         )}
       </div>
@@ -569,6 +658,14 @@ export default function ShopPage() {
   const purchaseByItem = useMemo(() => {
     const m = new Map<string, ShopPurchase>();
     for (const p of purchases) m.set(p.item_id, p);
+    return m;
+  }, [purchases]);
+
+  // How many times each item has been bought — drives the "✓ N owned" chip on
+  // re-buyable consumables (which can have many rows per item).
+  const countByItem = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of purchases) m.set(p.item_id, (m.get(p.item_id) ?? 0) + 1);
     return m;
   }, [purchases]);
 
@@ -661,27 +758,36 @@ export default function ShopPage() {
         return;
       }
 
-      // Optimistically mark owned; fetchPurchases() pulls real fulfillment state
-      // (incl. Mission Control link) — and the poll picks up async provisioning.
-      setPurchases((prev) => [
-        {
-          id: `optimistic-${itemId}`,
-          item_id: itemId,
-          spent_tokens: data.spent_tokens,
-          purchased_at: new Date().toISOString(),
-          fulfillment_metadata: data.agent_access_pending
-            ? { provision_status: 'pending' }
-            : null,
-        },
-        ...prev.filter((p) => p.item_id !== itemId),
-      ]);
+      const boughtItem = items.find((i) => i.id === itemId);
+      const isConsumable = boughtItem?.metadata?.consumable === true;
+
+      // Non-consumables: optimistically mark owned so the card flips to its
+      // fulfillment state instantly. Consumables can have many rows and never
+      // lock — skip the optimistic push and just let fetchPurchases() refresh
+      // the owned count (avoids a count flicker).
+      if (!isConsumable) {
+        setPurchases((prev) => [
+          {
+            id: `optimistic-${itemId}`,
+            item_id: itemId,
+            spent_tokens: data.spent_tokens,
+            purchased_at: new Date().toISOString(),
+            fulfillment_metadata: data.agent_access_pending
+              ? { provision_status: 'pending' }
+              : null,
+          },
+          ...prev.filter((p) => p.item_id !== itemId),
+        ]);
+      }
       setUser({ ...user, broski_tokens: data.new_balance });
       pollAttempts.current = 0;
       void fetchPurchases();
 
-      const itemName = items.find((i) => i.id === itemId)?.name ?? data.item_name;
+      const itemName = boughtItem?.name ?? data.item_name;
       const notificationText = data.agent_access_pending
         ? `🤖 Agent access queued! Check Discord for your Mission Control link.`
+        : isConsumable
+        ? `🎉 NICE ONE BROski♾️ — stocked up on ${itemName} (-${data.spent_tokens.toLocaleString()} 🪙)`
         : `🎉 NICE ONE BROski♾️ — unlocked ${itemName} (-${data.spent_tokens.toLocaleString()} 🪙)`;
 
       setNotification({ type: 'success', text: notificationText });
@@ -806,19 +912,26 @@ export default function ShopPage() {
                     {config?.heading ?? cat}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {catItems.map((item) => (
-                      <ItemCard
-                        key={item.id}
-                        item={item}
-                        owned={purchaseByItem.has(item.id)}
-                        purchase={purchaseByItem.get(item.id)}
-                        balance={balance}
-                        tier={tierName}
-                        discountPct={discountPct}
-                        purchasing={purchasingId === item.id}
-                        onBuy={requestBuy}
-                      />
-                    ))}
+                    {catItems.map((item) => {
+                      const isConsumable = item.metadata?.consumable === true;
+                      return (
+                        <ItemCard
+                          key={item.id}
+                          item={item}
+                          // Consumables never lock to the fulfillment state —
+                          // they stay buyable.
+                          owned={!isConsumable && purchaseByItem.has(item.id)}
+                          consumable={isConsumable}
+                          ownedCount={countByItem.get(item.id) ?? 0}
+                          purchase={purchaseByItem.get(item.id)}
+                          balance={balance}
+                          tier={tierName}
+                          discountPct={discountPct}
+                          purchasing={purchasingId === item.id}
+                          onBuy={requestBuy}
+                        />
+                      );
+                    })}
                   </div>
                 </section>
               );

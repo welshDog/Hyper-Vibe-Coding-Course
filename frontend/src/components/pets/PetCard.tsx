@@ -21,6 +21,14 @@ import {
 } from '../../lib/evolution'
 import { MoodBadge } from './MoodBadge'
 import { XPBar } from './XPBar'
+import {
+  PetPortrait,
+  type PetCosmeticSlot,
+  type EquippedCosmetics,
+} from './PetPortrait'
+
+// Re-exported for back-compat — these types now live in PetPortrait.
+export type { PetCosmeticSlot, EquippedCosmetics }
 
 // Pointer-tracked tilt — Pokémon-card holo feel without the gaudy.
 // Capped at ~6° so it stays elegant; perspective 1000px keeps the depth shallow.
@@ -40,6 +48,8 @@ export type Pet = {
   ipfs_cid:        string
   chain_id:        number
   created_at:      string
+  /** Equipped cosmetics by slot → shop_item uuid. Written via the equip RPC. */
+  cosmetics?:      Partial<Record<PetCosmeticSlot, string>>
 }
 
 type Props = {
@@ -50,6 +60,8 @@ type Props = {
   onClick?:    () => void
   /** Pet was minted this session — play the gold shimmer sweep once. */
   freshMint?:  boolean
+  /** Resolved cosmetic art for this pet's equipped slots. */
+  equipped?:   EquippedCosmetics
 }
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
@@ -59,7 +71,7 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
   legendary: 'gold',
 }
 
-export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false }: Props) {
+export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped }: Props) {
   // ⚠️  All hooks declared up top — Rules of Hooks. Even though `tilt` only
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
@@ -80,11 +92,11 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
         style={{ minWidth: 220 }}
       >
         <div className="flex items-center gap-3">
-          <img
-            src={species.imageUrl}
-            alt=""
-            className="h-12 w-12 rounded-hfz-sm object-cover"
-            loading="lazy"
+          <PetPortrait
+            imageUrl={species.imageUrl}
+            alt={species.displayName}
+            size="sm"
+            equipped={equipped}
           />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-hfz-text-primary truncate">{pet.pet_name}</p>
@@ -158,25 +170,24 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
           </div>
         )}
 
-        <div
-          className={`relative shrink-0 rounded-hfz-md ${isEvolving ? 'motion-safe:animate-border-pulse' : ''}`}
-        >
-          <img
-            src={species.imageUrl}
-            alt={species.displayName}
-            className="h-20 w-20 rounded-hfz-md object-cover"
-            loading="lazy"
-          />
-          {isLegend && (
-            <span
-              aria-hidden
-              className="absolute -bottom-1 -right-1 text-lg drop-shadow"
-              title="Fully evolved"
-            >
-              ✨
-            </span>
-          )}
-        </div>
+        <PetPortrait
+          imageUrl={species.imageUrl}
+          alt={species.displayName}
+          size="lg"
+          equipped={equipped}
+          className={isEvolving ? 'motion-safe:animate-border-pulse' : undefined}
+          cornerFallback={
+            isLegend ? (
+              <span
+                aria-hidden
+                className="absolute -bottom-1 -right-1 text-lg drop-shadow"
+                title="Fully evolved"
+              >
+                ✨
+              </span>
+            ) : null
+          }
+        />
 
         <div className="flex-1 min-w-0">
           <header className="flex items-start justify-between gap-3">
