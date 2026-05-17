@@ -20,11 +20,9 @@ const AUTHED_LINKS: { label: string; href: string }[] = [
 ];
 
 export function Navbar() {
-  const { user, signOut } = useAuthStore();
+  const { user, loading, signOut } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  // Derive isMenuOpen from pathname so route changes auto-close the drawer
-  // without a setState-in-effect. See React 19 react-hooks/set-state-in-effect rule.
   const [openedAtPath, setOpenedAtPath] = useState<string | null>(null);
   const isMenuOpen = openedAtPath === location.pathname;
   const toggleMenu = () =>
@@ -117,7 +115,13 @@ export function Navbar() {
           </div>
 
           <div className="hidden sm:flex sm:items-center sm:gap-4">
-            {user ? (
+            {/* ⏳ While Supabase checks the session — show nothing, avoid the Sign in flash */}
+            {loading ? (
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-16 rounded-hfz-md bg-white/10 motion-safe:animate-pulse" />
+                <div className="h-8 w-24 rounded-hfz-md bg-white/10 motion-safe:animate-pulse" />
+              </div>
+            ) : user ? (
               <>
                 {tier && <LoyaltyTierBadge tier={tier} size="sm" />}
                 <Link to="/shop" className={navLinkClass}>
@@ -200,7 +204,15 @@ export function Navbar() {
               ))}
           </div>
           <div className="px-4 py-4 border-t border-hfz-border-violet">
-            {user ? (
+            {/* ⏳ Mobile: same loading guard */}
+            {loading ? (
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-white/10 motion-safe:animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-4 w-32 rounded bg-white/10 motion-safe:animate-pulse" />
+                </div>
+              </div>
+            ) : user ? (
               <div className="flex items-center gap-3">
                 {avatarUrl ? (
                   <img
