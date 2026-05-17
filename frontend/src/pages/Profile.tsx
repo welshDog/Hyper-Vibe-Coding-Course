@@ -29,12 +29,22 @@ type LoyaltyTierRow = {
   lifetime_earned: number;
 };
 
+type FulfillmentMetadata = {
+  provision_status?: 'pending' | 'provisioned' | 'failed';
+  mission_control_url?: string | null;
+};
+
 type ShopPurchaseWithItem = {
   id: string;
   item_id: string;
   spent_tokens: number;
   purchased_at: string;
-  shop_items: Array<{ name: string }> | null;
+  fulfillment_metadata: FulfillmentMetadata | null;
+  shop_items: Array<{
+    name: string;
+    category: string;
+    metadata: { type?: string; content_url?: string; cosmetic?: string } | null;
+  }> | null;
 };
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
@@ -43,13 +53,28 @@ function Avatar({
   name,
   url,
   size = 'lg',
+  frame = null,
 }: {
   name: string;
   url?: string | null;
   size?: 'sm' | 'lg';
+  frame?: 'gold' | null;
 }) {
   const dim = size === 'lg' ? 'h-24 w-24 text-3xl' : 'h-10 w-10 text-sm';
   const initial = name?.charAt(0)?.toUpperCase() ?? '?';
+
+  const frameStyle: React.CSSProperties =
+    frame === 'gold'
+      ? {
+          border: '2px solid var(--color-gold-light)',
+          boxShadow:
+            '0 0 0 4px rgba(245,158,11,0.2), 0 0 24px rgba(245,158,11,0.45)',
+        }
+      : {
+          border: '2px solid var(--color-violet-lt)',
+          boxShadow:
+            '0 0 0 4px rgba(168,85,247,0.15), 0 0 20px rgba(168,85,247,0.3)',
+        };
 
   if (url) {
     return (
@@ -57,10 +82,7 @@ function Avatar({
         src={url}
         alt={name}
         className={`${dim} rounded-full object-cover`}
-        style={{
-          border: '2px solid var(--color-violet-lt)',
-          boxShadow: '0 0 0 4px rgba(168,85,247,0.15), 0 0 20px rgba(168,85,247,0.3)',
-        }}
+        style={frameStyle}
       />
     );
   }
@@ -69,8 +91,7 @@ function Avatar({
       className={`${dim} rounded-full flex items-center justify-center font-display font-extrabold text-white`}
       style={{
         background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
-        border: '2px solid var(--color-violet-lt)',
-        boxShadow: '0 0 0 4px rgba(168,85,247,0.15), 0 0 20px rgba(168,85,247,0.3)',
+        ...frameStyle,
       }}
     >
       {initial}
@@ -124,7 +145,7 @@ export default function Profile() {
           .maybeSingle(),
         supabase
           .from('shop_purchases')
-          .select('id, item_id, spent_tokens, purchased_at, shop_items(name)')
+          .select('id, item_id, spent_tokens, purchased_at, fulfillment_metadata, shop_items(name, category, metadata)')
           .eq('user_id', user!.id)
           .order('purchased_at', { ascending: false }),
       ]);
@@ -173,12 +194,68 @@ export default function Profile() {
     year: 'numeric',
   });
 
+  const ownsGoldFrame = shopPurchases.some(
+    (p) => p.shop_items?.[0]?.metadata?.cosmetic === 'gold_frame',
+  );
+
+  function renderDelivery(p: ShopPurchaseWithItem) {
+    const si = p.shop_items?.[0];
+    const cat = si?.category;
+    const meta = si?.metadata;
+    const fm = p.fulfillment_metadata;
+
+    if (meta?.type === 'agent_access') {
+      if (fm?.provision_status === 'provisioned' && fm.mission_control_url) {
+        return (
+          <a
+            href={fm.mission_control_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-hfz-cyan hover:text-hfz-violet-light transition-colors font-semibold no-underline"
+          >
+            Mission Control ↗
+          </a>
+        );
+      }
+      if (fm?.provision_status === 'failed') {
+        return <span className="text-hfz-danger">Failed — ping support</span>;
+      }
+      return <span className="text-hfz-cyan">Provisioning…</span>;
+    }
+
+    if (cat === 'prompt_pack' || cat === 'bonus_content') {
+      return meta?.content_url ? (
+        <a
+          href={meta.content_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-hfz-cyan hover:text-hfz-violet-light transition-colors font-semibold no-underline"
+        >
+          Open ↗
+        </a>
+      ) : (
+        <span className="text-hfz-pink">Dropping soon 🎁</span>
+      );
+    }
+
+    if (cat === 'cosmetic') {
+      return <span className="text-hfz-mint">Equipped ✨</span>;
+    }
+
+    return <span className="text-hfz-text-secondary">We'll DM you</span>;
+  }
+
   return (
     <div className="bg-hfz-space-black min-h-screen py-12 sm:py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-10">
         {/* Hero */}
         <div className="flex items-center gap-6 flex-wrap">
-          <Avatar name={displayName} url={user.avatar_url} size="lg" />
+          <Avatar
+            name={displayName}
+            url={user.avatar_url}
+            size="lg"
+            frame={ownsGoldFrame ? 'gold' : null}
+          />
           <div className="flex-1 min-w-0">
             <HVZTag color="violet">👤 Your Z0ne</HVZTag>
             <h1
@@ -469,6 +546,9 @@ export default function Profile() {
                     <th className="text-left px-4 py-3 font-mono uppercase text-xs tracking-hfz-caps text-hfz-text-secondary">
                       Item
                     </th>
+                    <th className="text-left px-4 py-3 font-mono uppercase text-xs tracking-hfz-caps text-hfz-text-secondary">
+                      Delivery
+                    </th>
                     <th className="text-right px-4 py-3 font-mono uppercase text-xs tracking-hfz-caps text-hfz-text-secondary">
                       Spent
                     </th>
@@ -482,6 +562,9 @@ export default function Profile() {
                     <tr key={p.id} className="hover:bg-hfz-violet/5 transition-colors">
                       <td className="px-4 py-3 text-hfz-text-primary font-medium">
                         {p.shop_items?.[0]?.name ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {renderDelivery(p)}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-hfz-gold-light tabular-nums font-mono">
                         -{p.spent_tokens.toLocaleString()} 🪙

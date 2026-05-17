@@ -55,6 +55,30 @@ All rewrites: https://github.com/welshDog/Hyper-Vibe-Coding-Course/tree/main/rew
 
 ---
 
+## 🛒 BROski$ Shop — Fulfillment v2 (BUILT May 17 — deploy pending)
+
+Shop was UI-complete but **bought = dead end**. Fixed across 3 sweeps:
+
+| Sweep | What shipped |
+|---|---|
+| **Fulfillment surface** | Every category now delivers: agent_access → Mission Control link + key hint (auto-polls while provisioning) · prompt_pack/bonus_content → content_url or graceful "dropping soon" · cosmetic → Gold Frame renders on Profile avatar · coaching → "we'll DM you". Profile gained a Delivery column. |
+| **Safety-net** | Buy-confirm modal (Esc/backdrop, locked while in-flight) + server auto-refund via `award_tokens` if the purchase row fails after spend. |
+| **Tier discounts** | Server-authoritative: bronze/silver/gold/hyper = **0/5/10/15% off** all items. UI shows struck price + breakdown; bronze gets a "Reach Silver" nudge. |
+
+**Files:** `frontend/src/pages/ShopPage.tsx`, `frontend/src/pages/Profile.tsx`, `supabase/functions/shop-purchase/index.ts`, migration `20260517000030_shop_cosmetic_metadata.sql`, `seed-shop-items.sql`
+
+**Status:** ✅ code done · TS+ESLint pass · ⚠️ NOT deployed, NO E2E run yet
+
+**To go live (2 steps):**
+1. `supabase db push` (applies 000030 — Gold Frame stays violet until then)
+2. `supabase functions deploy shop-purchase` (keep verify_jwt ON) → deploy frontend to Vercel preview
+
+**Open follow-ups (🟡 polish, not blocking):** drop real `metadata.content_url` into seed for prompt packs/cheat sheet/bonus footage · rebuyable items · Stripe `price_gbp` fallback · admin catalogue UI · stock/featured
+
+> ⚠️ `TIER_DISCOUNT_PCT` is duplicated in the edge fn + ShopPage — **keep both in sync** (comment marks both).
+
+---
+
 ## 🎯 Course Mission (Locked)
 
 > **"Stop apologising for your brain. Start building."**
