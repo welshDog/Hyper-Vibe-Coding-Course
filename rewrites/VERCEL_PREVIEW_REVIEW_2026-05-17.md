@@ -118,7 +118,7 @@
 | Priority | What | Where |
 |---|---|---|
 | ✅ 1 | **DONE** — payment-success bypass closed (see Fix Log) | `/payment-success` + Stripe webhook |
-| 🔴 2 | Wire module body content to frontend | `hv_modules` + course pages |
+| ✅ 2 | **DONE** — module content wired (see Fix Log) | `hv_modules` + course pages |
 | 🟡 3 | Fix Pet$ display + mint config | `/pets` |
 | 🟡 4 | Make rarity random/weighted server-side | `/pets` + mint logic |
 | 🔵 5 | Verify leaderboard data + sort | `/leaderboard` |
@@ -145,6 +145,20 @@
 - `stripe-webhook/index.ts` — now the **single trusted grantor**: creates `enrollments` server-side *after* Stripe signature verification (single course via `client_reference_id`; all active courses for tier/subscription); also handles single-course buys with no tier mapping. Redeployed **v33**, `verify_jwt=false` preserved.
 
 **Follow-up (not blocking):** tier→courses mapping is currently "all active courses" for any tier/subscription (mirrors prior intended behaviour, now verified). A finer per-tier course mapping is a future refinement. `/learn/:id` is a dead link in `PaymentSuccess` (no such route) — cosmetic, low priority.
+
+---
+
+### 🔴 #2 — Module content not wired — FIXED (May 17, commit `231f8b8`)
+
+**Approach changed from the brief (with Lyndz's sign-off):** the plan said runtime-fetch from GitHub raw on every page load. The code already half-expected a DB `content` column (existing `select(...content)` + fallback), so we went DB-column instead — faster render, no GitHub runtime dependency, `content_hash` becomes meaningful.
+
+**Also caught a brief bug:** Step 1 said point M5B `script_path` at `MODULE_05B_REWRITE.md` — **that file didn't exist** (M5B was Part B inside `MODULE_05_REWRITE.md`). Fixed properly: split `MODULE_05` → M5 (Part A) + new `MODULE_05B_REWRITE.md` (Part B), then corrected the path.
+
+**Shipped:**
+- `hv_modules` — added `content` column + enabled `http` extension; populated all 11 modules from `rewrites/*.md` via **server-side `http_get`** keyed by `script_path` (status-gated 200), `content_hash` recomputed. Re-sync = re-run that one statement.
+- `CourseModule.tsx` — renders `row.content` via **react-markdown + remark-gfm** (tables, blockquotes, fenced code now render — the hand-rolled renderer mangled them); dark-theme styling via Tailwind arbitrary variants (no typography plugin); skeleton loading; friendly *"Content loading — check back soon"* empty state (never a blank box).
+
+**Cost/flag:** main JS chunk grew ~180KB (react-markdown). Acceptable; pre-existing chunk-size warning is project-wide. `/learn/:id` dead link in `PaymentSuccess` still cosmetic (unchanged).
 
 ---
 
