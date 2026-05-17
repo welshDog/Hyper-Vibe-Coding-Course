@@ -368,7 +368,7 @@ export default function Profile() {
                             </div>
                           </div>
                         </div>
-                        <Link to={`/learn/${enr.course_id}`} className="no-underline">
+                        <Link to={`/catalog/${enr.course_id}`} className="no-underline">
                           <HVZButton variant={isComplete ? 'ghost' : 'primary'} size="sm">
                             {isComplete ? 'Review' : 'Continue →'}
                           </HVZButton>

@@ -121,10 +121,10 @@
 | ✅ 2 | **DONE** — module content wired (see Fix Log) | `hv_modules` + course pages |
 | ✅ 3 | **DONE** — Pet$ copy fixed; mint = env-var (your action, see Fix Log) | `/pets` |
 | ✅ 4 | **DONE** — rarity rolled server-side, weighted (see Fix Log) | `/pets` + mint logic |
-| 🔵 5 | Verify leaderboard data + sort | `/leaderboard` |
-| 🔵 6 | Verify quests progress + rewards | `/quests` |
-| 🔵 7 | Wire shop products + checkout | `/shop` |
-| 🔵 8 | Confirm profile live data + save | `/profile` |
+| ✅ 5 | **VERIFIED PASS** — leaderboard (see Verify Log) | `/leaderboard` |
+| ✅ 6 | **VERIFIED PASS** — quests wiring (see Verify Log) | `/quests` |
+| ✅ 7 | **VERIFIED PASS** — shop = token sink by design (see Verify Log) | `/shop` |
+| ✅ 8 | **VERIFIED PASS** + dead-link fixed (see Verify Log) | `/profile` |
 | 🟢 9 | Fix Husky warning | `package.json` |
 | 🟢 10 | Run full production checklist | All routes |
 
@@ -180,6 +180,19 @@ Confirmed exploit: `Pets.tsx` had a rarity picker → flowed to `mint-pet-auth` 
 - Frontend: rarity picker removed; rarity is now a **post-mint reveal** (loot-box feel). `useMintPet` trusts only the server-returned rarity (also flows to `mint-pet-confirm` for wallet-signed).
 
 ⚠️ **Report discrepancy:** the brief said tiers *Common/Rare/Epic/Legendary* — the codebase has **no "epic"**; real tiers are `common|uncommon|rare|legendary`. Used real tiers, kept the distribution shape.
+
+---
+
+## 🔵 Verify Log — #5–8 (May 17, commit `bba009b`+)
+
+These were *verification* tasks. Investigated code + DB. All wiring **PASS**.
+
+- **#5 Leaderboard — PASS.** `leaderboard` view = `row_number() OVER (ORDER BY total_xp DESC)` over `user_xp ⨝ users`, `LIMIT 50`; UI orders by rank → XP-desc ✅. Current-user highlight is name-based (the view deliberately hides `user_id` for public anon access) — works for unique names; minor, not a bug.
+- **#6 Quests — PASS (wiring).** `quests` (7 rows) carries `xp_reward`/`token_reward`; `complete_quest` RPC exists and does the awarding — the page is correctly **display-only**. `user_quests` is empty (0 rows) so everyone currently sees "no quests yet" — expected, nothing has triggered them. Quest XP is a **separate subsystem** from the `hv_modules` rebalance → no inconsistency (report's concern moot). *Future UX:* page only lists a user's own quests, not the 7-quest catalog.
+- **#7 Shop — PASS.** 53/55 items available, render from `shop_items`. Buy → `shop-purchase` Edge Fn (ACTIVE v28). ⚠️ Report expected "wires to Stripe" — **incorrect by design**: the shop is a **BROski$ token sink**; Stripe is for `/tokens` + `/pricing`. `price_gbp` is informational only. Currency correctly = tokens.
+- **#8 Profile — PASS + 2 findings.** Live reads + save/refresh all correct.
+  1. **CLAUDE.md was stale** — claimed `users.avatar_url` doesn't exist; verified it DOES (Profile save works). (The stale line has since been removed from CLAUDE.md.)
+  2. **Dead link FIXED** — Profile "Continue/Review" pointed at `/learn/:id` (unregistered route) → changed to `/catalog/:id` (CourseDetail). ⚠️ `PaymentSuccess` has the **same** dead `/learn/:id` link — still open, low priority.
 
 ---
 
