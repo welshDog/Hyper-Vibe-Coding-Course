@@ -23,6 +23,7 @@ type ShopItem = {
   category: string;
   is_available: boolean;
   created_at: string;
+  image_url: string | null;
   metadata: ShopItemMetadata | null;
 };
 
@@ -58,17 +59,41 @@ type PurchaseResult = {
 // ── Category config ───────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<string, { heading: string; tone: TagColor }> = {
-  agent_access:  { heading: '🤖 Agent Access',       tone: 'cyan' },
-  prompt_pack:   { heading: '🧠 Prompt Packs',       tone: 'violet' },
-  bonus_content: { heading: '🎬 Bonus Content',      tone: 'pink' },
-  coaching:      { heading: '🎯 Coaching & Feedback', tone: 'amber' },
-  cosmetic:      { heading: '✨ Cosmetic Upgrades',  tone: 'pink' },
+  agent_access:   { heading: '🤖 Agent Access',        tone: 'cyan' },
+  prompt_pack:    { heading: '🧠 Prompt Packs',        tone: 'violet' },
+  bonus_content:  { heading: '🎬 Bonus Content',       tone: 'pink' },
+  coaching:       { heading: '🎯 Coaching & Feedback', tone: 'amber' },
+  cosmetic:       { heading: '✨ Cosmetic Upgrades',   tone: 'pink' },
+  pet_boost:      { heading: '⚡ Pet Boosters',        tone: 'amber' },
+  pet_care:       { heading: '🐾 Pet Care',            tone: 'cyan' },
+  pet_aura:       { heading: '🌀 Pet Auras',           tone: 'violet' },
+  pet_frame:      { heading: '🖼️ Pet Frames',          tone: 'pink' },
+  pet_badge:      { heading: '🎖️ Pet Badges',          tone: 'gold' },
+  pet_background: { heading: '🌌 Pet Backgrounds',     tone: 'cyan' },
+  food:           { heading: '🍔 Snacks & Fuel',       tone: 'amber' },
+  toys:           { heading: '🎾 Toys & Gadgets',      tone: 'pink' },
+  hygiene:        { heading: '🧼 Clean & Tidy',        tone: 'mint' },
+  sacred:         { heading: '🔮 Sacred Relics',       tone: 'violet' },
 };
 
-const CATEGORY_ORDER = ['agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic'];
+const CATEGORY_ORDER = [
+  'agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic',
+  'pet_boost', 'pet_care', 'pet_aura', 'pet_frame', 'pet_badge', 'pet_background',
+  'food', 'toys', 'hygiene', 'sacred',
+];
 
 // Categories whose deliverable is a direct content URL.
 const CONTENT_CATEGORIES = new Set(['prompt_pack', 'bonus_content']);
+
+// Collectibles: owning them IS the deliverable (art in your stash / on your
+// BROskiPet). No offline fulfillment, no Discord promise — just confirm it.
+const PET_COSMETIC_CATEGORIES = new Set([
+  'pet_aura', 'pet_frame', 'pet_badge', 'pet_background',
+]);
+const COLLECTIBLE_CATEGORIES = new Set([
+  ...PET_COSMETIC_CATEGORIES,
+  'pet_boost', 'pet_care', 'food', 'toys', 'hygiene', 'sacred',
+]);
 
 // ── Loyalty tier discounts ────────────────────────────────────────────────────
 // UI preview only — the shop-purchase Edge Function is the source of truth and
@@ -408,6 +433,26 @@ function FulfillmentBlock({
     );
   }
 
+  // ── Collectibles — owning it IS the delivery (art in your stash) ────────────
+  if (COLLECTIBLE_CATEGORIES.has(item.category)) {
+    const isPetCosmetic = PET_COSMETIC_CATEGORIES.has(item.category);
+    return (
+      <p
+        className="text-sm font-medium rounded-hfz-sm px-3 py-2.5 leading-relaxed flex items-center gap-2"
+        style={{
+          background: 'rgba(16,245,160,0.1)',
+          border: '1px solid rgba(16,245,160,0.3)',
+          color: 'var(--color-success-mint)',
+        }}
+      >
+        <Sparkles className="h-4 w-4 flex-shrink-0" />
+        {isPetCosmetic
+          ? 'In your stash — equip it on your BROskiPet 🐾'
+          : 'Added to your collection ✨'}
+      </p>
+    );
+  }
+
   // ── Everything else (e.g. coaching) — owned, fulfilled offline ──────────────
   return (
     <p
@@ -477,6 +522,27 @@ function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasin
 
   return (
     <HVZCard padding={20} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {item.image_url && (
+        <div
+          className="-mx-1 -mt-1 mb-4 rounded-hfz-sm overflow-hidden flex items-center justify-center"
+          style={{
+            aspectRatio: '4 / 3',
+            background:
+              'radial-gradient(circle at 50% 40%, rgba(123,47,190,0.18), rgba(15,27,53,0.6))',
+            border: '1px solid rgba(168,85,247,0.18)',
+          }}
+        >
+          <img
+            src={item.image_url}
+            alt={item.name}
+            loading="lazy"
+            className="h-full w-full object-contain p-3 transition-transform duration-hfz-base ease-hfz-smooth hover:scale-[1.04]"
+            onError={(e) => {
+              (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+            }}
+          />
+        </div>
+      )}
       <div className="flex items-center gap-2 flex-wrap self-start mb-3">
         {catConfig && (
           <HVZTag color={catConfig.tone}>

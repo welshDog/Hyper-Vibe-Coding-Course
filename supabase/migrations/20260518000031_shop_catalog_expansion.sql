@@ -1,107 +1,49 @@
--- seed-shop-items.sql
--- Idempotent seed for shop_items.
--- Uses explicit UUIDs so ON CONFLICT (id) DO NOTHING is safe on re-runs.
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Migration 000031: BROski$ Shop — catalogue expansion (49 collectible items)
 --
--- Requires: migration 000014 (shop_items table) for the first 5 items.
---           migration 000021 (metadata JSONB column) for the agent_access item.
---           Run migrations first, then this seed.
+-- Why:
+--   The shop shipped with 6 utility items but the repo carries 49 pieces of
+--   item art (pets, snacks, cosmetics, toys, relics) with nowhere to live.
+--   This lights the whole catalogue up: adds an image_url column and seeds
+--   every art asset as a real, buyable shop_item.
 --
--- Run against your Supabase DB:
---   supabase db reset                                          (dev)
---   psql $DATABASE_URL -f supabase/seed-shop-items.sql        (targeted)
+-- Change:
+--   1. ADD COLUMN IF NOT EXISTS shop_items.image_url text
+--      (public URL under frontend/public — served by Vite at site root).
+--   2. Idempotent INSERT of 49 items with stable UUIDs:
+--        33330001-* food (6)            33330006-* pet_boost (5)
+--        33330002-* hygiene (3)         33330007-* pet_care (9)
+--        33330003-* pet_aura (5)        33330008-* pet_frame (5)
+--        33330004-* pet_background (5)  33330009-* sacred (2)
+--        33330005-* pet_badge (5)       33330010-* toys (4)
 --
--- To update a description or price after initial seed, use UPDATE manually —
--- re-seeding a row with the same id is a no-op by design.
+-- Notes:
+--   - Art files carry a literal `.png.png` double extension on disk — the
+--     image_url paths below match exactly. (Cosmetic wart; safe to rename
+--     in a later sweep, but the paths must track the real filenames.)
+--   - metadata: cosmetics carry { "pet_slot": ... } for future BROskiPets
+--     equip wiring; consumables carry { "consumable": true }. No item here
+--     reuses the profile "cosmetic" key (that stays gold-frame only).
+--
+-- Idempotent — ON CONFLICT (id) DO NOTHING + ADD COLUMN IF NOT EXISTS.
+-- Requires: 000014 (shop_items), 000021 (metadata column).
+-- ═══════════════════════════════════════════════════════════════════════════
 
--- ── Original 5 items (no metadata needed — defaults to '{}') ─────────────────
+BEGIN;
 
-INSERT INTO public.shop_items (id, name, description, price_tokens, price_gbp, category, is_available)
-VALUES
-  (
-    '11111111-0001-0000-0000-000000000001',
-    'Hyper Prompt Pack Vol.1',
-    '25 battle-tested prompts for shipping faster with AI. Copy, paste, ship.',
-    50,
-    NULL,
-    'prompt_pack',
-    TRUE
-  ),
-  (
-    '11111111-0002-0000-0000-000000000002',
-    'Module 2 Deep Dive',
-    'Extended walkthrough: build a full SaaS in 2 hours. 90 minutes of bonus footage.',
-    200,
-    NULL,
-    'bonus_content',
-    TRUE
-  ),
-  (
-    '11111111-0003-0000-0000-000000000003',
-    'Project Review Slot',
-    '30-min 1-on-1 review of your capstone project. Real feedback, no fluff.',
-    500,
-    NULL,
-    'coaching',
-    TRUE
-  ),
-  (
-    '11111111-0004-0000-0000-000000000004',
-    'Gold Profile Frame',
-    'Show off your Hyper status with a gold profile border. Flex responsibly.',
-    100,
-    NULL,
-    'cosmetic',
-    TRUE
-  ),
-  (
-    '11111111-0005-0000-0000-000000000005',
-    'AI Tools Cheat Sheet',
-    'The 10 AI tools every vibe coder needs in 2026. Bookmarkable PDF included.',
-    30,
-    NULL,
-    'prompt_pack',
-    TRUE
-  )
-ON CONFLICT (id) DO NOTHING;
+-- ── 1. image_url column ───────────────────────────────────────────────────────
+ALTER TABLE public.shop_items
+  ADD COLUMN IF NOT EXISTS image_url text;
 
--- ── Agent access item (requires migration 000021 — metadata column) ───────────
--- Also seeded inside migration 000021 itself (ON CONFLICT DO UPDATE).
--- This entry is here so db reset re-seeds it cleanly alongside the others.
+COMMENT ON COLUMN public.shop_items.image_url IS
+  'Public path to item art, served from frontend/public (e.g. /images/shop/food/x.png.png). NULL = render icon/emoji fallback.';
 
-INSERT INTO public.shop_items (id, name, description, price_tokens, price_gbp, category, is_available, metadata)
-VALUES (
-  '22222222-0001-0000-0000-000000000001',
-  'Agent Sandbox Access',
-  'Unlock your personal HyperCode V2.4 sandbox. Deploy the agents you build in this course to a real AI dev stack. Comes with your own Mission Control dashboard and API key.',
-  300,
-  NULL,
-  'agent_access',
-  TRUE,
-  '{"type":"agent_access","v24_tier":"sandbox"}'::jsonb
-)
-ON CONFLICT (id) DO NOTHING;
-
--- ── Cosmetic fulfillment key (mirrors migration 000030) ──────────────────────
--- The Gold Profile Frame is seeded above via the no-metadata INSERT, so on a
--- fresh `supabase db reset` its metadata defaults to '{}'. Tag it so the
--- fulfillment UI can equip the frame without hard-coding the item UUID.
--- Idempotent: `||` merge + guard make re-runs a no-op.
-
-UPDATE public.shop_items
-SET    metadata = metadata || '{"cosmetic":"gold_frame"}'::jsonb
-WHERE  id = '11111111-0004-0000-0000-000000000004'
-  AND  COALESCE(metadata->>'cosmetic', '') <> 'gold_frame';
-
--- ── Catalogue expansion: 49 collectibles (mirrors migration 000031) ──────────
--- Requires migration 000031 (adds the image_url column). Kept here so a fresh
--- `supabase db reset` re-seeds the full catalogue alongside the original items.
--- Authoritative copy lives in 20260518000031_shop_catalog_expansion.sql —
--- if you change a row, change it in BOTH (same convention as the agent item).
+-- ── 2. Catalogue ──────────────────────────────────────────────────────────────
 
 INSERT INTO public.shop_items
   (id, name, description, price_tokens, price_gbp, category, is_available, image_url, metadata)
 VALUES
-  -- 🍔 Snacks & Fuel (food)
+  -- ── 🍔 Snacks & Fuel (food) ─────────────────────────────────────────────────
   ('33330001-0000-0000-0000-000000000001', 'API Apple',
    'A crisp byte of fruit. Keeps the rate-limiter away. 🍎',
    20, NULL, 'food', TRUE,
@@ -127,7 +69,7 @@ VALUES
    40, NULL, 'food', TRUE,
    '/images/shop/food/shop_food_pixel_sushi.png.png', '{"consumable":true}'::jsonb),
 
-  -- 🧼 Clean & Tidy (hygiene)
+  -- ── 🧼 Clean & Tidy (hygiene) ───────────────────────────────────────────────
   ('33330002-0000-0000-0000-000000000001', 'Cache Shampoo',
    'Clears the gunk. Lather, rinse, hard-refresh. 🧴',
    22, NULL, 'hygiene', TRUE,
@@ -141,7 +83,7 @@ VALUES
    20, NULL, 'hygiene', TRUE,
    '/images/shop/hygiene/shop_hygiene_log_floss.png.png', '{"consumable":true}'::jsonb),
 
-  -- 🌀 Pet Auras (pet_aura)
+  -- ── 🌀 Pet Auras (pet_aura) ─────────────────────────────────────────────────
   ('33330003-0000-0000-0000-000000000001', 'Cosmic Swirl Aura',
    'Wrap your BROskiPet in a galaxy. Pure main-character energy. 🌀',
    140, NULL, 'pet_aura', TRUE,
@@ -163,7 +105,7 @@ VALUES
    150, NULL, 'pet_aura', TRUE,
    '/images/shop/pet-aura/shop_aura_matrix_rain.png.png', '{"pet_slot":"aura"}'::jsonb),
 
-  -- 🌌 Pet Backgrounds (pet_background)
+  -- ── 🌌 Pet Backgrounds (pet_background) ─────────────────────────────────────
   ('33330004-0000-0000-0000-000000000001', 'Cosmic Vortex',
    'A swirling spacescape behind your pet. Deep. 🌌',
    130, NULL, 'pet_background', TRUE,
@@ -185,7 +127,7 @@ VALUES
    160, NULL, 'pet_background', TRUE,
    '/images/shop/pet-background/shop_bg_reality_fracture.png.png', '{"pet_slot":"background"}'::jsonb),
 
-  -- 🎖️ Pet Badges (pet_badge)
+  -- ── 🎖️ Pet Badges (pet_badge) ──────────────────────────────────────────────
   ('33330005-0000-0000-0000-000000000001', 'BROski Holo Badge',
    'Holographic BROski seal. Catches the light, catches eyes. ✨',
    120, NULL, 'pet_badge', TRUE,
@@ -207,7 +149,7 @@ VALUES
    200, NULL, 'pet_badge', TRUE,
    '/images/shop/pet-badge/shop_badge_welsh_dragon.png.png', '{"pet_slot":"badge"}'::jsonb),
 
-  -- ⚡ Pet Boosters (pet_boost)
+  -- ── ⚡ Pet Boosters (pet_boost) ─────────────────────────────────────────────
   ('33330006-0000-0000-0000-000000000001', 'Evolution Potion',
    'Force-evolves your BROskiPet to its next form. One-time use. 🧬',
    300, NULL, 'pet_boost', TRUE,
@@ -229,7 +171,7 @@ VALUES
    150, NULL, 'pet_boost', TRUE,
    '/images/shop/pet-boost/shop_boost_xp_booster.png.png', '{"consumable":true,"boost":"xp"}'::jsonb),
 
-  -- 🐾 Pet Care (pet_care)
+  -- ── 🐾 Pet Care (pet_care) ──────────────────────────────────────────────────
   ('33330007-0000-0000-0000-000000000001', 'HyperFuel',
    'High-octane pet food. Big stat bump, big happy pet. 🛢️',
    45, NULL, 'pet_care', TRUE,
@@ -267,7 +209,7 @@ VALUES
    40, NULL, 'pet_care', TRUE,
    '/images/shop/pet-care/pet_shop_treat_rainbow.png.png', '{"consumable":true}'::jsonb),
 
-  -- 🖼️ Pet Frames (pet_frame)
+  -- ── 🖼️ Pet Frames (pet_frame) ──────────────────────────────────────────────
   ('33330008-0000-0000-0000-000000000001', 'Basic Neon Frame',
    'Clean neon border. Where every collection starts. 🟪',
    90, NULL, 'pet_frame', TRUE,
@@ -289,7 +231,7 @@ VALUES
    220, NULL, 'pet_frame', TRUE,
    '/images/shop/pet-frame/shop_frame_welsh_celtic.png.png', '{"pet_slot":"frame"}'::jsonb),
 
-  -- 🔮 Sacred Relics (sacred)
+  -- ── 🔮 Sacred Relics (sacred) ───────────────────────────────────────────────
   ('33330009-0000-0000-0000-000000000001', 'Redemption Core',
    'The rarest relic. Resets one mistake. Use it wisely. 🔮',
    1200, NULL, 'sacred', TRUE,
@@ -299,7 +241,7 @@ VALUES
    1500, NULL, 'sacred', TRUE,
    '/images/shop/sacred/shop_sacred_vault_seal.png.png', '{"rarity":"legendary"}'::jsonb),
 
-  -- 🎾 Toys & Gadgets (toys)
+  -- ── 🎾 Toys & Gadgets (toys) ────────────────────────────────────────────────
   ('33330010-0000-0000-0000-000000000001', 'Code Ball',
    'Throw it, it bounces back compiled. Endless fun. 🎾',
    30, NULL, 'toys', TRUE,
@@ -317,3 +259,10 @@ VALUES
    35, NULL, 'toys', TRUE,
    '/images/shop/toys/shop_toy_webhook_whistle.png.png', '{"consumable":true}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
+
+-- ── Verify (uncomment to check) ───────────────────────────────────────────────
+-- SELECT category, count(*) FROM public.shop_items
+-- WHERE id::text LIKE '3333%' GROUP BY category ORDER BY category;
+-- ^ expect 49 rows total across 10 categories.
+
+COMMIT;
