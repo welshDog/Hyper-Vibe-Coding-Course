@@ -8,10 +8,11 @@ import { HVZCard, HVZTag, type TagColor } from '../components/ui/hvz';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ShopItemMetadata = {
-  type?: string;        // 'agent_access' triggers V2.4 provisioning
-  v24_tier?: string;    // 'sandbox' | 'level4'
-  content_url?: string; // direct download / access URL for content items
-  cosmetic?: string;    // cosmetic id this purchase equips (e.g. 'gold_frame')
+  type?: string;         // 'agent_access' triggers V2.4 provisioning
+  v24_tier?: string;     // 'sandbox' | 'level4'
+  content_url?: string;  // direct download / access URL for content items
+  cosmetic?: string;     // cosmetic id this purchase equips (e.g. 'gold_frame')
+  consumable?: boolean;  // true → re-buyable, never locks to "Owned"
 };
 
 type ShopItem = {
@@ -489,6 +490,8 @@ function FulfillmentBlock({
 interface ItemCardProps {
   item: ShopItem;
   owned: boolean;
+  consumable: boolean;
+  ownedCount: number;
   purchase: ShopPurchase | undefined;
   balance: number;
   tier: string;
@@ -497,7 +500,7 @@ interface ItemCardProps {
   onBuy: (itemId: string) => void;
 }
 
-function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasing, onBuy }: ItemCardProps) {
+function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier, discountPct, purchasing, onBuy }: ItemCardProps) {
   const catConfig = CATEGORY_CONFIG[item.category];
   const effectivePrice = discountedPrice(item.price_tokens, tier);
   const hasDiscount = discountPct > 0 && effectivePrice < item.price_tokens;
@@ -526,7 +529,7 @@ function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasin
       cursor: 'not-allowed',
     };
   } else {
-    buttonContent = 'Buy →';
+    buttonContent = consumable && ownedCount > 0 ? 'Buy again →' : 'Buy →';
     buttonStyle = {
       background: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-neon-cyan))',
       color: '#fff',
@@ -567,6 +570,11 @@ function ItemCard({ item, owned, purchase, balance, tier, discountPct, purchasin
         {owned && (
           <HVZTag color="mint">
             <CheckCircle className="h-3 w-3" /> Owned
+          </HVZTag>
+        )}
+        {consumable && ownedCount > 0 && (
+          <HVZTag color="mint">
+            <CheckCircle className="h-3 w-3" /> {ownedCount} owned
           </HVZTag>
         )}
       </div>
@@ -650,6 +658,14 @@ export default function ShopPage() {
   const purchaseByItem = useMemo(() => {
     const m = new Map<string, ShopPurchase>();
     for (const p of purchases) m.set(p.item_id, p);
+    return m;
+  }, [purchases]);
+
+  // How many times each item has been bought — drives the "✓ N owned" chip on
+  // re-buyable consumables (which can have many rows per item).
+  const countByItem = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of purchases) m.set(p.item_id, (m.get(p.item_id) ?? 0) + 1);
     return m;
   }, [purchases]);
 
@@ -742,27 +758,36 @@ export default function ShopPage() {
         return;
       }
 
-      // Optimistically mark owned; fetchPurchases() pulls real fulfillment state
-      // (incl. Mission Control link) — and the poll picks up async provisioning.
-      setPurchases((prev) => [
-        {
-          id: `optimistic-${itemId}`,
-          item_id: itemId,
-          spent_tokens: data.spent_tokens,
-          purchased_at: new Date().toISOString(),
-          fulfillment_metadata: data.agent_access_pending
-            ? { provision_status: 'pending' }
-            : null,
-        },
-        ...prev.filter((p) => p.item_id !== itemId),
-      ]);
+      const boughtItem = items.find((i) => i.id === itemId);
+      const isConsumable = boughtItem?.metadata?.consumable === true;
+
+      // Non-consumables: optimistically mark owned so the card flips to its
+      // fulfillment state instantly. Consumables can have many rows and never
+      // lock — skip the optimistic push and just let fetchPurchases() refresh
+      // the owned count (avoids a count flicker).
+      if (!isConsumable) {
+        setPurchases((prev) => [
+          {
+            id: `optimistic-${itemId}`,
+            item_id: itemId,
+            spent_tokens: data.spent_tokens,
+            purchased_at: new Date().toISOString(),
+            fulfillment_metadata: data.agent_access_pending
+              ? { provision_status: 'pending' }
+              : null,
+          },
+          ...prev.filter((p) => p.item_id !== itemId),
+        ]);
+      }
       setUser({ ...user, broski_tokens: data.new_balance });
       pollAttempts.current = 0;
       void fetchPurchases();
 
-      const itemName = items.find((i) => i.id === itemId)?.name ?? data.item_name;
+      const itemName = boughtItem?.name ?? data.item_name;
       const notificationText = data.agent_access_pending
         ? `🤖 Agent access queued! Check Discord for your Mission Control link.`
+        : isConsumable
+        ? `🎉 NICE ONE BROski♾️ — stocked up on ${itemName} (-${data.spent_tokens.toLocaleString()} 🪙)`
         : `🎉 NICE ONE BROski♾️ — unlocked ${itemName} (-${data.spent_tokens.toLocaleString()} 🪙)`;
 
       setNotification({ type: 'success', text: notificationText });
@@ -887,19 +912,26 @@ export default function ShopPage() {
                     {config?.heading ?? cat}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {catItems.map((item) => (
-                      <ItemCard
-                        key={item.id}
-                        item={item}
-                        owned={purchaseByItem.has(item.id)}
-                        purchase={purchaseByItem.get(item.id)}
-                        balance={balance}
-                        tier={tierName}
-                        discountPct={discountPct}
-                        purchasing={purchasingId === item.id}
-                        onBuy={requestBuy}
-                      />
-                    ))}
+                    {catItems.map((item) => {
+                      const isConsumable = item.metadata?.consumable === true;
+                      return (
+                        <ItemCard
+                          key={item.id}
+                          item={item}
+                          // Consumables never lock to the fulfillment state —
+                          // they stay buyable.
+                          owned={!isConsumable && purchaseByItem.has(item.id)}
+                          consumable={isConsumable}
+                          ownedCount={countByItem.get(item.id) ?? 0}
+                          purchase={purchaseByItem.get(item.id)}
+                          balance={balance}
+                          tier={tierName}
+                          discountPct={discountPct}
+                          purchasing={purchasingId === item.id}
+                          onBuy={requestBuy}
+                        />
+                      );
+                    })}
                   </div>
                 </section>
               );
