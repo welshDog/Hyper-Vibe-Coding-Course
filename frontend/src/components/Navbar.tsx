@@ -53,7 +53,6 @@ export function Navbar() {
   useEffect(() => {
     const userId = user?.id;
     if (!userId) return;
-
     let cancelled = false;
     supabase
       .from('users')
@@ -65,13 +64,8 @@ export function Navbar() {
         if (error || !data) return;
         setBroskiTokens(typeof data.broski_tokens === 'number' ? data.broski_tokens : null);
         setAvatarUrl(typeof data.avatar_url === 'string' ? data.avatar_url : null);
-      }, () => {
-        if (cancelled) return;
-      });
-
-    return () => {
-      cancelled = true;
-    };
+      }, () => { if (cancelled) return; });
+    return () => { cancelled = true; };
   }, [user?.id]);
 
   const handleSignOut = async () => {
@@ -95,6 +89,8 @@ export function Navbar() {
     >
       <div className="max-w-hfz-page mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center gap-4">
+
+          {/* Left — brand + nav links */}
           <div className="flex items-center gap-8">
             <Link to="/" aria-label="Home" className="no-underline">
               <HVZBrand size="sm" />
@@ -105,70 +101,63 @@ export function Navbar() {
                   {l.label}
                 </Link>
               ))}
-              {user &&
-                AUTHED_LINKS.filter((l) => l.href !== '/shop').map((l) => (
-                  <Link key={l.href} to={l.href} className={navLinkClass}>
-                    {l.label}
-                  </Link>
-                ))}
+              {user && AUTHED_LINKS.filter((l) => l.href !== '/shop').map((l) => (
+                <Link key={l.href} to={l.href} className={navLinkClass}>
+                  {l.label}
+                </Link>
+              ))}
             </div>
           </div>
 
+          {/* Right — auth area (desktop) */}
           <div className="hidden sm:flex sm:items-center sm:gap-4">
-            {/* ⏳ While Supabase checks the session — show nothing, avoid the Sign in flash */}
-            {loading ? (
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-16 rounded-hfz-md bg-white/10 motion-safe:animate-pulse" />
-                <div className="h-8 w-24 rounded-hfz-md bg-white/10 motion-safe:animate-pulse" />
-              </div>
-            ) : user ? (
-              <>
-                {tier && <LoyaltyTierBadge tier={tier} size="sm" />}
-                <Link to="/shop" className={navLinkClass}>
-                  🛒 Shop
-                </Link>
-                {typeof broskiTokens === 'number' && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-hfz-full border border-hfz-gold/30 bg-hfz-gold/10">
-                    <span aria-hidden>🪙</span>
-                    <span className="font-mono font-bold text-hfz-gold-light text-sm">
-                      {broskiTokens.toLocaleString()}
-                    </span>
-                  </div>
-                )}
-                <Link to="/profile" className="flex items-center gap-2 no-underline">
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={(user.full_name ?? user.email) ?? 'avatar'}
-                      className="h-8 w-8 rounded-full object-cover border border-hfz-border-violet-strong"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-hfz-violet/20 border border-hfz-border-violet-strong flex items-center justify-center text-hfz-violet-light font-bold text-sm">
-                      {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
+            {/* loading → show nothing at all, no flash */}
+            {!loading && (
+              user ? (
+                // ✅ Logged in
+                <>
+                  {tier && <LoyaltyTierBadge tier={tier} size="sm" />}
+                  <Link to="/shop" className={navLinkClass}>🛒 Shop</Link>
+                  {typeof broskiTokens === 'number' && (
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-hfz-full border border-hfz-gold/30 bg-hfz-gold/10">
+                      <span aria-hidden>🪙</span>
+                      <span className="font-mono font-bold text-hfz-gold-light text-sm">
+                        {broskiTokens.toLocaleString()}
+                      </span>
                     </div>
                   )}
-                  <span className="text-[15px] text-hfz-text-primary/85 font-medium">
-                    {(user.full_name ?? user.email)?.split(' ')[0] ?? 'Profile'}
-                  </span>
-                </Link>
-                <HVZButton variant="ghost" size="sm" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </HVZButton>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="no-underline">
-                  <HVZButton variant="ghost" size="sm">
-                    Sign in
+                  <Link to="/profile" className="flex items-center gap-2 no-underline">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt={(user.full_name ?? user.email) ?? 'avatar'}
+                        className="h-8 w-8 rounded-full object-cover border border-hfz-border-violet-strong"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-hfz-violet/20 border border-hfz-border-violet-strong flex items-center justify-center text-hfz-violet-light font-bold text-sm">
+                        {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <span className="text-[15px] text-hfz-text-primary/85 font-medium">
+                      {(user.full_name ?? user.email)?.split(' ')[0] ?? 'Profile'}
+                    </span>
+                  </Link>
+                  <HVZButton variant="ghost" size="sm" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4" />
+                    Sign out
                   </HVZButton>
-                </Link>
-                <Link to="/register" className="no-underline">
-                  <HVZButton variant="primary" size="sm">
-                    Start free →
-                  </HVZButton>
-                </Link>
-              </>
+                </>
+              ) : (
+                // 🔓 Logged out
+                <>
+                  <Link to="/login" className="no-underline">
+                    <HVZButton variant="ghost" size="sm">Sign in</HVZButton>
+                  </Link>
+                  <Link to="/register" className="no-underline">
+                    <HVZButton variant="primary" size="sm">Start free →</HVZButton>
+                  </Link>
+                </>
+              )
             )}
           </div>
 
@@ -192,66 +181,54 @@ export function Navbar() {
         <div className="sm:hidden border-t border-hfz-border-violet bg-hfz-space-black">
           <div className="py-2">
             {PUBLIC_LINKS.map((l) => (
-              <Link key={l.href} to={l.href} className={mobileLinkClass}>
-                {l.label}
-              </Link>
+              <Link key={l.href} to={l.href} className={mobileLinkClass}>{l.label}</Link>
             ))}
-            {user &&
-              AUTHED_LINKS.map((l) => (
-                <Link key={l.href} to={l.href} className={mobileLinkClass}>
-                  {l.label}
-                </Link>
-              ))}
+            {user && AUTHED_LINKS.map((l) => (
+              <Link key={l.href} to={l.href} className={mobileLinkClass}>{l.label}</Link>
+            ))}
           </div>
           <div className="px-4 py-4 border-t border-hfz-border-violet">
-            {/* ⏳ Mobile: same loading guard */}
-            {loading ? (
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-white/10 motion-safe:animate-pulse" />
-                <div className="flex-1">
-                  <div className="h-4 w-32 rounded bg-white/10 motion-safe:animate-pulse" />
-                </div>
-              </div>
-            ) : user ? (
-              <div className="flex items-center gap-3">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={(user.full_name ?? user.email) ?? 'avatar'}
-                    className="h-10 w-10 rounded-full object-cover border border-hfz-border-violet-strong"
-                  />
-                ) : (
-                  <div className="h-10 w-10 rounded-full bg-hfz-violet/20 border border-hfz-border-violet-strong flex items-center justify-center text-hfz-violet-light font-bold">
-                    {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-base font-semibold text-hfz-text-primary truncate">
-                    {user.full_name ?? user.email}
-                  </div>
-                  {typeof broskiTokens === 'number' && (
-                    <div className="text-sm font-bold text-hfz-gold-light font-mono mt-0.5">
-                      🪙 {broskiTokens.toLocaleString()}
+            {/* loading → show nothing, no flash on mobile either */}
+            {!loading && (
+              user ? (
+                // ✅ Logged in (mobile)
+                <div className="flex items-center gap-3">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={(user.full_name ?? user.email) ?? 'avatar'}
+                      className="h-10 w-10 rounded-full object-cover border border-hfz-border-violet-strong"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-hfz-violet/20 border border-hfz-border-violet-strong flex items-center justify-center text-hfz-violet-light font-bold">
+                      {(user.full_name ?? user.email)?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
                   )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-semibold text-hfz-text-primary truncate">
+                      {user.full_name ?? user.email}
+                    </div>
+                    {typeof broskiTokens === 'number' && (
+                      <div className="text-sm font-bold text-hfz-gold-light font-mono mt-0.5">
+                        🪙 {broskiTokens.toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                  <HVZButton variant="ghost" size="sm" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4" />
+                  </HVZButton>
                 </div>
-                <HVZButton variant="ghost" size="sm" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4" />
-                </HVZButton>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Link to="/login" className="no-underline">
-                  <HVZButton variant="ghost" size="md" fullWidth>
-                    Sign in
-                  </HVZButton>
-                </Link>
-                <Link to="/register" className="no-underline">
-                  <HVZButton variant="primary" size="md" fullWidth>
-                    Start free →
-                  </HVZButton>
-                </Link>
-              </div>
+              ) : (
+                // 🔓 Logged out (mobile)
+                <div className="flex flex-col gap-2">
+                  <Link to="/login" className="no-underline">
+                    <HVZButton variant="ghost" size="md" fullWidth>Sign in</HVZButton>
+                  </Link>
+                  <Link to="/register" className="no-underline">
+                    <HVZButton variant="primary" size="md" fullWidth>Start free →</HVZButton>
+                  </Link>
+                </div>
+              )
             )}
           </div>
         </div>
