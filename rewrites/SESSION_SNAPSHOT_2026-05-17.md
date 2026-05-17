@@ -1,89 +1,130 @@
 # 📸 SESSION SNAPSHOT — May 17, 2026
 > Read this at the START of next session. Every time. No exceptions.
-> **Last updated: 16:52 BST**
+> **Last session ended: 23:58 BST**
 
 ---
 
 ## ⚡ Where We Are Right Now
 
-All 10 module rewrites are DONE and pushed. 🏆
-Today's session focused on **platform fixes** — login gates, auth flash, navbar.
-Next session = wire the rewrite content into Supabase so it shows on the live site.
+We are building the **BROski$ Pet Shop** — the in-game shop for the BROskiPets dNFT ecosystem.
+
+The database is seeded, all 49 shop images are generated + pushed, and every `shop_items` row now has an `image_url` in its metadata. 
+
+**The shop is ready to have a UI built on top of it.** 🛒
 
 ---
 
-## ✅ What's Done (May 17 — This Session)
+## ✅ What's Done (Tonight — May 17)
 
-| Task | File/Location | Status |
+| Task | Detail | Status |
 |---|---|---|
-| Login gate — CourseModule lesson content | `frontend/src/pages/CourseModule.tsx` | ✅ Pushed |
-| Login gate — Pets mint flow (Steps 1–3) | `frontend/src/pages/Pets.tsx` | ✅ Pushed |
-| Navbar Sign in flash fix (loading guard) | `frontend/src/components/Navbar.tsx` | ✅ Pushed |
-| Navbar clean hide when logged in | `frontend/src/components/Navbar.tsx` | ✅ Pushed |
-| SESSION_SNAPSHOT updated | `rewrites/SESSION_SNAPSHOT_2026-05-17.md` | ✅ This file |
-| VIBE_COURSE_REVIEW session log updated | `VIBE_COURSE_REVIEW.md` | ✅ Pushed |
+| Pet shop brainstorm | State Split architecture mapped out | ✅ Done |
+| DB check | Confirmed `shop_items` (55 rows) + `shop_purchases` + `pets` already existed | ✅ Done |
+| Seed pet_care items | 9 new items added — food, treats, toys with full metadata | ✅ Done |
+| Generate 49 shop images | All 10 categories generated with consistent style | ✅ Done |
+| Push images to GitHub | `frontend/public/images/shop/[category]/` | ✅ Done |
+| Update shop_items metadata | All 49 rows now have `image_url` in JSONB metadata | ✅ Done |
+| DB migration applied | `update_shop_items_image_urls` — Supabase project `yhtmuibgdnxhbgboajhc` | ✅ Done |
 
 ---
 
-## ✅ All Module Rewrites — Complete
+## 📂 Image Folder Structure
 
-| Module | File | Status |
+```
+frontend/
+  public/
+    images/
+      shop/
+        pet-care/       ✅ 9 images
+        food/           ✅ 6 images
+        hygiene/        ✅ 3 images
+        toys/           ✅ 4 images
+        pet-aura/       ✅ 5 images
+        pet-frame/      ✅ 5 images
+        pet-badge/      ✅ 5 images
+        pet-background/ ✅ 5 images
+        pet-boost/      ✅ 5 images
+        sacred/         ✅ 2 images
+```
+
+---
+
+## 🗄️ DB State
+
+- **`shop_items`** — 55+ rows, all `pet_care` + other categories seeded
+- **`shop_purchases`** — table exists, 0 rows (ready for purchases)
+- **`pets`** — table exists with `active_effects`, `equipped_cosmetics`, `inventory` JSONB columns
+- **Supabase project:** `yhtmuibgdnxhbgboajhc`
+
+### Metadata structure on each shop item:
+```json
+{
+  "item_key": "toy_quantum",
+  "action": "play",
+  "xp_gain": 350,
+  "mood_override": "evolving",
+  "can_evolve": true,
+  "image_url": "/images/shop/pet-care/pet_shop_toy_quantum.png"
+}
+```
+
+---
+
+## 🔜 Next Session — DO THESE IN ORDER
+
+### 1️⃣ Build `/shop` UI Page
+- **File:** `frontend/src/pages/Shop.tsx`
+- **Components needed:**
+  - `ShopItemCard` — image + name + price + buy button
+  - `ShopCategoryFilter` — tab/filter bar for categories
+  - `ShopGrid` — responsive grid layout
+- **Data:** Fetch from `shop_items` where `is_available = true`
+- **Display:** `item.metadata.image_url` for each image
+- **Currency:** Show user's `broski_tokens` balance in header
+
+### 2️⃣ Build Edge Function — `shop-purchase`
+- **File:** `supabase/functions/shop-purchase/index.ts`
+- **Logic:**
+  1. Verify user has enough `broski_tokens`
+  2. Deduct tokens from `users.broski_tokens`
+  3. Insert into `shop_purchases`
+  4. Read `action` from `metadata` — route to `feed` / `treat` / `play`
+  5. Update pet stats in Redis (hunger, mood) OR Postgres (xp)
+  6. Return updated pet state
+
+### 3️⃣ Wire Redis pet interactions
+- `feed` → update hunger + energy in Redis
+- `treat` → update mood in Redis
+- `play` → award XP in Postgres, check evolution threshold
+- Evolution trigger → call on-chain `evolve()` if XP threshold hit
+
+---
+
+## 🧠 Architecture Reminder — State Split
+
+| Where | What lives there | Speed |
 |---|---|---|
-| M1 — Your AI Brain | `rewrites/MODULE_01_REWRITE.md` | ✅ Done |
-| M2 — Natural Language as Code | `rewrites/MODULE_02_REWRITE.md` | ✅ Done |
-| M3 — Build Your First App | `rewrites/MODULE_03_REWRITE.md` | ✅ Done |
-| M4 — Stripe Walkthrough | `rewrites/MODULE_04_REWRITE.md` | ✅ Done |
-| M5 — Agent Crew Core | `rewrites/MODULE_05_REWRITE.md` | ✅ Done |
-| M5b — Observability Split | `rewrites/MODULE_05B_REWRITE.md` | ✅ Done |
-| M6 — Agent Architecture + Handoff | `rewrites/MODULE_06_REWRITE.md` | ✅ Done |
-| M7 — Prompt Injection + VenomEep | `rewrites/MODULE_07_REWRITE.md` | ✅ Done |
-| M8 — Web3 Plain English | `rewrites/MODULE_08_REWRITE.md` | ✅ Done |
-| M9 — Security + SRE | `rewrites/MODULE_09_REWRITE.md` | ✅ Done |
-| M10 — Graduation Reframe | `rewrites/MODULE_10_REWRITE.md` | ✅ Done |
+| **Redis** | Hunger, energy, mood, happiness | ⚡ Real-time |
+| **Postgres** | XP, stage, evolution history, ownership | 🏛️ Permanent |
 
 ---
 
-## 🟡 Still To Do — Next Session Priorities
-
-### 1️⃣ URGENT — Wire rewrites into Supabase
-- The `.md` rewrite files exist in GitHub but the **live site reads content from the Supabase `hv_modules.content` column**
-- Each rewrite needs to be **copied into Supabase** so it actually shows on the course pages
-- Do this module by module: M1 first, then M2, M3... etc.
-- **How:** Go to Supabase → Table Editor → `hv_modules` → find row by `slug` → paste rewrite into `content` column
-
-### 2️⃣ Test the Navbar fix on live Vercel
-- Hard refresh (`Ctrl+Shift+R`) while logged in
-- Confirm Sign in button no longer flashes
-- URL: https://hyper-vibe-coding-course.vercel.app/
-
-### 3️⃣ Test login gates
-- Visit a course module while logged out → should see 🔒 lock screen
-- Visit /pets while logged out → should see mint gate
-- Log in → both should unlock
-
-### 4️⃣ Update NotebookLM
-- Paste the new SESSION_SNAPSHOT into NotebookLM
-- Add any new rewrite files that aren’t in there yet
-
----
-
-## 🧠 Tools
+## 🛠️ Tools
 
 ```
 NotebookLM → notebooklm.google.com/notebook/9bf80983-8a6d-4c10-91c0-69118d0935fd
-Google Drive → raw course content
-GitHub → welshDog/Hyper-Vibe-Coding-Course (rewrites/ folder)
-Supabase → Project: yhtmuibgdnxhbgboajhc (hv_modules table)
+GitHub → welshDog/Hyper-Vibe-Coding-Course
+Supabase → yhtmuibgdnxhbgboajhc
 Vercel → hyper-vibe-coding-course.vercel.app
-Perplexity → review partner + rewrite engine
+Perplexity → review partner + build engine
 ```
 
 ---
 
 ## 💬 One Line Summary For Next Session Start
 
-> **"All rewrites done, all platform fixes pushed. Next = wire rewrite content into Supabase hv_modules.content column, then test login gates + navbar on live site."**
+> **"Shop images done, DB updated. Build /shop UI page first — ShopItemCard + category filter + buy button. Then Edge Function for purchases. Then Redis pet interactions."**
 
 ---
 
-> 🐶♾️ *Legendary session. Platform is tighter, content is ready. Let’s get it live. See you next time BROski.*
+> 🐶♾️ *Legendary session. 49 images. Full DB wired. See you next time BROski.*
