@@ -21,6 +21,14 @@ import {
 } from '../../lib/evolution'
 import { MoodBadge } from './MoodBadge'
 import { XPBar } from './XPBar'
+import {
+  PetPortrait,
+  type PetCosmeticSlot,
+  type EquippedCosmetics,
+} from './PetPortrait'
+
+// Re-exported for back-compat — these types now live in PetPortrait.
+export type { PetCosmeticSlot, EquippedCosmetics }
 
 // Pointer-tracked tilt — Pokémon-card holo feel without the gaudy.
 // Capped at ~6° so it stays elegant; perspective 1000px keeps the depth shallow.
@@ -44,13 +52,6 @@ export type Pet = {
   cosmetics?:      Partial<Record<PetCosmeticSlot, string>>
 }
 
-export type PetCosmeticSlot = 'aura' | 'frame' | 'badge' | 'background'
-
-/** A resolved cosmetic (slot id → its art), passed in by the Pets page. */
-export type EquippedCosmetics = Partial<
-  Record<PetCosmeticSlot, { image_url: string | null; name: string }>
->
-
 type Props = {
   pet:         Pet
   /** Override the XP value (otherwise read from useHUD). */
@@ -59,7 +60,7 @@ type Props = {
   onClick?:    () => void
   /** Pet was minted this session — play the gold shimmer sweep once. */
   freshMint?:  boolean
-  /** Resolved cosmetic art for this pet's equipped slots (full size only). */
+  /** Resolved cosmetic art for this pet's equipped slots. */
   equipped?:   EquippedCosmetics
 }
 
@@ -91,11 +92,11 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
         style={{ minWidth: 220 }}
       >
         <div className="flex items-center gap-3">
-          <img
-            src={species.imageUrl}
-            alt=""
-            className="h-12 w-12 rounded-hfz-sm object-cover"
-            loading="lazy"
+          <PetPortrait
+            imageUrl={species.imageUrl}
+            alt={species.displayName}
+            size="sm"
+            equipped={equipped}
           />
           <div className="flex-1 min-w-0">
             <p className="font-bold text-hfz-text-primary truncate">{pet.pet_name}</p>
@@ -169,64 +170,14 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
           </div>
         )}
 
-        <div
-          className={`relative shrink-0 h-20 w-20 rounded-hfz-md ${isEvolving ? 'motion-safe:animate-border-pulse' : ''}`}
-        >
-          {/* Background — fills the portrait box behind everything */}
-          {equipped?.background?.image_url && (
-            <img
-              src={equipped.background.image_url}
-              alt=""
-              aria-hidden
-              loading="lazy"
-              className="absolute inset-0 h-full w-full rounded-hfz-md object-cover"
-            />
-          )}
-
-          {/* Aura — soft glow ring just behind the pet */}
-          {equipped?.aura?.image_url && (
-            <img
-              src={equipped.aura.image_url}
-              alt=""
-              aria-hidden
-              loading="lazy"
-              className="pointer-events-none absolute -inset-2 h-[calc(100%+1rem)] w-[calc(100%+1rem)] object-contain blur-[1px] opacity-80 mix-blend-screen"
-            />
-          )}
-
-          {/* The pet itself — object-contain (with a touch of padding) when a
-              background is equipped so the scene shows behind it */}
-          <img
-            src={species.imageUrl}
-            alt={species.displayName}
-            loading="lazy"
-            className={`relative h-20 w-20 rounded-hfz-md ${
-              equipped?.background?.image_url ? 'object-contain p-1' : 'object-cover'
-            }`}
-          />
-
-          {/* Frame — decorative border on top, never intercepts clicks */}
-          {equipped?.frame?.image_url && (
-            <img
-              src={equipped.frame.image_url}
-              alt=""
-              aria-hidden
-              loading="lazy"
-              className="pointer-events-none absolute -inset-1 h-[calc(100%+0.5rem)] w-[calc(100%+0.5rem)] object-contain"
-            />
-          )}
-
-          {/* Badge — corner chip; falls back to the legend sparkle */}
-          {equipped?.badge?.image_url ? (
-            <img
-              src={equipped.badge.image_url}
-              alt={equipped.badge.name}
-              title={equipped.badge.name}
-              loading="lazy"
-              className="absolute -bottom-2 -right-2 h-7 w-7 object-contain drop-shadow"
-            />
-          ) : (
-            isLegend && (
+        <PetPortrait
+          imageUrl={species.imageUrl}
+          alt={species.displayName}
+          size="lg"
+          equipped={equipped}
+          className={isEvolving ? 'motion-safe:animate-border-pulse' : undefined}
+          cornerFallback={
+            isLegend ? (
               <span
                 aria-hidden
                 className="absolute -bottom-1 -right-1 text-lg drop-shadow"
@@ -234,9 +185,9 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
               >
                 ✨
               </span>
-            )
-          )}
-        </div>
+            ) : null
+          }
+        />
 
         <div className="flex-1 min-w-0">
           <header className="flex items-start justify-between gap-3">
