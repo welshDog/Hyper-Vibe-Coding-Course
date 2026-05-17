@@ -80,3 +80,14 @@ VALUES (
   '{"type":"agent_access","v24_tier":"sandbox"}'::jsonb
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- ── Cosmetic fulfillment key (mirrors migration 000030) ──────────────────────
+-- The Gold Profile Frame is seeded above via the no-metadata INSERT, so on a
+-- fresh `supabase db reset` its metadata defaults to '{}'. Tag it so the
+-- fulfillment UI can equip the frame without hard-coding the item UUID.
+-- Idempotent: `||` merge + guard make re-runs a no-op.
+
+UPDATE public.shop_items
+SET    metadata = metadata || '{"cosmetic":"gold_frame"}'::jsonb
+WHERE  id = '11111111-0004-0000-0000-000000000004'
+  AND  COALESCE(metadata->>'cosmetic', '') <> 'gold_frame';

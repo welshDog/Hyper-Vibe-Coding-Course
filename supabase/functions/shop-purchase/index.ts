@@ -105,6 +105,25 @@ type ProvisionResponse = {
   provision_event_id?: string;
 };
 
+// ── Loyalty tier discounts ────────────────────────────────────────────────────
+// Server-authoritative: the charge is ALWAYS computed here from the user's
+// tier (read from the user_loyalty_tier view), never trusted from the client.
+// ⚠️ KEEP IN SYNC with TIER_DISCOUNT_PCT in frontend/src/pages/ShopPage.tsx —
+//    the UI only previews this; this function is the source of truth.
+
+const TIER_DISCOUNT_PCT: Record<string, number> = {
+  bronze: 0,
+  silver: 5,
+  gold:   10,
+  hyper:  15,
+};
+
+// Floor → never overcharge; rounding always favours the buyer.
+function discountedPrice(base: number, tier: string | null | undefined): number {
+  const pct = TIER_DISCOUNT_PCT[tier ?? 'bronze'] ?? 0;
+  return Math.floor(base * (1 - pct / 100));
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -182,11 +201,21 @@ Deno.serve(async (req: Request) => {
     return jsonAppError('You already own this item!');
   }
 
+  // ── 4b. Apply loyalty-tier discount (server-authoritative) ────────────────
+  const { data: tierRow } = await supabaseAdmin
+    .from('user_loyalty_tier')
+    .select('tier')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const tier = (tierRow as { tier?: string } | null)?.tier ?? 'bronze';
+  const chargeTokens = discountedPrice(shopItem.price_tokens, tier);
+
   // ── 5. Spend tokens via spend_tokens() RPC ────────────────────────────────
   const { data: spendData, error: spendError } = await supabaseAdmin
     .rpc('spend_tokens', {
       p_user_id:   userId,
-      p_amount:    shopItem.price_tokens,
+      p_amount:    chargeTokens,
       p_reason:    'shop_purchase',
       p_source_id: itemId,
     });
@@ -221,18 +250,47 @@ Deno.serve(async (req: Request) => {
     .insert({
       user_id:      userId,
       item_id:      itemId,
-      spent_tokens: shopItem.price_tokens,
+      spent_tokens: chargeTokens,
     })
     .select('id')
     .single();
 
   if (insertError) {
-    // UNIQUE violation means a race — treat as already_owned
+    // UNIQUE violation means a race — treat as already_owned.
+    // Tokens were spent but the duplicate purchase already exists, so the
+    // user keeps the item they already own — no refund owed.
     if (insertError.code === '23505') {
       return jsonAppError('You already own this item!');
     }
-    console.error('shop_purchases insert failed:', insertError.message);
-    return jsonAppError('Purchase record failed — contact support.');
+
+    // Tokens were spent but the item could not be recorded → auto-refund.
+    // Inverse of step 5: award_tokens() puts the spent amount straight back.
+    console.error('shop_purchases insert failed — auto-refunding:', insertError.message);
+
+    const { data: refundData, error: refundError } = await supabaseAdmin
+      .rpc('award_tokens', {
+        p_user_id:   userId,
+        p_amount:    chargeTokens,
+        p_reason:    'shop_purchase_refund',
+        p_source_id: itemId,
+      });
+
+    const refundOk = !refundError && (refundData as { awarded?: boolean } | null)?.awarded === true;
+
+    if (refundOk) {
+      console.log(`↩️ Auto-refund OK: user=${userId} item=${itemId} amount=${chargeTokens}`);
+      return jsonAppError(
+        `Couldn't complete that purchase — your ${chargeTokens.toLocaleString()} BROski$ have been refunded. Give it another go.`,
+      );
+    }
+
+    console.error(
+      `🚨 Auto-refund FAILED: user=${userId} item=${itemId} amount=${chargeTokens} ` +
+      `err=${refundError?.message ?? 'award_tokens returned awarded:false'}`,
+    );
+    return jsonAppError(
+      'Purchase failed and the auto-refund did not go through — contact support, your balance was affected.',
+    );
   }
 
   const purchaseId = (purchaseRow as { id: string } | null)?.id;
@@ -378,13 +436,14 @@ Deno.serve(async (req: Request) => {
 
   console.log(
     `✅ Shop purchase: user=${userId} item=${itemId} ` +
-    `item_name="${shopItem.name}" spent=${shopItem.price_tokens} new_balance=${newBalance}`,
+    `item_name="${shopItem.name}" tier=${tier} list=${shopItem.price_tokens} ` +
+    `spent=${chargeTokens} new_balance=${newBalance}`,
   );
 
   return jsonOk({
     success:              true,
     item_name:            shopItem.name,
-    spent_tokens:         shopItem.price_tokens,
+    spent_tokens:         chargeTokens,
     new_balance:          newBalance,
     ...(agentAccessPending && { agent_access_pending: true }),
   });
