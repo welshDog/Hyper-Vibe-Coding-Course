@@ -103,4 +103,7 @@ export type MintPetAuthResponse = {
   relayed?: boolean
   /** Present only when `relayed` is true. The hash of the submitted mintWithAuth tx. */
   tx_hash?: `0x${string}`
+  /** Server-rolled rarity tier (common|uncommon|rare|legendary). Authoritative —
+   *  the client no longer chooses rarity; it is revealed after the mint. */
+  rarity?: string
 }

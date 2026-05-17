@@ -38,7 +38,10 @@
 //   you want to separate the signing wallet (no ETH) from the relayer (holds ETH).
 //   The relayer wallet must have funds on the target chain.
 
-import "../deno-shims.d.ts";
+// NOTE: editor-only ambient types previously came from ../deno-shims.d.ts.
+// That side-effect import is intentionally omitted so this file deploys as a
+// single self-contained module (Deno Edge resolves jsr:/npm: natively, and a
+// cross-dir relative import is fragile in single-function deploys).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { privateKeyToAccount } from "npm:viem@2.21.0/accounts";
@@ -114,7 +117,7 @@ Deno.serve(async (req: Request) => {
   };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
-  const { wallet_address, ipfs_cid, pet_name, relay, species_id, rarity } = body;
+  const { wallet_address, ipfs_cid, pet_name, relay, species_id } = body;
   const wantsRelay = relay === true;
   if (!wallet_address || !ipfs_cid) {
     return json({ error: "wallet_address and ipfs_cid are required" }, 400);
@@ -131,13 +134,13 @@ Deno.serve(async (req: Request) => {
   // INSERT and log so the operator can see it. New clients should always
   // send these.
   const speciesValid = typeof species_id === "string" && VALID_SPECIES.has(species_id);
-  const rarityValid  = typeof rarity     === "string" && VALID_RARITIES.has(rarity);
   if (species_id && !speciesValid) {
     return json({ error: "Invalid species_id" }, 400);
   }
-  if (rarity && !rarityValid) {
-    return json({ error: "Invalid rarity" }, 400);
-  }
+  // SECURITY: rarity is NEVER taken from the client. It used to be a
+  // user-selectable picker, which let anyone mint Legendaries at will and
+  // broke the game economy. We roll it server-side, weighted, here.
+  const rolledRarity = rollRarity();
   // Names must fit the public.pets CHECK constraint.
   const safePetName =
     typeof pet_name === "string" && pet_name.trim().length >= 1 && pet_name.trim().length <= 32
@@ -315,7 +318,7 @@ Deno.serve(async (req: Request) => {
     //
     // Failure here does NOT refund — the tx is already on-chain. A
     // reconciliation job (Phase 2B) can backfill from PetMinted events.
-    if (txHash && speciesValid && rarityValid && safePetName) {
+    if (txHash && speciesValid && safePetName) {
       const { error: petInsertErr } = await adminClient
         .from("pets")
         .insert({
@@ -324,7 +327,7 @@ Deno.serve(async (req: Request) => {
           pet_id:         petId,
           species_id:     species_id,
           pet_name:       safePetName,
-          rarity:         rarity,
+          rarity:         rolledRarity,
           mint_tx_hash:   txHash,
           ipfs_cid:       ipfs_cid,
           chain_id:       CHAIN_ID,
@@ -337,7 +340,7 @@ Deno.serve(async (req: Request) => {
       }
     } else if (txHash) {
       console.warn(
-        `[mint-pet-auth] Skipping pets INSERT for tx ${txHash} — missing species_id/rarity/pet_name. ` +
+        `[mint-pet-auth] Skipping pets INSERT for tx ${txHash} — missing species_id/pet_name. ` +
         `Update the client to send these fields. petId=${petId}`,
       );
     }
@@ -356,10 +359,32 @@ Deno.serve(async (req: Request) => {
     cost_paid: MINT_COST_TOKENS,
     chain_id:  CHAIN_ID,
     contract:  contractAddress,
+    rarity:    rolledRarity,   // server-authoritative; client must use this
     relayed:   wantsRelay,
     ...(txHash ? { tx_hash: txHash } : {}),
   }, 200);
 });
+
+// ─── Rarity (server-authoritative) ───────────────────────────────────────────
+// Client input is ignored entirely. Weights sum to 1.00 and mirror the
+// intended game economy. crypto.getRandomValues → unbiased uniform draw.
+const RARITY_WEIGHTS: ReadonlyArray<readonly [string, number]> = [
+  ["common",    0.60],
+  ["uncommon",  0.25],
+  ["rare",      0.12],
+  ["legendary", 0.03],
+];
+function rollRarity(): string {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  const x = buf[0] / 2 ** 32; // uniform [0, 1)
+  let acc = 0;
+  for (const [tier, weight] of RARITY_WEIGHTS) {
+    acc += weight;
+    if (x < acc) return tier;
+  }
+  return "common"; // floating-point safety net
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function json(body: unknown, status: number): Response {

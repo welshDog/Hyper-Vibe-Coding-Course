@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMintPet } from '../../hooks/useMintPet'
 import { useAuthStore } from '../../context/auth'
 import { useHUD } from '../../hooks/useHUD'
-import { isRealCid, type SpeciesConfig, type Rarity } from '../../lib/species'
+import { isRealCid, type SpeciesConfig } from '../../lib/species'
 import { ACTIVE_CHAIN } from '../../lib/wagmi'
 import { HVZButton } from '../ui/hvz'
 
@@ -26,7 +26,6 @@ const MINT_COST       = 100
 type Props = {
   species:   SpeciesConfig
   petName:   string
-  rarity:    Rarity
   onMinted?: (info: { txHash: `0x${string}`; petName: string; species: string }) => void
 }
 
@@ -61,7 +60,7 @@ function LockedGlass({
   )
 }
 
-export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
+export function MintPetButton({ species, petName, onMinted }: Props) {
   const navigate = useNavigate()
   const userId = useAuthStore((s) => s.user?.id)
   const hasSession = !!userId
@@ -69,7 +68,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
   const { tokens, tokensLoading, refreshHUD } = useHUD()
 
   const { isConnected, address } = useAccount()
-  const { mintPet, confirmMint, state, error, txHash, isReady, reset } = useMintPet()
+  const { mintPet, confirmMint, state, error, txHash, mintedRarity, isReady, reset } = useMintPet()
 
   // Wait for on-chain receipt — flips to confirmed once mined.
   const {
@@ -246,7 +245,6 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
           petName:   petName.trim(),
           ipfsCid:   species.babyMetadataCid,
           speciesId: species.id,
-          rarity,
         })}
         disabled={!isReady || !canAfford || !cidIsReal || !nameValid || isWorking || isDone}
       >
@@ -258,7 +256,7 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
           : state === 'mining' && receiptPending ? 'Minting onchain…'
           : isDone        ? 'Pet minted! 🎉'
           : !isReady      ? 'Mint not configured'
-          : `Mint Your Pet$ (${MINT_COST} BROski$)`}
+          : `Mint Your Pet (${MINT_COST} BROski$)`}
       </HVZButton>
 
       {/* Step trail */}
@@ -283,7 +281,11 @@ export function MintPetButton({ species, petName, rarity, onMinted }: Props) {
       {/* Success card */}
       {isDone && txHash && (
         <div className="rounded-hfz-md border border-green-500/40 bg-green-500/10 px-4 py-3 text-center">
-          <p className="font-bold text-green-300">{petName} minted as a {rarity} {species.displayName}! 🎉</p>
+          <p className="font-bold text-green-300">
+            🎲 {petName} hatched as a{' '}
+            <span className="uppercase">{mintedRarity ?? 'mystery'}</span>{' '}
+            {species.displayName}! 🎉
+          </p>
           <a
             href={`https://${ACTIVE_CHAIN.id === 8453 ? '' : 'sepolia.'}basescan.org/tx/${txHash}`}
             target="_blank"

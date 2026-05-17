@@ -7,7 +7,7 @@
 //
 // Steps 1–3: the live mint flow (unchanged from May 7 ship).
 //   1. Pick a species (SpeciesPicker)
-//   2. Name your pet + choose rarity
+//   2. Name your pet (rarity is rolled server-side on mint — anti-exploit)
 //   3. Mint (MintPetButton — handles wallet connect, balance gate, on-chain tx)
 //
 // After a mint confirms we refetch useMyPets — Edge Fn INSERT may take a
@@ -25,11 +25,8 @@ import { useMyPets } from '../hooks/useMyPets'
 import { useAuthStore } from '../context/auth'
 import { useHUD } from '../hooks/useHUD'
 import {
-  RARITIES,
-  RARITY_LABELS,
   SPECIES,
   getSpecies,
-  type Rarity,
   type SpeciesId,
 } from '../lib/species'
 
@@ -38,7 +35,6 @@ import { usePetNotifications } from '../hooks/usePetNotifications'
 export default function Pets() {
   const [speciesId, setSpeciesId] = useState<SpeciesId | null>(null)
   const [petName,   setPetName]   = useState('')
-  const [rarity,    setRarity]    = useState<Rarity>('common')
   const [justMintedTx, setJustMintedTx] = useState<`0x${string}` | null>(null)
 
   const { tokens } = useHUD()
@@ -206,26 +202,13 @@ export default function Pets() {
                 />
               </label>
 
-              <fieldset className="flex flex-col gap-1.5">
-                <legend className="text-xs font-semibold uppercase tracking-wider text-hfz-text-secondary">
-                  Rarity tier
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {RARITIES.map((r) => (
-                    <HVZButton
-                      key={r}
-                      variant={rarity === r ? 'primary' : 'ghost'}
-                      size="sm"
-                      onClick={() => setRarity(r)}
-                    >
-                      {RARITY_LABELS[r]}
-                    </HVZButton>
-                  ))}
-                </div>
-                <p className="text-[11px] text-hfz-text-secondary mt-1">
-                  All rarities cost the same to mint (100 BROski$). Rarity affects power-multiplier + visual flair.
+              <div className="rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/40 px-3 py-2.5">
+                <p className="text-[11px] text-hfz-text-secondary">
+                  🎲 <strong className="text-hfz-text-primary">Rarity is rolled on mint</strong> — Common, Uncommon,
+                  Rare or Legendary. Luck of the draw, revealed when your pet hatches. Every mint costs the same
+                  (100 BROski$).
                 </p>
-              </fieldset>
+              </div>
             </div>
           </HVZCard>
         </section>
@@ -245,7 +228,6 @@ export default function Pets() {
             <MintPetButton
               species={species}
               petName={petName}
-              rarity={rarity}
               onMinted={handleMinted}
             />
           </HVZCard>

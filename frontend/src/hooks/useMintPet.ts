@@ -39,9 +39,8 @@ type MintPetParams = {
   /** Species id (matches lib/species.ts SpeciesId). Used by the Edge Fn to
    *  populate the pets row in relay mode. */
   speciesId: string
-  /** Rarity tier (common | uncommon | rare | legendary). Used by the Edge Fn
-   *  to populate the pets row in relay mode. */
-  rarity: string
+  // NOTE: rarity is intentionally NOT a param. It is rolled server-side by
+  // mint-pet-auth (anti-exploit) and returned in the response.
 }
 
 type MintPetState = 'idle' | 'authorizing' | 'awaiting-signature' | 'mining' | 'success' | 'error'
@@ -75,6 +74,7 @@ export function useMintPet() {
   const [state, setState] = useState<MintPetState>('idle')
   const [error, setError] = useState<MintPetError | null>(null)
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null)
+  const [mintedRarity, setMintedRarity] = useState<string | null>(null)
   const lastContext = useRef<MintContext | null>(null)
   const confirmedTxHashes = useRef<Set<string>>(new Set())
 
@@ -84,9 +84,10 @@ export function useMintPet() {
   )
 
   const mintPet = useCallback(
-    async ({ petName, ipfsCid, speciesId, rarity }: MintPetParams) => {
+    async ({ petName, ipfsCid, speciesId }: MintPetParams) => {
       setError(null)
       setTxHash(null)
+      setMintedRarity(null)
 
       if (!user) {
         const err: MintPetError = { code: 'not-connected', message: 'Sign in first.' }
@@ -141,7 +142,6 @@ export function useMintPet() {
           ipfs_cid:       ipfsCid,
           pet_name:       petName,
           species_id:     speciesId,
-          rarity,
           relay:          MINT_VIA_RELAY,
         }),
       })
@@ -162,13 +162,18 @@ export function useMintPet() {
 
       const payload = (await authResp.json()) as MintPetAuthResponse
 
+      // Rarity is decided server-side (anti-exploit). Trust ONLY the value the
+      // Edge Function returns — never a client choice.
+      const serverRarity = payload.rarity ?? 'common'
+      setMintedRarity(serverRarity)
+
       // Stash context so confirmMint() can persist the row in wallet-signed
       // mode once the receipt confirms.
       lastContext.current = {
         petId:         payload.auth.petId,
         petName,
         speciesId,
-        rarity,
+        rarity:        serverRarity,
         ipfsCid,
         walletAddress: address,
       }
@@ -242,7 +247,7 @@ export function useMintPet() {
   )
 
   const reset = useCallback(() => {
-    setState('idle'); setError(null); setTxHash(null)
+    setState('idle'); setError(null); setTxHash(null); setMintedRarity(null)
     lastContext.current = null
     confirmedTxHashes.current.clear()
   }, [])
@@ -325,6 +330,7 @@ export function useMintPet() {
     state,
     error,
     txHash,
+    mintedRarity,
     isReady: isConnected && isContractConfigured,
   }
 }
