@@ -1,6 +1,6 @@
 # 💾 SESSION SNAPSHOT — May 17, 2026
-> Created: 00:47 BST
-> Status: 🟢 ALL 10 MODULES COMPLETE — Phase 2 Ready
+> Created: 00:47 BST · Updated: May 17 (Claude Code session)
+> Status: 🟢 ALL MODULES COMPLETE · Phase 2 — video scripts ✅ + Supabase restructure ✅ + quizzes ✅ · NotebookLM/Vercel/XP parked
 
 ---
 
@@ -68,6 +68,37 @@ All files: https://github.com/welshDog/Hyper-Vibe-Coding-Course/tree/main/rewrit
 4. **Vercel deploy** — push to preview
 5. **BROski$ XP config** — set token rewards per module in Supabase
 6. **Claude Code handoff** — use CLAUDE.md to get Claude Code to auto-draft video scripts
+
+---
+
+## ✅ Phase 2 — Execution Log (May 17, Claude Code session)
+
+| # | Task | Status |
+|---|---|---|
+| 1 | NotebookLM sync | 🔵 Still parked |
+| 2 | **Video scripts** — all 11 (M1–M10 + M5B), 3-min spoken, M4 template | ✅ **DONE + pushed** |
+| 3 | **Supabase sync** | ✅ **DONE** — see correction ⚠️ below |
+| 4 | Vercel deploy → preview | 🔵 Still parked |
+| 5 | BROski$ XP config | 🟡 Coins aligned; **XP review still open** (see below) |
+| 6 | Claude Code handoff (auto-draft scripts) | ✅ **DONE** |
+
+### 🎬 Video scripts — shipped
+`video_scripts/MODULE_{01,02,03,04,05,05B,06,07,08,09,10}_VIDEO_SCRIPT.md` — all on `main`.
+Each: Production Notes → timed scenes (VO + on-screen) → B-roll checklist → VO timing cheat sheet. M5 split into M5 (crew) + M5B (observability). M10 = 3:15 finale. Index: `video_scripts/README.md`.
+
+### ⚠️ Supabase sync — IMPORTANT CORRECTION
+There is **NO `module_content` table** — that name in task #3 was wrong. The real table is **`hv_modules`** (Supabase project `yhtmuibgdnxhbgboajhc`). It stores metadata + a `script_path` pointer, **not** markdown bodies.
+
+**What was done (full restructure → May model, approved):**
+- `hv_modules`: **12 → 11 rows**. Old April 12-module structure replaced by canonical May model (M1–M10 + M5B). All row `id`s reused (FK-safe), old M12 "Ride or Die" deleted. `script_path` → `rewrites/MODULE_0X_REWRITE.md`, `content_hash` = sha256 of each, `status_script`/`status_video` = `ready`.
+- `hv_quizzes`: **regenerated** — 12 stale April quizzes wiped, 11 fresh `claude-auto` v1 quizzes authored from the new rewrites (3 multiple-choice + 1 true/false + 1 practical each). FK-safe, 0 orphans, all well-formed.
+- 0 `module_completions` anywhere → zero learner impact.
+
+### 🟡 Still open — BROski$ XP review
+`coin_reward` is aligned to rewrite tiers. But `xp_reward` for **M1 (50), M4 (50), M5 (75), M5B (30)** was carried over from the old reused rows and may want rebalancing vs the new reward tiers. M2 (150) + M3 (200) set from rewrites. Decision needed.
+
+### 📌 Remaining Phase 2
+NotebookLM sync · Vercel preview deploy · XP rebalance decision.
 
 ---
 
