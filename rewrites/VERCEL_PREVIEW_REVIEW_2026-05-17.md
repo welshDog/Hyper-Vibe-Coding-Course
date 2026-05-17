@@ -125,8 +125,8 @@
 | ✅ 6 | **VERIFIED PASS** — quests wiring (see Verify Log) | `/quests` |
 | ✅ 7 | **VERIFIED PASS** — shop = token sink by design (see Verify Log) | `/shop` |
 | ✅ 8 | **VERIFIED PASS** + dead-link fixed (see Verify Log) | `/profile` |
-| 🟢 9 | Fix Husky warning | `package.json` |
-| 🟢 10 | Run full production checklist | All routes |
+| ✅ 9 | **DONE** — Husky skipped in CI (`.husky/install.mjs`) | `package.json` |
+| ✅ 10 | **DRAFTED** — `rewrites/GO_LIVE_CHECKLIST_2026-05-17.md` | All routes |
 
 ---
 
