@@ -277,7 +277,7 @@ export default function PaymentSuccess() {
 
           <div className="flex flex-col gap-3">
             {courseId ? (
-              <Link to={`/learn/${courseId}`} className="block no-underline">
+              <Link to={`/catalog/${courseId}`} className="block no-underline">
                 <HVZButton variant="primary" size="md" fullWidth>
                   Start learning now
                   <ArrowRight className="h-4 w-4" />
