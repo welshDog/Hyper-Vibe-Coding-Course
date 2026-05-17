@@ -117,7 +117,7 @@
 
 | Priority | What | Where |
 |---|---|---|
-| 🔴 1 | Lock payment-success behind Stripe session check | `/payment-success` + Stripe webhook |
+| ✅ 1 | **DONE** — payment-success bypass closed (see Fix Log) | `/payment-success` + Stripe webhook |
 | 🔴 2 | Wire module body content to frontend | `hv_modules` + course pages |
 | 🟡 3 | Fix Pet$ display + mint config | `/pets` |
 | 🟡 4 | Make rarity random/weighted server-side | `/pets` + mint logic |
@@ -127,6 +127,24 @@
 | 🔵 8 | Confirm profile live data + save | `/profile` |
 | 🟢 9 | Fix Husky warning | `package.json` |
 | 🟢 10 | Run full production checklist | All routes |
+
+---
+
+## ✅ Fix Log
+
+### 🔴 #1 — Payment-success bypass — FIXED (May 17, commit `711d9c7`)
+
+**Root cause was NOT what the report prescribed.** The report suggested adding `session_id` retrieval on the success page. Investigation showed the actual leak was client-side, and a properly signature-verified Stripe webhook already existed (`supabase/functions/stripe-webhook`). The real holes:
+
+1. `PaymentSuccess.tsx` **wrote enrollments client-side with zero payment proof** — a no-`course_id` branch enrolled the user in **all active courses** just for visiting the URL; the `course_id` branch self-upserted after a 10s poll.
+2. `Pricing.tsx` line ~148: missing Stripe link env → `navigate('/payment-success')`, routing every CTA straight to the unlock page on the preview.
+
+**Corrected fix shipped:**
+- `Pricing.tsx` — removed the `/payment-success` fallback; missing link now shows an error, never unlocks.
+- `PaymentSuccess.tsx` — now **display-only**: read-only polling, both client-side enrollment writes deleted; unconfirmed → support path, never self-grants.
+- `stripe-webhook/index.ts` — now the **single trusted grantor**: creates `enrollments` server-side *after* Stripe signature verification (single course via `client_reference_id`; all active courses for tier/subscription); also handles single-course buys with no tier mapping. Redeployed **v33**, `verify_jwt=false` preserved.
+
+**Follow-up (not blocking):** tier→courses mapping is currently "all active courses" for any tier/subscription (mirrors prior intended behaviour, now verified). A finer per-tier course mapping is a future refinement. `/learn/:id` is a dead link in `PaymentSuccess` (no such route) — cosmetic, low priority.
 
 ---
 
