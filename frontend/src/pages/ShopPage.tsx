@@ -435,7 +435,24 @@ function FulfillmentBlock({
 
   // ── Collectibles — owning it IS the delivery (art in your stash) ────────────
   if (COLLECTIBLE_CATEGORIES.has(item.category)) {
-    const isPetCosmetic = PET_COSMETIC_CATEGORIES.has(item.category);
+    // Pet cosmetics now have a real home — link straight to the equip panel.
+    if (PET_COSMETIC_CATEGORIES.has(item.category)) {
+      return (
+        <a
+          href="/pets"
+          className={DELIVERY_LINK_CLASS}
+          style={{
+            background: 'rgba(16,245,160,0.12)',
+            border: '1px solid rgba(16,245,160,0.4)',
+            color: 'var(--color-success-mint)',
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Sparkles className="h-4 w-4" />
+          Equip on your BROskiPet →
+        </a>
+      );
+    }
     return (
       <p
         className="text-sm font-medium rounded-hfz-sm px-3 py-2.5 leading-relaxed flex items-center gap-2"
@@ -446,9 +463,7 @@ function FulfillmentBlock({
         }}
       >
         <Sparkles className="h-4 w-4 flex-shrink-0" />
-        {isPetCosmetic
-          ? 'In your stash — equip it on your BROskiPet 🐾'
-          : 'Added to your collection ✨'}
+        Added to your collection ✨
       </p>
     );
   }

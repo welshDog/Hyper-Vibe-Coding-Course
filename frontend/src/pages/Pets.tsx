@@ -22,7 +22,10 @@ import { PetCard } from '../components/pets/PetCard'
 import { PetCardSkeleton } from '../components/pets/PetCardSkeleton'
 import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { PetSquadRow } from '../components/pets/PetSquadRow'
+import { PetCosmeticsPanel } from '../components/pets/PetCosmeticsPanel'
 import { useMyPets } from '../hooks/useMyPets'
+import { useOwnedCosmetics, PET_SLOTS } from '../hooks/useOwnedCosmetics'
+import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../context/auth'
 import { useHUD } from '../hooks/useHUD'
 import {
@@ -41,7 +44,67 @@ export default function Pets() {
   const { tokens } = useHUD()
 
   const { pets, loading: petsLoading, error: petsError, refetch } = useMyPets()
+  const { bySlot, byId, refetch: refetchCosmetics } = useOwnedCosmetics()
+  const [busy, setBusy] = useState(null)          // { petId, slot } | null
+  const [equipError, setEquipError] = useState(null)
   const userId = useAuthStore((s) => s.user?.id)
+
+  const prettyEquipError = (raw) => {
+    switch (raw) {
+      case 'not_your_pet':       return "That's not your pet."
+      case 'not_owned':          return "You don't own that cosmetic yet — grab it in the shop."
+      case 'not_a_pet_cosmetic': return "That item can't be equipped on a pet."
+      case 'not_authenticated':  return 'Please sign in again.'
+      default:                   return raw || "Couldn't update — give it another go."
+    }
+  }
+
+  // Resolve a pet's equipped slot → cosmetic art (only what the user owns).
+  const resolveEquipped = (pet) => {
+    const c = pet.cosmetics ?? {}
+    const out = {}
+    for (const slot of PET_SLOTS) {
+      const id = c[slot]
+      const owned = id ? byId[id] : undefined
+      if (owned) out[slot] = { image_url: owned.image_url, name: owned.name }
+    }
+    return out
+  }
+
+  const handleEquip = async (petId, itemId) => {
+    const cos = byId[itemId]
+    if (!cos) return
+    setBusy({ petId, slot: cos.slot })
+    setEquipError(null)
+    const { data, error } = await supabase.rpc('equip_pet_cosmetic', {
+      p_pet_id: petId,
+      p_item_id: itemId,
+    })
+    if (error || !data?.ok) {
+      setEquipError(prettyEquipError(data?.error ?? error?.message))
+    } else {
+      await refetch()
+    }
+    setBusy(null)
+  }
+
+  const handleUnequip = async (petId, slot) => {
+    setBusy({ petId, slot })
+    setEquipError(null)
+    const { data, error } = await supabase.rpc('unequip_pet_cosmetic', {
+      p_pet_id: petId,
+      p_slot: slot,
+    })
+    if (error || !data?.ok) {
+      setEquipError(prettyEquipError(data?.error ?? error?.message))
+    } else {
+      await refetch()
+    }
+    setBusy(null)
+  }
+
+  // Keep the owned-cosmetics list fresh when a shop purchase happens elsewhere.
+  void refetchCosmetics
   const species = speciesId ? getSpecies(speciesId) : null
   const showEmptyState = !!userId && !petsLoading && !petsError && pets.length === 0
   const { notifyLevelUp } = usePetNotifications()
@@ -107,6 +170,14 @@ export default function Pets() {
               </span>
             )}
           </div>
+          {equipError && (
+            <p
+              role="status"
+              className="rounded-hfz-sm border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300"
+            >
+              ⚠️ {equipError}
+            </p>
+          )}
           {petsError ? (
             <HVZCard>
               <div className="flex items-center justify-between gap-3">
@@ -147,12 +218,20 @@ export default function Pets() {
               {pets.map((p, i) => (
                 <li
                   key={p.id}
-                  className="motion-safe:animate-fade-in-up"
+                  className="motion-safe:animate-fade-in-up flex flex-col gap-3"
                   style={{ animationDelay: `${Math.min(i, 5) * 50}ms` }}
                 >
                   <PetCard
                     pet={p}
                     freshMint={p.mint_tx_hash === justMintedTx}
+                    equipped={resolveEquipped(p)}
+                  />
+                  <PetCosmeticsPanel
+                    pet={p}
+                    bySlot={bySlot}
+                    busySlot={busy?.petId === p.id ? busy.slot : null}
+                    onEquip={handleEquip}
+                    onUnequip={handleUnequip}
                   />
                 </li>
               ))}

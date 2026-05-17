@@ -40,7 +40,16 @@ export type Pet = {
   ipfs_cid:        string
   chain_id:        number
   created_at:      string
+  /** Equipped cosmetics by slot → shop_item uuid. Written via the equip RPC. */
+  cosmetics?:      Partial<Record<PetCosmeticSlot, string>>
 }
+
+export type PetCosmeticSlot = 'aura' | 'frame' | 'badge' | 'background'
+
+/** A resolved cosmetic (slot id → its art), passed in by the Pets page. */
+export type EquippedCosmetics = Partial<
+  Record<PetCosmeticSlot, { image_url: string | null; name: string }>
+>
 
 type Props = {
   pet:         Pet
@@ -50,6 +59,8 @@ type Props = {
   onClick?:    () => void
   /** Pet was minted this session — play the gold shimmer sweep once. */
   freshMint?:  boolean
+  /** Resolved cosmetic art for this pet's equipped slots (full size only). */
+  equipped?:   EquippedCosmetics
 }
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
@@ -59,7 +70,7 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
   legendary: 'gold',
 }
 
-export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false }: Props) {
+export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped }: Props) {
   // ⚠️  All hooks declared up top — Rules of Hooks. Even though `tilt` only
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
@@ -159,22 +170,71 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
         )}
 
         <div
-          className={`relative shrink-0 rounded-hfz-md ${isEvolving ? 'motion-safe:animate-border-pulse' : ''}`}
+          className={`relative shrink-0 h-20 w-20 rounded-hfz-md ${isEvolving ? 'motion-safe:animate-border-pulse' : ''}`}
         >
+          {/* Background — fills the portrait box behind everything */}
+          {equipped?.background?.image_url && (
+            <img
+              src={equipped.background.image_url}
+              alt=""
+              aria-hidden
+              loading="lazy"
+              className="absolute inset-0 h-full w-full rounded-hfz-md object-cover"
+            />
+          )}
+
+          {/* Aura — soft glow ring just behind the pet */}
+          {equipped?.aura?.image_url && (
+            <img
+              src={equipped.aura.image_url}
+              alt=""
+              aria-hidden
+              loading="lazy"
+              className="pointer-events-none absolute -inset-2 h-[calc(100%+1rem)] w-[calc(100%+1rem)] object-contain blur-[1px] opacity-80 mix-blend-screen"
+            />
+          )}
+
+          {/* The pet itself — object-contain (with a touch of padding) when a
+              background is equipped so the scene shows behind it */}
           <img
             src={species.imageUrl}
             alt={species.displayName}
-            className="h-20 w-20 rounded-hfz-md object-cover"
             loading="lazy"
+            className={`relative h-20 w-20 rounded-hfz-md ${
+              equipped?.background?.image_url ? 'object-contain p-1' : 'object-cover'
+            }`}
           />
-          {isLegend && (
-            <span
+
+          {/* Frame — decorative border on top, never intercepts clicks */}
+          {equipped?.frame?.image_url && (
+            <img
+              src={equipped.frame.image_url}
+              alt=""
               aria-hidden
-              className="absolute -bottom-1 -right-1 text-lg drop-shadow"
-              title="Fully evolved"
-            >
-              ✨
-            </span>
+              loading="lazy"
+              className="pointer-events-none absolute -inset-1 h-[calc(100%+0.5rem)] w-[calc(100%+0.5rem)] object-contain"
+            />
+          )}
+
+          {/* Badge — corner chip; falls back to the legend sparkle */}
+          {equipped?.badge?.image_url ? (
+            <img
+              src={equipped.badge.image_url}
+              alt={equipped.badge.name}
+              title={equipped.badge.name}
+              loading="lazy"
+              className="absolute -bottom-2 -right-2 h-7 w-7 object-contain drop-shadow"
+            />
+          ) : (
+            isLegend && (
+              <span
+                aria-hidden
+                className="absolute -bottom-1 -right-1 text-lg drop-shadow"
+                title="Fully evolved"
+              >
+                ✨
+              </span>
+            )
           )}
         </div>
 
