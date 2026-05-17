@@ -49,9 +49,6 @@ function isQuizPayload(value: unknown): value is HvQuizPayload {
 // ── Markdown rendering ──────────────────────────────────────────
 // react-markdown + remark-gfm renders the rewrite docs in full:
 // tables, blockquote callouts, fenced code, links, nested lists.
-// Styling is applied on the wrapping <article> via Tailwind
-// arbitrary variants — no typography plugin, no custom node map
-// (keeps it type-safe and avoids the `node` DOM-prop warning).
 function Markdown({ content }: { content: string }) {
   return (
     <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
@@ -289,8 +286,34 @@ export default function CourseModule() {
         ) : null}
       </div>
 
+      {/* ── Content block ── */}
       <div className="rounded-2xl bg-white/5 border border-white/10 p-6">
-        {content && content.trim().length > 0 ? (
+        {!user ? (
+          /* 🔒 Login gate — content is members-only */
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <span className="text-4xl" aria-hidden>🔒</span>
+            <p className="text-gray-200 font-semibold text-lg">
+              Log in to access this module
+            </p>
+            <p className="text-gray-400 text-sm max-w-sm">
+              Create a free account to read lessons, take quizzes and earn BROski$ XP.
+            </p>
+            <div className="flex gap-3 mt-2">
+              <Link
+                to="/login"
+                className="inline-flex rounded-lg bg-purple-600 hover:bg-purple-500 transition-colors px-5 py-2 text-white text-sm font-semibold"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/register"
+                className="inline-flex rounded-lg bg-white/10 hover:bg-white/15 transition-colors px-5 py-2 text-white text-sm font-semibold border border-white/10"
+              >
+                Create account
+              </Link>
+            </div>
+          </div>
+        ) : content && content.trim().length > 0 ? (
           <article
             className={[
               'text-gray-200 leading-relaxed break-words',

@@ -5,7 +5,7 @@
 // via useMyPets, populated by mint-pet-auth Edge Fn after a successful relay
 // mint. Reloads survive.
 //
-// Steps 1–3: the live mint flow (unchanged from May 7 ship).
+// Steps 1–3: the live mint flow (login-gated).
 //   1. Pick a species (SpeciesPicker)
 //   2. Name your pet (rarity is rolled server-side on mint — anti-exploit)
 //   3. Mint (MintPetButton — handles wallet connect, balance gate, on-chain tx)
@@ -14,6 +14,7 @@
 // beat to land, so we retry once with a small delay.
 
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { HVZCard, HVZButton } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
@@ -48,14 +49,9 @@ export default function Pets() {
   // Track old pets array to detect level ups
   const [prevPets, setPrevPets] = useState<typeof pets>([])
   useEffect(() => {
-    // Check for stage/level changes
     pets.forEach(pet => {
       const oldPet = prevPets.find(p => p.id === pet.id)
       if (oldPet && oldPet.stage !== pet.stage) {
-        // 🔔 Pet Evolved / Levelled Up!
-        // We grab the wallet address from the mint tx or assume it's the connected user's
-        // Usually, the pet row in DB should have the user's wallet_address, but since it doesn't
-        // exist in the Pet type directly, we'll cast it or handle it.
         const addr = (pet as any).wallet_address || window.ethereum?.selectedAddress || '0x'
         if (addr && addr !== '0x') {
           notifyLevelUp({
@@ -73,14 +69,9 @@ export default function Pets() {
     setJustMintedTx(txHash)
     setPetName('')
     setSpeciesId(null)
-    // Edge Fn INSERT may not have landed yet — refetch now and again shortly.
     void refetch()
   }
 
-  // Belt-and-braces refetch in case the Edge Fn INSERT trails the on-chain
-  // confirmation. The "syncing" UI below derives from the same predicate, so
-  // we don't need to clear justMintedTx — it just stays at the most recent
-  // tx and gets overwritten by the next mint.
   const awaitingSync = justMintedTx !== null && !pets.some((p) => p.mint_tx_hash === justMintedTx)
   useEffect(() => {
     if (!awaitingSync) return
@@ -119,7 +110,7 @@ export default function Pets() {
           {petsError ? (
             <HVZCard>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm text-red-300">Couldn’t load your pets: {petsError.message}</p>
+                <p className="text-sm text-red-300">Couldn't load your pets: {petsError.message}</p>
                 <HVZButton variant="ghost" size="sm" onClick={() => { void refetch() }}>
                   Retry
                 </HVZButton>
@@ -170,68 +161,105 @@ export default function Pets() {
         </section>
       )}
 
-      {/* Step 1 — pick species */}
-      <section aria-labelledby="step1" className="flex flex-col gap-3">
-        <h2 id="step1" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-          {pets.length > 0 ? 'Mint another' : `Step 1 — Pick a species (${SPECIES.length} available)`}
-        </h2>
-        <HVZCard>
-          <SpeciesPicker selected={speciesId} onSelect={setSpeciesId} />
-        </HVZCard>
-      </section>
-
-      {/* Step 2 — name + rarity */}
-      {species && (
-        <section aria-labelledby="step2" className="flex flex-col gap-3">
-          <h2 id="step2" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-            Step 2 — Name your {species.displayName}
+      {/* Steps 1–3 — Mint flow (login-gated) */}
+      {!userId ? (
+        /* 🔒 Login gate — mint is members-only */
+        <section aria-labelledby="mint-gate" className="flex flex-col gap-3">
+          <h2 id="mint-gate" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+            Mint a BROski Pet
           </h2>
           <HVZCard>
-            <div className="flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold uppercase tracking-wider text-hfz-text-secondary">
-                  Pet name (1–32 chars)
-                </span>
-                <input
-                  type="text"
-                  value={petName}
-                  onChange={(e) => setPetName(e.target.value)}
-                  maxLength={32}
-                  placeholder={`e.g. Sparkle, Bytecrunch, ${species.emoji}-Master`}
-                  className="rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black px-3 py-2 text-hfz-text-primary placeholder:text-hfz-text-secondary/50 focus:border-hfz-violet-light focus:outline-none focus:ring-2 focus:ring-hfz-violet-light/30"
-                />
-              </label>
-
-              <div className="rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/40 px-3 py-2.5">
-                <p className="text-[11px] text-hfz-text-secondary">
-                  🎲 <strong className="text-hfz-text-primary">Rarity is rolled on mint</strong> — Common, Uncommon,
-                  Rare or Legendary. Luck of the draw, revealed when your pet hatches. Every mint costs the same
-                  (100 BROski$).
-                </p>
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <span className="text-4xl" aria-hidden>🔒</span>
+              <p className="text-hfz-text-primary font-bold text-lg">
+                Log in to mint your BROskiPet
+              </p>
+              <p className="text-hfz-text-secondary text-sm max-w-sm">
+                Create a free account to pick a species, name your companion, and mint it on Base.
+              </p>
+              <div className="flex gap-3 mt-2">
+                <Link
+                  to="/login"
+                  className="inline-flex rounded-hfz-md bg-hfz-violet-light hover:opacity-90 transition-opacity px-5 py-2 text-white text-sm font-semibold"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  className="inline-flex rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black hover:bg-white/5 transition-colors px-5 py-2 text-hfz-text-primary text-sm font-semibold"
+                >
+                  Create account
+                </Link>
               </div>
             </div>
           </HVZCard>
         </section>
-      )}
+      ) : (
+        <>
+          {/* Step 1 — pick species */}
+          <section aria-labelledby="step1" className="flex flex-col gap-3">
+            <h2 id="step1" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+              {pets.length > 0 ? 'Mint another' : `Step 1 — Pick a species (${SPECIES.length} available)`}
+            </h2>
+            <HVZCard>
+              <SpeciesPicker selected={speciesId} onSelect={setSpeciesId} />
+            </HVZCard>
+          </section>
 
-      {/* Step 3 — mint */}
-      {species && (
-        <section aria-labelledby="step3" className="flex flex-col gap-3">
-          <h2 id="step3" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-            Step 3 — Mint · Your BROski${' '}
-            <span data-mint-broski className="font-mono font-bold">
-              {userId ? tokens.toLocaleString() : '—'}
-            </span>{' '}
-            / 100 needed
-          </h2>
-          <HVZCard>
-            <MintPetButton
-              species={species}
-              petName={petName}
-              onMinted={handleMinted}
-            />
-          </HVZCard>
-        </section>
+          {/* Step 2 — name + rarity */}
+          {species && (
+            <section aria-labelledby="step2" className="flex flex-col gap-3">
+              <h2 id="step2" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+                Step 2 — Name your {species.displayName}
+              </h2>
+              <HVZCard>
+                <div className="flex flex-col gap-4">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-hfz-text-secondary">
+                      Pet name (1–32 chars)
+                    </span>
+                    <input
+                      type="text"
+                      value={petName}
+                      onChange={(e) => setPetName(e.target.value)}
+                      maxLength={32}
+                      placeholder={`e.g. Sparkle, Bytecrunch, ${species.emoji}-Master`}
+                      className="rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black px-3 py-2 text-hfz-text-primary placeholder:text-hfz-text-secondary/50 focus:border-hfz-violet-light focus:outline-none focus:ring-2 focus:ring-hfz-violet-light/30"
+                    />
+                  </label>
+
+                  <div className="rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/40 px-3 py-2.5">
+                    <p className="text-[11px] text-hfz-text-secondary">
+                      🎲 <strong className="text-hfz-text-primary">Rarity is rolled on mint</strong> — Common, Uncommon,
+                      Rare or Legendary. Luck of the draw, revealed when your pet hatches. Every mint costs the same
+                      (100 BROski$).
+                    </p>
+                  </div>
+                </div>
+              </HVZCard>
+            </section>
+          )}
+
+          {/* Step 3 — mint */}
+          {species && (
+            <section aria-labelledby="step3" className="flex flex-col gap-3">
+              <h2 id="step3" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+                Step 3 — Mint · Your BROski${' '}
+                <span data-mint-broski className="font-mono font-bold">
+                  {tokens.toLocaleString()}
+                </span>{' '}
+                / 100 needed
+              </h2>
+              <HVZCard>
+                <MintPetButton
+                  species={species}
+                  petName={petName}
+                  onMinted={handleMinted}
+                />
+              </HVZCard>
+            </section>
+          )}
+        </>
       )}
 
       {/* Section 4 — Evolution Path (always visible, educational) */}
