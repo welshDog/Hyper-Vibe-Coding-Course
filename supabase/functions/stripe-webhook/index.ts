@@ -92,36 +92,38 @@ async function awardTokensAndUnlock(
   const config = PRICE_TO_TIER[priceId];
   if (!config) return;
 
-  // 1️⃣ Find the user in Supabase by email
+  // 1️⃣ Find the user in Supabase by email.
+  //     NOTE: the user table is `users` (NOT `profiles` — that table does
+  //     not exist; querying it silently bailed this whole handler so paid
+  //     buyers never got tokens/enrollment). `users` has no course_tier or
+  //     unlocked_modules columns — access is gated by `enrollments` (set in
+  //     step 4 below); tier is tracked via subscription_tier.
   const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, broski_tokens, course_tier, unlocked_modules')
+    .from('users')
+    .select('id, broski_tokens')
     .eq('email', email)
     .single();
 
   if (profileError || !profile) {
-    console.error('❌ Profile not found for email:', email);
+    console.error('❌ User not found for email:', email);
     return;
   }
 
   const userId = profile.id;
   const currentTokens = profile.broski_tokens ?? 0;
-  const currentModules: number[] = profile.unlocked_modules ?? [];
-  const newModules = [...new Set([...currentModules, ...config.modules])];
 
-  // 2️⃣ Award tokens + upgrade tier + unlock modules
+  // 2️⃣ Award tokens + upgrade subscription tier
   const { error: updateError } = await supabase
-    .from('profiles')
+    .from('users')
     .update({
       broski_tokens: currentTokens + config.tokens,
-      course_tier: config.tier,
-      unlocked_modules: newModules,
-      updated_at: new Date().toISOString(),
+      subscription_tier: config.tier,
+      subscription_status: 'active',
     })
     .eq('id', userId);
 
   if (updateError) {
-    console.error('❌ Failed to update profile:', updateError);
+    console.error('❌ Failed to update user:', updateError);
     return;
   }
 
@@ -182,13 +184,13 @@ async function enrollVerifiedBuyer(
   courseId: string
 ) {
   const { data: profile, error } = await supabase
-    .from('profiles')
+    .from('users')
     .select('id')
     .eq('email', email)
     .single();
 
   if (error || !profile) {
-    console.error('❌ Profile not found for email:', email);
+    console.error('❌ User not found for email:', email);
     return;
   }
 

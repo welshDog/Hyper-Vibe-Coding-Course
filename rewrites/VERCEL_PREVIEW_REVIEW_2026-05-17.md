@@ -196,6 +196,14 @@ These were *verification* tasks. Investigated code + DB. All wiring **PASS**.
 
 ---
 
+### 🔴 CRITICAL — webhook queried non-existent `profiles` table — FIXED (May 17, webhook v34)
+
+Pre-flight for a full pay test caught it: `stripe-webhook` resolved buyers via `.from('profiles')` — **`profiles` does not exist** (real table = `users`). Every paid purchase silently bailed at that lookup → **no tokens, no tier, no enrollment** (and #1's `enrollUser` never ran — it's called after the bail). Net before fix: exploit closed ✅ but real payers got nothing ❌. Bug predates #1; #1's enrollment was latent behind it.
+
+**Fixed (webhook v34, `verify_jwt:false` preserved):** `profiles`→`users`; `course_tier`→`subscription_tier` + `subscription_status='active'`; dropped non-existent `unlocked_modules`/`updated_at` (access is gated by `enrollments`, which `enrollUser`/`enrollVerifiedBuyer` set). Both tier + single-course paths fixed. **Pay test is now meaningful** — runbook to follow.
+
+---
+
 ## 🏆 Verdict
 
 The preview is **not broken — it's nearly there.** The app shell, routing, auth, quizzes, XP, and BROski$ economy are all alive. The remaining work is closing the **last 10%**: payment security, content wiring, game economy logic, and data consistency.
