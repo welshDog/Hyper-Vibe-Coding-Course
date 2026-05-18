@@ -12,6 +12,7 @@ import {
   type TagColor,
 } from '../components/ui/hvz'
 import { VIBE_LEVELS } from '../lib/vibeLabs'
+import { useProgress } from '../hooks/useProgress'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type WaitlistStatus = 'idle' | 'loading' | 'success' | 'duplicate' | 'error'
@@ -961,6 +962,11 @@ function SiteFooter() {
 // ─── Vibe Labs band ───────────────────────────────────────────────────────────
 function VibeLabsBand() {
   const [lead, ...path] = VIBE_LEVELS
+  // Public page: useProgress no-ops (no query, empty state) for logged-out
+  // visitors, so this is pure progressive enhancement for returners.
+  const { isLevelComplete, isLoggedIn, progress } = useProgress()
+  const leadDone = isLevelComplete(lead.id)
+  const claimedCount = progress.completedLevels.length
 
   return (
     <section
@@ -1026,7 +1032,28 @@ function VibeLabsBand() {
         >
           {/* Featured — Level 1, the free focal action */}
           <HVZCard style={{ display: 'flex', flexDirection: 'column', padding: 32 }}>
-            <HVZTag color={lead.accent as TagColor}>{lead.eyebrow}</HVZTag>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <HVZTag color={lead.accent as TagColor}>{lead.eyebrow}</HVZTag>
+              {leadDone && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--color-broski-gold)',
+                    border: '1px solid rgba(245,158,11,0.4)',
+                    background: 'rgba(245,158,11,0.1)',
+                    borderRadius: 999,
+                    padding: '3px 10px',
+                  }}
+                >
+                  <CheckCircle size={12} aria-hidden /> Claimed
+                </span>
+              )}
+            </div>
             <h3
               style={{
                 fontFamily: 'var(--font-display)',
@@ -1072,10 +1099,15 @@ function VibeLabsBand() {
             <Link
               to={lead.path}
               style={{ textDecoration: 'none', display: 'block' }}
-              aria-label={`Start ${lead.title} free — no signup`}
+              aria-label={
+                leadDone
+                  ? `Replay ${lead.title}`
+                  : `Start ${lead.title} free — no signup`
+              }
             >
               <HVZButton variant="primary" fullWidth>
-                Start Level 1 free <ArrowRight size={16} />
+                {leadDone ? 'Replay Level 1' : 'Start Level 1 free'}{' '}
+                <ArrowRight size={16} />
               </HVZButton>
             </Link>
           </HVZCard>
@@ -1151,11 +1183,19 @@ function VibeLabsBand() {
                           +{lvl.xp} XP · +{lvl.coins} BROski$
                         </span>
                       </span>
-                      <Lock
-                        size={14}
-                        aria-hidden
-                        style={{ color: 'var(--color-text-secondary)', flexShrink: 0 }}
-                      />
+                      {isLevelComplete(lvl.id) ? (
+                        <CheckCircle
+                          size={15}
+                          aria-hidden
+                          style={{ color: 'var(--color-broski-gold)', flexShrink: 0 }}
+                        />
+                      ) : (
+                        <Lock
+                          size={14}
+                          aria-hidden
+                          style={{ color: 'var(--color-text-secondary)', flexShrink: 0 }}
+                        />
+                      )}
                     </div>
                     {i < path.length - 1 && (
                       <div
@@ -1176,7 +1216,9 @@ function VibeLabsBand() {
                   margin: '18px 0 0',
                 }}
               >
-                Each unlocks when you claim the level before it. 🔓
+                {isLoggedIn && claimedCount > 0
+                  ? `${claimedCount}/5 claimed — keep the run going ♾️`
+                  : 'Each unlocks when you claim the level before it. 🔓'}
               </p>
             </HVZCard>
           </Link>
