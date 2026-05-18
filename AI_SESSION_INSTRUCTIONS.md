@@ -75,22 +75,27 @@ Full audit and rewrite of the **Hyper-Vibe Coding Course** — 10 modules, neuro
 | 🔴 RED | M4 — Stripe Walkthrough | ✅ DONE |
 | 🔴 RED | M8 — Web3 Plain English | ✅ DONE |
 | 🔴 RED | M9 — Security + SRE | ✅ DONE |
-| 🟡 YELLOW | M2+M2b — Merge Decision | ⏳ IN PROGRESS |
-| 🟡 YELLOW | M3 — Win Summary | 🔜 Todo |
-| 🟡 YELLOW | M5 — Split Observability | 🔜 Todo |
-| 🟡 YELLOW | M6 — M5→M6 Handoff | 🔜 Todo |
-| 🟡 YELLOW | M7 — Prompt Injection Intro | 🔜 Todo |
-| 🟡 YELLOW | M10 — Graduation Reframe | 🔜 Todo |
+| 🟡 YELLOW | M2+M2b — Merge Decision | ✅ DONE (merged → "Speaking Agent", May 17 audit) |
+| 🟡 YELLOW | M3 — Win Summary | ✅ DONE (Win Summary block added) |
+| 🟡 YELLOW | M5 — Split Observability | ✅ DONE (split → M5 + M5B) |
+| 🟡 YELLOW | M6 — M5→M6 Handoff | ✅ DONE |
+| 🟡 YELLOW | M7 — Prompt Injection Intro | ✅ DONE |
+| 🟡 YELLOW | M10 — Graduation Reframe | ✅ DONE |
 | 🟢 GREEN | M0, M2 core, M6 core | Keep as-is |
+
+> ✅ **ALL 10 modules + M5B rewritten, locked, and synced to Supabase `hv_modules`**
+> in the **May 17, 2026 audit** (single source of truth: `rewrites/NOTEBOOKLM_MASTER_PACK.md`).
+> The YELLOW list above is historical — do **not** re-do these rewrites.
+> ⚠️ Quiz fix (2026-05-18): all `true_false` answer_index were inverted course-wide —
+> data corrected in `hv_quizzes` + generator hardened. See memory `hv-quizzes-true-false-convention`.
 
 ### Completed rewrites live here:
 ```
 rewrites/
-  MODULE_01_REWRITE.md  ✅
-  MODULE_04_REWRITE.md  ✅
-  MODULE_08_REWRITE.md  ✅
-  MODULE_09_REWRITE.md  ✅
-  SESSION_SNAPSHOT_2026-05-16.md
+  MODULE_01_REWRITE.md … MODULE_10_REWRITE.md  ✅ (all 10)
+  MODULE_05B_REWRITE.md                         ✅
+  NOTEBOOKLM_MASTER_PACK.md                     ← single source of truth (May 17 audit)
+  SESSION_SNAPSHOT_2026-05-18.md                ← latest
 ```
 
 ---
