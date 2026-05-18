@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 
 const PUBLIC_LINKS: { label: string; href: string }[] = [
   { label: 'Courses', href: '/courses' },
+  { label: '🧪 Vibe Labs', href: '/vibe-labs' },
   { label: 'Pets', href: '/pets' },
   { label: 'Pricing', href: '/pricing' },
   { label: '🏆 Leaderboard', href: '/leaderboard' },
