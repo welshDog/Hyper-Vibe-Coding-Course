@@ -65,6 +65,8 @@ const CATEGORY_CONFIG: Record<string, { heading: string; tone: TagColor }> = {
   bonus_content:  { heading: '🎬 Bonus Content',       tone: 'pink' },
   coaching:       { heading: '🎯 Coaching & Feedback', tone: 'amber' },
   cosmetic:       { heading: '✨ Cosmetic Upgrades',   tone: 'pink' },
+  frame:          { heading: '🃏 Card Frames',         tone: 'gold' },
+  event:          { heading: '🎪 Limited Events',      tone: 'pink' },
   pet_boost:      { heading: '⚡ Pet Boosters',        tone: 'amber' },
   pet_care:       { heading: '🐾 Pet Care',            tone: 'cyan' },
   pet_aura:       { heading: '🌀 Pet Auras',           tone: 'violet' },
@@ -79,6 +81,7 @@ const CATEGORY_CONFIG: Record<string, { heading: string; tone: TagColor }> = {
 
 const CATEGORY_ORDER = [
   'agent_access', 'prompt_pack', 'bonus_content', 'coaching', 'cosmetic',
+  'frame', 'event',
   'pet_boost', 'pet_care', 'pet_aura', 'pet_frame', 'pet_badge', 'pet_background',
   'food', 'toys', 'hygiene', 'sacred',
 ];
@@ -93,6 +96,7 @@ const PET_COSMETIC_CATEGORIES = new Set([
 ]);
 const COLLECTIBLE_CATEGORIES = new Set([
   ...PET_COSMETIC_CATEGORIES,
+  'frame', 'event',
   'pet_boost', 'pet_care', 'food', 'toys', 'hygiene', 'sacred',
 ]);
 
@@ -363,7 +367,6 @@ function FulfillmentBlock({
       );
     }
 
-    // pending / queued / not-yet-written
     return (
       <p
         className="text-sm font-medium rounded-hfz-sm px-3 py-2.5 leading-relaxed flex items-center gap-2"
@@ -436,7 +439,6 @@ function FulfillmentBlock({
 
   // ── Collectibles — owning it IS the delivery (art in your stash) ────────────
   if (COLLECTIBLE_CATEGORIES.has(item.category)) {
-    // Pet cosmetics now have a real home — link straight to the equip panel.
     if (PET_COSMETIC_CATEGORIES.has(item.category)) {
       return (
         <a
@@ -498,9 +500,7 @@ interface ItemCardProps {
   discountPct: number;
   purchasing: boolean;
   onBuy: (itemId: string) => void;
-  /** Fire the one-shot purchase celebration on this card. */
   celebrate?: boolean;
-  /** Called once the celebration animation has finished (or was skipped). */
   onCelebrationEnd?: () => void;
 }
 
@@ -514,7 +514,6 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
   // image_url lives inside metadata JSONB, not as a top-level column
   const imageUrl = item.metadata?.image_url ?? null;
 
-  // ── Purchase celebration ────────────────────────────────────────────────────
   const flashRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const onEndRef = useRef(onCelebrationEnd);
@@ -548,8 +547,7 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
           { opacity: 0, boxShadow: 'inset 0 0 0 0 rgba(245,158,11,0)' },
           {
             opacity: 1,
-            boxShadow:
-              'inset 0 0 0 1.5px rgba(245,158,11,0.7), inset 0 0 26px rgba(245,158,11,0.30)',
+            boxShadow: 'inset 0 0 0 1.5px rgba(245,158,11,0.7), inset 0 0 26px rgba(245,158,11,0.30)',
             offset: 0.3,
           },
           { opacity: 0, boxShadow: 'inset 0 0 0 0 rgba(245,158,11,0)' },
@@ -605,7 +603,6 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
       padding={20}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}
     >
-      {/* Purchase celebration overlays */}
       <div
         ref={ringRef}
         aria-hidden
@@ -618,8 +615,7 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
         className="pointer-events-none absolute inset-0 rounded-[12px] z-10"
         style={{
           opacity: 0,
-          background:
-            'radial-gradient(circle at 50% 42%, rgba(245,158,11,0.42), rgba(245,158,11,0.10) 45%, transparent 70%)',
+          background: 'radial-gradient(circle at 50% 42%, rgba(245,158,11,0.42), rgba(245,158,11,0.10) 45%, transparent 70%)',
         }}
       />
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -645,8 +641,7 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
           <div
             className="h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden flex items-center justify-center"
             style={{
-              background:
-                'radial-gradient(circle at 50% 40%, rgba(123,47,190,0.18), rgba(15,27,53,0.6))',
+              background: 'radial-gradient(circle at 50% 40%, rgba(123,47,190,0.18), rgba(15,27,53,0.6))',
               border: '1px solid rgba(168,85,247,0.18)',
             }}
           >
