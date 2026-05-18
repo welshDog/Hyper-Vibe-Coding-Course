@@ -23,6 +23,7 @@ import {
   BROSKIPET_ABI,
   BROSKIPET_CHAIN_ID,
   BROSKIPET_CONTRACT_ADDRESS,
+  IS_BROSKIPET_CONFIGURED,
   type MintPetAuthResponse,
 } from '../lib/contracts/broskiPet'
 import { supabase } from '../lib/supabase'
@@ -78,10 +79,13 @@ export function useMintPet() {
   const lastContext = useRef<MintContext | null>(null)
   const confirmedTxHashes = useRef<Set<string>>(new Set())
 
-  const isContractConfigured = useMemo(
-    () => Boolean(BROSKIPET_CONTRACT_ADDRESS),
-    [],
-  )
+  // Pre-flight: a stale / placeholder / zero VITE_BROSKIPET_CONTRACT_ADDRESS
+  // must hard-stop the flow BEFORE mint-pet-auth — that Edge Function spends
+  // 100 BROski$ before the frontend can ever see the backend's contract, so a
+  // misconfig caught post-auth means tokens already gone. Boolean(addr) used
+  // to pass the 0x000…0 placeholder straight through; IS_BROSKIPET_CONFIGURED
+  // rejects empty / malformed / zero.
+  const isContractConfigured = useMemo(() => IS_BROSKIPET_CONFIGURED, [])
 
   const mintPet = useCallback(
     async ({ petName, ipfsCid, speciesId }: MintPetParams) => {
@@ -98,9 +102,15 @@ export function useMintPet() {
         setError(err); setState('error'); throw err
       }
       if (!isContractConfigured) {
+        // Hard stop BEFORE the Edge Function call. mint-pet-auth spends
+        // 100 BROski$ before it returns, so a misconfig must never reach it.
+        // No tokens are spent on this path — that's the whole point.
+        console.error(
+          '[useMintPet] Mint blocked: VITE_BROSKIPET_CONTRACT_ADDRESS is empty, malformed, or the 0x000…0 placeholder — refusing to call mint-pet-auth (would spend BROski$ before contract validation).',
+        )
         const err: MintPetError = {
           code: 'unknown',
-          message: 'BROskiPet contract address is not configured (VITE_BROSKIPET_CONTRACT_ADDRESS).',
+          message: 'Pet minting is temporarily unavailable (configuration issue). No BROski$ were spent — ping support on Discord and we\'ll sort it.',
         }
         setError(err); setState('error'); throw err
       }
