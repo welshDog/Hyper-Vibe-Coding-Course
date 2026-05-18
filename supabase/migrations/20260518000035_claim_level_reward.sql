@@ -28,11 +28,14 @@
 -- Idempotent — IF NOT EXISTS / DROP POLICY IF EXISTS / CREATE OR REPLACE.
 -- Requires: auth.users, award_tokens() (canonical BROski$ economy).
 --
--- ⚠️ award_tokens() signature: the PERFORM below is POSITIONAL
---    award_tokens(uuid, int, text). If the canonical function uses named args
---    (p_user_id / p_amount / p_reason) or a different order, fix the PERFORM
---    before deploy — a mismatch is a SILENT reward failure (function still
---    returns success, no coins land). Verify with: \df+ award_tokens
+-- award_tokens() VERIFIED (project yhtmuibgdnxhbgboajhc, 2026-05-19):
+--   award_tokens(p_user_id uuid, p_amount int, p_reason text,
+--                p_stripe_payment_intent_id text DEFAULT NULL,
+--                p_source_id text DEFAULT NULL) RETURNS jsonb, SECURITY DEFINER.
+--   It INSERTs token_transactions ON CONFLICT DO NOTHING. Ledger dedup is a
+--   PARTIAL unique index (user_id, reason, source_id) WHERE source_id IS NOT
+--   NULL (idx_token_transactions_dedup). We pass a stable p_source_id so the
+--   ledger ALSO rejects a duplicate award — defense in depth on the row lock.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ── 1. Progress table ──────────────────────────────────────────────────────
@@ -115,11 +118,13 @@ begin
   where user_id = v_user;
 
   -- BROski$ via the ONE economy — same txn, rolls back with everything else.
-  -- ⚠️ POSITIONAL call — see header note; align to award_tokens() real sig.
+  -- Named args + stable p_source_id → idx_token_transactions_dedup backstops
+  -- the row lock above (ledger refuses a second 'vibe-level-N' for this user).
   perform award_tokens(
-    v_user,
-    v_coins,
-    format('Level %s complete: %s', p_level, v_badge)
+    p_user_id   => v_user,
+    p_amount    => v_coins,
+    p_reason    => format('Level %s complete: %s', p_level, v_badge),
+    p_source_id => format('vibe-level-%s', p_level)
   );
 
   return jsonb_build_object(

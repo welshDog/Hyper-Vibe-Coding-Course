@@ -135,13 +135,14 @@ begin
       updated_at       = now()
   where user_id = v_user;
 
-  -- BROski$ via the ONE economy — same txn, rolls back with everything else
-  -- ⚠️ Confirm award_tokens() signature in your DB and match it here.
-  --    Positional shown; repo may use named args (p_user_id, p_amount, p_reason).
+  -- BROski$ via the ONE economy — same txn, rolls back with everything else.
+  -- Stable p_source_id → ledger dedup (idx_token_transactions_dedup) backstops
+  -- the row lock: a second 'vibe-level-N' for this user is refused server-side.
   perform award_tokens(
-    v_user,
-    v_coins,
-    format('Level %s complete: %s', p_level, v_badge)
+    p_user_id   => v_user,
+    p_amount    => v_coins,
+    p_reason    => format('Level %s complete: %s', p_level, v_badge),
+    p_source_id => format('vibe-level-%s', p_level)
   );
 
   return jsonb_build_object(
@@ -159,9 +160,13 @@ revoke all on function public.claim_level_reward(int) from public;
 grant execute on function public.claim_level_reward(int) to authenticated;
 ```
 
-> ⚠️ **Before deploy:** run `\df+ award_tokens` (or check the existing
-> migrations) and align the `perform award_tokens(...)` call to the real
-> signature. Wrong arg names = silent reward failure.
+> ✅ **Signature verified** (project `yhtmuibgdnxhbgboajhc`, 2026-05-19):
+> `award_tokens(p_user_id uuid, p_amount int, p_reason text,
+> p_stripe_payment_intent_id text DEFAULT NULL, p_source_id text DEFAULT NULL)`.
+> It does `INSERT … ON CONFLICT DO NOTHING`; ledger dedup is a partial unique
+> index `(user_id, reason, source_id) WHERE source_id IS NOT NULL`. Passing a
+> stable `p_source_id` (`vibe-level-N`) gives ledger idempotency on top of the
+> row lock — a duplicate award is refused even if the lock is bypassed.
 
 ---
 
