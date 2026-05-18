@@ -1,6 +1,6 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle, Rocket } from 'lucide-react'
+import { ArrowRight, CheckCircle, Lock, Rocket } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
   HVZBrand,
@@ -11,6 +11,7 @@ import {
   Starfield,
   type TagColor,
 } from '../components/ui/hvz'
+import { VIBE_LEVELS } from '../lib/vibeLabs'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type WaitlistStatus = 'idle' | 'loading' | 'success' | 'duplicate' | 'error'
@@ -957,6 +958,234 @@ function SiteFooter() {
   )
 }
 
+// ─── Vibe Labs band ───────────────────────────────────────────────────────────
+function VibeLabsBand() {
+  const [lead, ...path] = VIBE_LEVELS
+
+  return (
+    <section
+      style={{
+        position: 'relative',
+        padding: SECTION_PAD,
+        background:
+          'radial-gradient(ellipse at 50% 0%, rgba(123,47,190,0.12) 0%, var(--color-space-black) 70%)',
+      }}
+    >
+      <div style={CONTAINER}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            marginBottom: 48,
+            gap: 24,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ maxWidth: '65ch' }}>
+            <HVZTag color="cyan">🧪 Vibe Labs · Free · No signup</HVZTag>
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 'clamp(32px, 4vw, 48px)',
+                lineHeight: 1.1,
+                color: 'var(--color-text-primary)',
+                margin: '16px 0 14px',
+                textWrap: 'balance' as CSSProperties['textWrap'],
+              }}
+            >
+              Pick your first Big AI. Build something real.
+            </h2>
+            <p
+              style={{
+                fontSize: 18,
+                lineHeight: 1.8,
+                color: 'var(--color-text-secondary)',
+                maxWidth: '62ch',
+                margin: 0,
+              }}
+            >
+              Five labs, one path. Start with Claude — no account, no card. Claim
+              real BROski$ when you ship each level.
+            </p>
+          </div>
+          <Link to="/vibe-labs" style={{ textDecoration: 'none' }}>
+            <HVZButton variant="ghost">See all 5 levels →</HVZButton>
+          </Link>
+        </div>
+
+        <div
+          className="vibe-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1fr)',
+            gap: 24,
+            alignItems: 'stretch',
+          }}
+        >
+          {/* Featured — Level 1, the free focal action */}
+          <HVZCard style={{ display: 'flex', flexDirection: 'column', padding: 32 }}>
+            <HVZTag color={lead.accent as TagColor}>{lead.eyebrow}</HVZTag>
+            <h3
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 800,
+                fontSize: 'clamp(26px, 3vw, 36px)',
+                color: 'var(--color-text-primary)',
+                margin: '14px 0 10px',
+                lineHeight: 1.15,
+              }}
+            >
+              {lead.title}
+            </h3>
+            <p
+              style={{
+                fontSize: 16,
+                lineHeight: 1.7,
+                color: 'var(--color-text-secondary)',
+                margin: '0 0 20px',
+                flex: 1,
+              }}
+            >
+              {lead.tagline}
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                gap: 20,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 14,
+                marginBottom: 22,
+              }}
+            >
+              <span style={{ color: 'var(--color-neon-cyan)', fontWeight: 700 }}>
+                +{lead.xp} XP
+              </span>
+              <span style={{ color: 'var(--color-broski-gold)', fontWeight: 700 }}>
+                🪙 +{lead.coins} BROski$
+              </span>
+              <span style={{ color: 'var(--color-text-secondary)', marginLeft: 'auto' }}>
+                {lead.badge}
+              </span>
+            </div>
+            <Link
+              to={lead.path}
+              style={{ textDecoration: 'none', display: 'block' }}
+              aria-label={`Start ${lead.title} free — no signup`}
+            >
+              <HVZButton variant="primary" fullWidth>
+                Start Level 1 free <ArrowRight size={16} />
+              </HVZButton>
+            </Link>
+          </HVZCard>
+
+          {/* The path ahead — L2–5, progression not 5 clones */}
+          <Link
+            to="/vibe-labs"
+            className="no-underline"
+            aria-label="See the full Vibe Labs path"
+            style={{ textDecoration: 'none' }}
+          >
+            <HVZCard style={{ height: '100%', padding: 28 }}>
+              <p
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'var(--color-text-secondary)',
+                  margin: '0 0 18px',
+                }}
+              >
+                The path ahead
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {path.map((lvl, i) => (
+                  <div key={lvl.id}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                        padding: '10px 0',
+                      }}
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          display: 'grid',
+                          placeItems: 'center',
+                          width: 30,
+                          height: 30,
+                          flexShrink: 0,
+                          borderRadius: 999,
+                          border: '1px solid rgba(168,85,247,0.3)',
+                          background: 'rgba(168,85,247,0.08)',
+                          color: 'var(--color-violet-lt)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: 13,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {lvl.id}
+                      </span>
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: 15,
+                            fontWeight: 600,
+                            color: 'var(--color-text-primary)',
+                          }}
+                        >
+                          {lvl.short} · {lvl.title}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 12,
+                            color: 'var(--color-text-secondary)',
+                          }}
+                        >
+                          +{lvl.xp} XP · +{lvl.coins} BROski$
+                        </span>
+                      </span>
+                      <Lock
+                        size={14}
+                        aria-hidden
+                        style={{ color: 'var(--color-text-secondary)', flexShrink: 0 }}
+                      />
+                    </div>
+                    {i < path.length - 1 && (
+                      <div
+                        style={{
+                          height: 1,
+                          background: 'rgba(255,255,255,0.06)',
+                          margin: '0 0 0 44px',
+                        }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--color-text-secondary)',
+                  margin: '18px 0 0',
+                }}
+              >
+                Each unlocks when you claim the level before it. 🔓
+              </p>
+            </HVZCard>
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   return (
@@ -966,6 +1195,7 @@ export default function LandingPage() {
           .hero-grid { grid-template-columns: 1fr !important; gap: 48px !important; }
           .hero-cluster { min-height: 320px !important; }
           .grid-3 { grid-template-columns: 1fr !important; }
+          .vibe-grid { grid-template-columns: 1fr !important; }
           .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
         }
         @media (max-width: 520px) {
@@ -974,6 +1204,7 @@ export default function LandingPage() {
       `}</style>
       <TopNav />
       <Hero />
+      <VibeLabsBand />
       <Features />
       <CoursePreview />
       <Testimonials />
