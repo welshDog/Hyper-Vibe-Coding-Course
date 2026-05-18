@@ -80,9 +80,14 @@ No tech-babble. Give me 15-minute micro-missions.
 
 **Why it works:** You're not asking AI to do the work — you're asking it to translate. Your brain can handle patterns. It just needs them in the right format first.
 
+**Try it now:**
+Find any docs page or error message that made your brain stall. Paste the decoder line above it. Watch the wall of jargon turn into a checklist you can actually act on.
+
 ---
 
 ### 🤖 Move 3 — Atomic Scoping with Agent X (10 mins)
+
+> 🧭 **First time seeing these?** *Agent X* is your AI task-breaker — the assistant you hand missions to. The *BROski Terminal* is just the chat box in your BROski Dashboard where you type them. No install, no setup — that's all they are.
 
 Never ask for "the app." Ask for **"the win."**
 
@@ -102,6 +107,9 @@ Mission: [your idea here]
 - 🔵 Third win (15 mins)
 
 Don't look at wins 2 and 3 until win 1 is done. **Atomic focus = hyperfocus fuel.**
+
+**Try it now:**
+Take whatever you actually want to build. Drop it into the command above as your Mission. Then do **only** the 🟢 first win — ignore wins 2 and 3 until it's ticked.
 
 ---
 
