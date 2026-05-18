@@ -38,7 +38,7 @@ That's the Meta-Architect mindset.
 
 ## 🔧 HOW — Build Your Capstone Project
 
-**⏱️ Time: 1–2 hours**
+**⏱️ Total time: 1–2 hours**
 
 This is your capstone. One full project. All three tools.
 
@@ -49,7 +49,7 @@ A web app that's actually useful for YOUR brain:
 - Daily wins log with BROski$ rewards
 - Task board with drag-and-drop
 - Progress tracker with XP bar
-- Dark mode, purple + orange theme
+- Dark mode: `#0A0E1A` bg · `#7B2FBE` purple · `#00D4FF` cyan
 
 ---
 
@@ -64,12 +64,12 @@ It needs:
 - A daily wins log
 - A task board with drag and drop
 - An XP bar and BROski$ balance
-- Dark mode: #0A0E1A background, #7B2FBE purple, #00D4FF cyan (no orange)
+- Dark mode, purple and orange colors
 - Supabase for the database
-- Vite + React as the framework
+- Next.js as the framework
 
 Plan the full architecture. List every component,
-every data table, every API route I'll need.
+every Supabase table, every Edge Function I'll need.
 Identify any risks or tricky parts before I build.
 ```
 
@@ -77,9 +77,9 @@ Identify any risks or tricky parts before I build.
 
 ```
 Build the front end of a Hyperfocus z0ne Personal Dashboard
-using Vite + React, #0A0E1A dark background, #7B2FBE purple and #00D4FF cyan primary colors.
+using Next.js, dark background, purple and orange primary colors.
 Components needed: [paste Claude's component list here]
-Connect it to Supabase for data storage.
+Connect it to Supabase (client-side) for data storage.
 Make it feel like a game dashboard, not a boring productivity app.
 ```
 
@@ -88,7 +88,7 @@ Make it feel like a game dashboard, not a boring productivity app.
 ```
 Take this Vite + React project. Add:
 - Full Supabase auth with login and signup
-- All API routes from this plan: [paste Claude's routes]
+- All Supabase Edge Functions from this plan: [paste Claude's function list]
 - Mobile responsive layout
 - Framer Motion animations on the XP bar and timer
 - Deploy to Vercel with environment variables set up
