@@ -268,6 +268,17 @@ function Hero() {
             A gamified coding course made for ADHD, dyslexic, and autistic minds. Short lessons. Real ships. Real XP. Real BROski$. No shame, no walls of text — just momentum.
           </p>
           <WaitlistForm source="hero" ctaIdle="Let's GO" />
+          <div style={{ marginTop: 14 }}>
+            <Link
+              to="/vibe-labs"
+              className="no-underline"
+              aria-label="Try a Vibe Lab free — no signup needed"
+            >
+              <HVZButton variant="ghost" size="md">
+                Try Level 1 free — no signup <ArrowRight size={16} />
+              </HVZButton>
+            </Link>
+          </div>
           <div
             style={{
               marginTop: 24,
