@@ -540,42 +540,44 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
 
   return (
     <HVZCard padding={20} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {item.image_url && (
-        <div
-          className="-mx-1 -mt-1 mb-4 rounded-hfz-sm overflow-hidden flex items-center justify-center"
-          style={{
-            aspectRatio: '4 / 3',
-            background:
-              'radial-gradient(circle at 50% 40%, rgba(123,47,190,0.18), rgba(15,27,53,0.6))',
-            border: '1px solid rgba(168,85,247,0.18)',
-          }}
-        >
-          <img
-            src={item.image_url}
-            alt={item.name}
-            loading="lazy"
-            className="h-full w-full object-contain p-3 transition-transform duration-hfz-base ease-hfz-smooth hover:scale-[1.04]"
-            onError={(e) => {
-              (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
-            }}
-          />
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          {catConfig && (
+            <HVZTag color={catConfig.tone}>
+              {catConfig.heading.split(' ').slice(1).join(' ')}
+            </HVZTag>
+          )}
+          {owned && (
+            <HVZTag color="mint">
+              <CheckCircle className="h-3 w-3" /> Owned
+            </HVZTag>
+          )}
+          {consumable && ownedCount > 0 && (
+            <HVZTag color="mint">
+              <CheckCircle className="h-3 w-3" /> {ownedCount} owned
+            </HVZTag>
+          )}
         </div>
-      )}
-      <div className="flex items-center gap-2 flex-wrap self-start mb-3">
-        {catConfig && (
-          <HVZTag color={catConfig.tone}>
-            {catConfig.heading.split(' ').slice(1).join(' ')}
-          </HVZTag>
-        )}
-        {owned && (
-          <HVZTag color="mint">
-            <CheckCircle className="h-3 w-3" /> Owned
-          </HVZTag>
-        )}
-        {consumable && ownedCount > 0 && (
-          <HVZTag color="mint">
-            <CheckCircle className="h-3 w-3" /> {ownedCount} owned
-          </HVZTag>
+
+        {item.image_url && (
+          <div
+            className="h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden flex items-center justify-center"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 40%, rgba(123,47,190,0.18), rgba(15,27,53,0.6))',
+              border: '1px solid rgba(168,85,247,0.18)',
+            }}
+          >
+            <img
+              src={item.image_url}
+              alt={item.name}
+              loading="lazy"
+              className="h-full w-full object-contain p-1.5"
+              onError={(e) => {
+                (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+              }}
+            />
+          </div>
         )}
       </div>
 
