@@ -305,7 +305,7 @@ function ConfirmModal({
 // ── Fulfillment block (what "Owned" actually delivers) ─────────────────────────
 
 const DELIVERY_LINK_CLASS =
-  'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-hfz-sm text-sm font-semibold min-h-[40px] no-underline transition-all duration-hfz-fast ease-hfz-smooth';
+  'inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-hfz-sm text-sm font-semibold min-h-[44px] no-underline transition-[transform,filter,box-shadow] duration-hfz-fast ease-hfz-smooth hover:brightness-110 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d4ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1B35]';
 
 function FulfillmentBlock({
   item,
@@ -498,18 +498,82 @@ interface ItemCardProps {
   discountPct: number;
   purchasing: boolean;
   onBuy: (itemId: string) => void;
+  /** Fire the one-shot purchase celebration on this card. */
+  celebrate?: boolean;
+  /** Called once the celebration animation has finished (or was skipped). */
+  onCelebrationEnd?: () => void;
 }
 
-function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier, discountPct, purchasing, onBuy }: ItemCardProps) {
+function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier, discountPct, purchasing, onBuy, celebrate, onCelebrationEnd }: ItemCardProps) {
   const catConfig = CATEGORY_CONFIG[item.category];
   const effectivePrice = discountedPrice(item.price_tokens, tier);
   const hasDiscount = discountPct > 0 && effectivePrice < item.price_tokens;
   const canAfford = balance >= effectivePrice;
   const shortfall = effectivePrice - balance;
 
+  // ── Purchase celebration ────────────────────────────────────────────────────
+  // A BROski$ spend deserves a moment (design-brain elevation move). One-shot:
+  // a gold radial wash + an inset gold ring sweep over the card the user just
+  // bought, so the reward reads spatially — not just as a banner up top.
+  const flashRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+  // Keep the latest callback in a ref so the effect depends only on `celebrate`
+  // (parent passes an inline arrow — depending on it would restart the anim).
+  const onEndRef = useRef(onCelebrationEnd);
+  onEndRef.current = onCelebrationEnd;
+
+  useEffect(() => {
+    if (!celebrate) return;
+    const flash = flashRef.current;
+    if (!flash) {
+      onEndRef.current?.();
+      return;
+    }
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const opts: KeyframeAnimationOptions = reduce
+      ? { duration: 220, easing: 'linear', fill: 'forwards' }
+      : { duration: 720, easing: 'cubic-bezier(0.16,1,0.3,1)', fill: 'forwards' };
+
+    const a = flash.animate(
+      reduce
+        ? [{ opacity: 0 }, { opacity: 0.45 }, { opacity: 0 }]
+        : [
+            { opacity: 0, transform: 'scale(0.9)' },
+            { opacity: 1, transform: 'scale(1)', offset: 0.28 },
+            { opacity: 0, transform: 'scale(1.04)' },
+          ],
+      opts,
+    );
+    if (ringRef.current && !reduce) {
+      ringRef.current.animate(
+        [
+          { opacity: 0, boxShadow: 'inset 0 0 0 0 rgba(245,158,11,0)' },
+          {
+            opacity: 1,
+            boxShadow:
+              'inset 0 0 0 1.5px rgba(245,158,11,0.7), inset 0 0 26px rgba(245,158,11,0.30)',
+            offset: 0.3,
+          },
+          { opacity: 0, boxShadow: 'inset 0 0 0 0 rgba(245,158,11,0)' },
+        ],
+        opts,
+      );
+    }
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      onEndRef.current?.();
+    };
+    a.addEventListener('finish', finish);
+    a.addEventListener('cancel', finish);
+    return () => a.cancel();
+  }, [celebrate]);
+
   let buttonContent: React.ReactNode;
   let buttonStyle: React.CSSProperties;
-  const baseBtnClass = 'px-4 py-2 rounded-hfz-sm text-sm font-semibold min-w-[80px] min-h-[40px] flex items-center justify-center gap-1.5 transition-all duration-hfz-fast ease-hfz-smooth';
+  const baseBtnClass = 'px-4 py-2 rounded-hfz-sm text-sm font-semibold min-w-[80px] min-h-[44px] flex items-center justify-center gap-1.5 transition-[transform,filter,box-shadow] duration-hfz-fast ease-hfz-smooth enabled:hover:brightness-110 enabled:active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d4ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1B35]';
 
   if (purchasing) {
     buttonContent = <Loader2 className="h-4 w-4 animate-spin" />;
@@ -539,7 +603,28 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
   }
 
   return (
-    <HVZCard padding={20} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <HVZCard
+      padding={20}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}
+    >
+      {/* Purchase celebration overlays — pointer-events-none, one-shot, clipped
+          to the card by the parent's overflow:hidden. */}
+      <div
+        ref={ringRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[12px] z-10"
+        style={{ opacity: 0 }}
+      />
+      <div
+        ref={flashRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-[12px] z-10"
+        style={{
+          opacity: 0,
+          background:
+            'radial-gradient(circle at 50% 42%, rgba(245,158,11,0.42), rgba(245,158,11,0.10) 45%, transparent 70%)',
+        }}
+      />
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           {catConfig && (
@@ -649,6 +734,8 @@ export default function ShopPage() {
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null);
+  // Item id whose card should play the one-shot purchase celebration.
+  const [celebrateId, setCelebrateId] = useState<string | null>(null);
   const pollAttempts = useRef(0);
 
   const balance = user?.broski_tokens ?? 0;
@@ -748,6 +835,8 @@ export default function ShopPage() {
   async function handleBuy(itemId: string) {
     if (!user || purchasingId) return;
     setPurchasingId(itemId);
+    // Reset so a repeat buy of the same item re-triggers the false→true anim.
+    setCelebrateId(null);
 
     try {
       const { data, error } = await supabase.functions.invoke<PurchaseResult>('shop-purchase', {
@@ -793,6 +882,7 @@ export default function ShopPage() {
         : `🎉 NICE ONE BROski♾️ — unlocked ${itemName} (-${data.spent_tokens.toLocaleString()} 🪙)`;
 
       setNotification({ type: 'success', text: notificationText });
+      setCelebrateId(itemId);
     } catch (err) {
       console.error('shop-purchase invoke failed:', err);
       setNotification({ type: 'error', text: "Hmm, let's try that again 🔄 — purchase didn't go through." });
@@ -931,6 +1021,8 @@ export default function ShopPage() {
                           discountPct={discountPct}
                           purchasing={purchasingId === item.id}
                           onBuy={requestBuy}
+                          celebrate={celebrateId === item.id}
+                          onCelebrationEnd={() => setCelebrateId(null)}
                         />
                       );
                     })}
