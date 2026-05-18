@@ -143,6 +143,10 @@ export function useMintPet() {
           pet_name:       petName,
           species_id:     speciesId,
           relay:          MINT_VIA_RELAY,
+          // Pre-spend handshake: mint-pet-auth rejects a contract/chain
+          // mismatch BEFORE spending BROski$ (prevents silent token loss).
+          expected_contract: BROSKIPET_CONTRACT_ADDRESS,
+          expected_chain_id: BROSKIPET_CHAIN_ID,
         }),
       })
 

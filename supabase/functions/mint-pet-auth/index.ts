@@ -108,12 +108,15 @@ Deno.serve(async (req: Request) => {
 
   // 2. Parse + validate body
   let body: {
-    wallet_address?: string;
-    ipfs_cid?:       string;
-    pet_name?:       string;
-    relay?:          boolean;
-    species_id?:     string;
-    rarity?:         string;
+    wallet_address?:   string;
+    ipfs_cid?:         string;
+    pet_name?:         string;
+    relay?:            boolean;
+    species_id?:       string;
+    rarity?:           string;
+    /** Contract + chain the client is configured for. Checked pre-spend. */
+    expected_contract?: string;
+    expected_chain_id?: number;
   };
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
 
@@ -162,6 +165,46 @@ Deno.serve(async (req: Request) => {
   if (!/^0x[0-9a-fA-F]{64}$/.test(signerKey)) {
     console.error("[mint-pet-auth] BACKEND_SIGNER_PRIVATE_KEY is not a valid 32-byte key");
     return json({ error: "Service misconfigured — contact admin" }, 503);
+  }
+
+  // 3b. Contract / chain handshake — reject a stale client BEFORE the spend.
+  // The frontend sends the contract + chain it's configured for. If they
+  // don't match what we sign for, the client's own post-auth sanity check
+  // rejects the payload anyway — but by then 100 BROski$ are already gone
+  // (and in relay mode the NFT is already minted). Catch it here, pre-spend,
+  // at zero cost. Backwards-compatible: older clients that omit these fields
+  // are logged and allowed through (same policy as species_id above).
+  const expectedContract =
+    typeof body.expected_contract === "string"
+      ? body.expected_contract.trim().toLowerCase()
+      : null;
+  const expectedChainId =
+    typeof body.expected_chain_id === "number" ? body.expected_chain_id : null;
+
+  if (expectedContract && expectedContract !== contractAddress.toLowerCase()) {
+    console.error(
+      `[mint-pet-auth] Pre-spend contract mismatch: client=${expectedContract} ` +
+        `server=${contractAddress.toLowerCase()} — refusing, no BROski$ spent.`,
+    );
+    return json(
+      { error: "Pet minting is temporarily unavailable (contract config mismatch). No BROski$ were spent — ping support on Discord." },
+      409,
+    );
+  }
+  if (expectedChainId !== null && expectedChainId !== CHAIN_ID) {
+    console.error(
+      `[mint-pet-auth] Pre-spend chain mismatch: client=${expectedChainId} ` +
+        `server=${CHAIN_ID} — refusing, no BROski$ spent.`,
+    );
+    return json(
+      { error: "Pet minting is temporarily unavailable (network mismatch). No BROski$ were spent — ping support on Discord." },
+      409,
+    );
+  }
+  if (!expectedContract) {
+    console.warn(
+      "[mint-pet-auth] Client omitted expected_contract — pre-spend mismatch guard skipped (older client?).",
+    );
   }
 
   // 4. Spend BROski$ atomically (server-side; client cannot bypass)
