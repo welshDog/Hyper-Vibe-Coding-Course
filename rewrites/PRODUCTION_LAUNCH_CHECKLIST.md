@@ -14,7 +14,9 @@
 - [ ] Confirm all existing env vars from `.env.example` are set in Vercel production
 
 ### 2. Supabase Edge Function Secrets
-- [ ] `BROSKIPET_CONTRACT_ADDRESS` = same contract address as above
+> 🛡️ **Mint silent-loss now guarded in code** — PR #12 (frontend pre-flight) + PR #13 (backend pre-spend reject) merged to `main`: a contract/chain misconfig **fails safe with zero BROski$ spent**. This does *not* replace correct config. **`GO_LIVE_CHECKLIST_2026-05-17.md` is the source of truth for mint go-live status** — defer there; keep this section in sync.
+- [ ] **Deploy the Edge Function** — `supabase functions deploy mint-pet-auth` (PR #13's guard is inert until deployed)
+- [ ] `BROSKIPET_CONTRACT_ADDRESS` = same contract address as above (deployed `0x3691470c6c56D9bb3cBe8052A2cEAcDdeeEe2F09`)
 - [ ] `BACKEND_SIGNER_PRIVATE_KEY` = relayer/backend signing key
 - [ ] `RELAYER_PRIVATE_KEY` (optional — if using dedicated relayer wallet)
 - [ ] `MINT_RPC_URL` (optional — defaults to Base RPC if unset)
