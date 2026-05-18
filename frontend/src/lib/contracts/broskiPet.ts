@@ -19,6 +19,22 @@ if (
   )
 }
 
+/**
+ * True only when the frontend points at a real, non-zero BROskiPet contract.
+ * Empty, malformed, or the `0x000…0` placeholder (the `.env.example` default)
+ * all read as NOT configured.
+ *
+ * Why this matters: `mint-pet-auth` spends 100 BROski$ *before* it returns the
+ * backend's contract address, so the frontend can only detect a contract
+ * mismatch AFTER the spend. A stale/placeholder env must therefore hard-stop
+ * the mint flow *before* that Edge Function is ever called — never let a
+ * misconfig reach a paid call. `useMintPet` gates on this pre-auth.
+ */
+export const IS_BROSKIPET_CONFIGURED =
+  /^0x[a-fA-F0-9]{40}$/.test(BROSKIPET_CONTRACT_ADDRESS) &&
+  BROSKIPET_CONTRACT_ADDRESS.toLowerCase() !==
+    '0x0000000000000000000000000000000000000000'
+
 export const BROSKIPET_CHAIN_ID = ACTIVE_CHAIN.id
 
 /** Minimal ABI — only the functions/events the UI uses. */
