@@ -38,7 +38,7 @@ That's the Meta-Architect mindset.
 
 ## 🔧 HOW — Build Your Capstone Project
 
-**⏱️ Time: 1–2 hours**
+**⏱️ Total time: 1–2 hours**
 
 This is your capstone. One full project. All three tools.
 
@@ -49,13 +49,13 @@ A web app that's actually useful for YOUR brain:
 - Daily wins log with BROski$ rewards
 - Task board with drag-and-drop
 - Progress tracker with XP bar
-- Dark mode, purple + orange theme
+- Dark mode: `#0A0E1A` bg · `#7B2FBE` purple · `#00D4FF` cyan
 
 ---
 
 ## 🚀 THE 3-TOOL BUILD PLAN
 
-### Step 1 — Claude: Plan the Architecture
+### Step 1 — Claude: Plan the Architecture ⏱️ 15 min
 
 ```
 I want to build a Hyperfocus z0ne Personal Dashboard.
@@ -64,31 +64,33 @@ It needs:
 - A daily wins log
 - A task board with drag and drop
 - An XP bar and BROski$ balance
-- Dark mode, purple and orange colors
-- Supabase for the database
-- Next.js as the framework
+- Dark mode: #0A0E1A background, #7B2FBE purple, #00D4FF cyan
+- Supabase for the database (client-side only — no server)
+- Vite + React as the framework
+- Supabase Edge Functions for any server-side logic
 
 Plan the full architecture. List every component,
-every data table, every API route I'll need.
+every Supabase table, every Edge Function I'll need.
 Identify any risks or tricky parts before I build.
 ```
 
-### Step 2 — Google AI Studio: Build the Front End
+### Step 2 — Google AI Studio: Build the Front End ⏱️ 30 min
 
 ```
 Build the front end of a Hyperfocus z0ne Personal Dashboard
-using Next.js, dark background, purple and orange primary colors.
+using Vite + React.
+Dark background #0A0E1A, primary purple #7B2FBE, accent cyan #00D4FF.
 Components needed: [paste Claude's component list here]
-Connect it to Supabase for data storage.
+Connect it to Supabase (client-side) for data storage.
 Make it feel like a game dashboard, not a boring productivity app.
 ```
 
-### Step 3 — Trae SOLO Mode: Ship It
+### Step 3 — Trae SOLO Mode: Ship It ⏱️ 45 min
 
 ```
-Take this Next.js project. Add:
+Take this Vite + React project. Add:
 - Full Supabase auth with login and signup
-- All API routes from this plan: [paste Claude's routes]
+- All Supabase Edge Functions from this plan: [paste Claude's function list]
 - Mobile responsive layout
 - Framer Motion animations on the XP bar and timer
 - Deploy to Vercel with environment variables set up
@@ -108,7 +110,7 @@ That's the Meta-Architect moment.
 
 ---
 
-## 🔴 5 Final Lessons
+## 💡 5 Final Lessons
 
 1. **The stack is a team** — Claude thinks, AI Studio builds, Trae ships. Never fight the tool.
 2. **Iteration beats perfection** — ship v1 ugly and fast, then refine.
