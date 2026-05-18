@@ -64,9 +64,9 @@ It needs:
 - A daily wins log
 - A task board with drag and drop
 - An XP bar and BROski$ balance
-- Dark mode, purple and orange colors
+- Dark mode: #0A0E1A background, #7B2FBE purple, #00D4FF cyan (no orange)
 - Supabase for the database
-- Next.js as the framework
+- Vite + React as the framework
 
 Plan the full architecture. List every component,
 every Supabase table, every Edge Function I'll need.
@@ -77,7 +77,7 @@ Identify any risks or tricky parts before I build.
 
 ```
 Build the front end of a Hyperfocus z0ne Personal Dashboard
-using Next.js, dark background, purple and orange primary colors.
+using Vite + React, #0A0E1A dark background, #7B2FBE purple and #00D4FF cyan primary colors.
 Components needed: [paste Claude's component list here]
 Connect it to Supabase (client-side) for data storage.
 Make it feel like a game dashboard, not a boring productivity app.
