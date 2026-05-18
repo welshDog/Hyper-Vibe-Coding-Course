@@ -23,9 +23,15 @@ Generate exactly 5 quiz questions for the module provided.
 Rules:
 - Questions must be short, plain English, pattern-focused (not syntax-memorisation).
 - Mix: 3 multiple_choice + 1 true_false + 1 practical (hands-on task).
-- Multiple choice: provide exactly 3 options (A, B, C).
-- True/false: prompt must be a clear statement.
-- Practical: prompt is a hands-on task with no answer_index.
+- Multiple choice: provide exactly 3 options (A, B, C). answer_index is the
+  0-based position of the correct option in the choices array.
+- True/false: prompt must be a clear statement, "choices" must be null.
+  answer_index is POSITIONAL into the fixed list ["True","False"]:
+  → if the statement is TRUE  use answer_index 0
+  → if the statement is FALSE use answer_index 1
+  The explanation MUST begin with "True — " or "False — " accordingly so the
+  answer can be machine-verified against it.
+- Practical: prompt is a hands-on task with choices null and answer_index null.
 - Include a short explanation for every non-practical question.
 - Tone: casual, neurodivergent-friendly, mate-style.
 
@@ -201,8 +207,8 @@ function buildTemplateQuiz(input: {
         type: 'true_false',
         prompt: 'If you add a new script file and re-run scan, the agent should upsert the module without creating duplicates.',
         choices: null,
-        answer_index: 0,
-        explanation: 'That’s the point of upsert + conflict keys and content hashing.',
+        answer_index: 0, // statement is TRUE → positional 0 in ["True","False"]
+        explanation: 'True — that’s the point of upsert + conflict keys and content hashing.',
       },
       {
         id: 'q5',
@@ -214,6 +220,43 @@ function buildTemplateQuiz(input: {
       },
     ],
   };
+}
+
+/**
+ * Enforce the true_false answer_index convention before anything is saved.
+ *
+ * The frontend (CourseModule.tsx) renders true_false choices as the fixed
+ * list ["True","False"], so answer_index is POSITIONAL: 0 = True, 1 = False.
+ * LLMs left to guess will happily emit the opposite (0 = False) — which once
+ * inverted every true_false question in the entire course. This derives the
+ * intended answer from the explanation's leading "True"/"False" word and
+ * self-heals answer_index so a model drifting can never re-ship the bug.
+ *
+ * Mutates `payload` in place. Logs every correction. Throws only if a
+ * true_false explanation can't be machine-verified (forces authoring discipline).
+ */
+function normalizeTrueFalseAnswers(payload: QuizPayload, moduleCode: string): void {
+  for (const q of payload.questions ?? []) {
+    if (q.type !== 'true_false') continue;
+    q.choices = null; // frontend hardcodes ["True","False"]; keep payload clean
+
+    const lead = (q.explanation ?? '').trim().match(/^(true|false)\b/i)?.[1]?.toLowerCase();
+    if (!lead) {
+      throw new Error(
+        `[${moduleCode}] true_false "${q.id}" explanation must begin with "True — " or "False — " ` +
+        `so answer_index can be verified. Got: ${JSON.stringify(q.explanation)}`
+      );
+    }
+
+    const expected = lead === 'true' ? 0 : 1; // 0=True, 1=False (positional)
+    if (q.answer_index !== expected) {
+      console.warn(
+        `🔧 [${moduleCode}] true_false "${q.id}" answer_index ${q.answer_index} → ${expected} ` +
+        `(statement is ${lead.toUpperCase()}; positional into ["True","False"])`
+      );
+      q.answer_index = expected;
+    }
+  }
 }
 
 export async function generateQuizForModule(
@@ -312,6 +355,10 @@ export async function generateQuizForModule(
     payload = buildTemplateQuiz({ moduleCode: mod.code, emoji: mod.emoji, title: mod.title });
     source = 'template';
   }
+
+  // Enforce the true_false answer_index convention regardless of source
+  // (anthropic / perplexity / template) — self-heals from the explanation.
+  normalizeTrueFalseAnswers(payload, moduleCode);
 
   // Get next version number
   const { data: latestQuiz } = await supabase

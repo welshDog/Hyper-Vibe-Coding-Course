@@ -1,0 +1,12 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256' role='img' aria-label='v3.0 RIFT placeholder'>
+<defs>
+<radialGradient id='g' cx='50%' cy='42%' r='75%'><stop offset='0%' stop-color='#1A1140'/><stop offset='55%' stop-color='#0F1B35'/><stop offset='100%' stop-color='#0A1226'/></radialGradient>
+<linearGradient id='a' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='#A855F7'/><stop offset='100%' stop-color='#00D4FF'/></linearGradient>
+</defs>
+<rect width='256' height='256' rx='22' fill='url(#g)'/>
+<rect x='8' y='8' width='240' height='240' rx='16' fill='none' stroke='url(#a)' stroke-opacity='0.35' stroke-width='1.5'/>
+<path d='M36 212 L150 30' stroke='url(#a)' stroke-width='12' stroke-opacity='0.55' stroke-linecap='round'/><path d='M152 210 L214 120' stroke='url(#a)' stroke-width='5' stroke-opacity='0.30' stroke-linecap='round'/>
+<text x='128' y='128' text-anchor='middle' font-family='ui-monospace,SFMono-Regular,Menlo,monospace' font-size='58' font-weight='700' fill='url(#a)'>RFT</text>
+<text x='128' y='174' text-anchor='middle' font-family='ui-sans-serif,system-ui,Segoe UI,sans-serif' font-size='17' font-weight='600' letter-spacing='2' fill='#C9D4F0'>v3.0 RIFT</text>
+<text x='128' y='200' text-anchor='middle' font-family='ui-monospace,monospace' font-size='9' letter-spacing='3' fill='#5A6B92'>PLACEHOLDER</text>
+</svg>
