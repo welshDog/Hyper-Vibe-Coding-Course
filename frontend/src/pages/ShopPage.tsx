@@ -13,6 +13,7 @@ type ShopItemMetadata = {
   content_url?: string;  // direct download / access URL for content items
   cosmetic?: string;     // cosmetic id this purchase equips (e.g. 'gold_frame')
   consumable?: boolean;  // true → re-buyable, never locks to "Owned"
+  image_url?: string;    // thumbnail — stored in metadata JSONB, not a top-level column
 };
 
 type ShopItem = {
@@ -24,7 +25,6 @@ type ShopItem = {
   category: string;
   is_available: boolean;
   created_at: string;
-  image_url: string | null;
   metadata: ShopItemMetadata | null;
 };
 
@@ -219,7 +219,7 @@ function ConfirmModal({
             className="font-display font-bold text-lg text-hfz-text-primary mt-3"
             style={{ background: 'none', WebkitTextFillColor: 'unset' }}
           >
-            Buy “{item.name}”?
+            Buy "{item.name}"?
           </h2>
         </div>
 
@@ -511,14 +511,12 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
   const canAfford = balance >= effectivePrice;
   const shortfall = effectivePrice - balance;
 
+  // image_url lives inside metadata JSONB, not as a top-level column
+  const imageUrl = item.metadata?.image_url ?? null;
+
   // ── Purchase celebration ────────────────────────────────────────────────────
-  // A BROski$ spend deserves a moment (design-brain elevation move). One-shot:
-  // a gold radial wash + an inset gold ring sweep over the card the user just
-  // bought, so the reward reads spatially — not just as a banner up top.
   const flashRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
-  // Keep the latest callback in a ref so the effect depends only on `celebrate`
-  // (parent passes an inline arrow — depending on it would restart the anim).
   const onEndRef = useRef(onCelebrationEnd);
   onEndRef.current = onCelebrationEnd;
 
@@ -607,8 +605,7 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
       padding={20}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}
     >
-      {/* Purchase celebration overlays — pointer-events-none, one-shot, clipped
-          to the card by the parent's overflow:hidden. */}
+      {/* Purchase celebration overlays */}
       <div
         ref={ringRef}
         aria-hidden
@@ -644,7 +641,7 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
           )}
         </div>
 
-        {item.image_url && (
+        {imageUrl && (
           <div
             className="h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden flex items-center justify-center"
             style={{
@@ -654,7 +651,7 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
             }}
           >
             <img
-              src={item.image_url}
+              src={imageUrl}
               alt={item.name}
               loading="lazy"
               className="h-full w-full object-contain p-1.5"
@@ -734,7 +731,6 @@ export default function ShopPage() {
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [confirmItem, setConfirmItem] = useState<ShopItem | null>(null);
-  // Item id whose card should play the one-shot purchase celebration.
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
   const pollAttempts = useRef(0);
 
@@ -750,8 +746,6 @@ export default function ShopPage() {
     return m;
   }, [purchases]);
 
-  // How many times each item has been bought — drives the "✓ N owned" chip on
-  // re-buyable consumables (which can have many rows per item).
   const countByItem = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of purchases) m.set(p.item_id, (m.get(p.item_id) ?? 0) + 1);
@@ -794,9 +788,6 @@ export default function ShopPage() {
     void fetchAll();
   }, [user, fetchPurchases]);
 
-  // Poll while an owned agent_access purchase is still provisioning, so the
-  // Mission Control link appears without a manual reload. Capped so a purchase
-  // that stays pending (e.g. no Discord linked) doesn't poll forever.
   const hasPendingAgent = useMemo(() => {
     return items.some((it) => {
       if (it.metadata?.type !== 'agent_access') return false;
@@ -835,7 +826,6 @@ export default function ShopPage() {
   async function handleBuy(itemId: string) {
     if (!user || purchasingId) return;
     setPurchasingId(itemId);
-    // Reset so a repeat buy of the same item re-triggers the false→true anim.
     setCelebrateId(null);
 
     try {
@@ -852,10 +842,6 @@ export default function ShopPage() {
       const boughtItem = items.find((i) => i.id === itemId);
       const isConsumable = boughtItem?.metadata?.consumable === true;
 
-      // Non-consumables: optimistically mark owned so the card flips to its
-      // fulfillment state instantly. Consumables can have many rows and never
-      // lock — skip the optimistic push and just let fetchPurchases() refresh
-      // the owned count (avoids a count flicker).
       if (!isConsumable) {
         setPurchases((prev) => [
           {
@@ -1010,8 +996,6 @@ export default function ShopPage() {
                         <ItemCard
                           key={item.id}
                           item={item}
-                          // Consumables never lock to the fulfillment state —
-                          // they stay buyable.
                           owned={!isConsumable && purchaseByItem.has(item.id)}
                           consumable={isConsumable}
                           ownedCount={countByItem.get(item.id) ?? 0}
