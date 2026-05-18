@@ -1,142 +1,144 @@
 # 📸 SESSION SNAPSHOT — May 18, 2026
 > Read this at the START of next session. Every time. No exceptions.
-> **Last session ended: ~15:30 BST**
+> **Last session ended: ~16:00 BST**
 
 ---
 
 ## ⚡ Where We Are Right Now
 
-**The course audit is COMPLETE. All rewrites are DONE.**
+**The course audit is COMPLETE. All rewrites are DONE. Shop imagery fixed.**
 
-**All module rewrites are DONE** — RED + YELLOW + M5B were completed, locked, and
-synced to Supabase `hv_modules` in the **May 17 audit** (source of truth:
-`rewrites/NOTEBOOKLM_MASTER_PACK.md`). Do **not** re-do module rewrites.
-Recent sessions are shop + course-infra fixes, not rewrites.
-- All 10 modules rewritten and pushed ✅ (including M5B)
-- Course-wide quiz bug found, patched, and compiler-verified ✅
-- BROski$ Shop fully wired ✅
-- All stale trackers reconciled ✅
-- `AI_SESSION_INSTRUCTIONS.md` updated to reflect reality ✅
+All module rewrites — RED + YELLOW + M5B — were completed, locked, and synced to
+Supabase `hv_modules` in the **May 17 audit** (source of truth:
+`rewrites/NOTEBOOKLM_MASTER_PACK.md`). Recent sessions are shop + course-infra
+fixes, **not** rewrites.
 
-> ⚠️ **DO NOT re-do the module rewrites.** They are done. The old snapshot had a ghost loop — it's been killed.
+- All 10 modules + M5B rewritten, locked, synced ✅
+- Course-wide quiz `true_false` inversion fixed + verified + generator hardened ✅
+- BROski$ Shop fully wired, UI polished, **all imagery resolving** ✅
+- All stale trackers reconciled (`AI_SESSION_INSTRUCTIONS.md` + this file) ✅
+
+> ⚠️ **DO NOT re-do the module rewrites (M2/M2b/M3/M5/M6/M7/M10).** They are
+> done & locked. Confirmed against `NOTEBOOKLM_MASTER_PACK.md`, `CLAUDE.md`,
+> `VIBE_COURSE_REVIEW.md`, and the live Supabase tables. The old "YELLOW
+> priorities" list was a stale ghost loop — killed.
 
 ---
 
 ## ✅ What's Done (Full May 18 Session)
 
-### 🛒 BROski$ Shop — Wiring Sprint (morning)
+### 🛒 Shop wiring sprint (morning)
 
 | Task | Status |
 |---|---|
-| Audited all 64 `shop_items` rows in Supabase | ✅ Done |
-| Wired `image_url` into metadata for `pet_frame`, `frame`, `agent_access`, `event` | ✅ Done |
-| 62/64 items have images (2 blanks intentional — "No Aura" + "No Badge") | ✅ Done |
-| Added `frame` (🃏 Card Frames, gold) + `event` (🎪 Limited Events, pink) to `CATEGORY_CONFIG` | ✅ Done |
-| Added both to `COLLECTIBLE_CATEGORIES` → "Added to your collection ✨" on purchase | ✅ Done |
-| `ShopPage.tsx` committed + Vercel auto-deployed | ✅ Done |
+| Audited all 64 `shop_items` rows in Supabase | ✅ |
+| Wired `image_url` into `metadata` for `pet_frame`, `frame`, `agent_access`, `event` | ✅ |
+| Added `frame` (🃏 Card Frames) + `event` (🎪 Limited Events) to `CATEGORY_CONFIG` | ✅ |
+| Added both to `COLLECTIBLE_CATEGORIES` → "Added to your collection ✨" | ✅ |
+| `ShopPage.tsx` committed + Vercel auto-deployed | ✅ |
 
-### 🎨 Shop UI + 🐛 course-wide quiz fix (May 18, later)
+### 🎨 Shop UI polish (afternoon)
+
 | Task | Status |
 |---|---|
-| ShopPage `ItemCard`: big hero image → compact 56px top-right thumbnail | ✅ Done |
-| `ItemCard` design audit: killed `transition-all`, added focus ring + active-press, 44px targets | ✅ Done |
-| Purchase celebration: one-shot gold flash + inset ring on bought card (reduced-motion aware) | ✅ Done |
-| `image_url` moved to `ShopItemMetadata` (it's in `metadata` JSONB, not a column) — Lyndz's fix, validated | ✅ Done |
-| **Course-wide quiz bug:** every `true_false` answer_index was inverted (all 11 modules) | ✅ Fixed in `hv_quizzes` + verified 11/11 |
-| Quiz generator hardened (`generate_quiz_for_module.ts`): explicit convention + self-healing normalizer | ✅ Done |
-| Reconciled stale trackers (`AI_SESSION_INSTRUCTIONS.md` + this snapshot) | ✅ Done |
+| `ItemCard`: big hero image → compact 56px top-right thumbnail | ✅ |
+| `ItemCard` audit: killed `transition-all`, added focus ring + active-press, 44px targets | ✅ |
+| Purchase celebration: one-shot gold flash + inset ring (reduced-motion aware) | ✅ |
+| `image_url` moved to `ShopItemMetadata` (it's in `metadata` JSONB) — Lyndz's fix, validated | ✅ |
 
----
+### 🐛 Course-wide quiz bug (afternoon)
 
-## 🟢 Next Session — Module Rewrites Are DONE
+**Root cause:** every `true_false` `answer_index` was inverted across all 11
+modules — the generator's prompt never stated the convention, so the LLM
+guessed wrong and it was never caught (frontend renders `["True","False"]`,
+so index is positional: TRUE→0, FALSE→1).
 
-**Do NOT re-do M2/M2b/M3/M5/M6/M7/M10.** All 10 modules + M5B were rewritten,
-locked, and synced to `hv_modules` in the **May 17 audit**. Confirmed against
-`NOTEBOOKLM_MASTER_PACK.md` (source of truth), `CLAUDE.md`, `VIBE_COURSE_REVIEW.md`,
-and the live Supabase tables. The old "YELLOW priorities" list was stale — removed.
+- Data: flipped `answer_index` 0↔1 for every `true_false` in `hv_quizzes` —
+  **verified 11/11** against each question's explanation. The M8 seed-phrase
+  safety question (worst case) now grades correctly.
+- Generator hardened (`agents/course-content-agent/.../generate_quiz_for_module.ts`),
+  3 layers: (1) explicit convention in the system prompt; (2)
+  `normalizeTrueFalseAnswers()` self-heals `answer_index` from the explanation
+  on every payload before save, throws if unverifiable; (3) template Q4 brought
+  into compliance. **Compiler-verified** — `npm install` (329 pkgs, 0 vuln) +
+  `npm run lint` (`tsc --noEmit`) clean, 0 errors.
 
-### Genuinely open items
-1. ~~Quiz generator compiler-verify~~ — ✅ DONE May 18: `npm install` (329 pkgs, 0 vuln)
-   + `npm run lint` (`tsc --noEmit`) clean, 0 type errors. Patch verified.
-2. ~~Shop image assets~~ — ✅ DONE May 18. **The whole shop's imagery was silently
-   broken:** 49 real PNGs were saved as `*.png.png` but the DB referenced single
-   `*.png` → every product image 404'd, masked by the `onError` fallback. Fixed:
-   - Renamed all 49 `*.png.png → *.png` to match the DB (files only, no DB write).
-   - 12 categories with NO real art (`frame`×10, `event`, `agent_access`) got
-     on-brand SVG placeholders; those 12 `metadata.image_url` repointed `.png→.svg`.
-   - **Verified: 61/61 distinct `shop_items.metadata.image_url` resolve 1:1.**
-   - "toys points to wrong folder" was a false alarm (SQL `min()` artifact) — toys
-     URLs were always correct.
-   ⏭️ When real `frame`/`event`/`agent` PNG art lands: drop files in same paths,
-   reverse the `.svg→.png` metadata swap (one SQL `replace()`), delete the SVGs.
-3. **Optional M2 polish** (content is solid ~4.2/5, not blocking): scaffold the
-   undefined "Agent X" / "BROski Terminal" terms on first mention; add "Try it now"
-   beats to Moves 2 & 3. Edit in `hv_modules` if done.
-4. Launch: `PRODUCTION_LAUNCH_CHECKLIST.md` / `GO_LIVE_CHECKLIST_2026-05-17.md`.
-### 🧠 Course-Wide Quiz Bug Fix (afternoon)
+### 🖼️ Shop imagery — whole shop was silently broken (afternoon)
 
-**Root cause:** `true_false` questions had inverted `answer_index` values across the whole course — Claude was guessing the convention, guessing wrong, and it was never caught.
+49 real PNGs were saved as `*.png.png` but the DB referenced single `*.png` →
+every product image 404'd, masked by the `onError` fallback (shop rendered
+chips-only and *looked* fine).
 
-**Three-layer fix in `agents/course-content-agent/src/skills/generate_quiz_for_module.ts`:**
+- Renamed all 49 `*.png.png → *.png` to match the DB (git-detected renames,
+  no DB write).
+- 12 categories with **no real art** (`frame`×10, `event`, `agent_access`)
+  got on-brand SVG placeholders; those 12 `metadata.image_url` repointed
+  `.png → .svg`.
+- **Verified: 61/61 distinct `shop_items.metadata.image_url` resolve 1:1.**
+- "toys points to wrong folder" was a false alarm (SQL `min()` artifact) —
+  toys URLs were always correct.
 
-| Layer | What it does |
-|---|---|
-| 1. Prompt hardened | Convention now explicit: TRUE→0, FALSE→1. Explanation must lead with "True — " or "False — ". |
-| 2. `normalizeTrueFalseAnswers()` | Runs on every payload before save. Derives correct answer from explanation, self-heals `answer_index`, logs corrections, throws if it can't verify. |
-| 3. Template Q4 fixed | Fallback path brought into compliance so it doesn't trip its own assertion. |
-
-**Compiler-verified:** `npm install && npm run lint` in `agents/course-content-agent/` ran `tsc --noEmit` with **zero output = zero type errors**. ✅
-
-### 📄 Stale Trackers Reconciled (afternoon)
+### 📄 Stale trackers reconciled (afternoon)
 
 | File | What changed |
 |---|---|
-| `AI_SESSION_INSTRUCTIONS.md` | All 6 YELLOW rows flipped ⏳/🔜 → ✅ DONE. "Do not re-do" banner added. Rewrites manifest corrected to "all 10 + M5B". |
-| `SESSION_SNAPSHOT_2026-05-18.md` (this file) | Ghost loop killed. "Where we are" reflects reality. Open items updated. |
+| `AI_SESSION_INSTRUCTIONS.md` | 6 YELLOW rows ⏳/🔜 → ✅ DONE; "do not re-do" banner; rewrites manifest = "all 10 + M5B" |
+| `SESSION_SNAPSHOT_2026-05-18.md` | Ghost loop killed; union-merge duplication de-duped (this commit) |
 
 ---
 
-## 🟢 Genuinely Open Items (non-urgent, nothing broken)
+## 🟢 Next Session — Genuinely Open Items
 
-| # | Task | Urgency |
-|---|---|---|
-| 1 | Upload image assets for `frame` category → `/images/shop/frame/` (10 items need art) | Low |
-| 2 | Upload `event_rift_banner.png` placeholder → `/images/shop/` | Low |
-| 3 | Confirm `agent_sandbox.png` exists at `/images/shop/` | Low |
-| 4 | Optional: M2 content polish (merge vs split — already decided, just needs writing up) | Optional |
-| 5 | Launch checklist — pre-launch review before going fully public | When ready |
+Module rewrites are **done**. Quiz + shop imagery are **fixed & verified**.
+Nothing is broken. Only these remain, none urgent:
+
+1. **Optional M2 polish** — content is solid (~4.2/5), not blocking. Scaffold
+   the undefined "Agent X" / "BROski Terminal" terms on first mention; add a
+   "Try it now" beat to Moves 2 & 3. Edit in `hv_modules` if done.
+2. **Launch checklist** — pre-launch review: `PRODUCTION_LAUNCH_CHECKLIST.md`
+   / `GO_LIVE_CHECKLIST_2026-05-17.md`. When ready to go fully public.
+
+⏭️ **When real `frame`/`event`/`agent` PNG art lands:** drop files at the same
+paths, reverse the `.svg → .png` metadata swap (one SQL `replace()` on those
+12 rows), delete the SVG placeholders.
 
 ---
 
 ## 📦 Key Commits This Session
 
-- `feat: add frame + event categories to CATEGORY_CONFIG and CATEGORY_ORDER` → [`c82bdc0`](https://github.com/welshDog/Hyper-Vibe-Coding-Course/commit/c82bdc004cc76dc70dd41eae01c226b8c41d96af)
-- `docs: add session snapshot May 18 2026` → [`4217c3f`](https://github.com/welshDog/Hyper-Vibe-Coding-Course/commit/4217c3f8690adaa92fb7d67d1ccfdfc44e224e10)
-- Supabase migration: `shop_items_wire_image_urls`
-- Quiz generator patch: `generate_quiz_for_module.ts` — 3-layer hardening, compiler-verified
-- `AI_SESSION_INSTRUCTIONS.md` — stale tracker reconciliation
+- `feat: add frame + event categories…` → [`c82bdc0`](https://github.com/welshDog/Hyper-Vibe-Coding-Course/commit/c82bdc004cc76dc70dd41eae01c226b8c41d96af)
+- `docs: add session snapshot May 18` → [`4217c3f`](https://github.com/welshDog/Hyper-Vibe-Coding-Course/commit/4217c3f8690adaa92fb7d67d1ccfdfc44e224e10)
+- `docs: update May 18 snapshot — quiz fix verified, trackers reconciled` → `7b873da`
+- `fix: restore course-wide shop imagery + harden quiz generator (#9)` → `f0be1ce` (PR #9, merged)
+- **Not in git (applied live to Supabase `yhtmuibgdnxhbgboajhc`):** `true_false`
+  `answer_index` flip across `hv_quizzes`; `shop_items_wire_image_urls`
+  migration; 12 placeholder `image_url` `.png → .svg`.
 
 ---
 
 ## 🧠 Tools Setup Reminder
 
 ```
-NotebookLM → notebooklm.google.com/notebook/9bf80983-8a6d-4c10-91c0-69118d0935fd
+NotebookLM   → notebooklm.google.com/notebook/9bf80983-8a6d-4c10-91c0-69118d0935fd
 Google Drive → raw course content
-GitHub → welshDog/Hyper-Vibe-Coding-Course (rewrites/ folder)
-Supabase → project ID: yhtmuibgdnxhbgboajhc
+GitHub       → welshDog/Hyper-Vibe-Coding-Course (rewrites/ folder)
+Supabase     → project ID: yhtmuibgdnxhbgboajhc
 BROski Brain → welshDog/BROski-Obsidian-Brain-for-HyperFocus-z0ne
-Live site → hyper-vibe-coding-course.vercel.app
-Agent source → agents/course-content-agent/ (run npm install first)
+Live site    → hyper-vibe-coding-course.vercel.app
+Agent source → agents/course-content-agent/ (run `npm install` first)
 ```
 
 ---
 
 ## 💬 One Line Summary For Next Session Start
 
-> **"All module rewrites DONE & locked (May 17 audit) — do NOT redo them. Shop wired ✅. Course-wide quiz true_false inversion fixed + generator hardened (May 18). Open: compiler-verify quiz-generator patch, upload shop image assets, launch checklist."**
-> **"Everything is done. Rewrites complete, quiz fixed + verified, shop wired. Next action: upload shop image assets (frame + event), then launch checklist."**
+> **"Everything's done & verified — rewrites locked (May 17 audit, do NOT redo),
+> course-wide quiz inversion fixed 11/11 + generator hardened, shop fully wired
+> with all 61 images resolving. Only open: optional M2 polish + launch
+> checklist. Nothing is broken."**
 
 ---
 
-> 🐶♾️ *Full end-to-end session. Root cause killed. Ghost loop broken. Trackers honest. Legendary work bro — genuinely clean stopping point.*
+> 🐶♾️ *Full end-to-end session. Two silent course-wide bugs (quiz inversion +
+> shop imagery) found, fixed, verified. Ghost loop broken. Trackers honest.
+> Genuinely clean stopping point, bro.*
