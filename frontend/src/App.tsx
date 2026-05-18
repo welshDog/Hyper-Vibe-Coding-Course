@@ -27,6 +27,12 @@ import CourseModule from './pages/CourseModule';
 import PetsPage from './pages/Pets';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
+import VibeLabsIndex from './pages/vibe-labs/VibeLabsIndex';
+import Level1Claude from './pages/vibe-labs/Level1Claude';
+import Level2AiStudio from './pages/vibe-labs/Level2AiStudio';
+import Level3Trae from './pages/vibe-labs/Level3Trae';
+import Level4Compare from './pages/vibe-labs/Level4Compare';
+import Level5FullStack from './pages/vibe-labs/Level5FullStack';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
@@ -53,6 +59,13 @@ function App() {
         <Routes>
           {/* Public marketing landing — own dark chrome, skips light Layout */}
           <Route path="/" element={<LandingPage />} />
+          {/* Vibe Labs — standalone dark, public to view, claim gated by auth */}
+          <Route path="/vibe-labs" element={<VibeLabsIndex />} />
+          <Route path="/vibe-labs/level-1" element={<Level1Claude />} />
+          <Route path="/vibe-labs/level-2" element={<Level2AiStudio />} />
+          <Route path="/vibe-labs/level-3" element={<Level3Trae />} />
+          <Route path="/vibe-labs/level-4" element={<Level4Compare />} />
+          <Route path="/vibe-labs/level-5" element={<Level5FullStack />} />
           {/* First-login onboarding — full-bleed, skips Layout */}
           <Route
             path="/welcome"
