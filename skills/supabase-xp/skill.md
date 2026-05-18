@@ -155,8 +155,11 @@ begin
 end;
 $$;
 
--- Only logged-in users can call it; it acts only on auth.uid()
+-- Only logged-in users can call it; it acts only on auth.uid().
+-- NOTE: Supabase grants anon EXECUTE via default privileges, so `revoke from
+-- public` is not enough — revoke anon explicitly for true least-privilege.
 revoke all on function public.claim_level_reward(int) from public;
+revoke execute on function public.claim_level_reward(int) from anon;
 grant execute on function public.claim_level_reward(int) to authenticated;
 ```
 

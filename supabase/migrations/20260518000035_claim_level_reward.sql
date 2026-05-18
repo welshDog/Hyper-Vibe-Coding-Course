@@ -138,7 +138,12 @@ end;
 $$;
 
 -- ── 3. Grants ──────────────────────────────────────────────────────────────
+-- Supabase default privileges grant anon+authenticated EXECUTE explicitly, so
+-- `revoke from public` alone is NOT enough — anon keeps its own grant. Revoke
+-- anon explicitly. (Internal auth.uid() guard already returns 'unauthorized'
+-- for anon, but least-privilege: anon shouldn't even hold the grant.)
 revoke all on function public.claim_level_reward(int) from public;
+revoke execute on function public.claim_level_reward(int) from anon;
 grant execute on function public.claim_level_reward(int) to authenticated;
 
 -- ═══════════════════════════════════════════════════════════════════════════
