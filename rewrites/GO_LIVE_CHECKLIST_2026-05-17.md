@@ -17,19 +17,21 @@ Owner tags: **[LYNDZ]** = dashboard/manual (Claude can't) · **[CLAUDE]** = I ca
 | 5–8 | Leaderboard / Quests / Shop / Profile | ✅ verified PASS |
 | 9 | Husky CI warning silenced | ✅ live |
 | — | Dead `/learn/:id` links (Profile + PaymentSuccess) | ✅ both fixed → `/catalog/:id` |
+| 10 | **Mint silent-BROski$-loss class closed in code** — frontend pre-flight guard ([PR #12](https://github.com/welshDog/Hyper-Vibe-Coding-Course/pull/12)) + backend pre-spend contract/chain guard ([PR #13](https://github.com/welshDog/Hyper-Vibe-Coding-Course/pull/13)) | ✅ merged to `main`; ⚠️ #13 live only after `mint-pet-auth` Edge deploy (see Blocker #2) |
 
 ---
 
 ## 🔴 BLOCKERS — must clear before launch (mostly **[LYNDZ]** dashboard work)
 
 ### 1. Vercel env vars — Production + Preview + Development
-- [ ] **[LYNDZ]** `VITE_BROSKIPET_CONTRACT_ADDRESS` = deployed BROskiPet `0x…` — *without this, mint shows "Mint not configured"*
+- [ ] **[LYNDZ]** `VITE_BROSKIPET_CONTRACT_ADDRESS` = deployed BROskiPet `0x3691470c6c56D9bb3cBe8052A2cEAcDdeeEe2F09` — **must equal** the Edge secret `BROSKIPET_CONTRACT_ADDRESS`. *Until set, mint now **fails safe — zero BROski$ spent** (PR #12/#13) and shows "Mint temporarily unavailable" instead of silently eating tokens. Setting it correctly is still required for mint to actually work.*
 - [ ] **[LYNDZ]** `VITE_MINT_VIA_RELAY=true` (gasless mint + pet persistence)
 - [ ] **[LYNDZ]** Confirm `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_HYPERCODE_API_URL`, `VITE_STRIPE_*` link URLs all set on all 3 envs
 - [ ] **[LYNDZ]** Redeploy after env changes (Vite bakes envs at build time)
 
-### 2. Supabase Edge Function secrets (Project `yhtmuibgdnxhbgboajhc`)
-- [ ] **[LYNDZ]** `BROSKIPET_CONTRACT_ADDRESS`, `BACKEND_SIGNER_PRIVATE_KEY` set (mint-pet-auth 503s without them)
+### 2. Supabase Edge Function secrets + deploy (Project `yhtmuibgdnxhbgboajhc`)
+- [ ] **[LYNDZ]** **Deploy the Edge Function:** `supabase functions deploy mint-pet-auth` — PR #13's pre-spend contract/chain guard is **inert until deployed** (the frontend already sends `expected_contract`/`expected_chain_id`; the old deployed function ignores them harmlessly until then)
+- [ ] **[LYNDZ]** `BROSKIPET_CONTRACT_ADDRESS` (== the Vercel `VITE_` one above), `BACKEND_SIGNER_PRIVATE_KEY` set (mint-pet-auth 503s without them)
 - [ ] **[LYNDZ]** Optional: `RELAYER_PRIVATE_KEY`, `MINT_RPC_URL`, `BUILDER_CODE`
 - [ ] **[LYNDZ]** Relayer wallet funded with ETH on the target chain (Base Sepolia now / Base mainnet at launch)
 - [ ] **[LYNDZ]** `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` are **live** keys (not test) when going to real money
@@ -64,7 +66,7 @@ Run signed-out **and** signed-in (incognito for clean state):
 - [ ] `/courses/wire-up-the-watchers` — shows M5B (observability), distinct from `build-your-agent-crew`
 - [ ] `/pricing` — tiers render; CTA → Stripe (or safe "unavailable" banner, never `/payment-success`)
 - [ ] `/payment-success` (visit directly, logged in) — shows "processing/contact support", **does NOT unlock** anything; "Start learning" → `/catalog/:id`
-- [ ] `/pets` — no rarity picker; "🎲 rolled on mint" note; mint works (post-env); rarity revealed after, not selectable
+- [ ] `/pets` — no rarity picker; "🎲 rolled on mint" note; rarity revealed after, not selectable. **Mint stays 🔴 until env config + `mint-pet-auth` deploy (Blocker #1/#2). A misconfig now fails safe — zero BROski$ spent (PR #12/#13) — so verify the "Mint temporarily unavailable" path AND a real mint once config+deploy are done**
 - [ ] `/leaderboard` — XP-desc order, top 50, own row highlighted when named
 - [ ] `/quests` — loads (empty "no quests yet" is expected until triggered)
 - [ ] `/shop` — items render; buy spends **BROski$** via Edge Fn (not Stripe)
