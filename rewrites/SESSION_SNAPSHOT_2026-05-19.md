@@ -1,64 +1,80 @@
-# 🧠 SESSION SNAPSHOT — 2026-05-19
-> Built with Perplexity AI (Comet) + @welshDog
-> Time: ~6:20–7:05 PM BST
+# 🧠 SESSION SNAPSHOT — 2026-05-19 (FINAL)
+> Perplexity AI (Comet) + Claude Opus 4.7 + @welshDog
+> Time: ~9:00 AM – 8:30 PM BST
 > Repo: github.com/welshDog/Hyper-Vibe-Coding-Course
+> Last verified commit: `14a7ab88` (origin/main)
 
 ---
 
-## ✅ WHAT GOT DONE THIS SESSION
-
-### 1. Vibe Labs — Nav + Footer Fix
-- **Problem:** `/vibe-labs` and all `/vibe-labs/level-*` pages were outside the shared Layout — no Nav, no Footer
-- **Fix:** Created 6 new page components + moved all routes inside `<Route path="/" element={<Layout />}>` in `App.tsx`
-- **Files pushed:**
-  - `src/pages/VibeLabs.tsx` — hub page with 5 levels, locked/unlocked states, XP values
-  - `src/pages/vibe-labs/Level1.tsx` — full STOP/WHY/HOW/WIN structure
-  - `src/pages/vibe-labs/Level2.tsx` through `Level5.tsx` — peeking banners + redirect to previous level
-  - `src/App.tsx` — updated with vibe-labs routes inside Layout
-- **Commit:** `53470170`
-
-### 2. Forgot Password Page
-- **Problem:** `/login` had no forgot password link — users were stuck
-- **Fix:** Added `ForgotPassword` component to `Auth.tsx` using `supabase.auth.resetPasswordForEmail()`
-  - Success state: "Check your inbox" message
-  - Error handling
-  - "Forgot your password?" link added below password field on Login form
-  - Route `/forgot-password` added to `App.tsx`
-- **Commit:** `cd2c8f88`
-
-### 3. Footer — Full HyperFocus Z0ne Redesign
-- **Problem:** Footer was plain white, generic, didn't match site identity, had routes that 404'd (`/instructors`)
-- **Fix:** Full dark-theme redesign of `Footer.tsx`
-  - Dark `bg-[#0a0a0a]` theme
-  - Hyper Vibe Z0ne logo + "Built in Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁧 by @welshDog" tagline
-  - `v0.9 · Beta · All systems green` status line
-  - 4 columns: Product / Community / Brand / Start Here
-  - All real routes — no dead links
-  - External GitHub link
-  - `© 2026 HyperFocus Z0ne · Keep it weird, keep it Welsh.`
-  - `ENTER · THE · Z0NE` in purple mono
-- **Commit:** `e83723d6`
-
-### 4. BROski$ Nav Balance — Already Fixed
-- **Checked:** `Navbar.tsx` already conditionally hides balance for logged-out users
-- **Action:** No change needed ✅
-
-### 5. Module Subtitle Column (Supabase DB)
-- **Problem:** Module codes M1–M10 consistent in DB, but internal audit names (e.g. "Stripe Walkthrough") didn't match punchy student-facing titles (e.g. "Build Your Money Engine")
-- **Fix:** Added `subtitle TEXT` column to `hv_modules` table via migration
-- **Migration:** `add_subtitle_to_hv_modules`
-- **All 11 modules populated** with technical subtitles
-- **Project:** `yhtmuibgdnxhbgboajhc` (eu-west-2)
-
-### 6. Subtitle on Course Cards (UI)
-- **Fix:** Updated `Courses.tsx` to fetch + display `subtitle` below the punchy title
-  - Big white title = student-facing
-  - Small grey mono subtitle = technical/internal name
-- **Commit:** `99a9b05e`
+## ⚠️ RULE FOR NEXT SESSION
+**DO NOT pick tasks from this snapshot without checking `git log origin/main` first.**
+The parallel git workflow (Perplexity + Claude Code) moves faster than any snapshot.
+Always diff roadmap items against actual main before building.
 
 ---
 
-## 📊 MODULE REFERENCE (canonical as of this session)
+## ✅ FULLY SHIPPED TODAY (verified on origin/main)
+
+### Vibe Labs Track (Claude Code — Sprints 1–4)
+| Sprint | What | Commit |
+|--------|------|--------|
+| 1–2 | Vibe Labs pages, routing, layout, locked/unlocked states | `53470170` |
+| 3 | a11y — 16px floor, self-hosted fonts, 44px touch targets, axe cert | `45e0acdb` / `df8eac20` / `7a5585a6` |
+| 3 | Vibe Labs WIN lock-in beat on all 5 labs | `fb5532b5` |
+| 4 | Anon earn → signup conversion (dopamine before login wall) | `a12ecd00` |
+
+### P0 Critical Fixes (Claude Code)
+| Fix | Root Cause | Commit |
+|-----|-----------|--------|
+| Auth infinite-load | `auth.ts` awaited DB query inside `onAuthStateChange` → Supabase auth-lock deadlock → `loading` stuck `true` | `14a7ab88` |
+| Fix: defer `applySession` off callback + 8s watchdog | New deterministic regression test green | `14a7ab88` |
+
+### Perplexity Session Fixes
+| Fix | Commit |
+|-----|--------|
+| Forgot password page + login link | `cd2c8f88` |
+| Footer full HyperFocus Z0ne redesign | `e83723d6` |
+| Module subtitle column (Supabase migration) | migration: `add_subtitle_to_hv_modules` |
+| Subtitle shown on course cards (Courses.tsx) | `99a9b05e` |
+
+### Housekeeping
+- `Merge_CLAUDE.md` → canonical root `CLAUDE.md` (dupe deleted, contradictions resolved)
+- Course repo synced to `origin/main` clean
+- AI session memory updated: "verify roadmap items against main first"
+
+---
+
+## 🟡 HONEST OPEN ITEMS (in CLAUDE.md §11, not lost)
+
+### P0 — Needs human deploy confirmation
+- [ ] **P0 fix deployed but not verified** — Vercel deploy + real authed click-through needed to fully close the infinite-load bug. Module-pages P0 (#2) almost certainly fixed by the same root cause.
+
+### Code — Deferred (diagnosed, not lost)
+- [ ] **2 auth.spec.ts tests** — pre-existing stale tests, root cause diagnosed precisely, deferred by Lyndz call. Not blocking.
+
+### Auth gates — Already done (do NOT rebuild)
+- ✅ Leaderboard — soft gate (highlights your row, public board visible)
+- ✅ Quests / Tokens / Shop — hard `<PrivateRoute>` redirects
+- ✅ BROski$ balance — already hidden for logged-out users in Navbar.tsx
+
+---
+
+## 🟡 COURSE AUDIT REWRITES — Genuinely Pending
+
+These are **content**, not in the codebase. Fully undone:
+
+| Module | Task | Priority |
+|--------|------|---------|
+| M2 + M2b | Merge decision + rewrite | 🟡 YELLOW |
+| M3 | Win Summary rewrite | 🟡 YELLOW |
+| M5 | Observability split | 🟡 YELLOW |
+| M6 | M5→M6 handoff | 🟡 YELLOW |
+| M7 | Prompt Injection intro | 🟡 YELLOW |
+| M10 | Graduation reframe | 🟡 YELLOW |
+
+---
+
+## 📊 MODULE REFERENCE (canonical — verified in Supabase)
 
 | Code | Student Title | Technical Subtitle | Level |
 |------|--------------|-------------------|-------|
@@ -76,45 +92,32 @@
 
 ---
 
-## 🟡 STILL TO DO (next session)
-
-### P0 — Claude Code owns these in terminal
-- [ ] Dashboard + Courses infinite loading (Supabase session listener not resolving)
-- [ ] Module pages skeleton never resolving (possible RLS policy issue)
-- [ ] Leaderboard/Quests/Tokens/Shop — add auth gate (copy `/pets` pattern)
-
-### P1 — Next quick wins
-- [ ] Privacy page stub (`/privacy`)
-- [ ] Terms page stub (`/terms`)
-- [ ] Level 1 lab content — flesh out the full interactive mission
-- [ ] Level 2-5 full content (once M2-M6 rewrites are complete)
-
-### P2 — Course audit rewrites still pending
-- [ ] M2+M2b merge decision
-- [ ] M3 Win Summary rewrite
-- [ ] M5 Observability split
-- [ ] M6 M5→M6 handoff
-- [ ] M7 Prompt Injection intro
-- [ ] M10 Graduation reframe
-
----
-
 ## 🚀 NEXT SESSION — START HERE
 
-**First task:** Fix Dashboard + Courses infinite loading
-- Search for `useSession` / `onAuthStateChange` in codebase
-- Find where "Session refreshing..." state is set and never cleared
-- Add timeout fallback or check for missing env vars on deployed branch
+**Step 1 — Human gate first (5 mins):**
+- Open [hyper-vibe-coding-course.vercel.app](https://hyper-vibe-coding-course.vercel.app)
+- Log in with a real account
+- Click into Dashboard + a module page
+- Confirm the infinite-load is gone ✅
+- If broken → check Vercel deploy logs for `14a7ab88`
 
-**Then:** Wire auth gate on Leaderboard/Quests/Tokens/Shop (copy `/pets` pattern)
+**Step 2 — Pick a track:**
+- **Track A (Content):** M3 Win Summary rewrite — quickest module rewrite, standalone
+- **Track B (Tech):** Shop Fulfillment v2 — built May 17, deploy + E2E verification pending
+
+**Step 3 — Always run before picking work:**
+```
+git fetch origin
+git log origin/main --oneline -20
+```
 
 ---
 
 ## 📝 PASTE INTO NOTEBOOKLM
-Add this file as a source in your NotebookLM session to keep the brain up to date.
-Title it: `Session Snapshot — May 19 2026`
+Add this file as a source. Title it: `Session Snapshot — May 19 2026 FINAL`
+Replace the earlier May 19 snapshot if it exists.
 
 ---
 
-*Built by @welshDog + Perplexity AI — May 19, 2026*
-*"Stop apologising for your brain. Start building."*
+*Built by @welshDog + Perplexity AI + Claude Opus 4.7 — May 19, 2026*
+*"Stop apologising for your brain. Start building."* 🏴󠁧󠁢󠁷󠁬󠁳󠁿
