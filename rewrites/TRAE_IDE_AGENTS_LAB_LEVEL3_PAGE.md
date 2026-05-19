@@ -73,7 +73,7 @@ Paste this into Trae SOLO Mode:
 
 ```
 Build a Hyperfocus z0ne Daily Dashboard web app.
-Dark background, orange and purple primary colors.
+Dark background, violet and cyan primary colors.
 It should have:
 - A Pomodoro timer (25 min focus, 5 min break)
 - A daily to-do list with checkboxes
@@ -178,10 +178,9 @@ Here's what you've earned:
 |--------|--------|
 | 🧠 XP | +200 |
 | 💰 BROski$ | +100 |
-| 🏅 Badge | Trae IDE + Agents Lab: Level 3 |
-| 🌟 Title | Meta-Architect |
+| 🏅 Badge | 🤖 Trae Agent Master |
 
-> Claim your reward in the Hyperfocus z0ne dashboard. You've unlocked Meta-Architect status.
+> Hit the **Claim** button right there on the Level 3 page — your reward lands instantly. (Meta-Architect is the Level 5 badge — keep going to earn it.)
 
 ---
 
