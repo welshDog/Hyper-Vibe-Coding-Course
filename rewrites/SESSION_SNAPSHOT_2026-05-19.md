@@ -39,9 +39,16 @@ Commits: `b165f3f` `e869506` `03066ab` `72fd605` `4eb922d` `36e76d2` `93edfb6` `
 - This repo has **no `framer-motion`** — Vibe Labs motion is CSS-only, reduced-motion gated.
 - Landing-page styling idiom = inline styles + CSS vars + HVZ components (NOT the Tailwind `hfz-*` tokens the lab pages use). Match the file you're in.
 
+## Addendum — video scripts + doc sync (later same session)
+- **NotebookLM source pack** handed over (5 lab-page links + a "build state" text source + starter prompt).
+- **5 Vibe Labs video scripts** written, reviewed, saved + pushed: `video_scripts/VIBE_LAB_LEVEL1..5_VIDEO_SCRIPT.md`. Same 7-beat pedagogy voice; rewards verified vs deployed RPC; standard fixes applied every time (claim **on the lab page** not a dashboard, real badge strings, no orange).
+- **L3 source drift fixed at root** — `rewrites/TRAE_IDE_AGENTS_LAB_LEVEL3_PAGE.md` wrongly granted "Meta-Architect" (that's the L5 badge) → corrected to **Trae Agent Master**, claim-on-page, orange→violet/cyan.
+- **`video_scripts/README.md`** updated — added the Vibe Labs track table + pipeline + verified-reward note.
+- Commits this addendum: `7732c0a` `a42f165` `9c3feee` `f8a7062` `3edc3f4` `eb87f50` `<readme/snapshot sync>`.
+
 ## What's next
-- Nothing pending — the full arc (skill → migration → deploy → test → hook → pages → nav → funnel → progress-aware) is complete and live.
-- Optional future: NotebookLM "deep dive" buttons per level; record/QA a `prefers-reduced-motion` pass on the live site.
+- Nothing pending — full arc + all 5 lab video scripts complete and pushed.
+- Optional future: NotebookLM "deep dive" buttons per level; `prefers-reduced-motion` QA pass on the live site; record the 5 lab videos from these scripts.
 
 ## Key decisions
 - Master HFZ palette is authoritative for this repo (no orange). Lab pages use Tailwind `hfz-*` tokens; landing page keeps its own CSS-var idiom.

@@ -1,8 +1,8 @@
 # 🎬 Video Scripts — Hyper-Vibe Coding Course
 
-3-minute spoken video scripts, one per module, generated from the canonical May rewrites in [`../rewrites/`](../rewrites/).
+3-minute spoken video scripts generated from the canonical May rewrites in [`../rewrites/`](../rewrites/). Two tracks: the **11 course modules** and the **5 Vibe Labs** (HyperLabs on-ramp).
 
-> Status: 🟡 All v1 drafts complete (May 17, 2026) — ready for review + recording.
+> Status: 🟡 All v1 drafts complete — 11 module scripts (May 17, 2026) + 5 Vibe Labs scripts (May 19, 2026). Ready for review + recording.
 
 ---
 
@@ -26,6 +26,22 @@
 
 ---
 
+## 🧪 The 5 Vibe Labs scripts (HyperLabs track)
+
+The free no-signup on-ramp — Big AI stack labs that funnel into the course. Each follows the **neurodivergent 7-beat pedagogy** (STOP · WHY · HOW · WIN · NEXT · HELP · REWARD), not the module timed-scene template.
+
+| # | Script | Lab | Source rewrite | Reward (verified vs RPC) | Runtime |
+|---|---|---|---|---|---|
+| 1 | `VIBE_LAB_LEVEL1_VIDEO_SCRIPT.md` | 🧠 Claude Vibe Lab | `CLAUDE_VIBE_LAB_LEVEL1_PAGE.md` | +100 XP · +50 BROski$ · Claude Lab Graduate | 3:00 |
+| 2 | `VIBE_LAB_LEVEL2_VIDEO_SCRIPT.md` | 🚀 Google AI Studio Lab | `GOOGLE_AI_STUDIO_LAB_LEVEL2_PAGE.md` | +150 XP · +75 BROski$ · AI Studio Graduate | 3:00 |
+| 3 | `VIBE_LAB_LEVEL3_VIDEO_SCRIPT.md` | 🤖 Trae IDE + Agents Lab | `TRAE_IDE_AGENTS_LAB_LEVEL3_PAGE.md` | +200 XP · +100 BROski$ · Trae Agent Master | 3:00 |
+| 4 | `VIBE_LAB_LEVEL4_VIDEO_SCRIPT.md` | ⚔️ Big AI Comparisons | `BIG_AI_COMPARISONS_LEVEL4_PAGE.md` | +250 XP · +125 BROski$ · Big AI Stack Master | 3:00 |
+| 5 | `VIBE_LAB_LEVEL5_VIDEO_SCRIPT.md` | 🌟 Hyperfocus z0ne Full Stack | `HYPERFOCUS_FULLSTACK_LEVEL5_PAGE.md` | +500 XP · +250 BROski$ · Meta-Architect | 3:15 (finale) |
+
+> Rewards/badges verified against the deployed `claim_level_reward` RPC (project `yhtmuibgdnxhbgboajhc`, real-user tested 2026-05-19). Levels unlock in order; reward is claimed **on the lab page** (`/vibe-labs/level-N`), not a dashboard. Theme is master palette (#0A0E1A / #7B2FBE violet / #00D4FF cyan) — no orange. See `../rewrites/SESSION_SNAPSHOT_2026-05-19.md`.
+
+---
+
 ## 📐 Script template (every file follows this)
 
 1. **Production Notes** — runtime, word count, pace, tone, on-screen code, music cues
@@ -41,5 +57,7 @@ Voice: BROski energy — short sentences, plain-English analogies kept from the 
 ## 🔗 Pipeline
 
 `rewrites/MODULE_0X_REWRITE.md` → `video_scripts/MODULE_0X_VIDEO_SCRIPT.md` → recording.
+
+Vibe Labs: `rewrites/<LAB>_PAGE.md` → `video_scripts/VIBE_LAB_LEVELN_VIDEO_SCRIPT.md` → recording. Live lab pages + reward claim run client-side in `frontend/src/pages/vibe-labs/` against the `claim_level_reward` RPC.
 
 Live course state (titles, rewards, status, quizzes) lives in Supabase `hv_modules` + `hv_quizzes` (project `yhtmuibgdnxhbgboajhc`), synced to the May model on 2026-05-17. See `../rewrites/SESSION_SNAPSHOT_2026-05-17.md`.
