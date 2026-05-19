@@ -1,7 +1,8 @@
 # 🤝 Handover → Next Claude Window
 > From: Claude (Opus 4.7), end of 2026-05-19 monster session.
 > Read this + `SESSION_SNAPSHOT_2026-05-19.md` + the auto-loaded memory first.
-> Repo: `Hyper-Vibe-Coding-Course` · all work on `main` · `b165f3f` → handover.
+> Repo: `Hyper-Vibe-Coding-Course` · all work on `main` · HEAD `3bef345`
+> (Sprint 3 done, a11y-certified) → handover.
 
 ---
 
@@ -14,8 +15,13 @@ The **Vibe Labs / HyperLabs** funnel is built, deployed, and live end-to-end:
 - 5 video scripts (`video_scripts/VIBE_LAB_LEVEL1..5`).
 - Perf: route code-split + web3 deferred → cold funnel **1,270 kB → ~61 kB gzip**.
 - Auth-truth: real `authError` state + `useAuthStatus` + status badges.
+- **Sprint 3 (a11y/perf polish) COMPLETE & live** (`3bef345`, Vercel-MCP
+  `state:READY`): 16px floor, self-hosted fonts (were 100% broken — Arial
+  fallback), 44px targets, new axe cert + Lighthouse **A11Y 100 /
+  Best-Practices 100** on `/vibe-labs` + `/vibe-labs/level-1`.
 
-**The work is solid. What's left is mostly human verification + Sprint 3/4.**
+**The work is solid + a11y-certified. What's left: Sprint 4 + the
+human-only gates (§3).**
 
 ## 2. 🔴 Load-bearing gotchas — DO NOT relearn these the hard way
 
@@ -44,14 +50,38 @@ The **Vibe Labs / HyperLabs** funnel is built, deployed, and live end-to-end:
    source_id IS NOT NULL`. Always pass a stable `p_source_id`.
 7. **`Pets.tsx` has `@ts-nocheck`** (line 1) + an `any` cast — pre-existing,
    non-blocking warnings. Don't chase them; it's a money-path file.
+8. **Lyndz runs a PARALLEL git workflow.** His tooling auto-commits/pushes
+   the same work out-of-band (this session: Course `a5ec6da` `87331c5`
+   merge `3bef345`; V2.4 `be35153`). Your local commit can become a
+   redundant duplicate. **Always `git fetch` + check what actually landed
+   on `origin/main` before pushing. NEVER force-push.** If your commit is a
+   verified dup, `git reset --hard origin/main` to align (nothing lost).
+9. **Vercel Attack Challenge Mode.** Aggressive `curl`-polling of the prod
+   URL trips it → `HTTP 403` + `X-Vercel-Mitigated: challenge` (looks like
+   prod is down — it isn't; real browsers are fine). **Deploy-truth = Vercel
+   MCP `get_deployment`** (teamId `team_Uy6hGYD4AZqclHqUeEsmZuDP`, project
+   `hyper-vibe-coding-course`), NOT a curl bundle-hash loop. One light check
+   ok; don't loop-poll prod.
+10. **Lighthouse can't hit live prod** (challenge-blocked) → run vs a local
+    `vite preview` prod build with **system Chrome**
+    (`C:/Program Files/Google/Chrome/Application/chrome.exe`,
+    `--headless=new`). `--output-path` MUST be cwd-relative (`lh-out/x.json`)
+    — a `/tmp/...` path is read differently by the Windows lighthouse process
+    vs bash and the file "vanishes". Lighthouse here = **lab a11y/BP only**;
+    real-field CWV/INP stays the Vercel Speed Insights human gate.
+11. **a11y cert harness exists & is reusable:** `tests/vibe-labs-a11y.spec.ts`
+    + `@axe-core/playwright`, via `npm run test:e2e`. Copy this exact pattern
+    for the auth E2E (gate #1). `styles/globals.css` is DEAD (unimported,
+    flagged inline in `index.css`) — never sync it; delete its dead
+    `@font-face` block in a separate cleanup.
 
 ## 3. ⚠️ Open gates — these need a REAL BROWSER (I can't do them)
 
 | Gate | How | Owner |
 |---|---|---|
-| 15-step auth checklist | **Use the repo's Playwright** (`npm run test:e2e`). Best assertion: kill network during profile load → badge must read `Auth error`, not `Signed out`. | Next session (write the E2E) or Lyndz |
+| 15-step auth checklist | **Copy `tests/vibe-labs-a11y.spec.ts`** (Playwright proven working this session). Best assertion: kill network during profile load → badge must read `Auth error`, not `Signed out`. | Next session (write the E2E) or Lyndz |
 | `/pets` wallet smoke | Connect Wallet → RainbowKit modal → mint inits. MetaMask can't be automated — Lyndz clicks. | Lyndz |
-| Real Core Web Vitals | Vercel dashboard → project → **Speed Insights** (RUM already collecting via `@vercel/speed-insights`). All CWV in the review are estimates. | Lyndz reads dashboard, or check Vercel MCP for a logs/metrics endpoint |
+| Real Core Web Vitals | Lab a11y/Best-Practices now **100/100** (Lighthouse, Sprint 3) — but real-field LCP/INP/CLS still need Vercel → **Speed Insights** (RUM via `@vercel/speed-insights`). Review CWV are still estimates. | Lyndz reads dashboard |
 
 ## 4. 🧰 Tools & skills you (next Claude) actually need
 
@@ -107,13 +137,16 @@ The **Vibe Labs / HyperLabs** funnel is built, deployed, and live end-to-end:
 
 ## 6. Recommended next moves (priority order)
 
-1. **Playwright auth E2E** for the 15-step checklist (close gate #1 properly).
-2. **Sprint 3** (review §5): 16px text floor, font `preload`+`display:swap`,
-   44px progress-bar touch targets, run axe + Lighthouse.
-3. **Sprint 4**: anon→signup conversion (localStorage `completedLevels`, gate
-   the claim) — highest funnel ROI per the review.
-4. Ask Lyndz for the `/pets` wallet result + a Vercel Speed Insights screenshot
-   to replace the estimated CWV in the review with real numbers.
+1. **Sprint 4 — START HERE.** anon→signup conversion: persist
+   `completedLevels` in `localStorage`, let logged-out users *earn* the win,
+   then gate the **claim** with "create an account to bank your XP". Highest
+   funnel ROI per review §6.
+2. **Playwright auth E2E** for the 15-step checklist — copy the now-proven
+   `tests/vibe-labs-a11y.spec.ts` harness pattern (closes gate #1).
+3. **Cleanup:** delete the dead `@font-face` block in `styles/globals.css`
+   (unimported; live fonts live in `index.css`).
+4. Ask Lyndz for the `/pets` wallet result + a Vercel Speed Insights read to
+   replace the review's estimated CWV with real field numbers.
 
 ## 7. Key files map
 

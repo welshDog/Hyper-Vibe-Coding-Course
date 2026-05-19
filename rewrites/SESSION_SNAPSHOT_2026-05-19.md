@@ -54,6 +54,15 @@ Commits: `b165f3f` `e869506` `03066ab` `72fd605` `4eb922d` `36e76d2` `93edfb6` `
 - **Auth-truth (`949f733`):** added real `authError` state to `context/auth.ts` (was silently swallowed → looked signed-out). New `useAuthStatus` hook (auth-only, no wagmi). `AuthStatusBadge` in Navbar (authed shell, not funnel). `WalletStatusBadge` on `/pets` only (inside Web3Provider). Also fixed a pre-existing `set-state-in-effect` ERROR in `Pets.tsx` (ref not state; behaviour identical) that blocked the pre-commit hook.
 - Commits this addendum: `2e86207` `0cd772a` `4c16b0c` `0cb0402` `949f733` + this snapshot/handover sync.
 
+## Addendum 3 — Sprint 3 (a11y / perf polish) COMPLETE (later same session)
+All 4 review §5 Sprint-3 items shipped, deployed READY (`3bef345`, **Vercel-MCP verified `state:READY`**), a11y-certified:
+- **Item 1 — 16px floor (`7a5585a`, live):** `hfz-caption` token 12→14px in `tailwind.config.js` (one line, clears all 11 lab `text-hfz-caption` usages). LandingPage's ~25 inline sub-16px values catalogued + **deferred** (out of Sprint 3 scope, separate pass).
+- **Item 2 — fonts (`df8eac2`, live):** discovered the branded fonts **never loaded** (zero woff2 in repo; `@font-face` only in the *unimported* `styles/globals.css` → every user got Arial/Consolas). Added 8 OFL woff2 to `public/fonts`, moved `@font-face` (`font-display:swap`) into the LIVE `index.css`, preloaded the 2 LCP faces (SpaceGrotesk-Bold 700 + Inter-Regular 400). No 800 face — Space Grotesk axis tops at 700; `hfz-display:800`→700 by design.
+- **Item 3 — 44px targets (`45e0acd`, live):** `LevelProgressBar` dots `h-9 w-9`→`h-11 w-11` (36→44px, WCAG 2.5.5 AAA).
+- **Item 4 — axe + Lighthouse certify (`87331c5` + `a5ec6da`, merged `3bef345`):** added `@axe-core/playwright` + reusable `tests/vibe-labs-a11y.spec.ts` (runs via `npm run test:e2e`). It caught **2 pre-existing serious bugs** an eyeball pass would've shipped: (a) `aria-prohibited-attr` — locked-dot `<span aria-label>` with no role → fixed `role="img"`; (b) `color-contrast` — `hfz.text.disabled #3D4F6E` ≈2:1 (failed AA app-wide, ~30 usages), compounded by locked-card `opacity-70`. Fixed via **design-brain**: token → **`#7E8FB5`** (same hue, ≈5.3:1, keeps the 3-step ramp) + removed `opacity-70`. **axe cert: both pages GREEN (0 violations).** **Lighthouse (local `vite preview` prod build, system Chrome): `/vibe-labs` + `/vibe-labs/level-1` = A11Y 100 / Best-Practices 100, `color-contrast` + `target-size` PASS, zero failing audits.**
+- Review §5 High/Medium polish fully closed. `styles/globals.css` remains dead code (flagged inline in `index.css`) — delete its dead `@font-face` block in a separate cleanup.
+- Commits this addendum: `7a5585a` `df8eac2` `45e0acd` `87331c5` `a5ec6da` `3bef345` (Lyndz parallel-workflow merges) + this snapshot/handover sync.
+
 ## ⚠️ Open human-only gates (cannot be done by Claude — need a real browser)
 1. **15-step auth checklist** — now a fast eyeball pass (badge can't lie). Key test: kill network during profile load → must show **`Auth error`**, not `Signed out`.
 2. **`/pets` wallet smoke test** — Connect Wallet → RainbowKit modal → mint inits (owed since Sprint 2 + new `Wallet ready` pill).
@@ -61,8 +70,8 @@ Commits: `b165f3f` `e869506` `03066ab` `72fd605` `4eb922d` `36e76d2` `93edfb6` `
 
 ## What's next (for the next session)
 - Close the 3 gates above (see `NEXT_SESSION_HANDOVER_2026-05-19.md` for how — esp. use the existing **Playwright** harness for the auth checklist).
-- Sprint 3 (review §5): 16px text-floor fix, font preload+`display:swap`, 44px touch targets on the progress bar, axe/Lighthouse certify.
-- Sprint 4: anon→signup conversion (persist `completedLevels` in localStorage, gate the claim) — the funnel multiplier.
+- ~~Sprint 3~~ ✅ **DONE** (see Addendum 3) — a11y-certified (axe + Lighthouse 100/100), deployed live.
+- **Sprint 4 (NEXT, headline):** anon→signup conversion (persist `completedLevels` in localStorage, gate the claim) — the funnel multiplier.
 - Optional: NotebookLM deep-dive buttons; record the 5 lab videos.
 
 ## Key decisions
