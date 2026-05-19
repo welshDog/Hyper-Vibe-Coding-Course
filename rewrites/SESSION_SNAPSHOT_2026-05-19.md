@@ -1,89 +1,120 @@
-# Session Snapshot — May 19, 2026 — HyperLabs Wired End-to-End
-
-## What we did this session
-Took HyperLabs from "markdown docs + skills" all the way to **live, tested, funnel-wired product**.
-
-1. **Reviewed** skills + context. Flagged 2 big gaps: dual brand palette (old purple/orange vs master HFZ), and `supabase-xp` skill was Next.js in a Vite repo.
-2. **L5 page pedagogy fixes** — 🔴→💡, per-step ⏱️ times, Vite + master palette in the capstone prompt blocks; aligned Step 1 & 2 prompt blocks (no orange, no Next.js).
-3. **Rewrote `supabase-xp`** for Vite — one atomic `SECURITY DEFINER` RPC. Killed: double-award race, missing server-side level lock, Edge-Fn CORS.
-4. **Migration `000035` `claim_level_reward`** — written house-style, idempotent.
-5. **Verified `award_tokens()` live** → switched to named args + stable `p_source_id` (`vibe-level-N`) for ledger-level idempotency on top of the row lock.
-6. **Deployed `000035` to prod** via Supabase MCP `apply_migration` (NOT `supabase db push`). Revoked `anon` EXECUTE (Supabase default privs bypass `revoke from public`). Verified table + RLS + grants.
-7. **End-to-end tested** `claim_level_reward` against a real user in a rolled-back txn — happy path, idempotency, server lock, invalid, real `award_tokens` balance bump, ledger rows. Zero persistence.
-8. **Built the frontend** — `useProgress` hook, `vibeLabs.ts` registry, 5 shared components, 5 level pages + hub, routed in `App.tsx`. HFZ Tailwind tokens, CSS-only motion (no framer dep in repo), reduced-motion safe.
-9. **Navbar link** → `🧪 Vibe Labs`.
-10. **Landing funnel** — hero ghost CTA, then the rich "Pick your first Big AI" section (asymmetric: featured L1 + path rail), then progress-aware ✓ marks for logged-in returners.
-11. Every step: TS + ESLint + `vite build` green, pushed, Vercel deploy confirmed READY + serving live (bundle-hash flip verified each time).
-
-## Files pushed this session
-- `rewrites/HYPERFOCUS_FULLSTACK_LEVEL5_PAGE.md` ✅ (pedagogy + prompt-block fixes)
-- `skills/supabase-xp/skill.md` ✅ (full Vite rewrite + verified award_tokens wiring)
-- `supabase/migrations/20260518000035_claim_level_reward.sql` ✅ (**deployed to prod**)
-- `frontend/src/hooks/useProgress.ts` ✅
-- `frontend/src/lib/vibeLabs.ts` ✅
-- `frontend/src/components/vibe-labs/` ✅ (VibeLabShell, LevelProgressBar, RewardCard, PromptBlock, LabSection)
-- `frontend/src/pages/vibe-labs/` ✅ (VibeLabsIndex + Level1–5)
-- `frontend/src/App.tsx` ✅ (routes)
-- `frontend/src/components/Navbar.tsx` ✅ (nav link)
-- `frontend/src/pages/LandingPage.tsx` ✅ (hero CTA + rich section + progress-aware band)
-
-Commits: `b165f3f` `e869506` `03066ab` `72fd605` `4eb922d` `36e76d2` `93edfb6` `ae4436a` `43a47ac` `8e9dc1f` `ff74628` — all on `main`, all deployed READY.
-
-## What's live now
-- **Prod DB** (`yhtmuibgdnxhbgboajhc`): `user_level_progress` table + `claim_level_reward` RPC — atomic, idempotent (row lock + ledger dedup), server-side level lock, `authenticated`-only, real-user tested.
-- **Frontend**: `/vibe-labs` hub + `/vibe-labs/level-1..5`; navbar link; landing-page funnel (free CTA → rich section → progress-aware ✓ for returners). All public to view, claim auth-gated.
-
-## ⚠️ Key gotchas (read before touching this again)
-- **NEVER run `supabase db push` on this repo** — local migration filenames are desynced from the remote `schema_migrations` table (zero overlap). It would replay shop/pet migrations the DB already has. Deploy single migrations via **Supabase MCP `apply_migration`**.
-- `award_tokens()` verified sig: `(p_user_id uuid, p_amount int, p_reason text, p_stripe_payment_intent_id text DEFAULT NULL, p_source_id text DEFAULT NULL)`. Ledger dedup = partial unique index `(user_id, reason, source_id) WHERE source_id IS NOT NULL` — always pass a stable `p_source_id`.
-- This repo has **no `framer-motion`** — Vibe Labs motion is CSS-only, reduced-motion gated.
-- Landing-page styling idiom = inline styles + CSS vars + HVZ components (NOT the Tailwind `hfz-*` tokens the lab pages use). Match the file you're in.
-
-## Addendum — video scripts + doc sync (later same session)
-- **NotebookLM source pack** handed over (5 lab-page links + a "build state" text source + starter prompt).
-- **5 Vibe Labs video scripts** written, reviewed, saved + pushed: `video_scripts/VIBE_LAB_LEVEL1..5_VIDEO_SCRIPT.md`. Same 7-beat pedagogy voice; rewards verified vs deployed RPC; standard fixes applied every time (claim **on the lab page** not a dashboard, real badge strings, no orange).
-- **L3 source drift fixed at root** — `rewrites/TRAE_IDE_AGENTS_LAB_LEVEL3_PAGE.md` wrongly granted "Meta-Architect" (that's the L5 badge) → corrected to **Trae Agent Master**, claim-on-page, orange→violet/cyan.
-- **`video_scripts/README.md`** updated — added the Vibe Labs track table + pipeline + verified-reward note.
-- Commits this addendum: `7732c0a` `a42f165` `9c3feee` `f8a7062` `3edc3f4` `eb87f50` `<readme/snapshot sync>`.
-
-## Addendum 2 — HyperLabs review + perf + auth-truth (later same session)
-- **Comprehensive HyperLabs page review** written + saved: `rewrites/HYPERLABS_PAGE_REVIEW_2026-05-19.md`. Self-corrected two wrong first-pass claims after code inspection (error boundary already existed/wired; web3 was at the app root so lazy-routes alone wouldn't fix LCP).
-- **Sprint 1 (`0cd772a`, live):** route code-splitting (`React.lazy`+`Suspense`) + route-scoped `ErrorBoundary` in `App.tsx`. Entry chunk **1,270 kB → 587 kB** gzip 340→176.
-- **Sprint 2 (`4c16b0c`, live):** lifted Wagmi/RainbowKit/QueryClient out of `main.tsx`'s eager root into a **lazy `src/components/Web3Provider.tsx` wrapping ONLY the `/pets` route**. Entry **587 → ~61 kB** gzip 176→16. metamask-sdk/wagmi now `/pets`-only lazy chunks. Verified blast radius: only 4 files use wagmi (`main.tsx`, `lib/wagmi.ts`, `useMintPet.ts`, `MintPetButton.tsx`); react-query is wagmi-only.
-- **Review doc updated (`0cb0402`)** — Sprints 1&2 marked ✅ with measured numbers; verdict 7.5→9.
-- **Auth-truth (`949f733`):** added real `authError` state to `context/auth.ts` (was silently swallowed → looked signed-out). New `useAuthStatus` hook (auth-only, no wagmi). `AuthStatusBadge` in Navbar (authed shell, not funnel). `WalletStatusBadge` on `/pets` only (inside Web3Provider). Also fixed a pre-existing `set-state-in-effect` ERROR in `Pets.tsx` (ref not state; behaviour identical) that blocked the pre-commit hook.
-- Commits this addendum: `2e86207` `0cd772a` `4c16b0c` `0cb0402` `949f733` + this snapshot/handover sync.
-
-## Addendum 3 — Sprint 3 (a11y / perf polish) COMPLETE (later same session)
-All 4 review §5 Sprint-3 items shipped, deployed READY (`3bef345`, **Vercel-MCP verified `state:READY`**), a11y-certified:
-- **Item 1 — 16px floor (`7a5585a`, live):** `hfz-caption` token 12→14px in `tailwind.config.js` (one line, clears all 11 lab `text-hfz-caption` usages). LandingPage's ~25 inline sub-16px values catalogued + **deferred** (out of Sprint 3 scope, separate pass).
-- **Item 2 — fonts (`df8eac2`, live):** discovered the branded fonts **never loaded** (zero woff2 in repo; `@font-face` only in the *unimported* `styles/globals.css` → every user got Arial/Consolas). Added 8 OFL woff2 to `public/fonts`, moved `@font-face` (`font-display:swap`) into the LIVE `index.css`, preloaded the 2 LCP faces (SpaceGrotesk-Bold 700 + Inter-Regular 400). No 800 face — Space Grotesk axis tops at 700; `hfz-display:800`→700 by design.
-- **Item 3 — 44px targets (`45e0acd`, live):** `LevelProgressBar` dots `h-9 w-9`→`h-11 w-11` (36→44px, WCAG 2.5.5 AAA).
-- **Item 4 — axe + Lighthouse certify (`87331c5` + `a5ec6da`, merged `3bef345`):** added `@axe-core/playwright` + reusable `tests/vibe-labs-a11y.spec.ts` (runs via `npm run test:e2e`). It caught **2 pre-existing serious bugs** an eyeball pass would've shipped: (a) `aria-prohibited-attr` — locked-dot `<span aria-label>` with no role → fixed `role="img"`; (b) `color-contrast` — `hfz.text.disabled #3D4F6E` ≈2:1 (failed AA app-wide, ~30 usages), compounded by locked-card `opacity-70`. Fixed via **design-brain**: token → **`#7E8FB5`** (same hue, ≈5.3:1, keeps the 3-step ramp) + removed `opacity-70`. **axe cert: both pages GREEN (0 violations).** **Lighthouse (local `vite preview` prod build, system Chrome): `/vibe-labs` + `/vibe-labs/level-1` = A11Y 100 / Best-Practices 100, `color-contrast` + `target-size` PASS, zero failing audits.**
-- Review §5 High/Medium polish fully closed. `styles/globals.css` remains dead code (flagged inline in `index.css`) — delete its dead `@font-face` block in a separate cleanup.
-- Commits this addendum: `7a5585a` `df8eac2` `45e0acd` `87331c5` `a5ec6da` `3bef345` (Lyndz parallel-workflow merges) + this snapshot/handover sync.
-
-## ⚠️ Open human-only gates (cannot be done by Claude — need a real browser)
-1. **15-step auth checklist** — now a fast eyeball pass (badge can't lie). Key test: kill network during profile load → must show **`Auth error`**, not `Signed out`.
-2. **`/pets` wallet smoke test** — Connect Wallet → RainbowKit modal → mint inits (owed since Sprint 2 + new `Wallet ready` pill).
-3. **Real Core Web Vitals read** — `@vercel/speed-insights` is installed; pull before/after LCP/INP/CLS from the Vercel dashboard. All CWV in the review are *estimates*.
-
-## What's next (for the next session)
-- Close the 3 gates above (see `NEXT_SESSION_HANDOVER_2026-05-19.md` for how — esp. use the existing **Playwright** harness for the auth checklist).
-- ~~Sprint 3~~ ✅ **DONE** (see Addendum 3) — a11y-certified (axe + Lighthouse 100/100), deployed live.
-- **Sprint 4 (NEXT, headline):** anon→signup conversion (persist `completedLevels` in localStorage, gate the claim) — the funnel multiplier.
-- Optional: NotebookLM deep-dive buttons; record the 5 lab videos.
-
-## Key decisions
-- Master HFZ palette is authoritative for this repo (no orange). Lab pages use Tailwind `hfz-*` tokens; landing page keeps its own CSS-var idiom.
-- Reward logic = one atomic DB RPC, not an Edge Function (Vite SPA, no CORS, can't be spoofed).
-- Wire into the existing `award_tokens()`/`token_transactions` economy — never a parallel coin system.
-- Landing funnel: free taste (labs) before the ask (waitlist/course); returners see their own progress.
-
-## Mood
-🟢🔥 Monster session. Docs → deployed RPC → real-user tested → full wired frontend → live funnel. Every deploy green. Nice one BROski♾️
+# 🧠 SESSION SNAPSHOT — 2026-05-19
+> Built with Perplexity AI (Comet) + @welshDog
+> Time: ~6:20–7:05 PM BST
+> Repo: github.com/welshDog/Hyper-Vibe-Coding-Course
 
 ---
 
-*Built by Lyndz Williams + Claude (Opus 4.7) ♾️🚀*
-*Hyperfocus z0ne — Stop apologising for your brain. Start building.*
+## ✅ WHAT GOT DONE THIS SESSION
+
+### 1. Vibe Labs — Nav + Footer Fix
+- **Problem:** `/vibe-labs` and all `/vibe-labs/level-*` pages were outside the shared Layout — no Nav, no Footer
+- **Fix:** Created 6 new page components + moved all routes inside `<Route path="/" element={<Layout />}>` in `App.tsx`
+- **Files pushed:**
+  - `src/pages/VibeLabs.tsx` — hub page with 5 levels, locked/unlocked states, XP values
+  - `src/pages/vibe-labs/Level1.tsx` — full STOP/WHY/HOW/WIN structure
+  - `src/pages/vibe-labs/Level2.tsx` through `Level5.tsx` — peeking banners + redirect to previous level
+  - `src/App.tsx` — updated with vibe-labs routes inside Layout
+- **Commit:** `53470170`
+
+### 2. Forgot Password Page
+- **Problem:** `/login` had no forgot password link — users were stuck
+- **Fix:** Added `ForgotPassword` component to `Auth.tsx` using `supabase.auth.resetPasswordForEmail()`
+  - Success state: "Check your inbox" message
+  - Error handling
+  - "Forgot your password?" link added below password field on Login form
+  - Route `/forgot-password` added to `App.tsx`
+- **Commit:** `cd2c8f88`
+
+### 3. Footer — Full HyperFocus Z0ne Redesign
+- **Problem:** Footer was plain white, generic, didn't match site identity, had routes that 404'd (`/instructors`)
+- **Fix:** Full dark-theme redesign of `Footer.tsx`
+  - Dark `bg-[#0a0a0a]` theme
+  - Hyper Vibe Z0ne logo + "Built in Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁧 by @welshDog" tagline
+  - `v0.9 · Beta · All systems green` status line
+  - 4 columns: Product / Community / Brand / Start Here
+  - All real routes — no dead links
+  - External GitHub link
+  - `© 2026 HyperFocus Z0ne · Keep it weird, keep it Welsh.`
+  - `ENTER · THE · Z0NE` in purple mono
+- **Commit:** `e83723d6`
+
+### 4. BROski$ Nav Balance — Already Fixed
+- **Checked:** `Navbar.tsx` already conditionally hides balance for logged-out users
+- **Action:** No change needed ✅
+
+### 5. Module Subtitle Column (Supabase DB)
+- **Problem:** Module codes M1–M10 consistent in DB, but internal audit names (e.g. "Stripe Walkthrough") didn't match punchy student-facing titles (e.g. "Build Your Money Engine")
+- **Fix:** Added `subtitle TEXT` column to `hv_modules` table via migration
+- **Migration:** `add_subtitle_to_hv_modules`
+- **All 11 modules populated** with technical subtitles
+- **Project:** `yhtmuibgdnxhbgboajhc` (eu-west-2)
+
+### 6. Subtitle on Course Cards (UI)
+- **Fix:** Updated `Courses.tsx` to fetch + display `subtitle` below the punchy title
+  - Big white title = student-facing
+  - Small grey mono subtitle = technical/internal name
+- **Commit:** `99a9b05e`
+
+---
+
+## 📊 MODULE REFERENCE (canonical as of this session)
+
+| Code | Student Title | Technical Subtitle | Level |
+|------|--------------|-------------------|-------|
+| M1 | Turn On Your AI Brain | Your AI Brain | Beginner |
+| M2 | Prompt Like a Pro | Prompt Engineering | Beginner |
+| M3 | Build Your First App | First Full-Stack App | Intermediate |
+| M4 | Build Your Money Engine | Stripe Walkthrough | Intermediate |
+| M5 | Build Your Agent Crew | Agent Swarm Basics | Advanced |
+| M5B | Wire Up the Watchers | Observability + Monitoring | Advanced |
+| M6 | Give Your Agent a Passport | Web3 Plain English | Advanced |
+| M7 | Build a Pet That Remembers You | BROski$ Pets + dNFT | Advanced |
+| M8 | Make Your AI Agent Worth Something | Web3 Token Value | Hyper-Pro |
+| M9 | Protect Your Empire | Security + SRE | Hyper-Pro |
+| M10 | You Built an Empire. Now Ship It. | Graduation — Meta-Architect | Elite |
+
+---
+
+## 🟡 STILL TO DO (next session)
+
+### P0 — Claude Code owns these in terminal
+- [ ] Dashboard + Courses infinite loading (Supabase session listener not resolving)
+- [ ] Module pages skeleton never resolving (possible RLS policy issue)
+- [ ] Leaderboard/Quests/Tokens/Shop — add auth gate (copy `/pets` pattern)
+
+### P1 — Next quick wins
+- [ ] Privacy page stub (`/privacy`)
+- [ ] Terms page stub (`/terms`)
+- [ ] Level 1 lab content — flesh out the full interactive mission
+- [ ] Level 2-5 full content (once M2-M6 rewrites are complete)
+
+### P2 — Course audit rewrites still pending
+- [ ] M2+M2b merge decision
+- [ ] M3 Win Summary rewrite
+- [ ] M5 Observability split
+- [ ] M6 M5→M6 handoff
+- [ ] M7 Prompt Injection intro
+- [ ] M10 Graduation reframe
+
+---
+
+## 🚀 NEXT SESSION — START HERE
+
+**First task:** Fix Dashboard + Courses infinite loading
+- Search for `useSession` / `onAuthStateChange` in codebase
+- Find where "Session refreshing..." state is set and never cleared
+- Add timeout fallback or check for missing env vars on deployed branch
+
+**Then:** Wire auth gate on Leaderboard/Quests/Tokens/Shop (copy `/pets` pattern)
+
+---
+
+## 📝 PASTE INTO NOTEBOOKLM
+Add this file as a source in your NotebookLM session to keep the brain up to date.
+Title it: `Session Snapshot — May 19 2026`
+
+---
+
+*Built by @welshDog + Perplexity AI — May 19, 2026*
+*"Stop apologising for your brain. Start building."*
