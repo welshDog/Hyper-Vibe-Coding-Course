@@ -95,7 +95,7 @@ export default {
         'hfz-body-lg': ['18px', { lineHeight: '1.8' }],
         'hfz-body':    ['16px', { lineHeight: '1.6' }],
         'hfz-label':   ['14px', { lineHeight: '1.4',  letterSpacing: '0.05em', fontWeight: '600' }],
-        'hfz-caption': ['12px', { lineHeight: '1.4' }],
+        'hfz-caption': ['14px', { lineHeight: '1.4' }],
         'hfz-code':    ['14px', { lineHeight: '1.6' }],
       },
 
