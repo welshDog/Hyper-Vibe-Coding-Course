@@ -38,6 +38,8 @@ const CourseModule = lazy(() => import('./pages/CourseModule'));
 const PetsPage = lazy(() => import('./pages/Pets'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Terms = lazy(() => import('./pages/Terms'));
+// Wallet/web3 stack — loaded only when the /pets route mounts (see Web3Provider).
+const Web3Provider = lazy(() => import('./components/Web3Provider'));
 const VibeLabsIndex = lazy(() => import('./pages/vibe-labs/VibeLabsIndex'));
 const Level1Claude = lazy(() => import('./pages/vibe-labs/Level1Claude'));
 const Level2AiStudio = lazy(() => import('./pages/vibe-labs/Level2AiStudio'));
@@ -115,7 +117,14 @@ function App() {
                 <Route path="catalog" element={<CourseCatalog />} />
                 <Route path="catalog/:id" element={<CourseDetail />} />
                 <Route path="leaderboard" element={<Leaderboard />} />
-                <Route path="pets" element={<PetsPage />} />
+                <Route
+                  path="pets"
+                  element={
+                    <Web3Provider>
+                      <PetsPage />
+                    </Web3Provider>
+                  }
+                />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="terms" element={<Terms />} />
                 <Route

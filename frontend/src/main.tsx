@@ -1,16 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import '@rainbow-me/rainbowkit/styles.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { setupErrorTracking } from './utils/errorHandler'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { Analytics } from '@vercel/analytics/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider } from 'wagmi'
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
-import { wagmiConfig } from './lib/wagmi'
+
+// Web3 (wagmi/rainbowkit/metamask-sdk + its react-query peer) is NOT mounted
+// here anymore. It lives in src/components/Web3Provider.tsx, lazy-loaded by
+// App.tsx and wrapped around the /pets route only — so the public funnel
+// (landing, Vibe Labs) never downloads the ~540 kB wallet stack.
 
 // Initialize error tracking
 setupErrorTracking();
@@ -30,20 +30,12 @@ function validateEnvironment() {
 
 validateEnvironment();
 
-const queryClient = new QueryClient()
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <WagmiProvider config={wagmiConfig}>
-        <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider theme={darkTheme()}>
-            <App />
-            <SpeedInsights />
-            <Analytics />
-          </RainbowKitProvider>
-        </QueryClientProvider>
-      </WagmiProvider>
+      <App />
+      <SpeedInsights />
+      <Analytics />
     </ErrorBoundary>
   </StrictMode>,
 )
