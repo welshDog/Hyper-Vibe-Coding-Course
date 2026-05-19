@@ -9,6 +9,7 @@ interface HvModuleRow {
   id: string;
   code: string;
   title: string;
+  subtitle: string | null;
   emoji: string | null;
   level: ModuleLevel | string;
   xp_reward: number;
@@ -37,7 +38,7 @@ export default function Courses() {
       setError(null);
       const { data, error } = await supabase
         .from('hv_modules')
-        .select('id, code, title, emoji, level, xp_reward, coin_reward, slug')
+        .select('id, code, title, subtitle, emoji, level, xp_reward, coin_reward, slug')
         .order('code', { ascending: true });
 
       if (error) {
@@ -152,9 +153,18 @@ export default function Courses() {
                   </span>
                 </div>
 
+                {/* Punchy student-facing title */}
                 <h2 className="text-white font-semibold text-lg mt-4 leading-snug">
                   {mod.title}
                 </h2>
+
+                {/* Technical subtitle — smaller, muted */}
+                {mod.subtitle && (
+                  <p className="text-xs text-gray-500 mt-1 font-mono">
+                    {mod.subtitle}
+                  </p>
+                )}
+
                 {isCompleted ? (
                   <div className="mt-2 text-sm font-semibold text-emerald-200">
                     ✅ Completed
