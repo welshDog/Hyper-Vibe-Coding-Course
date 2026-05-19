@@ -85,7 +85,7 @@ export default function VibeLabsIndex() {
                   key={lvl.id}
                   style={style}
                   aria-label={`${lvl.title} — locked. Finish Level ${lvl.id - 1} to unlock.`}
-                  className={`${cardBase} cursor-not-allowed border-hfz-border-soft bg-hfz-midnight/40 opacity-70`}
+                  className={`${cardBase} cursor-not-allowed border-hfz-border-soft bg-hfz-midnight/40`}
                 >
                   {inner}
                 </div>

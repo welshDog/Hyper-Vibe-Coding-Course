@@ -42,7 +42,7 @@ export default {
           text: {
             primary:   '#F0F4FF',
             secondary: '#8B9CC8',
-            disabled:  '#3D4F6E',
+            disabled:  '#7E8FB5', // Sprint 3 item 4: was #3D4F6E (~2:1, failed WCAG AA). Same hue, AA-pass (~5.3:1 worst bg).
           },
           rarity: {
             'common':         '#60A5FA',

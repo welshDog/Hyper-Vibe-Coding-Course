@@ -89,7 +89,11 @@
     --color-danger-red: #EF4444;
     --color-text-primary: #F0F4FF;
     --color-text-secondary: #8B9CC8;
-    --color-text-disabled: #3D4F6E;
+    /* Sprint 3 item 4: was #3D4F6E (~2:1, failed WCAG AA). Kept in sync
+       with tailwind.config.js hfz.text.disabled. NOTE: styles/globals.css
+       has a dead (unimported) duplicate of this var — intentionally NOT
+       synced; index.css is the live source of truth. */
+    --color-text-disabled: #7E8FB5;
     --color-bg: var(--color-space-black);
     --color-surface: var(--color-midnight-blue);
     --color-border: var(--color-text-disabled);
