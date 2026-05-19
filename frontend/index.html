@@ -43,6 +43,12 @@
     <!-- DNS prefetch for Supabase to cut TTFB -->
     <link rel="dns-prefetch" href="https://yhtmuibgdnxhbgboajhc.supabase.co" />
     <link rel="preconnect" href="https://yhtmuibgdnxhbgboajhc.supabase.co" crossorigin />
+
+    <!-- Preload the two LCP-critical fonts: heading (Space Grotesk Bold
+         700 — all h1–h6 are font-bold) + body (Inter Regular 400).
+         crossorigin is mandatory: fonts always fetch in CORS mode. -->
+    <link rel="preload" href="/fonts/space-grotesk/SpaceGrotesk-Bold.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter/Inter-Regular.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>
