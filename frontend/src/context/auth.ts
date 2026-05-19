@@ -44,6 +44,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 let authRequestId = 0
 
+/** Watchdog: `loading` must never stick `true` forever if a profile lookup
+ *  wedges (auth-lock contention, dead network, RLS stall). The whole app is
+ *  gated on store `loading` (App.tsx PrivateRoute), so a stuck flag = the
+ *  May-19 P0 infinite-load. Snapshot 2026-05-19 explicitly: "add timeout
+ *  fallback". */
+const PROFILE_LOAD_TIMEOUT_MS = 8000
+let loadingWatchdog: ReturnType<typeof setTimeout> | null = null
+
+function clearLoadingWatchdog() {
+  if (loadingWatchdog !== null) {
+    clearTimeout(loadingWatchdog)
+    loadingWatchdog = null
+  }
+}
+
 async function loadUserProfile(userId: string) {
   const { data: userProfile, error } = await supabase
     .from('users')
@@ -61,6 +76,19 @@ async function applySession(session: Session | null) {
 
   set({ session, loading: true })
 
+  clearLoadingWatchdog()
+  loadingWatchdog = setTimeout(() => {
+    // Still the live request and still spinning → the profile lookup is
+    // wedged. Release the UI and tell the truth rather than infinite-load
+    // the whole app behind the store `loading` gate.
+    if (requestId !== authRequestId) return
+    if (!useAuthStore.getState().loading) return
+    useAuthStore.setState({
+      loading: false,
+      authError: session?.user ? 'profile_load_timeout' : null,
+    })
+  }, PROFILE_LOAD_TIMEOUT_MS)
+
   try {
     if (!session?.user) {
       set({ user: null, authError: null })
@@ -77,13 +105,23 @@ async function applySession(session: Session | null) {
     set({ user: null, authError: 'profile_load_failed' })
   } finally {
     if (requestId === authRequestId) {
+      clearLoadingWatchdog()
       set({ loading: false })
     }
   }
 }
 
-supabase.auth.onAuthStateChange(async (_, session) => {
-  await applySession(session)
+// Supabase v2 holds an internal auth lock for the lifetime of this callback.
+// Awaiting a Supabase *data* query (loadUserProfile → from('users')) directly
+// inside it deadlocks the lock → applySession's finally never runs → store
+// `loading` sticks true → every store-loading-gated route (Dashboard,
+// Courses, module pages) infinite-loads. Defer to a fresh macrotask so the
+// auth lock is released before we touch the DB. Documented Supabase gotcha;
+// P0 fix — snapshot 2026-05-19.
+supabase.auth.onAuthStateChange((_, session) => {
+  setTimeout(() => {
+    void applySession(session)
+  }, 0)
 })
 
 async function initializeAuth() {
@@ -91,6 +129,7 @@ async function initializeAuth() {
     const { data } = await supabase.auth.getSession()
     await applySession(data.session)
   } catch {
+    clearLoadingWatchdog()
     useAuthStore.setState({
       user: null,
       session: null,
