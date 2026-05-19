@@ -60,6 +60,11 @@ and show the total I need to pay.`}
           your head — on a live preview.
         </p>
         <p>Pause. Screenshot it. That's real. You guided a working app into existence.</p>
+        <p>
+          <strong>What you can now change:</strong> ask Claude for a custom tip
+          %, a different accent, or bill-splitting. Same loop, your variation —
+          that's the skill, not the app.
+        </p>
       </LabSection>
 
       <LabSection kind="help" icon="🆘" title="If things break — this trips everyone up">

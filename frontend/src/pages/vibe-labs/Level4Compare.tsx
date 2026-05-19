@@ -102,6 +102,10 @@ export default function Level4Compare() {
           </li>
         </ol>
         <p>That's a full production app across three tools. No manual coding.</p>
+        <p>
+          <strong>What you can now decide:</strong> which tool for which job.
+          You're choosing the weapon now, not following one.
+        </p>
       </LabSection>
 
       <LabSection kind="help" icon="🆘" title="5 common mistakes — everyone makes these">

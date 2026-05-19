@@ -76,6 +76,11 @@ and deploy to Vercel with environment variables set up.`}
           Not a screenshot. A real app, built by you, powered by your brain,
           deployed to the world. That's the Meta-Architect moment.
         </p>
+        <p>
+          <strong>What you can now change:</strong> everything — you ran plan →
+          build → ship end-to-end. Next idea = same loop, your content. That's
+          Meta-Architect.
+        </p>
       </LabSection>
 
       <LabSection kind="help" icon="🆘" title="When you're stuck — there's always a next step">

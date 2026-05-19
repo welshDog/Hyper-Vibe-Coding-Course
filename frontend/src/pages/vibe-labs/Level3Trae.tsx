@@ -60,6 +60,11 @@ Deploy it to Vercel when it's ready.`}
           preview — a real URL you can share.
         </p>
         <p>That's a deployed app built entirely from a prompt. Production-level vibe coding.</p>
+        <p>
+          <strong>What you can now change:</strong> re-brief the crew for a
+          feature or fix, then redeploy. You can ship changes, not just a first
+          build.
+        </p>
       </LabSection>
 
       <LabSection kind="help" icon="🆘" title="If SOLO Mode goes off track — normal">

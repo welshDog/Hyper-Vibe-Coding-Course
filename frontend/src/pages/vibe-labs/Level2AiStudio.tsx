@@ -56,6 +56,10 @@ and a session history list with a timestamp for each completed session.`}
           Click <em>Add Database</em> — your timer now saves sessions for real.
         </p>
         <p>You just went full stack without writing a line of SQL.</p>
+        <p>
+          <strong>What you can now change:</strong> tell AI Studio to save a new
+          field or add a screen. You own a full-stack loop now, not one timer.
+        </p>
       </LabSection>
 
       <LabSection kind="help" icon="🆘" title="If things break — totally normal">
