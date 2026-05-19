@@ -74,6 +74,7 @@ export function LevelProgressBar({ currentId, completedLevels, unlocked }: Props
               </Link>
             ) : (
               <span
+                role="img"
                 aria-label={`Level ${lvl.id}: ${lvl.title} (locked — finish Level ${
                   lvl.id - 1
                 } to unlock)`}
