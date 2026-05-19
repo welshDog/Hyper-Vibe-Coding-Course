@@ -25,7 +25,6 @@ export function Login() {
       });
 
       if (error) throw error;
-      // Identify the user in PostHog so all subsequent events are linked to them
       if (data.user) {
         identifyUser(data.user.id, {
           email: data.user.email,
@@ -103,6 +102,15 @@ export function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+              {/* Forgot password link — below the password field */}
+              <div className="text-right mt-2">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm font-medium text-primary hover:text-primary-hover"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
             </div>
 
             <div>
@@ -137,7 +145,6 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  // BUG-014: show success state instead of silent redirect
   const [success, setSuccess] = useState(false);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,7 +177,6 @@ export function Register() {
       });
 
       if (error) throw error;
-      // BUG-014: show confirmation message — don't silently redirect
       setSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -183,7 +189,6 @@ export function Register() {
     }
   };
 
-  // ── Success state ──────────────────────────────────────────────────────
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -301,6 +306,114 @@ export function Register() {
               <Button type="submit" className="w-full" disabled={loading || !!passwordError}>
                 {loading ? 'Creating account...' : 'Create account'}
               </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ForgotPassword() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong. Try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
+            <div className="text-4xl mb-4">📬</div>
+            <h2 className="text-2xl font-bold text-gray-900">Check your inbox!</h2>
+            <p className="mt-3 text-gray-600">
+              We sent a reset link to <strong>{email}</strong>.
+            </p>
+            <p className="mt-2 text-sm text-gray-500">
+              No email? Check spam — or try again in a minute.
+            </p>
+            <Link
+              to="/login"
+              className="mt-6 inline-block text-primary font-medium hover:underline text-sm"
+            >
+              ← Back to login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Reset your password
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Enter your email and we'll send you a reset link.
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleReset}>
+            {error && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <div className="mt-1">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Sending...' : 'Send reset link ✉️'}
+              </Button>
+            </div>
+
+            <div className="text-center">
+              <Link to="/login" className="text-sm text-gray-500 hover:text-gray-700">
+                ← Back to login
+              </Link>
             </div>
           </form>
         </div>

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Layout } from './components/Layout';
 import { AuthInitializer } from './components/AuthInitializer';
 import LandingPage from './pages/LandingPage';
-import { Login, Register } from './pages/Auth';
+import { Login, Register, ForgotPassword } from './pages/Auth';
 import CourseCatalog from './pages/CourseCatalog';
 import CourseDetail from './pages/CourseDetail';
 import Pricing from './pages/Pricing';
@@ -34,10 +34,6 @@ import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
 
-/**
- * PrivateRoute — waits for auth to resolve before redirecting
- * Uses loading state so pages don't flash to /login on refresh
- */
 function PrivateRoute({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuthStore();
 
@@ -68,8 +64,6 @@ function PrivateRoute({ children }: { children: React.ReactElement }) {
 function App() {
   const { user } = useAuthStore();
   return (
-    // AuthInitializer wraps everything — runs getSession + onAuthStateChange ONCE
-    // This is what keeps users logged in across all pages
     <AuthInitializer>
       <HUDProvider userId={user?.id}>
         <Router>
@@ -78,6 +72,7 @@ function App() {
               <Route index element={<LandingPage />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
+              <Route path="forgot-password" element={<ForgotPassword />} />
               <Route path="pricing" element={<Pricing />} />
               <Route path="courses" element={<Courses />} />
               <Route path="courses/:slug" element={<CourseModule />} />
