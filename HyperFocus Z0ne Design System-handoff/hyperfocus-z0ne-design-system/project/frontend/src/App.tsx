@@ -24,6 +24,12 @@ import Leaderboard from './pages/Leaderboard';
 import Quests from './pages/Quests';
 import Courses from './pages/Courses';
 import CourseModule from './pages/CourseModule';
+import VibeLabs from './pages/VibeLabs';
+import VibeLabLevel1 from './pages/vibe-labs/Level1';
+import VibeLabLevel2 from './pages/vibe-labs/Level2';
+import VibeLabLevel3 from './pages/vibe-labs/Level3';
+import VibeLabLevel4 from './pages/vibe-labs/Level4';
+import VibeLabLevel5 from './pages/vibe-labs/Level5';
 import { useAuthStore } from './context/auth';
 import AdminRoute from './components/PrivateRoute';
 import { HUDProvider } from './context/HUDContext';
@@ -131,6 +137,13 @@ function App() {
                   </PrivateRoute>
                 }
               />
+              {/* ⚡ Vibe Labs — inside Layout so Nav + Footer appear on all levels */}
+              <Route path="vibe-labs" element={<VibeLabs />} />
+              <Route path="vibe-labs/level-1" element={<VibeLabLevel1 />} />
+              <Route path="vibe-labs/level-2" element={<VibeLabLevel2 />} />
+              <Route path="vibe-labs/level-3" element={<VibeLabLevel3 />} />
+              <Route path="vibe-labs/level-4" element={<VibeLabLevel4 />} />
+              <Route path="vibe-labs/level-5" element={<VibeLabLevel5 />} />
               <Route element={<AdminRoute role="admin" />}>
                 <Route path="admin" element={<Admin />} />
               </Route>
