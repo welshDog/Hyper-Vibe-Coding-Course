@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Check, Lock } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react'
 import { VIBE_LEVELS } from '../../lib/vibeLabs'
 import { useProgress } from '../../hooks/useProgress'
 
@@ -22,6 +22,16 @@ export default function VibeLabsIndex() {
       />
 
       <div className="relative mx-auto w-full max-w-4xl px-hfz-5 py-hfz-9">
+        {/* Escape hatch — the hub must never be a dead end for the
+            "I don't want a course" path. Mirrors VibeLabShell's
+            "Back to Labs" ghost-link idiom for cross-surface consistency. */}
+        <Link
+          to="/"
+          className="mb-hfz-6 inline-flex items-center gap-1.5 rounded-hfz-sm text-hfz-label text-hfz-text-secondary transition-colors hover:text-hfz-cyan outline-none focus-visible:ring-2 focus-visible:ring-hfz-violet-light/70 focus-visible:ring-offset-2 focus-visible:ring-offset-hfz-space-black"
+        >
+          <ArrowLeft size={15} /> Hyper Vibe home
+        </Link>
+
         <header className="max-w-2xl">
           <p className="font-mono text-hfz-label uppercase tracking-hfz-caps text-hfz-cyan">
             Hyperfocus z0ne · Vibe Coding Labs
