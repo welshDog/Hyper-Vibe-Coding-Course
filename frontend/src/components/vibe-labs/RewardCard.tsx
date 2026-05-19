@@ -1,17 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Lock, Sparkles, Trophy } from 'lucide-react'
+import { Lock, PartyPopper, Sparkles, Trophy } from 'lucide-react'
 import type { VibeLevel } from '../../lib/vibeLabs'
 import type { ClaimOutcome } from '../../hooks/useProgress'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 
 interface Props {
   level: VibeLevel
-  claimed: boolean
+  /** Level complete — local (anon) OR server-banked. */
+  earned: boolean
+  /** Complete AND server-backed (logged-in). */
+  banked: boolean
   unlocked: boolean
   isLoggedIn: boolean
   claiming: boolean
   onClaim: () => Promise<ClaimOutcome>
+  /** Anon-only: mark earned locally ("I built it ✓"). */
+  onCompleteLocally: () => void
+  /** Signup URL carrying a returnTo back to this lab. */
+  bankHref: string
+  /** Login URL (returning users) carrying the same returnTo. */
+  loginHref: string
 }
 
 /**
@@ -55,21 +64,28 @@ const ERROR_COPY: Record<string, string> = {
 
 export function RewardCard({
   level,
-  claimed,
+  earned,
+  banked,
   unlocked,
   isLoggedIn,
   claiming,
   onClaim,
+  onCompleteLocally,
+  bankHref,
+  loginHref,
 }: Props) {
   const [celebrating, setCelebrating] = useState(false)
   const [justClaimed, setJustClaimed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Derived — no prop→state effect. Earned if the server already had it,
-  // or we just claimed it this session.
-  const earned = claimed || justClaimed
-  const xp = useCountUp(level.xp, earned)
-  const coins = useCountUp(level.coins, earned)
+  // Derived — no prop→state effect. Earned if the server/store already had
+  // it, or it was just earned this session (server claim or local mark).
+  const earnedNow = earned || justClaimed
+  // Banked = it's truly in their wallet (logged-in + server). An anon who
+  // earned locally is earnedNow-but-NOT-banked → the conversion moment.
+  const bankedNow = (banked || (justClaimed && isLoggedIn))
+  const xp = useCountUp(level.xp, earnedNow)
+  const coins = useCountUp(level.coins, earnedNow)
 
   const handleClaim = async () => {
     setError(null)
@@ -83,25 +99,36 @@ export function RewardCard({
     }
   }
 
+  const handleCompleteLocally = () => {
+    setError(null)
+    setCelebrating(true)
+    onCompleteLocally() // parent re-renders with `earned` → drives the count-up
+  }
+
   // ---- Locked ----
-  if (!unlocked && !earned) {
+  if (!unlocked && !earnedNow) {
     return (
       <div className="rounded-hfz-lg border border-hfz-border-soft bg-hfz-midnight/50 p-hfz-6 text-center">
         <Lock className="mx-auto mb-hfz-3 text-hfz-text-disabled" size={24} />
         <p className="text-hfz-body text-hfz-text-secondary">
-          Locked — claim <strong className="text-hfz-text-primary">Level {level.id - 1}</strong>{' '}
+          Locked — {isLoggedIn ? 'claim' : 'finish'}{' '}
+          <strong className="text-hfz-text-primary">Level {level.id - 1}</strong>{' '}
           first to open this reward.
         </p>
       </div>
     )
   }
 
+  const accentEarned = bankedNow ? 'text-hfz-gold' : 'text-hfz-cyan'
+
   return (
     <div
       className={[
         'relative overflow-hidden rounded-hfz-lg border p-hfz-7 text-center transition-[box-shadow,border-color] duration-500',
-        earned
-          ? 'border-hfz-gold/60 bg-hfz-deep-violet shadow-hfz-glow-gold'
+        earnedNow
+          ? bankedNow
+            ? 'border-hfz-gold/60 bg-hfz-deep-violet shadow-hfz-glow-gold'
+            : 'border-hfz-cyan/50 bg-hfz-deep-violet shadow-hfz-glow-violet'
           : 'border-hfz-border-violet bg-hfz-midnight',
         celebrating &&
           'motion-safe:animate-[vl-reward_700ms_cubic-bezier(0.16,1,0.3,1)]',
@@ -113,24 +140,38 @@ export function RewardCard({
         aria-hidden
         className={[
           'mx-auto mb-hfz-4 grid h-14 w-14 place-items-center rounded-hfz-full',
-          earned ? 'bg-hfz-gold/15 text-hfz-gold' : 'bg-hfz-violet/15 text-hfz-violet-light',
+          earnedNow
+            ? bankedNow
+              ? 'bg-hfz-gold/15 text-hfz-gold'
+              : 'bg-hfz-cyan/15 text-hfz-cyan'
+            : 'bg-hfz-violet/15 text-hfz-violet-light',
         ].join(' ')}
       >
-        {earned ? <Trophy size={26} /> : <Sparkles size={26} />}
+        {!earnedNow ? (
+          <Sparkles size={26} />
+        ) : bankedNow ? (
+          <Trophy size={26} />
+        ) : (
+          <PartyPopper size={26} />
+        )}
       </div>
 
       <p className="font-display text-hfz-h3 text-hfz-text-primary">
-        {earned ? 'Level Complete' : 'Claim Your Reward'}
+        {!earnedNow
+          ? 'Claim Your Reward'
+          : bankedNow
+            ? 'Level Complete'
+            : 'You earned it'}
       </p>
 
       <div className="mt-hfz-4 flex items-center justify-center gap-hfz-6">
         <div>
           <div
             className={`font-mono text-hfz-h2 tabular-nums ${
-              earned ? 'text-hfz-cyan' : 'text-hfz-text-disabled'
+              earnedNow ? accentEarned : 'text-hfz-text-disabled'
             }`}
           >
-            +{earned ? xp : level.xp}
+            +{earnedNow ? xp : level.xp}
           </div>
           <div className="text-hfz-caption uppercase tracking-hfz-label text-hfz-text-secondary">
             XP
@@ -140,10 +181,10 @@ export function RewardCard({
         <div>
           <div
             className={`font-mono text-hfz-h2 tabular-nums ${
-              earned ? 'text-hfz-gold' : 'text-hfz-text-disabled'
+              earnedNow ? accentEarned : 'text-hfz-text-disabled'
             }`}
           >
-            +{earned ? coins : level.coins}
+            +{earnedNow ? coins : level.coins}
           </div>
           <div className="text-hfz-caption uppercase tracking-hfz-label text-hfz-text-secondary">
             BROski$
@@ -155,18 +196,51 @@ export function RewardCard({
         Badge: <strong className="text-hfz-text-primary">{level.badge}</strong>
       </p>
 
-      {earned ? (
+      {/* ---- Closing action: depends on banked / earned / who ---- */}
+      {bankedNow ? (
         <p className="mt-hfz-5 font-display text-hfz-body-lg text-hfz-gold">
           Nice one BROski♾️ — that's yours.
         </p>
+      ) : earnedNow ? (
+        // Anon earned, unbanked — THE conversion moment.
+        <div className="mt-hfz-5">
+          <p className="font-display text-hfz-body-lg text-hfz-cyan">
+            Boom — you did that. 🎉
+          </p>
+          <p className="mt-hfz-2 text-hfz-body text-hfz-text-secondary">
+            Your <strong className="text-hfz-text-primary">+{level.xp} XP</strong> and{' '}
+            <strong className="text-hfz-text-primary">+{level.coins} BROski$</strong> are
+            waiting. Create a free account to bank them — and unlock the next level.
+          </p>
+          <Link
+            to={bankHref}
+            className="mt-hfz-5 inline-block w-full rounded-hfz-md bg-hfz-violet px-hfz-6 py-hfz-4 font-display text-hfz-body-lg font-bold text-white transition-[transform,filter] duration-150 hover:brightness-110 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-hfz-violet-light/70 focus-visible:ring-offset-2 focus-visible:ring-offset-hfz-deep-violet sm:w-auto"
+          >
+            Create a free account to bank it →
+          </Link>
+          <p className="mt-hfz-3 text-hfz-caption text-hfz-text-secondary">
+            Already have one?{' '}
+            <Link to={loginHref} className="text-hfz-cyan hover:text-hfz-violet-light">
+              Log in to bank it
+            </Link>
+          </p>
+        </div>
       ) : !isLoggedIn ? (
-        <Link
-          to="/login"
-          className="mt-hfz-5 inline-block w-full rounded-hfz-md bg-hfz-violet px-hfz-6 py-hfz-4 font-display text-hfz-body-lg font-bold text-white transition-[transform,filter] duration-150 hover:brightness-110 active:scale-[0.98] sm:w-auto"
-        >
-          Log in to claim →
-        </Link>
+        // Anon, unlocked, not yet earned — the dopamine trigger.
+        <div className="mt-hfz-5">
+          <button
+            type="button"
+            onClick={handleCompleteLocally}
+            className="inline-flex w-full items-center justify-center gap-hfz-2 rounded-hfz-md bg-hfz-violet px-hfz-6 py-hfz-4 font-display text-hfz-body-lg font-bold text-white transition-[transform,filter] duration-150 hover:brightness-110 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-hfz-violet-light/70 focus-visible:ring-offset-2 focus-visible:ring-offset-hfz-midnight sm:w-auto"
+          >
+            I built it — mark complete ✓
+          </button>
+          <p className="mt-hfz-3 text-hfz-caption text-hfz-text-secondary">
+            Free · no account needed yet
+          </p>
+        </div>
       ) : (
+        // Logged-in, unlocked, not yet claimed — server claim (unchanged).
         <button
           type="button"
           onClick={handleClaim}

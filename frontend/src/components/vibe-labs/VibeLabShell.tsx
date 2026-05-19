@@ -18,14 +18,24 @@ interface Props {
  */
 export function VibeLabShell({ levelId, children }: Props) {
   const level = getLevel(levelId)
-  const { progress, claiming, claimReward, levelUnlocked, isLevelComplete, isLoggedIn } =
-    useProgress()
+  const {
+    progress,
+    claiming,
+    reconciliation,
+    claimReward,
+    completeLevelLocally,
+    levelUnlocked,
+    isLevelComplete,
+    isLoggedIn,
+  } = useProgress()
 
   if (!level) return null
 
   const next = VIBE_LEVELS.find((l) => l.id === level.id + 1)
-  const claimedThis = isLevelComplete(level.id)
-  const nextUnlocked = next ? claimedThis : false
+  const earnedThis = isLevelComplete(level.id)
+  const banked = earnedThis && isLoggedIn
+  const nextUnlocked = next ? earnedThis : false
+  const returnTo = encodeURIComponent(level.path)
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-hfz-space-black text-hfz-text-primary">
@@ -82,11 +92,16 @@ export function VibeLabShell({ levelId, children }: Props) {
           >
             <ArrowLeft size={15} /> Back to Labs
           </Link>
-          {claimedThis && (
-            <span className="rounded-hfz-full border border-hfz-gold/40 bg-hfz-gold/10 px-hfz-3 py-1 text-hfz-caption font-semibold uppercase tracking-hfz-label text-hfz-gold">
-              ✓ Claimed
-            </span>
-          )}
+          {earnedThis &&
+            (banked ? (
+              <span className="rounded-hfz-full border border-hfz-gold/40 bg-hfz-gold/10 px-hfz-3 py-1 text-hfz-caption font-semibold uppercase tracking-hfz-label text-hfz-gold">
+                ✓ Claimed
+              </span>
+            ) : (
+              <span className="rounded-hfz-full border border-hfz-cyan/40 bg-hfz-cyan/10 px-hfz-3 py-1 text-hfz-caption font-semibold uppercase tracking-hfz-label text-hfz-cyan">
+                ✓ Earned · unbanked
+              </span>
+            ))}
         </div>
 
         <div className="mt-hfz-6">
@@ -96,6 +111,21 @@ export function VibeLabShell({ levelId, children }: Props) {
             unlocked={levelUnlocked}
           />
         </div>
+
+        {/* Anon→signup bank celebration — greets the returning new account */}
+        {reconciliation && (
+          <div
+            role="status"
+            className="vl-rise mt-hfz-6 rounded-hfz-lg border border-hfz-gold/50 bg-hfz-gold/10 p-hfz-5 text-center"
+          >
+            <p className="font-display text-hfz-body-lg text-hfz-gold">
+              🎉 Banked {reconciliation.banked}{' '}
+              {reconciliation.banked === 1 ? 'level' : 'levels'} — +
+              {reconciliation.xp} XP · +{reconciliation.coins} BROski$ are in
+              your wallet. Nice one BROski♾️
+            </p>
+          </div>
+        )}
 
         {/* Hero */}
         <header className="vl-rise mt-hfz-7">
@@ -128,11 +158,15 @@ export function VibeLabShell({ levelId, children }: Props) {
           </div>
           <RewardCard
             level={level}
-            claimed={claimedThis}
+            earned={earnedThis}
+            banked={banked}
             unlocked={levelUnlocked(level.id)}
             isLoggedIn={isLoggedIn}
             claiming={claiming === level.id}
             onClaim={() => claimReward(level.id)}
+            onCompleteLocally={() => completeLevelLocally(level.id)}
+            bankHref={`/register?returnTo=${returnTo}`}
+            loginHref={`/login?returnTo=${returnTo}`}
           />
         </div>
 
@@ -164,7 +198,7 @@ export function VibeLabShell({ levelId, children }: Props) {
                 </span>
                 <span className="mt-1 block">
                   <strong className="text-hfz-text-primary">{next.title}</strong> unlocks
-                  the moment you claim this level's reward.
+                  the moment you {isLoggedIn ? "claim this level's reward" : 'complete this level'}.
                 </span>
               </div>
             )}

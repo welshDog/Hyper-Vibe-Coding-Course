@@ -39,8 +39,19 @@ function ErrorBox({ message }: { message: string }) {
   );
 }
 
+/**
+ * Internal-only return path (open-redirect safe): must be an absolute app
+ * path, never protocol-relative (`//host`) or a scheme.
+ */
+function safeReturnTo(params: URLSearchParams): string | null {
+  const rt = params.get('returnTo');
+  if (!rt || !rt.startsWith('/') || rt.startsWith('//')) return null;
+  return rt;
+}
+
 export function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -66,7 +77,7 @@ export function Login() {
         });
       }
       const onboardedAt = data.user?.user_metadata?.onboarded_at as string | undefined;
-      navigate(onboardedAt ? '/dashboard' : '/welcome');
+      navigate(safeReturnTo(searchParams) ?? (onboardedAt ? '/dashboard' : '/welcome'));
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -229,7 +240,10 @@ export function Register() {
               variant="primary"
               size="md"
               fullWidth
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                const rt = safeReturnTo(searchParams);
+                navigate(rt ? `/login?returnTo=${encodeURIComponent(rt)}` : '/login');
+              }}
             >
               Go to login →
             </HVZButton>
