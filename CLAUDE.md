@@ -9,8 +9,10 @@
 
 1. **This file** — rules, context, philosophy
 2. **`rewrites/SESSION_SNAPSHOT_[latest date].md`** — current sprint state, what's live, what's next
-3. **If touching DB** → check `supabase/migrations/` for latest migration number first
-4. **Then build.** Not before.
+3. **`rewrites/NEXT_SESSION_HANDOVER_[latest date].md`** — open gates, first task, load-bearing gotchas
+4. **HyperLabs work?** also read `rewrites/HYPERLABS_PRIORITY_HITLIST_[latest date].md` — do-next / later / leave-alone
+5. **If touching DB** → check `supabase/migrations/` for latest migration number first
+6. **Then build.** Not before.
 
 > The SESSION_SNAPSHOT is the living state. This file is the constitution.
 > If they contradict, surface it — don't silently pick one.
@@ -56,6 +58,7 @@
 | 8 | **`setState` synchronously in `useEffect` = ERROR** | Enforced by ESLint `react-hooks/set-state-in-effect` | Commit blocked by husky |
 | 9 | **Lab pages = `hfz-*` Tailwind tokens. Landing page = inline styles + CSS vars** | Two different idioms by design | Wrong token overrides, visual breakage |
 | 10 | **No `framer-motion` in this repo** | Not installed — CSS-only motion, reduced-motion gated | Broken build |
+| 11 | **Course dev *from repo root* = `npm run dev:frontend` NOT `npm run dev`** | Repo-root `npm run dev` ≠ frontend. NOTE: inside `frontend/` the package's own `dev` IS `vite` — that's what `playwright.config.ts` launches and is correct; do NOT "fix" it to match this rule | Dev server broken from root, or a working Playwright/test config wrongly reverted |
 
 ---
 
@@ -189,10 +192,11 @@
 |---|---|
 | DB changes (course) | Supabase MCP `apply_migration` — NEVER `db push` |
 | DB queries / safe prod testing | Supabase MCP `execute_sql` — wrap in `BEGIN / ROLLBACK` |
-| Auth + browser testing | **Playwright** — installed (`npm run test:e2e`), badges have `data-auth-status` for assertions |
-| Deploy verification | Watch for bundle-hash flip on prod URL — reliable signal |
-| Perf claims | `npm run build` chunk sizes = real evidence. Never assert CWV wins without Vercel dashboard |
-| Before claiming done | `npx tsc --noEmit` + `npx eslint <files>` + `npm run build` — all three green |
+| Auth + browser testing | **Playwright** — installed (`npm run test:e2e`). Reusable cert harness: `tests/vibe-labs-a11y.spec.ts` (axe via `@axe-core/playwright`) + `tests/vibe-labs-anon-flow.spec.ts`. Copy these patterns |
+| Deploy verification | **Vercel MCP `get_deployment` / `list_deployments`** (team `team_Uy6hGYD4AZqclHqUeEsmZuDP`). ⚠️ NEVER curl-poll prod — trips Vercel **Attack Challenge Mode** (403 `X-Vercel-Mitigated`); looks down, isn't |
+| Lighthouse / a11y cert | Can't hit live prod (challenge-blocked). Run vs local `vite preview` + system Chrome (`--headless=new`, **cwd-relative** `--output-path`). Lab a11y/BP only |
+| Perf claims | `npm run build` chunk sizes = real evidence. Never assert CWV wins without Vercel Speed Insights |
+| Before claiming done | `npx tsc --noEmit` + `npx eslint <files>` + `npm run build` + `npm run test:e2e` cert — all green |
 
 ### Human-only gates — be honest, don't pretend otherwise
 
@@ -203,6 +207,7 @@
 ### General behaviour
 
 - Surface contradictions between this file and SESSION_SNAPSHOT — correct the doc, don't silently proceed
+- **Lyndz runs a PARALLEL git workflow** — his tooling auto-commits/pushes the same work out-of-band. ALWAYS `git fetch` + check `origin/main` before pushing; NEVER force-push; if your commit is a verified duplicate, `git reset --hard origin/main` to align
 - Quick wins first — momentum > perfection
 - Nothing is done until it's committed and pushed to GitHub
 - Update SESSION_SNAPSHOT at end of every session
