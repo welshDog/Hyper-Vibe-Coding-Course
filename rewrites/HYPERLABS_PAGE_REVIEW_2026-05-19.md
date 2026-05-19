@@ -28,12 +28,18 @@ speed-insights` is already installed).
 
 ## 0. Overall Assessment
 
-**Verdict: 7.5/10 — Strong product, UX & brand foundation; one real
-performance liability (web3 at the app root) and a few polish gaps.**
+**Verdict: 9/10 — Strong product, UX & brand; the critical performance
+liability is now RESOLVED (Sprints 1 & 2 shipped & live).**
+
+> **Status 2026-05-19:** Sprint 1 ✅ (`0cd772a`) + Sprint 2 ✅ (`4c16b0c`)
+> deployed to prod. Cold funnel entry JS cut **1,270 kB → ~61 kB (gzip
+> 340 → 16)**; the ~900 kB wallet stack is now `/pets`-only. Open: §5
+> High/Medium polish + a manual `/pets` wallet smoke test (provider surgery —
+> not verifiable by automated checks) + a before/after CWV read in Vercel.
 
 Well-architected, on-brand, accessibility-conscious, smart funnel logic. The
-dominant drag is that the public funnel pays for the wallet/web3 stack it never
-uses. That fix is now proven low-blast-radius. Land it and this is a 9.
+dominant drag — the funnel paying for a wallet stack it never used — is fixed:
+verified low-blast-radius (4 wagmi files, none in the funnel) and deployed.
 
 ---
 
@@ -122,34 +128,35 @@ installed, so real RUM is in the Vercel dashboard; use that as truth.
 
 | Metric | Reasoned estimate (mobile, cold) | Target |
 |---|---|---|
-| **LCP** | ⚠️ 2.5–4s (SPA, no SSR, web3 at root before paint) | **< 2.5s** |
+| **LCP** | ↓ much improved post-Sprint 2 (entry ~16 kB gzip, no web3 parse on funnel); still SPA/no-SSR — re-measure | **< 2.5s** |
 | **INP** | likely OK post-load (trivial handlers) | **< 200ms** |
 | **CLS** | likely good (no images; same-size async swaps) — watch fonts | **< 0.1** |
-| **TBT** | ⚠️ poor mid-mobile (monolith + web3 parse) | **< 200ms** |
+| **TBT** | ↓ much improved (monolith split + web3 off funnel) — re-measure | **< 200ms** |
 
-The web3-at-root + monolith are the levers; everything else is near target.
+Sprints 1 & 2 removed both levers (monolith + web3-at-root). These remain
+*estimates* — confirm the real gain in Vercel **Speed Insights** (before/after).
 
 ## 5. Prioritised Recommendations
 
 ### 🔴 Critical
-1. **Defer the Wagmi/RainbowKit providers** (the real LCP lever). Only 4 files
-   use wagmi, none in the funnel. Move `WagmiProvider`/`RainbowKitProvider`/
-   `wagmiConfig`/rainbowkit CSS out of `main.tsx`'s eager root into a lazy
-   wrapper mounted only on wallet routes (Pets/mint). Public funnel stops
-   shipping `metamask-sdk`. *Needs its own task + verification — flagged, not
-   done in Sprint 1.*
+1. ✅ **DONE (Sprint 2, `4c16b0c`, live)** — **Deferred the Wagmi/RainbowKit
+   providers.** `WagmiProvider`/`RainbowKitProvider`/`QueryClientProvider`/
+   wagmiConfig/rainbowkit CSS moved out of `main.tsx`'s eager root into a lazy
+   `Web3Provider` wrapping only the `/pets` route. Entry **587 → 61 kB (gzip
+   176 → 16)**; `metamask-sdk`/`wagmi` now `/pets`-only lazy chunks. ⚠️ Open:
+   manual wallet smoke test on live `/pets` (can't drive MetaMask via curl).
 
 ### 🟠 High
-2. **Route code-splitting** — `React.lazy` + `Suspense` for all pages.
-   **(Shipped in Sprint 1.)** Splits the 1.27 MB monolith into per-route
-   chunks; faster parse + instant subsequent nav.
+2. ✅ **DONE (Sprint 1, `0cd772a`, live)** — **Route code-splitting**
+   (`React.lazy` + `Suspense`, all pages). Monolith **1,270 → 587 kB (gzip
+   340 → 176)** pre-Sprint-2; each route now its own ~6 kB chunk.
 3. **Honor the 16px floor** — bump `text-hfz-caption` (12px) usages on
    lab/landing surfaces to ≥14–16px. It's your own ND rule.
 4. **Fonts** — verify + add `preload` and `font-display:swap`.
 
 ### 🟡 Medium
-5. **Route-scoped ErrorBoundary** inside `<Routes>` so a route crash keeps the
-   app shell instead of replacing the whole app. **(Shipped in Sprint 1.)**
+5. ✅ **DONE (Sprint 1, `0cd772a`, live)** — **Route-scoped ErrorBoundary**
+   inside `<Routes>`: a route crash recovers without tearing down the shell.
 6. **44px touch targets** — progress-bar nodes `h-9 w-9` → `h-11 w-11`.
 7. **Certify a11y** — axe + Lighthouse on `/vibe-labs` + a level page.
 8. **Reserve space** for the async progress chip (CLS insurance).
@@ -182,17 +189,19 @@ reward path; lean assets; error boundary already in place.
 16px rule; unverified font loading & real CWV.
 
 **Roadmap**
-- **Sprint 1 (done this session):** route code-split + route-scoped boundary.
-- **Sprint 2 (~½ day, the real lever):** defer Wagmi providers off the funnel
-  (Critical #1) — measure CWV in Vercel Speed Insights before/after.
-- **Sprint 3 (~½ day):** 16px fix, fonts, 44px targets, axe/Lighthouse certify.
+- ✅ **Sprint 1 — DONE (`0cd772a`, live):** route code-split + route-scoped boundary.
+- ✅ **Sprint 2 — DONE (`4c16b0c`, live):** Wagmi providers deferred off the
+  funnel. Entry JS **1,270 → ~61 kB gzip**, web3 `/pets`-only. ⚠️ pending a
+  manual `/pets` wallet test + before/after CWV read in Vercel Speed Insights.
+- **Sprint 3 (~½ day, NEXT):** 16px fix, fonts, 44px touch targets, axe/Lighthouse certify.
 - **Sprint 4 (~1 day):** anon→signup conversion (the funnel multiplier).
 - **Backlog:** UGC wall, mini-demo, badge OG, exit-intent, per-route meta.
 
-**Bottom line:** strong, on-brand, accessible funnel. Sprint 1 splits the
-monolith; the decisive win is Sprint 2 (defer web3) — now proven safe-ish
-(4 files, none in the funnel). Sequence those two and the page's load story
-flips from liability to advantage.
+**Bottom line:** the critical liability is resolved and live — the funnel went
+from a 1.27 MB cold load to ~61 kB gzip with web3 quarantined to `/pets`. Load
+story flipped from liability to advantage. Remaining work is polish (Sprint 3)
+and the conversion multiplier (Sprint 4); the only open gate on Sprints 1–2 is
+a human `/pets` wallet smoke test.
 
 ---
 
