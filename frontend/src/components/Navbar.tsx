@@ -5,6 +5,7 @@ import { HVZBrand, HVZButton } from './ui/hvz';
 import { LoyaltyTierBadge } from './LoyaltyTierBadge';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { AuthStatusBadge } from './AuthStatusBadge';
 
 const PUBLIC_LINKS: { label: string; href: string }[] = [
   { label: 'Courses', href: '/courses' },
@@ -112,6 +113,7 @@ export function Navbar() {
 
           {/* Right — auth area (desktop) */}
           <div className="hidden sm:flex sm:items-center sm:gap-4">
+            <AuthStatusBadge />
             {/* loading → show nothing at all, no flash */}
             {!loading && (
               user ? (
@@ -163,7 +165,8 @@ export function Navbar() {
           </div>
 
           {/* Mobile menu toggle */}
-          <div className="sm:hidden -mr-2 flex items-center">
+          <div className="sm:hidden -mr-2 flex items-center gap-2">
+            <AuthStatusBadge />
             <button
               type="button"
               onClick={toggleMenu}

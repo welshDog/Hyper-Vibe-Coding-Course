@@ -13,11 +13,12 @@
 // After a mint confirms we refetch useMyPets — Edge Fn INSERT may take a
 // beat to land, so we retry once with a small delay.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HVZCard, HVZButton } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
+import { WalletStatusBadge } from '../components/WalletStatusBadge'
 import { PetCard } from '../components/pets/PetCard'
 import { PetCardSkeleton } from '../components/pets/PetCardSkeleton'
 import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
@@ -109,9 +110,11 @@ export default function Pets() {
   const showEmptyState = !!userId && !petsLoading && !petsError && pets.length === 0
   const { notifyLevelUp } = usePetNotifications()
 
-  // Track old pets array to detect level ups
-  const [prevPets, setPrevPets] = useState<typeof pets>([])
+  // Track previous pets via a ref (not state) to detect level-ups without a
+  // setState-in-effect / render loop. Behaviour identical to before.
+  const prevPetsRef = useRef<typeof pets>([])
   useEffect(() => {
+    const prevPets = prevPetsRef.current
     pets.forEach(pet => {
       const oldPet = prevPets.find(p => p.id === pet.id)
       if (oldPet && oldPet.stage !== pet.stage) {
@@ -125,8 +128,8 @@ export default function Pets() {
         }
       }
     })
-    setPrevPets(pets)
-  }, [pets, prevPets, notifyLevelUp])
+    prevPetsRef.current = pets
+  }, [pets, notifyLevelUp])
 
   const handleMinted = ({ txHash }: { txHash: `0x${string}`; petName: string; species: string }) => {
     setJustMintedTx(txHash)
@@ -329,6 +332,7 @@ export default function Pets() {
                 </span>{' '}
                 / 100 needed
               </h2>
+              <WalletStatusBadge />
               <HVZCard>
                 <MintPetButton
                   species={species}

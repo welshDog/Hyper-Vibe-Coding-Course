@@ -7,6 +7,9 @@ interface AuthState {
   user: User | null
   session: Session | null
   loading: boolean
+  /** Non-null when a session/profile lookup actually failed — distinct from
+   *  "signed out". Lets the UI tell the truth instead of showing logged-out. */
+  authError: string | null
   setUser: (user: User | null) => void
   setSession: (session: Session | null) => void
   setLoading: (loading: boolean) => void
@@ -19,12 +22,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   session: null,
   loading: true,
+  authError: null,
   setUser: (user) => set({ user }),
   setSession: (session) => set({ session }),
   setLoading: (loading) => set({ loading }),
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, session: null })
+    set({ user: null, session: null, authError: null })
   },
   refreshUser: async () => {
     const { session } = get()
@@ -59,16 +63,18 @@ async function applySession(session: Session | null) {
 
   try {
     if (!session?.user) {
-      set({ user: null })
+      set({ user: null, authError: null })
       return
     }
 
     const user = await loadUserProfile(session.user.id)
     if (requestId !== authRequestId) return
-    set({ user })
+    set({ user, authError: null })
   } catch {
     if (requestId !== authRequestId) return
-    set({ user: null })
+    // Session exists but the profile lookup failed — this is an ERROR, not
+    // a sign-out. Surface it so the badge doesn't lie.
+    set({ user: null, authError: 'profile_load_failed' })
   } finally {
     if (requestId === authRequestId) {
       set({ loading: false })
@@ -85,7 +91,12 @@ async function initializeAuth() {
     const { data } = await supabase.auth.getSession()
     await applySession(data.session)
   } catch {
-    useAuthStore.setState({ user: null, session: null, loading: false })
+    useAuthStore.setState({
+      user: null,
+      session: null,
+      loading: false,
+      authError: 'session_lookup_failed',
+    })
   }
 }
 
