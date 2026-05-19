@@ -34,7 +34,7 @@ export function LevelProgressBar({ currentId, completedLevels, unlocked }: Props
         const dot = (
           <span
             className={[
-              'grid h-9 w-9 shrink-0 place-items-center rounded-hfz-full border text-hfz-label',
+              'grid h-11 w-11 shrink-0 place-items-center rounded-hfz-full border text-hfz-label',
               'transition-[transform,box-shadow,background-color] duration-200',
               'motion-safe:hover:-translate-y-0.5',
               state === 'done' &&
