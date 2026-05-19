@@ -46,9 +46,24 @@ Commits: `b165f3f` `e869506` `03066ab` `72fd605` `4eb922d` `36e76d2` `93edfb6` `
 - **`video_scripts/README.md`** updated — added the Vibe Labs track table + pipeline + verified-reward note.
 - Commits this addendum: `7732c0a` `a42f165` `9c3feee` `f8a7062` `3edc3f4` `eb87f50` `<readme/snapshot sync>`.
 
-## What's next
-- Nothing pending — full arc + all 5 lab video scripts complete and pushed.
-- Optional future: NotebookLM "deep dive" buttons per level; `prefers-reduced-motion` QA pass on the live site; record the 5 lab videos from these scripts.
+## Addendum 2 — HyperLabs review + perf + auth-truth (later same session)
+- **Comprehensive HyperLabs page review** written + saved: `rewrites/HYPERLABS_PAGE_REVIEW_2026-05-19.md`. Self-corrected two wrong first-pass claims after code inspection (error boundary already existed/wired; web3 was at the app root so lazy-routes alone wouldn't fix LCP).
+- **Sprint 1 (`0cd772a`, live):** route code-splitting (`React.lazy`+`Suspense`) + route-scoped `ErrorBoundary` in `App.tsx`. Entry chunk **1,270 kB → 587 kB** gzip 340→176.
+- **Sprint 2 (`4c16b0c`, live):** lifted Wagmi/RainbowKit/QueryClient out of `main.tsx`'s eager root into a **lazy `src/components/Web3Provider.tsx` wrapping ONLY the `/pets` route**. Entry **587 → ~61 kB** gzip 176→16. metamask-sdk/wagmi now `/pets`-only lazy chunks. Verified blast radius: only 4 files use wagmi (`main.tsx`, `lib/wagmi.ts`, `useMintPet.ts`, `MintPetButton.tsx`); react-query is wagmi-only.
+- **Review doc updated (`0cb0402`)** — Sprints 1&2 marked ✅ with measured numbers; verdict 7.5→9.
+- **Auth-truth (`949f733`):** added real `authError` state to `context/auth.ts` (was silently swallowed → looked signed-out). New `useAuthStatus` hook (auth-only, no wagmi). `AuthStatusBadge` in Navbar (authed shell, not funnel). `WalletStatusBadge` on `/pets` only (inside Web3Provider). Also fixed a pre-existing `set-state-in-effect` ERROR in `Pets.tsx` (ref not state; behaviour identical) that blocked the pre-commit hook.
+- Commits this addendum: `2e86207` `0cd772a` `4c16b0c` `0cb0402` `949f733` + this snapshot/handover sync.
+
+## ⚠️ Open human-only gates (cannot be done by Claude — need a real browser)
+1. **15-step auth checklist** — now a fast eyeball pass (badge can't lie). Key test: kill network during profile load → must show **`Auth error`**, not `Signed out`.
+2. **`/pets` wallet smoke test** — Connect Wallet → RainbowKit modal → mint inits (owed since Sprint 2 + new `Wallet ready` pill).
+3. **Real Core Web Vitals read** — `@vercel/speed-insights` is installed; pull before/after LCP/INP/CLS from the Vercel dashboard. All CWV in the review are *estimates*.
+
+## What's next (for the next session)
+- Close the 3 gates above (see `NEXT_SESSION_HANDOVER_2026-05-19.md` for how — esp. use the existing **Playwright** harness for the auth checklist).
+- Sprint 3 (review §5): 16px text-floor fix, font preload+`display:swap`, 44px touch targets on the progress bar, axe/Lighthouse certify.
+- Sprint 4: anon→signup conversion (persist `completedLevels` in localStorage, gate the claim) — the funnel multiplier.
+- Optional: NotebookLM deep-dive buttons; record the 5 lab videos.
 
 ## Key decisions
 - Master HFZ palette is authoritative for this repo (no orange). Lab pages use Tailwind `hfz-*` tokens; landing page keeps its own CSS-var idiom.
