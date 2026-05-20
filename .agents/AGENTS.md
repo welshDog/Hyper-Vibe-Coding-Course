@@ -45,6 +45,7 @@ BROski-Obsidian-Brain (meta-layer / living knowledge vault)
 |-------|----------|---------|
 | `mint-via-relay` | `.agents/skills/mint-via-relay/` | Enable + validate Phase 2A relay minting flag |
 | `e2e-broskipets` | `.agents/skills/e2e-broskipets/` | Run E2E tests for mint flow + Stripe checkout |
+| `base-notify` | `.agents/skills/base-notify/` | Send Base L2 push notifications (level-up, course unlock, mint confirm) — enforces 30/200/1000/20-per-min/24h-dedup limits |
 | `supabase` | `.agents/skills/supabase/` | Supabase workflows (Auth, DB, Edge Functions, CLI) |
 | `supabase-postgres-best-practices` | `.agents/skills/supabase-postgres-best-practices/` | Postgres performance + RLS best practices |
 
@@ -81,6 +82,7 @@ BROski-Obsidian-Brain (meta-layer / living knowledge vault)
 - XP + BROski$ earning system built ✅
 - Relay minting skill ready ✅
 - E2E test skill ready ✅
+- Base notifications skill + wired into Vibe Lab claim reward ✅
 
 ---
 
