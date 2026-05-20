@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../context/auth'
 import { getLevel, isLevelUnlocked } from '../lib/vibeLabs'
 import { addAnonLevel, clearAnonProgress, readAnonProgress } from '../lib/anonProgress'
+import { usePetNotifications } from './usePetNotifications'
 
 export interface VibeProgress {
   xp: number
@@ -38,6 +39,15 @@ function displayXp(levels: number[]): number {
   return levels.reduce((sum, id) => sum + (getLevel(id)?.xp ?? 0), 0)
 }
 
+/** Read the connected wallet (if any) without pulling wagmi outside `/pets`
+ *  (Sacred Rule 2). Course-only users have no `window.ethereum`; we just
+ *  return null and the Base push is skipped cleanly. */
+function readSelectedWallet(): string | null {
+  const w = window as unknown as { ethereum?: { selectedAddress?: string | null } }
+  const addr = w.ethereum?.selectedAddress
+  return addr && /^0x[a-fA-F0-9]{40}$/.test(addr) ? addr : null
+}
+
 /**
  * Vibe Labs progress + reward claiming.
  *
@@ -54,6 +64,7 @@ function displayXp(levels: number[]): number {
  */
 export function useProgress() {
   const { user, refreshUser } = useAuthStore()
+  const { notifyReward } = usePetNotifications()
   const [progress, setProgress] = useState<VibeProgress>(EMPTY)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState<number | null>(null)
@@ -178,6 +189,22 @@ export function useProgress() {
         }))
         await refreshUser()
 
+        // 🔔 Base push: fire-and-forget — never blocks the claim. Course-only
+        // users have no wallet → skip cleanly. The level + badge in the
+        // message make each claim a unique tuple under Base's 24h dedup
+        // (app_url, wallet, title, message, target_path); see base-notify
+        // SKILL.md.
+        const walletAddress = readSelectedWallet()
+        if (walletAddress) {
+          notifyReward({
+            walletAddress,
+            petName: 'Vibe Lab',
+            detail: `Lvl ${parsed.level} · ${parsed.coins} BROski$ · ${parsed.badge}`,
+          }).catch(() => {
+            /* swallowed — money path is sacred, notification is best-effort */
+          })
+        }
+
         return {
           ok: true,
           level: parsed.level,
@@ -189,7 +216,7 @@ export function useProgress() {
         setClaiming(null)
       }
     },
-    [user?.id, refreshUser],
+    [user?.id, refreshUser, notifyReward],
   )
 
   /**
