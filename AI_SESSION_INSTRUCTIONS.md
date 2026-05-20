@@ -1,7 +1,7 @@
 # 🧠 AI SESSION INSTRUCTIONS
 ## *Read this FIRST. Every session. No exceptions.*
 > For: Perplexity, Claude, ChatGPT, Cursor, or any AI partner working with @welshDog
-> Last Updated: May 16, 2026
+> Last Updated: May 20, 2026
 
 ---
 
@@ -42,11 +42,12 @@
 ### Repo 3 — Hyper-Vibe-Coding-Course (⭐ CURRENT FOCUS)
 - **What:** Neurodivergent-first AI education platform
 - **Repo:** `github.com/welshDog/Hyper-Vibe-Coding-Course`
-- **Stack:** Next.js + Vercel + Supabase + Stripe + BROski$ tokens
-- **Status:** 🟡 Mid-audit — yellow priorities in progress
+- **Stack:** **Vite + React** + Vercel + Supabase + Stripe + BROski$ tokens
+  > ⚠️ NOT Next.js — do not generate Next.js / App Router code for this repo. Use Vite + React patterns.
+- **Status:** 🟢 Course audit complete — all 10 modules rewritten
 - **KEY FILES TO READ:**
   - `VIBE_COURSE_REVIEW.md` — full module scorecard
-  - `rewrites/SESSION_SNAPSHOT_2026-05-16.md` — last session memory
+  - `rewrites/SESSION_SNAPSHOT_2026-05-18.md` — latest session memory
   - `THE_PAPER.md` — full project documentation
   - `rewrites/` folder — all completed module rewrites
 
@@ -136,7 +137,7 @@ rewrites/
 
 **You should:**
 1. Read this file ✅
-2. Read `rewrites/SESSION_SNAPSHOT_2026-05-16.md` ✅
+2. Read `rewrites/SESSION_SNAPSHOT_2026-05-18.md` ✅
 3. State the next task clearly in 2 lines
 4. Ask ONE decision question if needed
 5. Start building immediately
