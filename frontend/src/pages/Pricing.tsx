@@ -141,7 +141,7 @@ export default function Pricing() {
     const url = getStripeUrl(tier);
     if (url && url !== '#') {
       setCheckoutError(null);
-      window.location.href = url;
+      window.location.assign(url);
       return;
     }
     // SECURITY: never route to /payment-success without a real Stripe payment.
@@ -165,7 +165,7 @@ export default function Pricing() {
           No gatekeeping. No syntax walls. Just you, AI, and an empire you built.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 bg-green-900/30 border border-green-500/40 rounded-full px-4 py-2 text-sm text-green-400">
-          ✅ 72/72 tests passing · Platform LIVE · BROski$ economy active
+          ✅ Platform LIVE · BROski$ economy active · 251 tests green (May 2026)
         </div>
       </div>
 

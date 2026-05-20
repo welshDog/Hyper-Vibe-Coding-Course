@@ -1,4 +1,5 @@
 # 📣 Hyper-Vibe Marketing Brain
+
 > Audience, tone, copy rules, and channel strategy.
 > Reference this for ALL marketing copy, campaigns, and outreach.
 
@@ -69,13 +70,15 @@
 5. **Day 14:** Upgrade nudge (if Starter/Pro) — "ready for the next level?"
 6. **Day 30:** Feedback request + social proof ask
 
+> Operationalising this requires transactional email (Resend / Postmark) — see `financial.md` for the cost line.
+
 ---
 
 ## 🏷️ Launch & Discount Rules
 
 - **Founding Member discount:** Max 25% off, first 100 students only, time-limited
 - **Never discount publicly** without a clear reason (devalues brand)
-- **Referral program:** Give referring student 200 BROski$ per successful referral
+- **Referral programme:** Give referring student 200 BROski$ per successful referral
 - **Bundle deals:** Upgrade pricing (pay difference to move tiers) — handle via Discord
 - **Always frame discount as reward**, not desperation: "You're early. Here's your Founding Member rate."
 
@@ -95,6 +98,12 @@
 - "Claim Your Starter Pack"
 - "Join the Vibe"
 
-### Social proof framing:
-- "72/72 tests passing. Platform LIVE. BROski$ economy active."
-- "Built by a dyslexic ADHD dev from Wales. For every brain like mine."
+### Social proof framing (durable — don't bake in specific test counts that go stale)
+
+- ✅ **Use:** "Platform LIVE · BROski$ economy active · self-healing infra"
+- ✅ **Use:** "Real platform. Real stack. 48+ services running."
+- ✅ **Use:** "Built by a dyslexic ADHD dev from Wales. For every brain like mine."
+- ✅ **Use (if specific):** "251 backend tests green (May 2026)" — include the date so anyone can tell at a glance whether to refresh
+- ❌ **Don't use:** "72/72 tests passing" — outdated since April; current is **251 passed / 6 skipped** per V2.4 status board. Live `Pricing.tsx` still carries this stale string — clean up on the next pricing-page touch.
+
+> **Stale-copy rule:** any specific count (tests, students, deploys, downloads) is a maintenance liability. Default to durable framings ("LIVE", "active", "running"). If you must use a number, include the date and add it to a quarterly stale-copy sweep.
