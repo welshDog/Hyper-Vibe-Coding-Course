@@ -1,174 +1,314 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react'
 
-// ============================================================
-// PASTE YOUR STRIPE PAYMENT LINK URLs INTO THESE CONSTANTS
-// Get them from: Stripe Dashboard → Payment Links → Create Link
-// ============================================================
-const STRIPE_LINKS = {
-  starter: import.meta.env.VITE_STRIPE_STARTER_URL || '#',
-  builder: import.meta.env.VITE_STRIPE_BUILDER_URL || '#',
-  hyperLegend: import.meta.env.VITE_STRIPE_HYPER_LEGEND_URL || '#',
-  // Monthly subscription variants
-  builderMonthly: import.meta.env.VITE_STRIPE_BUILDER_MONTHLY_URL || '#',
-  hyperLegendMonthly: import.meta.env.VITE_STRIPE_HYPER_LEGEND_MONTHLY_URL || '#',
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// Stripe Payment Link URLs — set in Vercel env vars per environment (R2 in
+// STRIPE_INTEGRATION_REPORT_2026-05-20). If any is missing at runtime, the CTA
+// surfaces an error toast — NEVER a silent '#' fallback that locks the buyer
+// out of checkout invisibly.
+// ─────────────────────────────────────────────────────────────────────────────
+const STRIPE_LINKS: Record<string, string | undefined> = {
+  starter: import.meta.env.VITE_STRIPE_STARTER_URL,
+  pro: import.meta.env.VITE_STRIPE_PRO_URL,
+  builder: import.meta.env.VITE_STRIPE_BUILDER_URL,
+  builderMonthly: import.meta.env.VITE_STRIPE_BUILDER_MONTHLY_URL,
+  architect: import.meta.env.VITE_STRIPE_ARCHITECT_URL,
+  architectMonthly: import.meta.env.VITE_STRIPE_ARCHITECT_MONTHLY_URL,
+  hyperLegend: import.meta.env.VITE_STRIPE_HYPER_LEGEND_URL,
+  hyperLegendMonthly: import.meta.env.VITE_STRIPE_HYPER_LEGEND_MONTHLY_URL,
+}
 
-const TIERS = [
+type BillingMode = 'once' | 'monthly'
+
+interface Tier {
+  id: string
+  emoji: string
+  name: string
+  tagline: string
+  priceOnce: number
+  priceMonthly: number | null
+  /** 12 × monthly − one-time. Drives the "save £X over a year" nudge. */
+  yearlySaving: number | null
+  broskiTokens: number
+  modules: string
+  /** Builder is the hero — larger card, purple ring + glow. */
+  hero: boolean
+  /** Top banner ribbon copy (null = no banner). */
+  badge: string | null
+  /** Banner + CTA gradient. Legend's yellow→orange is the documented
+   *  brand-guard exception; every other tier uses purple/blue/indigo/green. */
+  gradient: string
+  /** Card ring colour — purple for hero, subtle gray-700 for others. */
+  ring: string
+  /** Card outer glow on the hero only. */
+  glow: string
+  /** Tailwind text colour for CTA label (black on yellow for AA contrast). */
+  ctaText: string
+  features: string[]
+  /** Optional "what you don't get" — keeps tier shape visible at a glance. */
+  notIncluded: string[]
+  oneTimeKey: keyof typeof STRIPE_LINKS
+  monthlyKey: keyof typeof STRIPE_LINKS | null
+}
+
+const TIERS: Tier[] = [
   {
     id: 'starter',
     emoji: '🌱',
     name: 'Starter',
-    tagline: 'Set up your brain & your empire',
-    priceOnce: '£29',
+    tagline: 'Through the door. Zero risk.',
+    priceOnce: 29,
     priceMonthly: null,
-    broskiTokens: 200,
-    modules: 'M1 – M4',
-    moduleCount: 4,
-    highlight: false,
+    yearlySaving: null,
+    broskiTokens: 100,
+    modules: 'M1',
+    hero: false,
     badge: null,
-    color: 'from-green-500 to-emerald-600',
-    borderColor: 'border-green-500/40',
-    btnColor: 'bg-green-600 hover:bg-green-500',
+    gradient: 'from-green-500 to-emerald-600',
+    ring: 'ring-green-500/30',
+    glow: '',
+    ctaText: 'text-white',
     features: [
-      '🧘 M1: Designing Your Focus Zone',
-      '🌱 M2: Your First Vibe (Docker empire)',
-      '🎤 M3: Prompt Like a Pro',
-      '🏗️ M4: Build Your First App',
-      '200 BROski$ tokens on signup',
-      'Quiz pack + practical tasks',
-      'Completion certificate',
+      'Module 1: Designing Your Focus Zone',
+      '100 BROski$ on signup',
       'Discord community access',
+      'Completion badge',
     ],
     notIncluded: [
-      'Full Stack modules',
-      'Agent architecture',
+      'Full-stack modules',
       'BROskiPets & AI memory',
-      'Web3 / On-chain modules',
-      'Quantum Vibe bonus module',
+      'Quantum module',
     ],
-    stripeKey: 'starter',
-    paymentType: 'one-time',
+    oneTimeKey: 'starter',
+    monthlyKey: null,
+  },
+  {
+    id: 'pro',
+    emoji: '⚡',
+    name: 'Pro',
+    tagline: 'Getting serious. Still safe.',
+    priceOnce: 49,
+    priceMonthly: null,
+    yearlySaving: null,
+    broskiTokens: 300,
+    modules: 'M1 – M4',
+    hero: false,
+    badge: null,
+    gradient: 'from-blue-500 to-cyan-600',
+    ring: 'ring-blue-500/30',
+    glow: '',
+    ctaText: 'text-white',
+    features: [
+      'Everything in Starter',
+      'M2: Your First Vibe (Docker)',
+      'M3: Prompt Like a Pro',
+      'M4: Build Your First App',
+      '300 BROski$ on signup',
+      'Quiz packs + practical tasks',
+      'Completion certificate',
+    ],
+    notIncluded: [
+      'BROskiPets',
+      'Agent architecture',
+    ],
+    oneTimeKey: 'pro',
+    monthlyKey: null,
   },
   {
     id: 'builder',
     emoji: '🔥',
     name: 'Builder',
-    tagline: 'The full Vibe Coding journey',
-    priceOnce: '£79',
-    priceMonthly: '£9/mo',
+    tagline: 'The full Vibe Coding journey.',
+    priceOnce: 97,
+    priceMonthly: 12,
+    yearlySaving: 47,
     broskiTokens: 800,
-    modules: 'M1 – M11',
-    moduleCount: 11,
-    highlight: true,
+    modules: 'M1 – M9',
+    hero: true,
     badge: '🏆 Most Popular',
-    color: 'from-purple-500 to-violet-600',
-    borderColor: 'border-purple-500/70',
-    btnColor: 'bg-purple-600 hover:bg-purple-500',
+    gradient: 'from-purple-500 to-violet-600',
+    ring: 'ring-purple-500',
+    glow: 'shadow-2xl shadow-purple-500/40',
+    ctaText: 'text-white',
     features: [
-      '✅ Everything in Starter',
-      '🧠 M5: Full Stack Vibe (Supabase)',
-      '🔥 M6: HyperCode The Hyper Way',
-      '🛠️ M7: Agent Architecture & Manifests',
-      '🐕 M8: Soulful Entities (AI Pets)',
-      '🔗 M9: Web3 & On-Chain Evolution',
-      '🛡️ M10: Security & SRE Observability',
-      '🚀 M11: Ship, Scale & Graduate',
-      '800 BROski$ tokens on signup',
+      'Everything in Pro',
+      'M5: Full Stack Vibe (Supabase)',
+      'M6: HyperCode The Hyper Way',
+      'M7: Agent Architecture & Manifests',
+      'M8: Soulful Entities (AI Pets)',
+      'M9: Web3 & On-Chain Evolution',
+      '800 BROski$ on signup',
       'Your BROskiPet evolves with you',
       'Priority Discord support',
-      'BROski Elite 🔥 badge on graduation',
+      'BROski Elite 🔥 badge',
     ],
     notIncluded: [
-      'Quantum Vibe bonus module',
-      'IBM Quantum cloud QPU access',
+      'Architect lab + Script Generator',
+      'Quantum module',
     ],
-    stripeKey: 'builder',
-    paymentType: 'both',
+    oneTimeKey: 'builder',
+    monthlyKey: 'builderMonthly',
+  },
+  {
+    id: 'architect',
+    emoji: '🏛️',
+    name: 'Architect',
+    tagline: 'Builders who ship at scale.',
+    priceOnce: 167,
+    priceMonthly: 18,
+    yearlySaving: 49,
+    broskiTokens: 1500,
+    modules: 'M1 – M11',
+    hero: false,
+    badge: null,
+    gradient: 'from-indigo-500 to-purple-600',
+    ring: 'ring-indigo-500/40',
+    glow: '',
+    ctaText: 'text-white',
+    features: [
+      'Everything in Builder',
+      'M10: Security & SRE Observability',
+      'M11: Ship, Scale & Graduate',
+      '1,500 BROski$ on signup',
+      'BROskiPet custom evolution',
+      'Grafana monitoring lab',
+      'Script Generator (Hyper Studio)',
+      'VIP Discord channel',
+    ],
+    notIncluded: [
+      'Quantum module',
+    ],
+    oneTimeKey: 'architect',
+    monthlyKey: 'architectMonthly',
   },
   {
     id: 'hyper-legend',
     emoji: '⚛️',
     name: 'Hyper Legend',
-    tagline: 'The full empire — including Quantum',
-    priceOnce: '£149',
-    priceMonthly: '£15/mo',
+    tagline: 'The full empire — including Quantum.',
+    priceOnce: 247,
+    priceMonthly: 25,
+    yearlySaving: 53,
     broskiTokens: 2500,
     modules: 'M1 – M13 + Quantum',
-    moduleCount: 13,
-    highlight: false,
+    hero: false,
+    // brand-guard: yellow→orange is the documented Legend exception.
     badge: '⚛️ Quantum Included',
-    color: 'from-yellow-400 to-orange-500',
-    borderColor: 'border-yellow-400/60',
-    btnColor: 'bg-yellow-500 hover:bg-yellow-400 text-black',
+    gradient: 'from-yellow-400 to-orange-500',
+    ring: 'ring-yellow-400/50',
+    glow: '',
+    // Yellow background → black text needed for AA contrast.
+    ctaText: 'text-black',
     features: [
-      '✅ Everything in Builder',
-      '🤝 M12: The Ride or Die Contribution',
-      '⚛️ BONUS M13: Quantum Vibe IDE',
-      'Drag-and-drop quantum circuits',
-      'Web3 wallet quantum seed generator',
+      'Everything in Architect',
+      'M12: The Ride or Die Contribution',
+      'BONUS M13: Quantum Vibe IDE',
       'IBM Quantum cloud QPU access',
-      '2500 BROski$ tokens on signup',
-      'BROski Legend ♾️ status for life',
-      'Name in the Hall of Legends on GitHub',
-      'Direct access to welshDog for Q&A',
-      '1-year free updates to all new modules',
+      'Drag-and-drop quantum circuits',
+      '2,500 BROski$ on signup',
+      'Hall of Legends on GitHub',
+      'Direct welshDog Q&A',
+      'Legend ♾️ status for life',
+      '1-year free updates',
     ],
     notIncluded: [],
-    stripeKey: 'hyperLegend',
-    paymentType: 'both',
+    oneTimeKey: 'hyperLegend',
+    monthlyKey: 'hyperLegendMonthly',
   },
-];
+]
+
+/** Resolve the right Stripe Payment Link for a tier + current billing toggle.
+ *  Returns `undefined` if the env var isn't configured — callers MUST treat
+ *  that as an error (toast), not a silent dead link. */
+function resolveCheckoutUrl(tier: Tier, billing: BillingMode): string | undefined {
+  if (billing === 'monthly' && tier.monthlyKey) {
+    return STRIPE_LINKS[tier.monthlyKey]
+  }
+  return STRIPE_LINKS[tier.oneTimeKey]
+}
 
 export default function Pricing() {
-  const [billingToggle, setBillingToggle] = useState<Record<string, 'once' | 'monthly'>>({
-    builder: 'once',
-    'hyper-legend': 'once',
-  });
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const getStripeUrl = (tier: typeof TIERS[0]) => {
-    if (tier.paymentType === 'one-time') {
-      return STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
-    }
-    const isMonthly = billingToggle[tier.id] === 'monthly';
-    if (isMonthly) {
-      const monthlyKey = (tier.stripeKey + 'Monthly') as keyof typeof STRIPE_LINKS;
-      return STRIPE_LINKS[monthlyKey] || STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
-    }
-    return STRIPE_LINKS[tier.stripeKey as keyof typeof STRIPE_LINKS];
-  };
+  const [billing, setBilling] = useState<BillingMode>('once')
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
-  const handleCheckout = (tier: typeof TIERS[0]) => {
-    const url = getStripeUrl(tier);
-    if (url && url !== '#') {
-      setCheckoutError(null);
-      window.location.assign(url);
-      return;
+  const monthlyOnlyTiersHidden = useMemo(
+    () => TIERS.filter((t) => t.monthlyKey !== null).length,
+    [],
+  )
+
+  const handleCheckout = (tier: Tier) => {
+    // Starter / Pro have no monthly key — fall back to their one-time link
+    // even if the global toggle is on "monthly".
+    const effectiveBilling: BillingMode =
+      billing === 'monthly' && tier.monthlyKey ? 'monthly' : 'once'
+    const url = resolveCheckoutUrl(tier, effectiveBilling)
+
+    if (url) {
+      setCheckoutError(null)
+      window.location.assign(url)
+      return
     }
-    // SECURITY: never route to /payment-success without a real Stripe payment.
-    // If the Stripe link isn't configured, surface an error instead of
-    // unlocking the course for free.
+    // Env var missing — surface clearly, never silently 404. Security: do not
+    // route to /payment-success without a real Stripe session.
     setCheckoutError(
-      `Checkout for ${tier.name} is temporarily unavailable. Please try again shortly or reach out on Discord — your access will be sorted.`,
-    );
-  };
+      `Checkout for ${tier.name} (${effectiveBilling === 'monthly' ? 'monthly' : 'one-time'}) isn't configured yet. Ping the team on Discord and we'll sort your access.`,
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Hero */}
-      <div className="text-center pt-16 pb-10 px-4">
-        <div className="text-5xl mb-4">🐶♾️</div>
-        <h1 className="text-4xl md:text-5xl font-black mb-4">
-          Pick Your Vibe Level
-        </h1>
-        <p className="text-gray-400 text-lg max-w-xl mx-auto">
+      <header className="text-center pt-16 pb-8 px-4">
+        <div className="text-5xl mb-4" aria-hidden="true">🐶♾️</div>
+        <h1 className="text-4xl md:text-5xl font-black mb-4">Pick Your Vibe Level</h1>
+        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
           Built for <span className="text-purple-400 font-bold">ADHD, dyslexic &amp; autistic minds</span>.
           No gatekeeping. No syntax walls. Just you, AI, and an empire you built.
         </p>
-        <div className="mt-6 inline-flex items-center gap-2 bg-green-900/30 border border-green-500/40 rounded-full px-4 py-2 text-sm text-green-400">
+        <div className="mt-6 inline-flex items-center gap-2 bg-emerald-900/30 border border-emerald-500/40 rounded-full px-4 py-2 text-sm text-emerald-300">
           ✅ Platform LIVE · BROski$ economy active · 251 tests green (May 2026)
         </div>
+      </header>
+
+      {/* Billing toggle */}
+      <div className="px-4 mb-10 flex flex-col items-center gap-2">
+        <div
+          role="tablist"
+          aria-label="Billing frequency"
+          className="inline-flex p-1 rounded-full bg-gray-900 border border-gray-800"
+        >
+          <button
+            role="tab"
+            aria-selected={billing === 'once'}
+            onClick={() => setBilling('once')}
+            className={`px-5 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
+              billing === 'once'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            One-time
+          </button>
+          <button
+            role="tab"
+            aria-selected={billing === 'monthly'}
+            onClick={() => setBilling('monthly')}
+            className={`px-5 py-2 text-sm font-bold rounded-full transition-all duration-200 ${
+              billing === 'monthly'
+                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Monthly
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">
+          {billing === 'once'
+            ? 'Own it forever. ND-friendly — no subscription guilt.'
+            : `Available on ${monthlyOnlyTiersHidden} tiers. One-time saves more long-term.`}
+        </p>
       </div>
 
+      {/* Error toast */}
       {checkoutError && (
         <div className="max-w-2xl mx-auto px-4 mb-6">
           <div
@@ -181,118 +321,107 @@ export default function Pricing() {
       )}
 
       {/* Tier Cards */}
-      <div className="max-w-6xl mx-auto px-4 pb-20 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-        {TIERS.map((tier) => (
-          <div
-            key={tier.id}
-            className={`relative rounded-2xl border-2 ${
-              tier.highlight
-                ? `${tier.borderColor} shadow-2xl shadow-purple-500/20 scale-105`
-                : tier.borderColor
-            } bg-gray-900/80 backdrop-blur-sm overflow-hidden flex flex-col`}
-          >
-            {/* Badge */}
-            {tier.badge && (
-              <div className={`bg-gradient-to-r ${tier.color} text-white text-xs font-bold text-center py-2 tracking-wider`}>
-                {tier.badge}
-              </div>
-            )}
-
-            <div className="p-6 flex flex-col flex-1">
-              {/* Header */}
-              <div className="mb-6">
-                <div className="text-4xl mb-2">{tier.emoji}</div>
-                <h2 className="text-2xl font-black">{tier.name}</h2>
-                <p className="text-gray-400 text-sm mt-1">{tier.tagline}</p>
-                <div className="text-xs text-gray-500 mt-1">Modules: {tier.modules} ({tier.moduleCount} total)</div>
-              </div>
-
-              {/* Price */}
-              <div className="mb-4">
-                {tier.paymentType === 'one-time' ? (
-                  <div>
-                    <span className="text-4xl font-black">{tier.priceOnce}</span>
-                    <span className="text-gray-500 text-sm ml-2">one-time</span>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <button
-                        onClick={() => setBillingToggle((p) => ({ ...p, [tier.id]: 'once' }))}
-                        className={`text-sm px-3 py-1 rounded-full border transition-all ${
-                          billingToggle[tier.id] === 'once'
-                            ? 'bg-white text-black border-white font-bold'
-                            : 'border-gray-600 text-gray-400 hover:border-gray-400'
-                        }`}
-                      >
-                        One-time
-                      </button>
-                      <button
-                        onClick={() => setBillingToggle((p) => ({ ...p, [tier.id]: 'monthly' }))}
-                        className={`text-sm px-3 py-1 rounded-full border transition-all ${
-                          billingToggle[tier.id] === 'monthly'
-                            ? 'bg-white text-black border-white font-bold'
-                            : 'border-gray-600 text-gray-400 hover:border-gray-400'
-                        }`}
-                      >
-                        Monthly
-                      </button>
-                    </div>
-                    <div>
-                      <span className="text-4xl font-black">
-                        {billingToggle[tier.id] === 'monthly' ? tier.priceMonthly : tier.priceOnce}
-                      </span>
-                      {billingToggle[tier.id] === 'once' && (
-                        <span className="text-gray-500 text-sm ml-2">one-time</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {/* BROski$ tokens */}
-                <div className="mt-2 inline-flex items-center gap-1 bg-yellow-900/30 border border-yellow-500/40 rounded-full px-3 py-1 text-xs text-yellow-400">
-                  💰 {tier.broskiTokens.toLocaleString()} BROski$ on signup
+      <div className="max-w-7xl mx-auto px-4 pb-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-stretch">
+        {TIERS.map((tier) => {
+          const showMonthly = billing === 'monthly' && tier.priceMonthly !== null
+          const displayPrice = showMonthly ? tier.priceMonthly! : tier.priceOnce
+          const displaySuffix = showMonthly ? '/mo' : ''
+          const oneTimeOnly = tier.priceMonthly === null
+          return (
+            <article
+              key={tier.id}
+              className={`relative flex flex-col rounded-2xl bg-gray-900/80 backdrop-blur-sm overflow-hidden ring-1 ${tier.ring} ${
+                tier.hero
+                  ? `lg:scale-105 lg:-my-2 ring-2 ${tier.glow} z-10`
+                  : 'shadow-lg shadow-black/40'
+              }`}
+            >
+              {tier.badge && (
+                <div
+                  className={`bg-gradient-to-r ${tier.gradient} ${
+                    tier.id === 'hyper-legend' ? 'text-black' : 'text-white'
+                  } text-xs font-black text-center py-2 tracking-wider`}
+                >
+                  {tier.badge}
                 </div>
+              )}
+
+              <div className="p-6 flex flex-col flex-1">
+                {/* Header */}
+                <div className="mb-5">
+                  <div className="text-4xl mb-2" aria-hidden="true">{tier.emoji}</div>
+                  <h2 className="text-2xl font-black">{tier.name}</h2>
+                  <p className="text-gray-400 text-sm mt-1">{tier.tagline}</p>
+                  <div className="text-xs text-gray-500 mt-1">Modules: {tier.modules}</div>
+                </div>
+
+                {/* Price */}
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black">£{displayPrice}</span>
+                    <span className="text-gray-500 text-sm">
+                      {showMonthly ? displaySuffix : 'one-time'}
+                    </span>
+                  </div>
+                  {billing === 'monthly' && oneTimeOnly && (
+                    <p className="mt-1 text-xs text-gray-500">One-time only</p>
+                  )}
+                  {!showMonthly && tier.yearlySaving !== null && tier.priceMonthly !== null && (
+                    <p className="mt-1 text-xs text-emerald-400">
+                      Save £{tier.yearlySaving}/year vs £{tier.priceMonthly}/mo ✅
+                    </p>
+                  )}
+                  {showMonthly && tier.yearlySaving !== null && (
+                    <p className="mt-1 text-xs text-amber-300">
+                      One-time saves you £{tier.yearlySaving} over a year ✨
+                    </p>
+                  )}
+                  {/* BROski$ pill */}
+                  <div className="mt-3 inline-flex items-center gap-1 bg-yellow-900/30 border border-yellow-500/40 rounded-full px-3 py-1 text-xs font-bold text-yellow-300">
+                    💰 {tier.broskiTokens.toLocaleString()} BROski$
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <button
+                  type="button"
+                  onClick={() => handleCheckout(tier)}
+                  className={`w-full py-3 px-6 rounded-xl font-black text-lg mb-6 transition-all duration-200 bg-gradient-to-r ${tier.gradient} ${tier.ctaText} shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40`}
+                >
+                  Get {tier.name} {tier.emoji}
+                </button>
+
+                {/* Features */}
+                <ul className="space-y-2 flex-1">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-300">
+                      <span className="text-emerald-400 mt-0.5 flex-shrink-0" aria-hidden="true">✓</span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                  {tier.notIncluded.map((f) => (
+                    <li key={`not-${f}`} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="mt-0.5 flex-shrink-0" aria-hidden="true">✗</span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* CTA Button */}
-              <button
-                onClick={() => handleCheckout(tier)}
-                className={`w-full py-3 px-6 rounded-xl font-black text-lg transition-all duration-200 mb-6 ${
-                  tier.btnColor
-                } text-white shadow-lg hover:scale-105 active:scale-95`}
-              >
-                Get {tier.name} {tier.emoji}
-              </button>
-
-              {/* Features */}
-              <ul className="space-y-2 flex-1">
-                {tier.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                    <span className="text-green-400 mt-0.5 flex-shrink-0">✓</span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-                {tier.notIncluded.map((f, i) => (
-                  <li key={`not-${i}`} className="flex items-start gap-2 text-sm text-gray-600">
-                    <span className="mt-0.5 flex-shrink-0">✗</span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        ))}
+            </article>
+          )
+        })}
       </div>
 
-      {/* FAQ strip */}
-      <div className="max-w-2xl mx-auto px-4 pb-16 text-center">
+      {/* FAQ */}
+      <section className="max-w-2xl mx-auto px-4 pb-16 text-center">
         <h3 className="text-xl font-bold mb-4 text-gray-300">Common Questions</h3>
         <div className="space-y-4 text-left">
           {[
             ['Do I need coding experience?', 'Zero. Module 1 starts with setting up your brain — not your IDE. If you can type, you can Vibe Code.'],
-            ['Can I upgrade later?', 'Yes! Just pay the difference. Contact us on Discord and we\'ll sort it.'],
+            ['Can I upgrade later?', 'Yes! Just pay the difference. Ping us on Discord and we\'ll sort it.'],
             ['What if I get stuck?', 'Every module has a ✨ Practical Task and BROski AI is in your corner 24/7. Plus Discord crew.'],
             ['Is this ND-friendly?', 'Built by an ND dev, for ND devs. Short sentences, chunked tasks, emojis, BROski$ rewards. Always.'],
+            ['One-time vs monthly?', 'One-time = own it forever, no recurring guilt. Monthly is for cash-flow-constrained learners — but 12 months of monthly always costs more.'],
           ].map(([q, a]) => (
             <div key={q} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
               <p className="font-bold text-white mb-1">{q}</p>
@@ -303,7 +432,7 @@ export default function Pricing() {
         <p className="mt-8 text-gray-600 text-xs">
           Payments powered by Stripe 🔒 · All prices include VAT · Built by welshDog 🐶♾️ Llanelli, Wales
         </p>
-      </div>
+      </section>
     </div>
-  );
+  )
 }
