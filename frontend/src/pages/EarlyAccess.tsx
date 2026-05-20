@@ -1,6 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { signUpForEarlyAccess, type EarlyAccessOutcome } from '../lib/earlyAccess'
 
+/** Tiny Tester warm-up — Perplexity prompt that returns a tiny app idea +
+ *  first 3 steps. Sits above the reward so visitors feel the value before
+ *  the form ask. URL provided in the spec — kept verbatim so the prompt is
+ *  the one tested with the audience. */
+const PERPLEXITY_PROMPT_URL =
+  'https://www.perplexity.ai/search?q=I+am+new+to+AI+coding.+Give+me+one+tiny+app+idea+I+can+build+today,+explain+it+in+plain+English,+and+give+me+the+first+3+steps.'
+
 /**
  * /early-access — Founding Member waitlist landing page.
  *
@@ -98,6 +105,28 @@ export default function EarlyAccess() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* ───── Tiny Tester (warm-up) ───── */}
+      <section className="px-6 py-8">
+        <div className="max-w-2xl mx-auto rounded-2xl bg-gray-900/80 border border-purple-500/30 p-6 sm:p-8 text-center">
+          <div className="text-4xl mb-3" aria-hidden="true">🧪</div>
+          <h2 className="text-2xl sm:text-3xl font-black mb-2">Tiny Tester</h2>
+          <p className="text-gray-300 text-base sm:text-lg mb-5">
+            Two minutes. One AI prompt. One tiny app idea you can build today.
+          </p>
+          <a
+            href={PERPLEXITY_PROMPT_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-block px-7 py-3 rounded-2xl font-black text-base bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300/60"
+          >
+            Get My App Idea 🚀
+          </a>
+          <p className="mt-3 text-xs text-gray-500">
+            Opens Perplexity in a new tab — your spot here is safe.
+          </p>
+        </div>
       </section>
 
       {/* ───── Early Bird Reward ───── */}
