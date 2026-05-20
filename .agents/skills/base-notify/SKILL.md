@@ -23,7 +23,7 @@ Base enforces **hard server-side limits**. Violating them costs requests against
 
 ## Pre-flight checks (do these FIRST)
 1. App is registered and verified on Base Dashboard (BROski dnft Pet$, App ID `6a03b7792be96789d34cef8d`).
-2. `BASE_NOTIFICATIONS_API_KEY` is set in `.env` locally **and** in Vercel env vars for production.
+2. `VITE_BASE_API_KEY` is set in `.env` locally **and** in Vercel env vars for production.
 3. `app_url` you pass exactly matches the URL registered on Base Dashboard — mismatches return 403.
 4. For Vite/Vercel: deployment protection is **off** for the URL Base scans, or scanners are bypassed.
 
@@ -42,13 +42,13 @@ If you're sending the same title+message twice within 24h (e.g., re-running a sc
 ## Endpoints
 
 **Base URL:** `https://dashboard.base.org/api/v1/`
-**Auth header (every request):** `x-api-key: $BASE_NOTIFICATIONS_API_KEY`
+**Auth header (every request):** `x-api-key: $VITE_BASE_API_KEY`
 
 ### 1. Check single user opt-in status
 ```http
 POST /notifications/app/user/status
 Content-Type: application/json
-x-api-key: $BASE_NOTIFICATIONS_API_KEY
+x-api-key: $VITE_BASE_API_KEY
 
 {
   "app_url": "https://hyper-vibe-coding-course-dnjpk2crx-bro-skis.vercel.app",
@@ -67,7 +67,7 @@ GET /notifications/app/users
   &notification_enabled=true
   &limit=500
   &cursor=NEXT_CURSOR
-x-api-key: $BASE_NOTIFICATIONS_API_KEY
+x-api-key: $VITE_BASE_API_KEY
 ```
 **Response:**
 ```json
@@ -83,7 +83,7 @@ Loop on `nextCursor` until empty. `limit` max is 500 — bigger pages get clampe
 ```http
 POST /notifications/send
 Content-Type: application/json
-x-api-key: $BASE_NOTIFICATIONS_API_KEY
+x-api-key: $VITE_BASE_API_KEY
 
 {
   "app_url": "https://hyper-vibe-coding-course-dnjpk2crx-bro-skis.vercel.app",
@@ -129,7 +129,7 @@ Keep the title short — the 30-char cap includes emoji code points, which often
 | Code | Meaning | What to do |
 |---|---|---|
 | 400 | Bad request — field missing / wrong format / over limit | Re-validate title/message/path/wallet-count locally |
-| 401 | Invalid or missing API key | Confirm `BASE_NOTIFICATIONS_API_KEY` is set in current env |
+| 401 | Invalid or missing API key | Confirm `VITE_BASE_API_KEY` is set in current env |
 | 403 | `app_url` not registered to your project | Match URL exactly to Base Dashboard registration |
 | 404 | Project not found | Wrong App ID / API key — re-issue from Base Dashboard |
 | 429 | Rate limit hit (>20/min IP) | Backoff + batch — coalesce wallet lists into single sends |
@@ -145,10 +145,10 @@ Keep the title short — the 30-char cap includes emoji code points, which often
 - **Test on a single wallet first** before fanning out to the full opted-in list.
 - Notifications cannot be unsent. If you fire a wrong message, immediately send a corrective one with a different title (or the dedup window will eat it).
 - If a script accidentally loops on send, kill it and wait — the 20/min rate-limit caps blast radius automatically.
-- Never commit `BASE_NOTIFICATIONS_API_KEY` — it lives in `.env` (local) and Vercel env vars (prod) only.
+- Never commit `VITE_BASE_API_KEY` — it lives in `.env` (local) and Vercel env vars (prod) only.
 
 ## Key env vars
-- `BASE_NOTIFICATIONS_API_KEY` — Base Dashboard API key
+- `VITE_BASE_API_KEY` — Base Dashboard API key
 - `BASE_APP_URL` — must match Base Dashboard registration exactly
 - `BASE_APP_ID` — `6a03b7792be96789d34cef8d` (BROski dnft Pet$)
 
