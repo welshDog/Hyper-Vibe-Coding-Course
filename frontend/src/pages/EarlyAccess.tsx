@@ -50,14 +50,17 @@ export default function EarlyAccess() {
     <div className="min-h-screen bg-gray-950 text-white selection:bg-purple-500/40">
       {/* ───── Hero ───── */}
       <header className="px-6 pt-20 pb-12 text-center max-w-3xl mx-auto">
-        <img
-          src="/hyperfocus-zone-logo.png"
-          alt="HyperFocus Zone"
-          width={1376}
-          height={768}
-          className="h-24 sm:h-28 w-auto mx-auto mb-6 drop-shadow-[0_0_24px_rgba(139,92,246,0.35)]"
-          fetchPriority="high"
-        />
+        <picture>
+          <source srcSet="/hyperfocus-zone-logo.webp" type="image/webp" />
+          <img
+            src="/hyperfocus-zone-logo.png"
+            alt="HyperFocus Zone"
+            width={917}
+            height={512}
+            className="h-24 sm:h-28 w-auto mx-auto mb-6 drop-shadow-[0_0_24px_rgba(139,92,246,0.35)]"
+            fetchPriority="high"
+          />
+        </picture>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight tracking-tight">
           Get Early Access to the{' '}
           <span className="bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
