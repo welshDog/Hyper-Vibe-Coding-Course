@@ -46,6 +46,7 @@ const Level2AiStudio = lazy(() => import('./pages/vibe-labs/Level2AiStudio'));
 const Level3Trae = lazy(() => import('./pages/vibe-labs/Level3Trae'));
 const Level4Compare = lazy(() => import('./pages/vibe-labs/Level4Compare'));
 const Level5FullStack = lazy(() => import('./pages/vibe-labs/Level5FullStack'));
+const EarlyAccess = lazy(() => import('./pages/EarlyAccess'));
 
 function RouteFallback() {
   return (
@@ -99,6 +100,8 @@ function App() {
               <Route path="/vibe-labs/level-3" element={<Level3Trae />} />
               <Route path="/vibe-labs/level-4" element={<Level4Compare />} />
               <Route path="/vibe-labs/level-5" element={<Level5FullStack />} />
+              {/* Founding-member waitlist — standalone dark chrome, anon-friendly */}
+              <Route path="/early-access" element={<EarlyAccess />} />
               {/* First-login onboarding — full-bleed, skips Layout */}
               <Route
                 path="/welcome"
