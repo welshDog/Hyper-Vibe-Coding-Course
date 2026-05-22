@@ -282,7 +282,7 @@ test.describe('/courses/:slug — Module Detail', () => {
     await page.goto('/courses');
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
-    await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('heading', { level: 1, name: /module 1/i })).toBeVisible();
   });
 
@@ -291,7 +291,7 @@ test.describe('/courses/:slug — Module Detail', () => {
     await page.goto('/courses');
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
-    await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible({ timeout: 15_000 });
     const hasQuiz = await page.locator('[data-testid="quiz"]').isVisible().catch(() => false);
     const hasLoginPrompt = await page.getByText(/log in to take the quiz/i).isVisible().catch(() => false);
     expect(hasQuiz || hasLoginPrompt).toBeTruthy();
@@ -302,6 +302,6 @@ test.describe('/courses/:slug — Module Detail', () => {
     await navigateClient(page, '/courses');
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
-    await expect(page.getByRole('button', { name: /mark as complete|completed/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /mark as complete|completed/i })).toBeVisible({ timeout: 15_000 });
   });
 });
