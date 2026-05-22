@@ -87,7 +87,7 @@ test.describe('Course Browsing & Details', () => {
 
     await page.goto('/catalog');
     
-    await expect(page.locator('h1')).toHaveText('Course Catalog');
+    await expect(page.locator('h1')).toHaveText(/Pick your next build session/);
     
     await expect(page.getByText('Intro to Programming', { exact: false })).toBeVisible();
     await expect(page.getByText('£29.99', { exact: false })).toBeVisible();
@@ -406,13 +406,14 @@ test.describe('/courses — Module List Page', () => {
     await page.fill('input[name="password"]', 'Password123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
+    // Generous timeout — the dashboard's HUD/data render can lag under full-suite parallel load
+    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible({ timeout: 15_000 });
   };
 
   test('loads course grid without auth', async ({ page }) => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
-    await expect(page.getByRole('heading', { name: /modules/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /pick a module/i })).toBeVisible();
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
   });
 
@@ -428,13 +429,13 @@ test.describe('/courses — Module List Page', () => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
     const firstCard = page.locator('[data-testid="module-card"]').first();
-    const link = firstCard.getByRole('link', { name: /start module/i });
+    const link = firstCard.getByRole('link', { name: /start quest/i });
     await expect(link).toHaveAttribute('href', /\/courses\//);
   });
 
   test('shows completion progress when authenticated', async ({ page }) => {
     await loginAsTestUser(page);
     await navigateClient(page, '/courses');
-    await expect(page.getByText(/modules complete/i)).toBeVisible();
+    await expect(page.getByText(/module progress/i)).toBeVisible();
   });
 });

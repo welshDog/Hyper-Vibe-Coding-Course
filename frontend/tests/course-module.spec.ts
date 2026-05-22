@@ -273,14 +273,15 @@ test.describe('/courses/:slug — Module Detail', () => {
     await page.fill('input[name="password"]', 'Password123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
+    // Generous timeout — the dashboard's HUD/data render can lag under full-suite parallel load
+    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible({ timeout: 15_000 });
   };
 
   test('loads module content without auth', async ({ page }) => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
-    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start module/i }).click();
+    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
     await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: /module 1/i })).toBeVisible();
   });
@@ -289,7 +290,7 @@ test.describe('/courses/:slug — Module Detail', () => {
     await installSupabaseMocks(page, { authenticated: false });
     await page.goto('/courses');
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
-    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start module/i }).click();
+    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
     await expect(page.getByRole('link', { name: /back to modules/i })).toBeVisible();
     const hasQuiz = await page.locator('[data-testid="quiz"]').isVisible().catch(() => false);
     const hasLoginPrompt = await page.getByText(/log in to take the quiz/i).isVisible().catch(() => false);
@@ -300,7 +301,7 @@ test.describe('/courses/:slug — Module Detail', () => {
     await loginAsTestUser(page);
     await navigateClient(page, '/courses');
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
-    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start module/i }).click();
+    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
     await expect(page.getByRole('button', { name: /mark as complete|completed/i })).toBeVisible();
   });
 });

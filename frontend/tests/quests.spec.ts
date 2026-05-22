@@ -226,7 +226,8 @@ test.describe('/quests — Quest Tracker', () => {
     await page.fill('input[name="password"]', 'Password123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible();
+    // Generous timeout — the dashboard's HUD/data render can lag under full-suite parallel load
+    await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible({ timeout: 15_000 });
   };
 
   test('redirects to login when not authenticated', async ({ page }) => {

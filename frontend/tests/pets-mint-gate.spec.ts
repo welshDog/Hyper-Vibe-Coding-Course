@@ -1,18 +1,28 @@
 import { test, expect } from '@playwright/test'
 
-test('pets mint panel prompts sign-in when logged out', async ({ page }) => {
+/**
+ * Logged-out users hit a hard login gate on /pets — the whole mint flow
+ * (species picker → name → mint) is members-only. The species picker is
+ * not rendered at all until a user is signed in. This guards that gate.
+ *
+ * (The earlier version of this test assumed logged-out users could pick a
+ * species and saw an inline "Sign in to unlock mint" lock — that inline
+ * design was replaced by the full login gate below.)
+ */
+test('pets mint flow is login-gated when logged out', async ({ page }) => {
   await page.goto('/pets')
-  await page.getByRole('button', { name: 'Choose Chaos Cat' }).click()
 
-  const signInBtn = page.getByRole('button', { name: 'Sign in to unlock mint' })
-  await expect(signInBtn).toBeVisible()
-  const bg = await signInBtn.evaluate((el) => getComputedStyle(el).backgroundImage)
-  expect(bg).toContain('linear-gradient')
+  // /pets lazy-loads the heavy web3 chunk — the first dev-mode compile can
+  // take well over the default 5s, so give this first assertion headroom.
+  await expect(page.getByText(/log in to mint your broskipet/i)).toBeVisible({
+    timeout: 30_000,
+  })
+  await expect(page.getByRole('heading', { name: /mint a broski pet/i })).toBeVisible()
 
-  await expect(page.locator('[data-hud-broski]')).toHaveText('—')
-  await expect(page.locator('[data-mint-broski]')).toHaveText('—')
+  // The mint gate's "Create account" CTA — unique to the gate (the page
+  // chrome's own auth CTA reads "Start free", so no strict-mode clash).
+  await expect(page.getByRole('link', { name: /create account/i })).toBeVisible()
 
-  await expect(page.getByText('Sign in to check your BROski$ balance')).toBeVisible()
-  await expect(page.getByLabel('Mint locked')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Connect wallet to mint 🔗' })).toHaveCount(0)
+  // Step 1 (the species picker) is NOT rendered for logged-out users.
+  await expect(page.getByText(/step 1 — pick a species/i)).toHaveCount(0)
 })

@@ -351,12 +351,13 @@ test.describe('Enrollment & Learning', () => {
     await expect(page.getByText(course.title, { exact: false })).toBeVisible({ timeout: 15_000 });
 
     // Navigate to course detail
-    await page.getByRole('button', { name: 'View Course' }).first().click();
+    await page.getByRole('button', { name: 'View →' }).first().click();
     await expect(page).toHaveURL(/\/catalog\/1/, { timeout: 10_000 });
     await expect(page.locator('h1')).toHaveText(course.title);
 
-    // Enroll (free course → direct enrollment, no Stripe redirect)
-    const enrollButton = page.locator('button', { hasText: /Enroll/ });
+    // Enroll (free course → direct enrollment, no Stripe redirect).
+    // A free course's CTA reads "Let's GO — free →" (paid courses say "Enroll — £x").
+    const enrollButton = page.getByRole('button', { name: /let's go.*free/i });
     await expect(enrollButton).toBeVisible();
     await enrollButton.click();
 
