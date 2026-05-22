@@ -47,6 +47,7 @@ const Level3Trae = lazy(() => import('./pages/vibe-labs/Level3Trae'));
 const Level4Compare = lazy(() => import('./pages/vibe-labs/Level4Compare'));
 const Level5FullStack = lazy(() => import('./pages/vibe-labs/Level5FullStack'));
 const EarlyAccess = lazy(() => import('./pages/EarlyAccess'));
+const SignupsDashboard = lazy(() => import('./pages/admin/signups'));
 
 function RouteFallback() {
   return (
@@ -183,8 +184,10 @@ function App() {
                     </PrivateRoute>
                   }
                 />
+                {/* ── Admin routes — protected by AdminRoute role="admin" ── */}
                 <Route element={<AdminRoute role="admin" />}>
                   <Route path="admin" element={<Admin />} />
+                  <Route path="admin/signups" element={<SignupsDashboard />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Route>
