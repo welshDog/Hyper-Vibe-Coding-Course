@@ -123,7 +123,8 @@ test.describe('Enrollment & Learning', () => {
             aud: 'authenticated',
             role: 'authenticated',
             email: user.email,
-            user_metadata: { full_name: user.fullName },
+            // onboarded_at present => Login routes to /dashboard (the onboarding gate in Auth.tsx)
+            user_metadata: { full_name: user.fullName, onboarded_at: '2026-05-01T00:00:00.000Z' },
           },
         });
         return;
@@ -152,7 +153,7 @@ test.describe('Enrollment & Learning', () => {
           aud: 'authenticated',
           role: 'authenticated',
           email: user.email,
-          user_metadata: { full_name: user.fullName },
+          user_metadata: { full_name: user.fullName, onboarded_at: '2026-05-01T00:00:00.000Z' },
         });
         return;
       }
