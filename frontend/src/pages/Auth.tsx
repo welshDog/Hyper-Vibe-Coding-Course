@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { pwnedPasswordCount } from '../lib/hibp';
 import { Input } from '../components/ui/Input';
 import { HVZBrand, HVZButton, HVZCard, HVZTag } from '../components/ui/hvz';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -193,6 +194,17 @@ export function Register() {
     setError(null);
 
     try {
+      // Leaked-password check (HaveIBeenPwned, k-anonymity) — the free
+      // stand-in for Supabase Pro's built-in leaked-password protection.
+      const breachCount = await pwnedPasswordCount(password);
+      if (breachCount > 0) {
+        setPasswordError(
+          `This password turned up in ${breachCount.toLocaleString()} known data breaches — pick a fresh one.`,
+        );
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
