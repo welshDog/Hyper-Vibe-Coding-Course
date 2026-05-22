@@ -12,6 +12,7 @@ COGS = [
     "cogs.badges",
     "cogs.quests",
     "cogs.commands",
+    "cogs.signups",  # 🔔 New student signup notifier
 ]
 
 
@@ -38,7 +39,7 @@ class HyperVibeBot(commands.Bot):
         await self.change_presence(
             activity=discord.Activity(
                 type=discord.ActivityType.watching,
-                name="builders vibe 🏴󠁧󠁢󠁷󠁬󠁳󠁠",
+                name="builders vibe 🏴󠁧󠁢󠁷󠁬󠁳󠁿",
             )
         )
 
