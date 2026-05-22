@@ -31,7 +31,7 @@ function ErrorBox({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="rounded-hfz-md border border-hfz-danger/40 bg-hfz-danger/10 px-4 py-3"
+      className="hfz-error-in rounded-hfz-md border border-hfz-danger/40 bg-hfz-danger/10 px-4 py-3"
     >
       <p className="text-sm text-hfz-danger m-0">
         Hmm, let's try that again 🔄 — {message}
@@ -94,7 +94,7 @@ export function Login() {
     <AuthShell tag="🔓 Welcome back, BROski♾️">
       <HVZCard padding={32}>
         <h1
-          className="font-display font-bold text-3xl text-hfz-text-primary mb-2 text-center"
+          className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-2 text-center"
           style={{ background: 'none', WebkitTextFillColor: 'unset' }}
         >
           Sign back in
@@ -147,7 +147,7 @@ export function Login() {
             />
           </div>
 
-          <HVZButton type="submit" variant="primary" size="md" disabled={loading} fullWidth>
+          <HVZButton type="submit" variant="primary" size="md" disabled={loading} fullWidth aria-busy={loading}>
             {loading ? 'Wiring up the Z0ne...' : "Let's GO →"}
           </HVZButton>
         </form>
@@ -234,9 +234,9 @@ export function Register() {
       <AuthShell tag="🎉 You're in, BROski♾️">
         <HVZCard padding={32} glow="mint">
           <div className="text-center">
-            <div className="text-5xl mb-4" aria-hidden>🚀</div>
+            <div className="text-5xl mb-4 hfz-celebrate" aria-hidden>🚀</div>
             <h1
-              className="font-display font-bold text-3xl text-hfz-text-primary mb-3"
+              className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-3"
               style={{ background: 'none', WebkitTextFillColor: 'unset' }}
             >
               Account live!
@@ -269,7 +269,7 @@ export function Register() {
     <AuthShell tag="✨ Hey bro, let's get you set up">
       <HVZCard padding={32}>
         <h1
-          className="font-display font-bold text-3xl text-hfz-text-primary mb-2 text-center"
+          className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-2 text-center"
           style={{ background: 'none', WebkitTextFillColor: 'unset' }}
         >
           Create your account
@@ -339,12 +339,13 @@ export function Register() {
               value={password}
               onChange={handlePasswordChange}
               placeholder="Make it solid"
-              className={passwordError ? 'border-hfz-danger focus:border-hfz-danger focus:shadow-none' : ''}
+              className={passwordError ? 'border-hfz-danger focus:border-hfz-danger focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]' : ''}
               aria-invalid={!!passwordError}
               aria-describedby="password-help"
             />
             <p
               id="password-help"
+              aria-live="polite"
               className={`mt-2 text-xs ${
                 passwordError ? 'text-hfz-danger' : 'text-hfz-text-secondary'
               }`}
@@ -359,6 +360,7 @@ export function Register() {
             size="md"
             fullWidth
             disabled={loading || !!passwordError}
+            aria-busy={loading}
           >
             {loading ? 'Wiring up the Z0ne...' : "Let's GO →"}
           </HVZButton>
