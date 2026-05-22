@@ -74,3 +74,6 @@ v2-deployment/
 
 # test
 test-results/
+
+.vercel
+.env*.local
