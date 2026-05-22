@@ -1,6 +1,5 @@
 /* ================================================================
    SELF-HOSTED FONTS — Sprint 3 item 2
-   Moved here from the orphaned styles/globals.css (never imported).
    All OFL-licensed, self-hosted from /public/fonts. font-display:swap
    on every face (no invisible text during load — ND-audience rule).
    NOTE: Space Grotesk's weight axis tops out at 700 — there is no 800
@@ -90,9 +89,7 @@
     --color-text-primary: #F0F4FF;
     --color-text-secondary: #8B9CC8;
     /* Sprint 3 item 4: was #3D4F6E (~2:1, failed WCAG AA). Kept in sync
-       with tailwind.config.js hfz.text.disabled. NOTE: styles/globals.css
-       has a dead (unimported) duplicate of this var — intentionally NOT
-       synced; index.css is the live source of truth. */
+       with tailwind.config.js hfz.text.disabled. */
     --color-text-disabled: #7E8FB5;
     --color-bg: var(--color-space-black);
     --color-surface: var(--color-midnight-blue);
