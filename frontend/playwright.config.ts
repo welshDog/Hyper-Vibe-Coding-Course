@@ -16,6 +16,10 @@ const isCI = process.env.CI === 'true' || process.env.CI === '1'
 export default defineConfig({
   testDir: './tests',
   timeout: 60_000,
+  /* Default assertion timeout. Generous on purpose: routes lazy-load heavy
+   * chunks (web3, course content) and a single dev server feeds several
+   * parallel workers, so first-paint can lag past the 5s default under load. */
+  expect: { timeout: 15_000 },
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
