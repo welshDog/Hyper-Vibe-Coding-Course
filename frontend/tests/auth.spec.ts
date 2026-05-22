@@ -71,6 +71,35 @@ test.describe('Authentication', () => {
       await fulfillJson(route, {});
     });
 
+    // HaveIBeenPwned leaked-password check (lib/hibp.ts) — mock as "clean"
+    // (empty range => password's hash suffix absent => 0 breaches) so signup
+    // proceeds deterministically and offline. The form's password
+    // ('Password123') is itself a known-breached string, so without this the
+    // real HIBP call would block the signup.
+    await page.route('https://api.pwnedpasswords.com/**', async (route) => {
+      const request = route.request();
+      const origin = request.headers()['origin'] ?? 'http://localhost:5173';
+      if (request.method() === 'OPTIONS') {
+        await route.fulfill({
+          status: 204,
+          headers: {
+            'access-control-allow-origin': origin,
+            'access-control-allow-headers': request.headers()['access-control-request-headers'] ?? '*',
+            'access-control-allow-methods': 'GET,OPTIONS',
+            vary: 'origin',
+          },
+          body: '',
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/plain',
+        headers: { 'access-control-allow-origin': origin, vary: 'origin' },
+        body: '',
+      });
+    });
+
     await page.goto('/register');
     
     await page.fill('input[name="fullName"]', user.fullName);
@@ -79,7 +108,7 @@ test.describe('Authentication', () => {
     
     await page.click('button[type="submit"]');
 
-    await expect(page.getByRole('heading', { name: 'Account created!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Account live!' })).toBeVisible();
     await page.getByRole('button', { name: /Go to login/ }).click();
     await expect(page).toHaveURL(/\/login/);
   });
@@ -122,7 +151,10 @@ test.describe('Authentication', () => {
             aud: 'authenticated',
             role: 'authenticated',
             email: user.email,
-            user_metadata: { full_name: user.fullName },
+            // onboarded_at present => Login routes to /dashboard, not /welcome
+            // (the onboarding gate in Auth.tsx). This test covers a returning,
+            // already-onboarded user.
+            user_metadata: { full_name: user.fullName, onboarded_at: '2026-05-01T00:00:00.000Z' },
           },
         });
         return;
@@ -134,7 +166,7 @@ test.describe('Authentication', () => {
           aud: 'authenticated',
           role: 'authenticated',
           email: user.email,
-          user_metadata: { full_name: user.fullName },
+          user_metadata: { full_name: user.fullName, onboarded_at: '2026-05-01T00:00:00.000Z' },
         });
         return;
       }
