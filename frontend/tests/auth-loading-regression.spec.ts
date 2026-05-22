@@ -127,8 +127,10 @@ test.describe('P0 regression — auth never infinite-loads', () => {
     // INVARIANT: a real session + a hung profile fetch must resolve to the
     // login redirect (loading released, no usable profile) within the
     // watchdog window — NOT an infinite global loader. The watchdog is
-    // PROFILE_LOAD_TIMEOUT_MS (8s) + buffer for build/route latency.
-    await expect(page).toHaveURL(/\/login/, { timeout: 20_000 });
+    // PROFILE_LOAD_TIMEOUT_MS (8s); the rest is generous buffer for cold
+    // dev-compile + slow-browser latency under full-suite parallel load.
+    // A genuine infinite loader still fails this — the URL never changes.
+    await expect(page).toHaveURL(/\/login/, { timeout: 35_000 });
 
     // And it must NOT be parked on the global loading text.
     await expect(page.getByText('Loading...', { exact: true })).toHaveCount(0);

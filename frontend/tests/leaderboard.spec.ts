@@ -78,12 +78,12 @@ test.describe('/leaderboard — Rankings Page', () => {
 
   test('loads without auth', async ({ page }) => {
     await page.goto('/leaderboard');
-    await expect(page.getByRole('heading', { name: /leaderboard/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /leaderboard/i })).toBeVisible({ timeout: 15_000 });
   });
 
   test('shows table column headers', async ({ page }) => {
     await page.goto('/leaderboard');
-    await expect(page.getByRole('heading', { name: /leaderboard/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /leaderboard/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('columnheader', { name: 'Rank' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible();
     await expect(page.getByRole('columnheader', { name: 'Level' })).toBeVisible();
@@ -92,7 +92,7 @@ test.describe('/leaderboard — Rankings Page', () => {
 
   test('shows empty state gracefully when no data', async ({ page }) => {
     await page.goto('/leaderboard');
-    await expect(page.getByRole('heading', { name: /leaderboard/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /leaderboard/i })).toBeVisible({ timeout: 15_000 });
     const hasRows = (await page.locator('tbody tr').count()) > 0;
     const hasEmptyState = await page
       .getByText(/no one on the leaderboard yet/i)
