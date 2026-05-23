@@ -64,7 +64,7 @@
 - **Repo:** `github.com/welshDog/Hyper-Vibe-Coding-Course`
 - **Stack:** **Vite + React** + Vercel + Supabase + Stripe + BROski$ tokens
   > ⚠️ NOT Next.js — do not generate Next.js / App Router code for this repo. Use Vite + React patterns.
-- **Status:** 🟢 Course audit complete — all 10 modules rewritten. Sprint 4 (Anon → Signup) in flight.
+- **Status:** 🟢 Course audit complete — all 10 modules rewritten. Sprint 4 (Anon → Signup) LIVE since May 19 (`a12ecd0`). See CLAUDE.md §0b.
 - **KEY FILES TO READ (in order):**
   1. `rewrites/NEXT_SESSION_HANDOVER_2026-05-23.md` — **live state, always wins**
   2. `CLAUDE.md` — sacred rules + tech gotchas
@@ -80,10 +80,12 @@
 
 ---
 
-## 🎓 CURRENT MISSION — Sprint 4 + Mission Control (May 2026)
+## 🎓 CURRENT MISSION — Catch Stragglers smoke-test + mc_events (May 2026)
 
 ### What we're doing:
-Verify Sprint 4 (Anon → Signup Conversion), wire Catch Stragglers into Mission Control, then mc_events migration.
+Catch Stragglers is LIVE end-to-end in the **WelshDog-Mission-Control** sibling repo (full overlay + Express `/api/send-dm`, commits `00aa770` / `ceadad2` / `c5b36c2`). Next: smoke-test with a real Discord token + service-role key, then `mc_events` event-sourcing migration.
+
+> ⛔ **Don't "verify Sprint 4" or wire up `useAnonymousProgress` / `migrateAnonProgress` / `ClaimXPModal` — that was a stale-handover trap.** Sprint 4 (anon → signup) was already LIVE since May 19 (`a12ecd0`) on a server-authoritative architecture (`lib/anonProgress.ts` + `useProgress.reconcile()` through `claim_level_reward` RPC). The duplicate-implementation files were removed in `c4a9274`. See CLAUDE.md §0b.
 
 ### Course mission:
 > *"Stop apologising for your brain. Start building."*

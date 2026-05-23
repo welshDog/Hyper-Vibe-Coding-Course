@@ -2,14 +2,14 @@
 
 > **Date:** Saturday May 23, 2026
 > **Time:** 14:00 – 15:00 BST
-> **AI Partners:** Perplexity (lead) + Claude (Sprint 4 build)
+> **AI Partners:** Perplexity (lead) + Claude (Sprint 4 cleanup + Catch Stragglers wire-up in MC sibling repo)
 > **Commit HEAD:** 3d7c72e
 
 ---
 
 ## 🧠 Session Summary
 
-Double-workstream session. Perplexity built Catch Stragglers (Mission Control operator tool). Claude worked Sprint 4 (anon → signup conversion) in parallel. Full handover chain written and verified.
+Double-workstream session that hit a contradiction. Perplexity drafted Catch Stragglers backend code (`api/routes/catch_stragglers.py` + `discord-bot/dm_sender.py` + `frontend/components/mission-control/CatchStragglers.jsx`) in the course repo, but none of it was deployed (course is a Vite SPA — no FastAPI runs there) and the JSX sat outside the Vite tree. Perplexity also opened a duplicate Sprint 4 build (root-level `useAnonymousProgress.ts` / `migrateAnonProgress.ts` / `ClaimXPModal.tsx`) on an RPC-bypassing architecture — would have been a security regression. Claude reconciled: Sprint 4 was already LIVE since May 19 (`a12ecd0`) on the RPC-gated architecture; the duplicate was deleted (`c4a9274`). Catch Stragglers was then rebuilt properly in **WelshDog-Mission-Control** with an Express `/api/send-dm` backend + full glass-panel operator overlay (commits `00aa770` / `ceadad2` / `c5b36c2` over there).
 
 ---
 
@@ -51,7 +51,7 @@ different (RPC-bypassing) approach — removed in cleanup. See CLAUDE.md §0b fo
 
 ## 🎯 Next Session First Task
 
-**Check Claude's Sprint 4 commits → test localStorage hook → wire Catch Stragglers into MC Hub.**
+**Smoke-test Catch Stragglers in WelshDog-Mission-Control** (real `DISCORD_TOKEN` / `DISCORD_BOT_TOKEN` + `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`, then `npm run dev:full` → Scan → Send). After that: `mc_events` event-sourcing migration. **Don't re-verify Sprint 4** — it was already LIVE since May 19 (`a12ecd0`), see CLAUDE.md §0b.
 
 ---
 

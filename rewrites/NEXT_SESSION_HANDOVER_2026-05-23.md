@@ -120,9 +120,9 @@ https://raw.githubusercontent.com/welshDog/Hyper-Vibe-Coding-Course/main/rewrite
 ## 🚀 How To Start Next Session
 
 1. Read this file ✅
-2. Run `git log origin/main --oneline -10` — check what Claude landed
-3. If Sprint 4 is done — test it, then move to Catch Stragglers wiring
-4. If Sprint 4 is NOT done — finish it first, students first
+2. Run `git log origin/main --oneline -10` — verify what already landed
+3. Catch Stragglers is now LIVE in the **WelshDog-Mission-Control** sibling repo (commits `00aa770` / `ceadad2` / `c5b36c2`). Smoke-test it with a real Discord token + service-role key
+4. Sprint 4 (anon → signup) was already LIVE since May 19 (`a12ecd0`) — **do not rebuild**. See CLAUDE.md §0b
 5. Update this handover at end of session
 
 ---
