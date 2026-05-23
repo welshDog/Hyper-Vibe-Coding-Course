@@ -1,7 +1,7 @@
 # 🧠 AI SESSION INSTRUCTIONS
 ## *Read this FIRST. Every session. No exceptions.*
 > For: Perplexity, Claude, ChatGPT, Cursor, or any AI partner working with @welshDog
-> Last Updated: May 20, 2026
+> Last Updated: May 23, 2026
 
 ---
 
@@ -25,10 +25,30 @@
 
 ---
 
+## 🔌 LIVE CONNECTOR STACK (Perplexity — always on)
+
+> These connectors are active. Use them directly — no copy-paste needed.
+> **Priority order for every session:**
+
+| Priority | Connector | What it gives you |
+|---|---|---|
+| 🔴 1 | **GitHub** | Code truth — commits, files, PRs, diffs |
+| 🔴 2 | **Supabase** | Data truth — auth, tables, migrations, edge functions |
+| 🔴 3 | **Vercel** | Deploy truth — build status, env vars, live frontend |
+| 🟡 4 | **Discord + Discord Bot** | Student comms, Catch Stragglers, DM verification |
+| 🟡 5 | **Google Drive** | Course brain, transcripts, raw scripts |
+| 🟢 6 | **Gmail + Google Calendar** | Launch ops, student outreach, session coordination |
+| 🟢 7 | **Stripe** | Payment verification, token economy, webhook testing |
+
+> ⚡ Rule: Use top 3 connectors every session. Add others only when the task needs them.
+> ❌ Never add connectors "just in case" — connector noise slows momentum.
+
+---
+
 ## 🏗️ THE ECOSYSTEM (3 repos, 1 brain)
 
 ### Repo 1 — HyperCode-V2.4
-- **What:** The core platform — 29 Docker containers, FastAPI, agent swarm
+- **What:** The core platform — 32 Docker containers, FastAPI, agent swarm
 - **Repo:** `github.com/welshDog/HyperCode-V2.4`
 - **Key files:** `CLAUDE.md`, `CLAUDE_CONTEXT.md`, `WHATS_DONE.md`
 - **Stack:** Docker, FastAPI, Python, Prometheus, Grafana, Redis, PostgreSQL
@@ -44,12 +64,13 @@
 - **Repo:** `github.com/welshDog/Hyper-Vibe-Coding-Course`
 - **Stack:** **Vite + React** + Vercel + Supabase + Stripe + BROski$ tokens
   > ⚠️ NOT Next.js — do not generate Next.js / App Router code for this repo. Use Vite + React patterns.
-- **Status:** 🟢 Course audit complete — all 10 modules rewritten
-- **KEY FILES TO READ:**
-  - `VIBE_COURSE_REVIEW.md` — full module scorecard
-  - `rewrites/SESSION_SNAPSHOT_2026-05-18.md` — latest session memory
-  - `THE_PAPER.md` — full project documentation
-  - `rewrites/` folder — all completed module rewrites
+- **Status:** 🟢 Course audit complete — all 10 modules rewritten. Sprint 4 (Anon → Signup) in flight.
+- **KEY FILES TO READ (in order):**
+  1. `rewrites/NEXT_SESSION_HANDOVER_2026-05-23.md` — **live state, always wins**
+  2. `CLAUDE.md` — sacred rules + tech gotchas
+  3. `WHATS_DONE.md` — full history, never rebuild what's here
+  4. `rewrites/SESSION_SNAPSHOT_2026-05-23.md` — sprint history
+  5. `AGENT-START.md` — load skills + start task
 
 ### The Brain — BROski-Obsidian-Brain
 - **What:** Persistent knowledge base — Obsidian vault + Python tools
@@ -59,64 +80,71 @@
 
 ---
 
-## 🎓 CURRENT MISSION — Course Audit (May 2026)
+## 🎓 CURRENT MISSION — Sprint 4 + Mission Control (May 2026)
 
 ### What we're doing:
-Full audit and rewrite of the **Hyper-Vibe Coding Course** — 10 modules, neurodivergent-first pedagogy.
+Verify Sprint 4 (Anon → Signup Conversion), wire Catch Stragglers into Mission Control, then mc_events migration.
 
 ### Course mission:
 > *"Stop apologising for your brain. Start building."*
 > Transform permission-seekers into Meta-Architects.
 
-### Progress snapshot:
+### 🔴 Immediate Priorities:
 
-| Priority | Module | Status |
+| Priority | Task | Status |
 |---|---|---|
-| 🔴 RED | M1 — Your AI Brain | ✅ DONE |
-| 🔴 RED | M4 — Stripe Walkthrough | ✅ DONE |
-| 🔴 RED | M8 — Web3 Plain English | ✅ DONE |
-| 🔴 RED | M9 — Security + SRE | ✅ DONE |
-| 🟡 YELLOW | M2+M2b — Merge Decision | ✅ DONE (merged → "Speaking Agent", May 17 audit) |
-| 🟡 YELLOW | M3 — Win Summary | ✅ DONE (Win Summary block added) |
-| 🟡 YELLOW | M5 — Split Observability | ✅ DONE (split → M5 + M5B) |
-| 🟡 YELLOW | M6 — M5→M6 Handoff | ✅ DONE |
-| 🟡 YELLOW | M7 — Prompt Injection Intro | ✅ DONE |
-| 🟡 YELLOW | M10 — Graduation Reframe | ✅ DONE |
-| 🟢 GREEN | M0, M2 core, M6 core | Keep as-is |
+| 🔴 1 | Verify Sprint 4 — `useAnonymousProgress` + `migrateAnonProgress` | ⏳ Verify Claude's work |
+| 🟡 2 | Wire `CatchStragglers.jsx` into Mission Control main panel | 🔜 Todo |
+| 🟡 3 | `mc_events` event sourcing migration | 🔜 Todo |
+| 🟡 4 | Add `DISCORD_BOT_TOKEN` to Vercel env vars | 🔜 Todo |
+| 🟡 5 | Register `catch_stragglers` router in FastAPI `main.py` | 🔜 Todo |
 
-> ✅ **ALL 10 modules + M5B rewritten, locked, and synced to Supabase `hv_modules`**
-> in the **May 17, 2026 audit** (single source of truth: `rewrites/NOTEBOOKLM_MASTER_PACK.md`).
-> The YELLOW list above is historical — do **not** re-do these rewrites.
-> ⚠️ Quiz fix (2026-05-18): all `true_false` answer_index were inverted course-wide —
-> data corrected in `hv_quizzes` + generator hardened. See memory `hv-quizzes-true-false-convention`.
+### Sprint 4 files to verify:
+```
+hooks/useAnonymousProgress.ts
+app/vibe-labs/level-[n]/page.tsx
+components/ClaimXPModal.tsx
+lib/migrateAnonProgress.ts
+```
 
-### Completed rewrites live here:
-```
-rewrites/
-  MODULE_01_REWRITE.md … MODULE_10_REWRITE.md  ✅ (all 10)
-  MODULE_05B_REWRITE.md                         ✅
-  NOTEBOOKLM_MASTER_PACK.md                     ← single source of truth (May 17 audit)
-  SESSION_SNAPSHOT_2026-05-18.md                ← latest
-```
+### Course audit status (complete ✅):
+
+| Module | Status |
+|---|---|
+| M0 — Welcome | ✅ Keep as-is |
+| M1 — Your AI Brain | ✅ Rewritten |
+| M2 — Speaking Agent | ✅ Rewritten (M2+M2b merged) |
+| M3 — Win Summary | ✅ Rewritten |
+| M4 — Stripe Walkthrough | ✅ Rewritten |
+| M5 — Observability Pt1 | ✅ Rewritten |
+| M5B — Observability Pt2 | ✅ Rewritten |
+| M6 — Agent Architecture | ✅ Rewritten |
+| M7 — Prompt Injection | ✅ Rewritten |
+| M8 — Web3 Plain English | ✅ Rewritten |
+| M9 — Security + SRE | ✅ Rewritten |
+| M10 — Graduation | ✅ Rewritten |
+
+> Single source of truth: `rewrites/NOTEBOOKLM_MASTER_PACK.md`
 
 ---
 
 ## 🛠️ TOOLS IN USE
 
-| Tool | Purpose | Link |
+| Tool | Purpose | Notes |
 |---|---|---|
-| NotebookLM | 53-source course brain | [Open](https://notebooklm.google.com/notebook/9bf80983-8a6d-4c10-91c0-69118d0935fd) |
-| Google Drive | Raw scripts + curriculum | drive.google.com |
-| GitHub | Version control + rewrites | github.com/welshDog |
-| Supabase | Course DB (modules, progress) | Project: yhtmuibgdnxhbgboajhc |
-| Vercel | Live course platform | hyper-vibe-coding-course.vercel.app |
-| Perplexity | Review partner + rewrite engine | This session |
+| **GitHub** (connector) | Version control + rewrites | Use connector — no copy-paste |
+| **Supabase** (connector) | Course DB — project: `yhtmuibgdnxhbgboajhc` | Use connector |
+| **Vercel** (connector) | Live platform: `hyper-vibe-coding-course.vercel.app` | Use connector |
+| **Discord** (connector) | Student comms + Catch Stragglers | Use connector |
+| **Google Drive** (connector) | Raw scripts + curriculum | Use connector |
+| **NotebookLM** | 53-source course brain | Manual: add latest handover + AGENT-START.md |
+| **Perplexity** | Review partner + build engine | This session |
 
 ---
 
 ## 💼 AI BEHAVIOUR RULES
 
-1. **Always read this file + SESSION_SNAPSHOT first** before suggesting anything
+1. **Always read this file + NEXT_SESSION_HANDOVER first** — before suggesting anything
 2. **Check WHATS_DONE.md** before building something that might exist
 3. **Push to GitHub after every task** — nothing is done until it's committed
 4. **Give quick wins first** — momentum > perfection
@@ -127,22 +155,38 @@ rewrites/
 
 ---
 
+## 🔴 LOAD-BEARING RULES (never break these)
+
+| Rule | Why |
+|---|---|
+| Never `supabase db push` | Migrations desynced — use `apply_migration` only |
+| Web3 = `/pets` only | Wagmi/RainbowKit must NOT leak into global app root |
+| `npm run dev:frontend` | `npm run dev` breaks the build for AI agents |
+| `set-state-in-effect` = lint fail | Hard commit block — avoid entirely |
+| `docker-ce-cli` not `docker.io` | Agent connectivity depends on it |
+| `git fetch` before push | Auto-commits are running — pull first |
+| `DISCORD_BOT_TOKEN` in `.env` only | Never commit secrets |
+| Commit + Push = Done | "I'll do it later" doesn't count |
+
+---
+
 ## 🚀 HOW TO START A SESSION
 
 **Lyndz will say something like:**
-- "Let's continue the course review"
+- "Let's continue"
 - "Back to it bro"
 - "Let's crack on"
 - "What's next?"
 
-**You should:**
-1. Read this file ✅
-2. Read `rewrites/SESSION_SNAPSHOT_2026-05-18.md` ✅
-3. State the next task clearly in 2 lines
-4. Ask ONE decision question if needed
-5. Start building immediately
+**You must:**
+1. Read `rewrites/NEXT_SESSION_HANDOVER_[latest date].md` via GitHub connector ✅
+2. Read `WHATS_DONE.md` via GitHub connector ✅
+3. State the next task in **2 lines max**
+4. Ask **ONE** decision question only if genuinely blocked
+5. **Start building immediately**
 
-**Never:** Recap everything from scratch. Never ask "what would you like to work on today?" if the snapshot tells you exactly what's next.
+**Never:** Ask "what would you like to work on today?" — the handover tells you exactly what's next.
+**Never:** Recap everything from scratch.
 
 ---
 
@@ -160,7 +204,7 @@ Every module rewrite must follow this structure:
 7. REWARD — BROski$ XP claim
 ```
 
-### The Analogy Arsenal (use these, add more):
+### The Analogy Arsenal:
 
 | Concept | Analogy |
 |---|---|
@@ -176,19 +220,22 @@ Every module rewrite must follow this structure:
 | Prompt injection | Con artist at the door 🥸 |
 | Agent swarm | Your crew of specialists 👥 |
 | Session snapshot | Your brain's save file 💾 |
+| localStorage migration | Saving your game before logging in 🎮 |
+| Catch Stragglers | Sending a lifeline to lost players 🆘 |
 
 ---
 
 ## 📝 SESSION END CHECKLIST
 
 Before ending any session:
-- [ ] Push all rewrites to `rewrites/` folder
-- [ ] Update `VIBE_COURSE_REVIEW.md` session log
-- [ ] Create new `SESSION_SNAPSHOT_[DATE].md`
-- [ ] Tell Lyndz what to paste into NotebookLM
-- [ ] Confirm what's next session's first task
+- [ ] Push all changes to GitHub via connector
+- [ ] Create `NEXT_SESSION_HANDOVER_[DATE].md` and push to `rewrites/`
+- [ ] Create `SESSION_SNAPSHOT_[DATE].md` and push to `rewrites/`
+- [ ] Update `WHATS_DONE.md`
+- [ ] Tell Lyndz the first task for next session in **one sentence**
+- [ ] Tell Lyndz what to add to NotebookLM
 
 ---
 
-> 🐶♾️ *Built by @welshDog + Perplexity AI — May 16, 2026*
+> 🐶♾️ *Built by @welshDog + Perplexity AI — May 23, 2026*
 > *"Stop apologising for your brain. Start building."*
