@@ -1,6 +1,6 @@
 # 🧠 CLAUDE.md — HyperCode + Hyper-Vibe Course
 > For Claude, Perplexity, ChatGPT, Cursor, or any AI partner.
-> Last updated: May 19, 2026 · Built by @welshDog + AI
+> Last updated: May 23, 2026 · Built by @welshDog + AI
 > **Read this FIRST. Every session. No exceptions.**
 
 ---
@@ -16,6 +16,27 @@
 
 > The SESSION_SNAPSHOT is the living state. This file is the constitution.
 > If they contradict, surface it — don't silently pick one.
+
+---
+
+## 0b. 🚨 Sprint 4 Status (verified May 23, 2026)
+
+> **DO NOT assume Sprint 4 is live. It was NOT in git as of May 23 session.**
+
+| Item | Status |
+|---|---|
+| `hooks/useAnonymousProgress.ts` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
+| `lib/migrateAnonProgress.ts` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
+| `components/ClaimXPModal.tsx` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
+| `SPRINT_4_WIRE_UP.md` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
+| E2E anon-signup-conversion spec | ❌ Not yet written |
+
+> 🔑 **Schema truth** — `user_level_progress` columns (verified via Supabase May 23):
+> `user_id` (uuid) · `completed_levels` (ARRAY) · `xp` (integer) · `badges` (ARRAY) · `created_at` · `updated_at`
+> **NO** `level`, `level_id`, `completed_at`, or `source` columns — it is a single-row-per-user array model.
+> `migrateAnonProgress.ts` must upsert ONE row, append to `completed_levels` array, increment `xp`.
+
+> When Sprint 4 actually lands, update this section with the real commit SHA and remove the ⚠️ flags.
 
 ---
 
@@ -58,7 +79,7 @@
 | 8 | **`setState` synchronously in `useEffect` = ERROR** | Enforced by ESLint `react-hooks/set-state-in-effect` | Commit blocked by husky |
 | 9 | **Lab pages = `hfz-*` Tailwind tokens. Landing page = inline styles + CSS vars** | Two different idioms by design | Wrong token overrides, visual breakage |
 | 10 | **No `framer-motion` in this repo** | Not installed — CSS-only motion, reduced-motion gated | Broken build |
-| 11 | **Course dev *from repo root* = `npm run dev:frontend` NOT `npm run dev`** | Repo-root `npm run dev` ≠ frontend. NOTE: inside `frontend/` the package's own `dev` IS `vite` — that's what `playwright.config.ts` launches and is correct; do NOT "fix" it to match this rule | Dev server broken from root, or a working Playwright/test config wrongly reverted |
+| 11 | **Course dev *from repo root* = `npm run dev:frontend` NOT `npm run dev`** | Repo-root `npm run dev` ≠ frontend. NOTE: inside `frontend/` the package's own `dev` IS `vite` — that's what `playwright.config.ts` launches and is correct; do NOT "fix" it | Dev server broken from root, or a working Playwright/test config wrongly reverted |
 
 ---
 
@@ -181,6 +202,8 @@
 | Session snapshot | Your brain's save file 💾 |
 | Atomic Scoping | Breaking a mountain into LEGO bricks 🧱 |
 | Claude | The crane — you're the architect |
+| localStorage migration | Saving your game before logging in 🎮 |
+| Catch Stragglers | Sending a lifeline to lost players 🆘 |
 
 ---
 
