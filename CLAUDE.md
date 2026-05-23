@@ -19,24 +19,27 @@
 
 ---
 
-## 0b. 🚨 Sprint 4 Status (verified May 23, 2026)
+## 0b. ✅ Sprint 4 Status — LIVE since May 19 (`a12ecd0`)
 
-> **DO NOT assume Sprint 4 is live. It was NOT in git as of May 23 session.**
+> Earlier drafts of this section claimed Sprint 4 was uncommitted on May 23.
+> That was **wrong** — it shipped on **May 19** as commit **`a12ecd0`** (verified via `git show`).
+> A parallel attempt on May 23 (`d7ca644`) introduced 4 duplicate root-level files using a
+> different architecture; those orphans were removed on May 23 to prevent a security
+> regression (they bypassed `claim_level_reward` RPC, the sole reward authority).
 
 | Item | Status |
 |---|---|
-| `hooks/useAnonymousProgress.ts` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
-| `lib/migrateAnonProgress.ts` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
-| `components/ClaimXPModal.tsx` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
-| `SPRINT_4_WIRE_UP.md` | ⚠️ Built by Claude May 23 — **NOT YET COMMITTED** |
-| E2E anon-signup-conversion spec | ❌ Not yet written |
+| `frontend/src/lib/anonProgress.ts` | ✅ Live (`a12ecd0`, May 19) |
+| `frontend/src/hooks/useProgress.ts` + `reconcile()` | ✅ Live — replays earned levels through `claim_level_reward` RPC in ascending order on `SIGNED_IN` |
+| `frontend/src/components/vibe-labs/RewardCard.tsx` | ✅ Live — anon "I built it → You earned it → bank it" CTA |
+| `frontend/src/components/vibe-labs/VibeLabShell.tsx` | ✅ Live — "Earned, unbanked" badge + post-login bank banner |
+| `frontend/src/pages/Auth.tsx` | ✅ Live — open-redirect-safe `returnTo` |
+| `frontend/tests/vibe-labs-anon-flow.spec.ts` | ✅ 3/3 green |
 
 > 🔑 **Schema truth** — `user_level_progress` columns (verified via Supabase May 23):
 > `user_id` (uuid) · `completed_levels` (ARRAY) · `xp` (integer) · `badges` (ARRAY) · `created_at` · `updated_at`
-> **NO** `level`, `level_id`, `completed_at`, or `source` columns — it is a single-row-per-user array model.
-> `migrateAnonProgress.ts` must upsert ONE row, append to `completed_levels` array, increment `xp`.
-
-> When Sprint 4 actually lands, update this section with the real commit SHA and remove the ⚠️ flags.
+> **NO** `level`, `level_id`, `completed_at`, or `source` columns — single-row-per-user array model.
+> The live `claim_level_reward` RPC is the sole writer to this table — never write to it directly from the client.
 
 ---
 

@@ -30,15 +30,11 @@ Double-workstream session. Perplexity built Catch Stragglers (Mission Control op
 
 ---
 
-## 🚧 In Flight (Claude)
+## ✅ Sprint 4 — already LIVE (`a12ecd0`, May 19)
 
-**Sprint 4 — Anon → Signup Conversion**
-- `hooks/useAnonymousProgress.ts`
-- `app/vibe-labs/level-[n]/page.tsx`
-- `components/ClaimXPModal.tsx`
-- `lib/migrateAnonProgress.ts`
-
-Check git log before touching any of these next session.
+Was listed here as "in flight" — incorrect; it shipped May 19 on a server-authoritative
+architecture (RPC-gated). The May 23 parallel attempt (`d7ca644`) was a duplicate using a
+different (RPC-bypassing) approach — removed in cleanup. See CLAUDE.md §0b for the truth.
 
 ---
 

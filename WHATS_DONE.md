@@ -14,14 +14,13 @@
 - **NEXT_SESSION_HANDOVER_2026-05-23.md** pushed to `rewrites/` (commit `3d7c72e`)
 - **SESSION_SNAPSHOT_2026-05-23.md** pushed to `rewrites/`
 - **NotebookLM fully synced** — ingested AGENT-START.md + May 23 handover; returning correct commit SHAs and priorities
-- **Claude running Sprint 4** (anon → signup localStorage gate) in parallel — check git log next session
+- **Sprint 4 truth reconciled** — Sprint 4 (anon → signup) was already LIVE since **May 19 (`a12ecd0`)**; the May 23 "in flight" handover claim was wrong. A parallel duplicate attempt (`d7ca644`) shipped 4 orphan root-level files (`useAnonymousProgress.ts`, `migrateAnonProgress.ts`, `ClaimXPModal.tsx`, `SPRINT_4_WIRE_UP.md`) bypassing the `claim_level_reward` RPC — **removed** to prevent a security regression. Docs (CLAUDE.md §0b, AI_SESSION_INSTRUCTIONS.md, May 23 snapshot + handover) corrected to point at the live v1 architecture.
 
 ### 🔴 Still Open From May 23
 - [ ] Wire `CatchStragglers.jsx` into Mission Control main panel
 - [ ] Register `catch_stragglers` router in FastAPI `main.py`
 - [ ] Add `DISCORD_BOT_TOKEN` to Vercel env vars
 - [ ] Enable Discord bot intents (Message Content + Direct Messages)
-- [ ] Verify Sprint 4 (Claude's work) — test `useAnonymousProgress` hook
 - [ ] Create `mc_events` event sourcing migration
 
 ---

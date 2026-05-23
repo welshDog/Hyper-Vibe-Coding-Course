@@ -32,24 +32,24 @@
 
 ---
 
-## 🚧 In Progress (Claude working on this NOW)
+## ✅ Sprint 4 — already LIVE since May 19 (`a12ecd0`)
 
-### Sprint 4 — Anon → Signup Conversion
-**Status:** Claude building as of 14:30 BST May 23
-
-**What it is:**
-- Let logged-out users complete vibe lab levels
-- Store wins in `localStorage` via `useAnonymousProgress` hook
-- Gate the XP **claim** with “Create account to bank your XP” modal
-- On signup — migrate localStorage wins into Supabase
-
-**Files Claude is likely touching:**
-- `hooks/useAnonymousProgress.ts` (new)
-- `app/vibe-labs/level-[n]/page.tsx` (modify)
-- `components/ClaimXPModal.tsx` (new)
-- `lib/migrateAnonProgress.ts` (new)
-
-**Check GitHub for Claude's commit before starting anything Sprint 4 related.**
+> Earlier in this handover this was listed as "in progress" — that was wrong.
+> Sprint 4 (anon → signup conversion) shipped on **May 19** as commit `a12ecd0`.
+> The live architecture lives at:
+> - `frontend/src/lib/anonProgress.ts`
+> - `frontend/src/hooks/useProgress.ts` (`reconcile()` replays earned levels through `claim_level_reward` RPC on `SIGNED_IN`)
+> - `frontend/src/components/vibe-labs/RewardCard.tsx`
+> - `frontend/src/components/vibe-labs/VibeLabShell.tsx`
+> - `frontend/src/pages/Auth.tsx` (open-redirect-safe `returnTo`)
+> - `frontend/tests/vibe-labs-anon-flow.spec.ts` (3/3 green)
+>
+> A May 23 parallel attempt (`d7ca644`) created 4 duplicate root-level files
+> (`useAnonymousProgress.ts`, `migrateAnonProgress.ts`, `ClaimXPModal.tsx`,
+> `SPRINT_4_WIRE_UP.md`) on a **different architecture** that bypassed the
+> `claim_level_reward` RPC. Removed in cleanup commit — they would have been
+> a security regression (the RPC is the sole reward authority preventing
+> tampered-localStorage bank attempts). See CLAUDE.md §0b.
 
 ---
 
@@ -66,14 +66,8 @@
 
 ## 🎯 Next Session — Priority Order
 
-### 🔴 PRIORITY 1 — Verify Sprint 4 (Claude's work)
-- Check git log for Claude's Sprint 4 commits
-- Test `useAnonymousProgress` hook locally
-- Confirm localStorage → Supabase migration works on signup
-- Write Playwright E2E: sign in → navigate → refresh → sign out
-  - Assert `[data-auth-status]` on badge
-
-### 🟡 PRIORITY 2 — Wire Catch Stragglers Into MC Hub
+### 🔴 PRIORITY 1 — Wire Catch Stragglers Into MC Hub
+(Sprint 4 verification dropped — it was already LIVE since May 19, see section above.)
 - Import `CatchStragglers` into Mission Control main panel
 - Add action card: `onClick={() => setActivePanel('stragglers')}`
 - Register FastAPI route in `main.py`

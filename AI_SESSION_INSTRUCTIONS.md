@@ -93,19 +93,15 @@ Verify Sprint 4 (Anon → Signup Conversion), wire Catch Stragglers into Mission
 
 | Priority | Task | Status |
 |---|---|---|
-| 🔴 1 | Verify Sprint 4 — `useAnonymousProgress` + `migrateAnonProgress` | ⏳ Verify Claude's work |
-| 🟡 2 | Wire `CatchStragglers.jsx` into Mission Control main panel | 🔜 Todo |
+| 🔴 1 | Wire `CatchStragglers.jsx` into Mission Control main panel (WelshDog-Mission-Control sibling repo) | 🔜 Todo |
 | 🟡 3 | `mc_events` event sourcing migration | 🔜 Todo |
 | 🟡 4 | Add `DISCORD_BOT_TOKEN` to Vercel env vars | 🔜 Todo |
 | 🟡 5 | Register `catch_stragglers` router in FastAPI `main.py` | 🔜 Todo |
 
-### Sprint 4 files to verify:
-```
-hooks/useAnonymousProgress.ts
-app/vibe-labs/level-[n]/page.tsx
-components/ClaimXPModal.tsx
-lib/migrateAnonProgress.ts
-```
+### Sprint 4 — ✅ already LIVE (`a12ecd0`, May 19)
+Anchored at `frontend/src/lib/anonProgress.ts` + `useProgress.reconcile()` + `claim_level_reward` RPC.
+No additional verification needed — `vibe-labs-anon-flow.spec.ts` is 3/3 green in prod.
+(May 23 duplicate `d7ca644` files were removed — see CLAUDE.md §0b.)
 
 ### Course audit status (complete ✅):
 
