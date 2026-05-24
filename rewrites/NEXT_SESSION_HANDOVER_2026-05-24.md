@@ -1,153 +1,138 @@
 # NEXT_SESSION_HANDOVER_2026-05-24.md
 
 > **For:** Next AI partner (Perplexity, Claude, ChatGPT, Cursor)
-> **Date:** May 24, 2026 — v2 (updated post-Claude review)
+> **Date:** May 24, 2026 — v3 (end of day update)
 > **Author:** Perplexity + Claude + Lyndz
-> **Commit HEAD:** cb21de9
+> **Commit HEAD:** 5314bfc (HYPERFOCUS_WAY.md)
 
 ---
 
-## ✅ What Landed Tonight (May 24)
+## ✅ What Landed Today (full May 24 log)
 
-| Commit | What | Who |
+| Commit | What | Version |
 |---|---|---|
-| `743bf57` | Fixed 11 broken Vercel deploys (`@supabase/ssr` → `@supabase/supabase-js`) | Perplexity |
-| `1fd71d9` | `weird` footer easter egg → stealth link to `/admin/mission-control` | Perplexity |
-| `cb21de9` | `/admin/mission-control` launchpad built — easter egg no longer 404s | Claude |
+| `743bf57` | Fixed 11 broken Vercel deploys (`@supabase/ssr` → `@supabase/supabase-js`) | — |
+| `1fd71d9` | `weird` footer easter egg → `/admin/mission-control` | — |
+| `cb21de9` | `/admin/mission-control` launchpad — no longer 404s | — |
+| `8c18bf0` | Handover v2 — Claude's 3 corrections + 3 missing items | — |
+| `9dbd95a` | `mc_events` migration SQL | v0.5.0 |
+| `45c2ceb` | v0.5.0 bump + CHANGELOG | v0.5.0 |
+| `6f3f706` | `requireAdmin` JWT middleware + `emitEvent()` helper + TDZ fix | v0.6.0 |
+| `5314bfc` | `HYPERFOCUS_WAY.md` — core platform philosophy locked in | — |
+| **staged** | Grant Tokens full build (8 files, not yet pushed) | **v0.7.0** |
 
 ---
 
-## 🚨 THREE SACRED-RULE CORRECTIONS (from Claude's review)
+## 🔴 IMMEDIATE NEXT TASK — UI Polish Mission
 
-### Correction 1 — Catch Stragglers is DONE, not to-do
-Catch Stragglers is **fully built** in WelshDog-Mission-Control (commits `00aa770` / `ceadad2` / `c5b36c2` / `583a2a1`).
-- Detect ✅ · Draft DMs ✅ · Edit tone ✅ · Approve/Skip/Snooze ✅ · Audit log ✅
-- Only missing: real DISCORD_TOKEN smoke test + MC deployed to a public URL
-- **These are smoke + ship tasks, NOT build tasks**
+Lyndz reviewed the MC page at v0.7.0 and spotted **3 visual bugs** to fix before v0.7.0 ships:
 
-### Correction 2 — Grant Tokens + Refund = BUILD, not "harden"
-- Both are `enabled: false` tiles in `AgentActions.jsx` — zero implementation
-- Budget full build time, not polish time
+### Bug 1 — Missions pipeline text is cramped
+- `0 mission sNewSyncDETECTED` is running together — spacing or layout wrap issue
+- Fix: add spacing between mission count + status label in the pipeline columns
 
-### Correction 3 — Missions Board needs schema migration FIRST
-- Current `mc_missions` columns: `id, title, signal_source, lane, notes, created_at, updated_at, resolved_at`
-- **Missing:** `owner`, `priority`, `assignee` — need `ALTER TABLE` migration before rendering owner/priority chips
-- Use `apply_migration` (idempotent) — combine with `mc_events` migration in one round-trip
+### Bug 2 — `SOOND` truncated label
+- Bottom of the page shows `SOOND` — looks like a layout wrap cutting off `SOON` + next element
+- Fix: check the `enabled: false` / SOON badge rendering in `AgentActions.jsx` — Refund tile label is wrapping wrong
 
----
+### Bug 3 — Missions columns need breathing room
+- The DETECTED / INVESTIGATING / FIXING / SHIPPED columns feel visually compressed
+- Fix: add gap or padding between pipeline status columns
 
-## 🚨 THREE MISSING THINGS (from Claude's review)
-
-### Missing A — Server-side admin auth on MC Express endpoints
-- `server/index.js` currently trusts CORS + service-role-key only
-- **CORS is not auth** — anything in the allowlist can call `/api/send-dm` without proving admin identity
-- Fix: every endpoint validates Supabase JWT from `Authorization: Bearer ...`, calls `auth.getUser()`, checks `users.role === 'admin'`
-- Build this BEFORE Grant Tokens and Refund or you ship a real attack surface
-
-### Missing B — Where does MC actually deploy?
-- `VITE_MISSION_CONTROL_URL` implies a public MC URL. It doesn't exist yet — MC is local-only (port 5174)
-- Vercel SPA hosting alone won't run `server/index.js` (Express)
-- Need Render or Fly.io (or similar) for the Express backend
-- This blocks the easter egg payoff in production
-
-### Missing C — Scheduler / notification surface
-- Morning Brief and Health Pulse are **manual-only** right now (operator clicks to run)
-- Without a cron (Supabase `pg_cron`, Vercel cron, or `node-cron` in `server/index.js`) they never auto-fire
-- **The loop to close:** high-priority mission → Discord DM to Lyndz via broski-bot
-- MC stops being "go check the dashboard" and starts being "the dashboard tells you when to check it"
+**These are small CSS/layout fixes. One commit. Ship with v0.7.0.**
 
 ---
 
-## 🎯 REFINED BUILD ORDER (Claude's reorder — follow this)
+## 🟡 SMOKE TEST STATUS
 
-| Step | Task | Why |
+- Lyndz added `SUPABASE_URL` to `.env.local` mid-boot (caught a missing env var, correct call)
+- `npm run dev:full` restarted with all 4 env vars present
+- **Smoke test result: pending** — Lyndz was reviewing the UI when this handover was written
+- **First thing next session:** confirm smoke green or red on Catch Stragglers + Grant Tokens
+
+### Full `.env.local` required for MC:
+```
+SUPABASE_URL=https://yhtmuibgdnxhbgboajhc.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+DISCORD_BOT_TOKEN=your_real_token
+MAX_GRANT_PER_CALL=10000
+```
+
+### Smoke test steps:
+1. `npm run dev:full` — confirm clean boot
+2. `http://localhost:5174` → click `weird` → Open Mission Control
+3. Catch Stragglers → Scan → Send one DM — confirm Discord DM lands
+4. Grant Tokens → paste real userId → 50 BROski$ → "smoke test" → Preview → Confirm
+5. Check `users.broski_tokens` updated + `mc_events` row exists in Supabase
+
+---
+
+## 🎯 NEXT BUILD ORDER (pick up from here)
+
+| Step | Task | Status |
 |---|---|---|
-| 1 | `mc_events` migration + `mc_missions` schema bump (`owner`/`priority`) | One combined `apply_migration` round-trip. Everything depends on this. |
-| 2 | Server-side admin JWT auth on MC Express | Small (one middleware). Must exist before Grant/Refund or it's a real attack surface. |
-| 3 | Catch Stragglers smoke test + MC prod deploy | Converts "built" → "shipped". Sets `VITE_MISSION_CONTROL_URL` for real. |
-| 4 | Real signals in Health Pulse + Morning Brief (persisted via `mc_events`) | Dashboards become non-toy. |
-| 5 | Build Grant Tokens | Needs `mc_events` for audit + JWT auth from step 2. |
-| 6 | Build Refund | Same deps + Stripe idempotency keys (one per charge, always). |
-| 7 | Drift Scan | Small — mostly a re-run of the true/false fix. |
-| 8 | Missions Board detail + filtering + Live Activity v2 | Polish layer. Lands last because everything underneath got smarter. |
-
----
-
-## 🧠 THE ARCHITECTURAL INSIGHT — mc_events is the spine
-
-`mc_events` unlocks everything else for free:
-- **Live Activity feed** — `SELECT FROM mc_events ORDER BY created_at DESC`
-- **Audit trail** for Grant/Refund/Catch Stragglers — every action emits one row
-- **Replay** — rebuild any view from the event log
-- **Who did what when** — `actor` column is the truth
-
-Right now `mc_missions` doubles as event log + state table. That's fine at this scale. But every new action makes the hack worse. **Splitting `mc_missions` (state) + `mc_events` (history) is the single highest-leverage move on the whole list.**
+| 🔴 NOW | Fix 3 UI bugs above + push v0.7.0 | Staged, needs polish + push |
+| 1 | Smoke test Catch Stragglers + Grant Tokens | Pending |
+| 2 | Rebuild ActivityTicker on `mc_events` realtime | Not started |
+| 3 | Real signals in Health Pulse + Morning Brief (persisted via `mc_events`) | Not started |
+| 4 | Build Refund — full build, same pattern + Stripe idempotency keys | Not started |
+| 5 | Add scheduler / cron — Morning Brief + Health Pulse auto-fire daily | Not started |
+| 6 | Deploy MC to prod — needs Render/Fly for Express backend | Blocking easter egg in prod |
+| 7 | Delete dead planning artifacts from course repo | Not started |
 
 ---
 
 ## ✅ Already Live — Do Not Rebuild
 
-| Feature | Commit | Status |
-|---|---|---|
-| Sprint 4 (anon → signup) | `a12ecd0` (May 19) | ✅ Live |
-| Catch Stragglers (MC repo) | `00aa770` / `ceadad2` / `c5b36c2` / `583a2a1` | ✅ Built — needs smoke + deploy |
-| All 10 module rewrites | various | ✅ Complete |
-| Vibe Labs funnel | various | ✅ 100/100 A11Y |
-| `mc_missions` table + RLS | various | ✅ Active |
-| Admin signups dashboard | `718178c` | ✅ Live |
-| Footer easter egg → MC launchpad | `1fd71d9` + `cb21de9` | ✅ Live |
+| Feature | Status |
+|---|---|
+| Sprint 4 (anon → signup) | ✅ Live since May 19 |
+| Catch Stragglers | ✅ Built in MC repo — smoke test only |
+| All 10 module rewrites | ✅ Complete |
+| Vibe Labs funnel 100/100 A11Y | ✅ Live |
+| `mc_missions` + `mc_events` tables | ✅ Live in Supabase |
+| `requireAdmin` JWT middleware | ✅ v0.6.0 |
+| `emitEvent()` helper | ✅ v0.6.0 |
+| Grant Tokens UI + endpoint | ✅ Built — staged as v0.7.0, push after smoke |
+| Footer easter egg → MC launchpad | ✅ Live |
+| `HYPERFOCUS_WAY.md` | ✅ Core platform philosophy locked in |
 
 ---
 
-## 🔴 Load-Bearing Gotchas (Do NOT Forget)
+## 🔴 Load-Bearing Gotchas
 
 1. **Never `supabase db push`** — use `apply_migration` only
 2. **Web3 = `/pets` only** — never add wagmi/wallet providers globally
-3. **`set-state-in-effect`** = automatic lint fail + commit block
+3. **`set-state-in-effect`** = lint fail + commit block
 4. **`DISCORD_BOT_TOKEN` in `.env` only** — never commit
-5. **`docker-ce-cli` not `docker.io`** — agent connectivity depends on it
-6. **`@supabase/ssr` is NOT installed** — use `@supabase/supabase-js` always
-7. **`git fetch` before push** — auto-commits may be running
-8. **CORS is not auth** — every MC Express endpoint needs JWT validation before Grant/Refund ship
-9. **Catch Stragglers = DONE** — do not rebuild. Smoke test only.
-10. **Grant Tokens + Refund = BUILD from scratch** — budget full build time, not polish time
+5. **`@supabase/ssr` is NOT installed** — use `@supabase/supabase-js` always
+6. **`git fetch` before push** — auto-commits may be running
+7. **CORS is not auth** — every MC Express endpoint needs JWT validation
+8. **Catch Stragglers = DONE** — do NOT rebuild. Smoke only.
+9. **Refund = full BUILD** — budget full build time, not polish
+10. **TDZ rule** — scan for `const X = ...` before replace_all on env-var renames. `node --check` won't catch it.
+11. **Read `HYPERFOCUS_WAY.md`** — every module, UI, and agent decision gets measured against it
 
 ---
 
-## 📊 Supabase Project
-
-- **Project ID:** `yhtmuibgdnxhbgboajhc`
-- **Tables in use:** `user_xp`, `users`, `lesson_progress`, `mc_missions`
-- **Tables to add:** `mc_events` + `mc_missions` schema bump (`owner`, `priority`, `assignee`)
-- **RLS:** Enabled on all tables — check after any new table creation
-
----
-
-## 🛠️ Tools Status
-
-| Tool | Status |
-|------|--------|
-| Vercel (course) | ✅ Live — hyper-vibe-coding-course.vercel.app |
-| Supabase | ✅ Active — project yhtmuibgdnxhbgboajhc |
-| Mission Control | ✅ Launchpad live. MC app local-only (port 5174) — needs prod deploy |
-| Discord Bot | 🟡 Token needed in MC `.env.local` — smoke test pending |
-| MC prod hosting | 🔴 NOT YET — needs Render/Fly for Express backend |
+## 📊 Supabase
+- **Project:** `yhtmuibgdnxhbgboajhc`
+- **Tables:** `user_xp`, `users`, `lesson_progress`, `mc_missions`, `mc_events`
+- **RLS:** Enabled on all — check after any new table
 
 ---
 
 ## 🚀 How To Start Next Session
 
 1. Read this file ✅
-2. Run `git log origin/main --oneline -5` in course repo + `git log --oneline -5` in MC repo
-3. **First task = `mc_events` + `mc_missions` schema bump migration** (Step 1 in build order above)
-4. Do NOT rebuild Catch Stragglers — it's done. Smoke test only.
-5. Do NOT "harden" Grant Tokens/Refund — they need a full build
+2. `git log --oneline -5` in MC repo — confirm HEAD
+3. **Fix the 3 UI bugs + push v0.7.0** (see IMMEDIATE NEXT TASK above)
+4. Run smoke test (5 mins, steps above)
+5. Then pick next from build order
 
 ---
 
 ## 📝 NotebookLM
-
-Add this file:
 ```
 https://raw.githubusercontent.com/welshDog/Hyper-Vibe-Coding-Course/main/rewrites/NEXT_SESSION_HANDOVER_2026-05-24.md
 ```
