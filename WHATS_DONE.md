@@ -19,17 +19,23 @@
 - **File:** `frontend/src/components/Footer.tsx`
 - **Commit:** `1fd71d9` — live on main ✅
 
+### 🚀 `/admin/mission-control` Launchpad LIVE
+- New page `frontend/src/pages/MissionControl.tsx` — hero · launch CTA · 4-panel "what's inside" card · "why it lives elsewhere" rationale · stealth-door footer. Pure hfz token palette (no orange, no new design tokens).
+- Route wired in `App.tsx` inside `<AdminRoute role="admin" />` next to `admin/signups`. Lazy-loaded.
+- `VITE_MISSION_CONTROL_URL` env added to `frontend/.env.example` (defaults to `http://localhost:5174` — the MC dev port). Set this in prod when MC has a public URL.
+- **Decision recorded:** `/admin/mission-control` is a **launchpad to the sibling repo**, NOT a duplicate operator UI. Catch Stragglers / Health Pulse / Morning Brief / Missions Kanban all live in **WelshDog-Mission-Control** (commits `00aa770` / `ceadad2` / `c5b36c2` / `c5b36c2`) with a real Express backend. Course is a Vite SPA on Vercel — there is no FastAPI here, and the May 23 handover's "register catch_stragglers in main.py" + "mount CatchStragglers.jsx as first panel" instructions were a stale-handover trap (same class as Sprint 4 v2). Surfaced + resolved before building anything wrong.
+- Pre-commit loop: `tsc` ✅ · `eslint` ✅ · `vite build` ✅ 18.70s · 1704 modules.
+
 ### 📝 Docs
 - `rewrites/NEXT_SESSION_HANDOVER_2026-05-24.md` pushed (commit `b1d52ae`)
 - `WHATS_DONE.md` updated (this file)
 
 ### 🔴 Still Open From May 24
-- [ ] **Build `/admin/mission-control` page** — footer link is live but route 404s until page is built
-- [ ] Mount `CatchStragglers.jsx` into Mission Control main panel
-- [ ] Register `catch_stragglers` router in FastAPI `main.py`
-- [ ] Add `DISCORD_BOT_TOKEN` to Vercel env vars
+- [ ] Smoke-test Catch Stragglers in WelshDog-Mission-Control (real Discord token + service-role key, then `npm run dev:full` → Scan → Send)
+- [ ] Deploy WelshDog-Mission-Control to a public URL + set `VITE_MISSION_CONTROL_URL` in Vercel env vars for the course
 - [ ] Enable Discord bot intents (Message Content + Direct Messages)
 - [ ] Create `mc_events` event sourcing migration
+- [ ] Delete the dead `api/routes/catch_stragglers.py` + `discord-bot/dm_sender.py` + `frontend/components/mission-control/CatchStragglers.jsx` from the course repo (planning artifacts, never deployed, can confuse future agents)
 
 ---
 
