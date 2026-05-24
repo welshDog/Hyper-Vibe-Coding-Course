@@ -83,7 +83,15 @@ export function Footer() {
 
         <div className="pt-6 border-t border-hfz-border-violet flex justify-between items-center flex-wrap gap-4">
           <div className="text-[13px] text-hfz-text-secondary">
-            © {new Date().getFullYear()} HyperFocus Z0ne · Keep it weird, keep it Welsh.
+            © {new Date().getFullYear()} HyperFocus Z0ne · Keep it{' '}
+            <Link
+              to="/admin/mission-control"
+              className="text-hfz-text-secondary hover:text-hfz-cyan transition-colors no-underline"
+              title=""
+            >
+              weird
+            </Link>
+            , keep it Welsh.
           </div>
           <div className="font-mono text-xs text-hfz-violet-light tracking-hfz-caps">
             ENTER · THE · Z0NE
