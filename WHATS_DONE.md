@@ -1,6 +1,35 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 23, 2026** — update this every session.
+> **Updated: May 24, 2026** — update this every session.
+
+---
+
+## 🎯 MAY 24 — VERCEL BUILD RESCUE + MISSION CONTROL EASTER EGG ✅
+
+### 🔴 CRITICAL — Vercel Build Fixed (was broken for 11 deploys)
+- **Root cause found:** `frontend/src/lib/supabase/client.ts` was importing `createBrowserClient` from `@supabase/ssr` — a Next.js SSR package that was never installed in this Vite SPA
+- **Fix:** Replaced with `createClient` from `@supabase/supabase-js` (already installed, correct for Vite React)
+- **Commit:** `743bf57` — production live again ✅
+- **Rule added to load-bearing gotchas:** `@supabase/ssr` is NOT installed — use `@supabase/supabase-js` always
+
+### 🥚 Footer Easter Egg — Stealth Mission Control Link
+- The word **`weird`** in `© HyperFocus Z0ne · Keep it weird, keep it Welsh.` is now a stealth `<Link>` to `/admin/mission-control`
+- Same colour as surrounding text, no underline, cyan on hover only
+- Normal users will never notice it — clean hidden admin door
+- **File:** `frontend/src/components/Footer.tsx`
+- **Commit:** `1fd71d9` — live on main ✅
+
+### 📝 Docs
+- `rewrites/NEXT_SESSION_HANDOVER_2026-05-24.md` pushed (commit `b1d52ae`)
+- `WHATS_DONE.md` updated (this file)
+
+### 🔴 Still Open From May 24
+- [ ] **Build `/admin/mission-control` page** — footer link is live but route 404s until page is built
+- [ ] Mount `CatchStragglers.jsx` into Mission Control main panel
+- [ ] Register `catch_stragglers` router in FastAPI `main.py`
+- [ ] Add `DISCORD_BOT_TOKEN` to Vercel env vars
+- [ ] Enable Discord bot intents (Message Content + Direct Messages)
+- [ ] Create `mc_events` event sourcing migration
 
 ---
 
@@ -14,21 +43,14 @@
 - **NEXT_SESSION_HANDOVER_2026-05-23.md** pushed to `rewrites/` (commit `3d7c72e`)
 - **SESSION_SNAPSHOT_2026-05-23.md** pushed to `rewrites/`
 - **NotebookLM fully synced** — ingested AGENT-START.md + May 23 handover; returning correct commit SHAs and priorities
-- **Sprint 4 truth reconciled** — Sprint 4 (anon → signup) was already LIVE since **May 19 (`a12ecd0`)**; the May 23 "in flight" handover claim was wrong. A parallel duplicate attempt (`d7ca644`) shipped 4 orphan root-level files (`useAnonymousProgress.ts`, `migrateAnonProgress.ts`, `ClaimXPModal.tsx`, `SPRINT_4_WIRE_UP.md`) bypassing the `claim_level_reward` RPC — **removed** to prevent a security regression. Docs (CLAUDE.md §0b, AI_SESSION_INSTRUCTIONS.md, May 23 snapshot + handover) corrected to point at the live v1 architecture.
-
-### 🔴 Still Open From May 23
-- [ ] Wire `CatchStragglers.jsx` into Mission Control main panel
-- [ ] Register `catch_stragglers` router in FastAPI `main.py`
-- [ ] Add `DISCORD_BOT_TOKEN` to Vercel env vars
-- [ ] Enable Discord bot intents (Message Content + Direct Messages)
-- [ ] Create `mc_events` event sourcing migration
+- **Sprint 4 truth reconciled** — Sprint 4 (anon → signup) was already LIVE since **May 19 (`a12ecd0`)**; the May 23 "in flight" handover claim was wrong. A parallel duplicate attempt (`d7ca644`) shipped 4 orphan root-level files bypassing the `claim_level_reward` RPC — **removed** to prevent a security regression.
 
 ---
 
 ## 🧩 MAY 5 PM — DOC SYNC + STRIPE SCAFFOLD SESSION ✅
 
 - **`BUSINESS_PLAN.md` → v1.1** — corrected pricing (Pro £12 → **£9**, Hyper £35 → **£29**) to match live `/pricing` page; rebuilt 12-month projections with two scenarios (3% conservative / 5% target); added cost math for Stripe fees + Anthropic AI; promoted **“Neurodivergent Hiring Pipeline”** to its own headline section above sponsor tiers; added **“Risks & Mitigations”** 6-row table; deleted empty testimonials block; swapped in live Discord invite (`discord.gg/PSBHyvx86T`); marked `/welcome` as `LIVE (auth)`.
-- **`/pricing` copy fix** (`Pricing.tsx:119`) — replaced contradictory “Cancel anytime. No subscription traps.” with **“Month-to-month, cancel anytime — no annual lock-in”**. Stripe wiring is monthly subs (`pro_monthly` / `hyper_monthly` price keys).
+- **`/pricing` copy fix** (`Pricing.tsx:119`) — replaced contradictory "Cancel anytime. No subscription traps." with **"Month-to-month, cancel anytime — no annual lock-in"**. Stripe wiring is monthly subs (`pro_monthly` / `hyper_monthly` price keys).
 - **Phantom preload nuked** — `index.html` was preloading `/assets/hero-bg.webp` which never existed in `public/` AND wasn’t imported anywhere. Removed the `<link rel="preload">` tag.
 - **Zustand warning closed as NOOP** — only usage in `src/context/auth.ts:1` already uses named import; zustand@5.0.11 dropped the default export entirely.
 - **Dead asset deleted** — `frontend/src/assets/hero.webp` (zero imports across the repo).
@@ -48,7 +70,7 @@
 
 ---
 
-## 🛒 MAY 3 — E2E SHOP-PURCHASE TEST PASSED ✅
+## 🛍️ MAY 3 — E2E SHOP-PURCHASE TEST PASSED ✅
 - New script: `scripts/Test-ShopPurchase.ps1`
 - Creates temp test user via Auth admin API → awards BROski$ → signs in for real JWT → POSTs `shop-purchase` edge function → verifies row + balance + duplicate guard → cleans up
 - Tested against production Supabase project `yhtmuibgdnxhbgboajhc`
@@ -127,12 +149,14 @@
 - `mc_missions` table + RLS ✅
 - Health Pulse, Morning Brief, Catch Stragglers ✅
 - Running locally port 5174 (not yet deployed to Vercel)
+- Footer easter egg — `weird` → `/admin/mission-control` ✅
 
 ### Course Frontend
 - Vibe Labs funnel live — 100/100 A11Y + BP ✅
 - All 10 module rewrites pushed to `rewrites/` ✅
 - `useProgress` hook + `claim_level_reward` RPC ✅
 - `user_xp.level` bug fix confirmed ✅
+- `frontend/src/lib/supabase/client.ts` — uses `@supabase/supabase-js` (NOT `@supabase/ssr`) ✅
 
 ### HyperAgent-SDK
 - Published: `@w3lshdog/hyper-agent@0.1.7` ✅
@@ -141,14 +165,15 @@
 
 ## 🔧 ONE-TIME MANUAL STEPS REMAINING
 
+- [ ] **Build `/admin/mission-control` page + mount `CatchStragglers.jsx`** ← NEXT
 - [ ] Register Supabase DB Webhook: `token_transactions` → INSERT → `sync-tokens-to-v24`
 - [ ] Set `COURSE_WEBHOOK_SECRET` in V2.4 `.env` AND Supabase Edge Function env vars
 - [ ] Fix `.env` file — rename any vars with `-` dashes to `_` underscores
 - [ ] `VITE_STRIPE_PAYMENT_LINK_URL` — set in `.env.local` + Vercel
 - [ ] Add `DISCORD_BOT_TOKEN` to Vercel env vars
-- [ ] Wire `CatchStragglers.jsx` into Mission Control panel
 - [ ] Register `catch_stragglers` router in FastAPI `main.py`
 - [ ] Enable Discord bot intents (Message Content + Direct Messages)
+- [ ] Create `mc_events` event sourcing migration
 
 ---
 
@@ -166,4 +191,5 @@ broski-pets:     health → http://localhost:8098/health
 Frontend auth:   VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY must be set in Vercel env vars
 Mission Control: Running locally port 5174
 Discord bot:     DISCORD_BOT_TOKEN in .env only — never commit
+Supabase client: ALWAYS use @supabase/supabase-js — @supabase/ssr is NOT installed
 ```
