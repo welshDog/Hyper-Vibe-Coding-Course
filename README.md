@@ -1,6 +1,8 @@
 # 🎓 Hyper-Vibe-Coding-Course
 ### Learn to Vibe Code. The Hyper Way. 🚀
 
+👉 **START HERE → [AGENT-START.md](AGENT-START.md)** — for AI agents and contributors
+
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Vercel](https://img.shields.io/badge/Deployed-Vercel-black)](https://hyper-vibe-coding-course.vercel.app)
 [![Made by WelshDog](https://img.shields.io/badge/Made_by-WelshDog_🦅-orange)](https://github.com/welshDog)
