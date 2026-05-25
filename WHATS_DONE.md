@@ -1,6 +1,64 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 24, 2026** — update this every session.
+> **Updated: May 25, 2026** — update this every session.
+
+---
+
+## 🎯 MAY 25 EVENING — MISSION CONTROL 4 SHIPS + RENDER BLUEPRINT ✅
+
+Late-night push closed Mission Control to **5/6 Agent Actions live end-to-end** + first prod-deploy path documented. All work in `WelshDog-Mission-Control` (HEAD: `3e7738f`).
+
+### 🎁 v0.7.0 — Grant Tokens (commit `f07597c`)
+- `POST /api/grant-tokens/preview` + `POST /api/grant-tokens` (admin-only via `requireAdmin`)
+- Uses existing course `award_tokens()` RPC — no schema changes, no duplication
+- Idempotent: client UUID → `p_source_id = mc-grant-<uuid>` → RPC's `(user_id, reason, source_id)` partial unique constraint dedups
+- Per-call cap `MAX_GRANT_PER_CALL` env (default 10000); UI shows the cap in preview
+- Two-step UI: paste userId → Preview (verify name + email + current balance) → Confirm
+- Audit: `mc_missions` shipped card + `mc_events` (`tokens.granted` OR `tokens.grant_skipped_duplicate`)
+
+### 🎨 v0.7.1 — UI polish (commit `4bf5fe8`)
+- Three layout bugs caught in pre-smoke review:
+  - Kanban header `0 mission sNewSyncDETECTED` run-together → `gap-x-4 gap-y-2 mr-1`
+  - `SOOND` badge bleed → tile is `flex flex-col h-full min-h-[128px]` + SOON `mt-auto`
+  - Pipeline columns cramped → `gap-5 md:gap-6` + `p-3 → p-4` + header divider
+
+### 🔁 v0.8.0 — Refund (commit `00c59ed`)
+- Stripe charge refund + matching BROski$ deduction in one click
+- Both sides idempotent: Stripe `Idempotency-Key` header + matching `spend_tokens()` `p_source_id`
+- Raw Stripe REST (no SDK — keeps deps slim)
+- **Pre-flight balance check** at preview AND re-check at commit (blocks "Stripe refunded but tokens couldn't deduct")
+- **Partial-failure path**: if Stripe succeeds but `spend_tokens` fails, emits `refund.token_deduction_failed`, writes `investigating`-lane p0 mission, returns `success: true awarded: false` with the spend_tokens error — UI surfaces in amber
+- Refuses to refund a `pi_*` with no matching `token_transactions` row (404) — operator uses Stripe dashboard for those edge cases
+
+### 🚀 Render Blueprint + PORT fallback (commit `68c0a7a`)
+- `render.yaml` for the Express API side (Vercel can't run `server/index.js` as long-lived process)
+- Server `PORT` now resolves as `process.env.PORT || process.env.API_PORT || 3011` so Render's auto-injected port works
+- Verified BOTH boot paths via real smoke (default + simulated `PORT=4321`)
+- Two SPA↔API wiring options documented at the top of `render.yaml`:
+  - **A (recommended)**: Vercel `rewrites` in `vercel.json` — zero client code change
+  - **B**: `VITE_MC_API_URL` env + prefix every `fetch('/api/...')` call
+
+### 📺 v0.9.0 — ActivityTicker v2 (commit `3e7738f`)
+- The v0.5.0 `mc_events` spine finally pays off in the UI
+- Initial load: `SELECT top 50 FROM mc_events ORDER BY created_at DESC`
+- Realtime: INSERT subscription via the publication added in v0.5.0
+- Per-event-type renderer (icon + accent + payload-aware summary) for 6 known types; unknown types degrade to Radio + raw type (future event_types appear instantly)
+- Kept `mc_missions` subscription as fallback for non-Agent-Action cards (manual, Pulse, Brief); dedup by `signal_source` prefix
+- Dropped `user_level_progress` (student-side noise)
+- MAX_EVENTS 20 → 50; actor email shortened to local-part in the line
+
+### ✅ Smoke verified
+- Catch Stragglers Discord DM landed in production 01:02 BST (2026-05-25)
+- Vercel SPA deployed 01:37 BST with all 6 env vars
+
+### 🔴 Still Open (May 26 build order)
+1. **Deploy MC API to Render** — single highest-leverage blocker; ~10 min total. Currently MC SPA is on Vercel but `/api/*` calls 404 in prod.
+2. **Wire SPA ↔ API** after Render URL exists (Vercel rewrites recommended)
+3. **Smoke Grant Tokens + Refund** — both built + audited but never smoked end-to-end
+4. **Health Pulse + Morning Brief emit `mc_events`** — once they do, the ticker auto-renders them (unknown event_type fallback)
+5. **Scheduler / cron** for Pulse + Brief auto-fire (recommend Supabase `pg_cron`)
+6. **Drift Scan** (the last Agent Action)
+7. **Delete dead course-repo artifacts** — `api/routes/catch_stragglers.py`, `discord-bot/dm_sender.py`, `frontend/components/mission-control/CatchStragglers.jsx`
 
 ---
 
