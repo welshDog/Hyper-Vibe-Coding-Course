@@ -43,23 +43,44 @@ serve(async (req: Request) => {
     return new Response('Webhook signature invalid', { status: 400 });
   }
 
+  // ✓ Idempotency guard — skip already-processed events
+  const { data: existingEvent } = await supabase
+    .from('token_transactions')
+    .select('id')
+    .eq('source_id', event.id)
+    .maybeSingle();
+  if (existingEvent) {
+    console.log(`⏭️ Skipping already-processed event: ${event.id}`);
+    return new Response(JSON.stringify({ received: true, skipped: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // ✓ Handle successful one-time payment
   if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
     const session = event.data.object as Stripe.Checkout.Session;
     const customerEmail = session.customer_details?.email ?? (session as any).receipt_email;
+    // Payment Links: set metadata.price_id on each link in Stripe dashboard
     const priceId = (session as any).line_items?.data?.[0]?.price?.id
       ?? (session as any).metadata?.price_id;
-    // courseId is buyer-supplied but Stripe echoes it back on the SIGNED
-    // event (signature already verified above), so it's trustworthy here.
     const courseId = (session as any).client_reference_id
       ?? (session as any).metadata?.course_id
       ?? null;
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
     } else if (customerEmail && courseId) {
-      // Single-course purchase (no tier mapping) — still enroll the verified buyer
       await enrollVerifiedBuyer(supabase, customerEmail, courseId);
+    } else {
+      console.error('❌ Missing email or priceId — logging for manual review', { customerEmail, priceId, courseId, eventId: event.id });
+      // Store failed event for manual admin review
+      await supabase.from('token_transactions').insert({
+        user_id: '00000000-0000-0000-0000-000000000000',
+        amount: 0,
+        reason: `⚠️ WEBHOOK_UNMATCHED — no user found for payment`,
+        source_id: event.id,
+        created_at: new Date().toISOString(),
+      });
     }
   }
 
@@ -70,8 +91,19 @@ serve(async (req: Request) => {
     const priceId = invoice.lines?.data?.[0]?.price?.id;
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      // Subscription = full access; no single course id → all active courses
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, null);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, null, event.id);
+    }
+  }
+
+  // ✓ Mission C — Revoke access on refund or dispute
+  if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
+    const charge = event.data.object as Stripe.Charge;
+    const customerEmail = charge.billing_details?.email ?? charge.receipt_email;
+
+    if (customerEmail) {
+      await revokeAccess(supabase, customerEmail, event.type, event.id);
+    } else {
+      console.error('❌ Refund/dispute: no email on charge', { chargeId: charge.id, eventId: event.id });
     }
   }
 
@@ -87,17 +119,12 @@ async function awardTokensAndUnlock(
   supabase: ReturnType<typeof createClient>,
   email: string,
   priceId: string,
-  courseId: string | null
+  courseId: string | null,
+  eventId: string
 ) {
   const config = PRICE_TO_TIER[priceId];
   if (!config) return;
 
-  // 1️⃣ Find the user in Supabase by email.
-  //     NOTE: the user table is `users` (NOT `profiles` — that table does
-  //     not exist; querying it silently bailed this whole handler so paid
-  //     buyers never got tokens/enrollment). `users` has no course_tier or
-  //     unlocked_modules columns — access is gated by `enrollments` (set in
-  //     step 4 below); tier is tracked via subscription_tier.
   const { data: profile, error: profileError } = await supabase
     .from('users')
     .select('id, broski_tokens')
@@ -105,7 +132,15 @@ async function awardTokensAndUnlock(
     .single();
 
   if (profileError || !profile) {
-    console.error('❌ User not found for email:', email);
+    console.error('❌ User not found for email:', email, '| event:', eventId);
+    // Dead-letter log so admin can manually fix
+    await supabase.from('token_transactions').insert({
+      user_id: '00000000-0000-0000-0000-000000000000',
+      amount: 0,
+      reason: `⚠️ WEBHOOK_USER_NOT_FOUND — email: ${email}`,
+      source_id: eventId,
+      created_at: new Date().toISOString(),
+    });
     return;
   }
 
@@ -127,23 +162,62 @@ async function awardTokensAndUnlock(
     return;
   }
 
-  // 3️⃣ Log the transaction in token_transactions table
+  // 3️⃣ Log the transaction — FIXED column names: reason + source_id
   await supabase.from('token_transactions').insert({
     user_id: userId,
     amount: config.tokens,
-    transaction_type: 'purchase',
-    description: `💰 ${config.tier} tier purchase — Stripe price ${priceId}`,
-    metadata: { priceId, tier: config.tier, modulesUnlocked: config.modules },
+    reason: `💰 ${config.tier} tier purchase — Stripe price ${priceId}`,
+    source_id: eventId,
     created_at: new Date().toISOString(),
   });
 
-  // 4️⃣ Enroll the buyer so the enrollments-gated course pages unlock.
-  //    This is the ONLY trusted enrollment path — the frontend success
-  //    page no longer self-grants. A specific courseId enrolls just that
-  //    course; null (tier/subscription) enrolls all active courses.
+  // 4️⃣ Enroll the buyer
   await enrollUser(supabase, userId, courseId);
 
   console.log(`✅ Awarded ${config.tokens} BROski$ to ${email} | Tier: ${config.tier} | Modules: ${config.modules.join(', ')}`);
+}
+
+// =============================================================
+// REVOKE: Set enrollments.status = revoked on refund/dispute
+// =============================================================
+async function revokeAccess(
+  supabase: ReturnType<typeof createClient>,
+  email: string,
+  eventType: string,
+  eventId: string
+) {
+  const { data: profile, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (error || !profile) {
+    console.error('❌ Revoke: user not found for email:', email);
+    return;
+  }
+
+  const { error: revokeError } = await supabase
+    .from('enrollments')
+    .update({ status: 'revoked' })
+    .eq('user_id', profile.id)
+    .eq('status', 'active');
+
+  if (revokeError) {
+    console.error('❌ Failed to revoke enrollments:', revokeError);
+    return;
+  }
+
+  // Log the revoke
+  await supabase.from('token_transactions').insert({
+    user_id: profile.id,
+    amount: 0,
+    reason: `🚫 Access revoked — ${eventType}`,
+    source_id: eventId,
+    created_at: new Date().toISOString(),
+  });
+
+  console.log(`🚫 Revoked access for ${email} | Reason: ${eventType}`);
 }
 
 // =============================================================
@@ -177,7 +251,7 @@ async function enrollUser(
   else console.log(`✅ Enrolled user ${userId} in ${ids.length} course(s)`);
 }
 
-// Verified single-course purchase that has no tier mapping in PRICE_TO_TIER
+// Verified single-course purchase with no tier mapping in PRICE_TO_TIER
 async function enrollVerifiedBuyer(
   supabase: ReturnType<typeof createClient>,
   email: string,
