@@ -1,9 +1,10 @@
 # NEXT_SESSION_HANDOVER — 2026-05-27
 > Single source of truth for the next AI session. Read this FIRST.
+> Last updated: 01:38 BST
 
 ---
 
-## ✅ What Was Done This Session (May 27, 01:00–01:26 BST)
+## ✅ What Was Done This Session (May 27, 01:00–01:38 BST)
 
 ### 1. `stripe/products.config.ts` — Updated ✅
 - Old 3-tier config replaced with **Option A 5-tier stack**
@@ -17,35 +18,47 @@
 
 ### 3. Vercel — Checked ✅
 - Project: `hyper-vibe-coding-course` — **READY** 🟢
-- Framework: Vite ✅
-- Node: 24.x
+- Framework: Vite ✅ | Node: 24.x
 - Live: https://hyper-vibe-coding-course.vercel.app
 - Error rate: 0% in last 6h
 - Production checklist: 4/5 (one optional Vercel feature pending)
-- Lyndz manually added env vars including `DISCORD_BOT_TOKEN` ✅
+- Env vars including `DISCORD_BOT_TOKEN` added manually by Lyndz ✅
 
-### 4. `stripe-webhook` Supabase Edge Function — Redeployed ✅
-- Was on v37 with **dead old price IDs** — now on **v38 with all 8 live IDs**
-- Handles: one-time payments, monthly subs, refunds, disputes
-- Idempotency guard in place ✅
-- Revoke-on-refund in place ✅
-- Function ID: `7c71a1e4-c2b7-47ad-b114-3c52dbe658ae`
+### 4. `stripe-webhook` — Redeployed x2 ✅
 
-### 5. Session Status Report — Pushed ✅
-- File: `rewrites/SESSION_STATUS_REPORT_2026-05-27.md`
+#### v38 (01:23 BST)
+- Replaced dead old 3-tier price IDs with all 8 live Option A IDs
+- Added monthly plan + subscription event handling
+
+#### v39 (01:36 BST) — CURRENT
+- ✅ Fixed `enrollments.status` — now explicitly writes `'active'` (was missing → silent fail)
+- ✅ Fixed `enrollments.user_email` — now written for debugging
+- ✅ `enrollUser()` now takes `email` param and passes it through
+- Function ID: `7c71a1e4-c2b7-47ad-b114-3c52dbe658ae` | Version: **39** | Status: **ACTIVE**
+
+### 5. DB Schema Verified ✅
+- `users_subscription_tier_check` accepts: `free | pro | hyper | starter | builder | hyper_legend` ✅
+- `users_subscription_status_check` accepts: `inactive | active | cancelled | past_due` ✅
+- `token_transactions` columns: `id, user_id, amount, reason, stripe_payment_intent_id, source_id, created_at` ✅
+- `enrollments` columns: `id, user_id, user_email, course_id, status, created_at, progress_percentage` ✅
+- RLS: `enrollments` has `service_role INSERT` policy ✅
+- RLS: `token_transactions` — service role bypasses RLS ✅
+
+### 6. Session Docs Pushed ✅
+- `rewrites/SESSION_STATUS_REPORT_2026-05-27.md`
 - Commit: `fb437fdbc8e592cce840f1a51977906fb3671d32`
 
 ---
 
 ## 💳 Live Stripe Tier Map (confirmed)
 
-| Tier | One-Time Price ID | Amount | Monthly Price ID | Amount |
-|---|---|---|---|---|
-| 🌱 Starter | `price_1TbUiz2LoEeIEPVE51tuHofX` | £29 | — | — |
-| ⚡ Pro | `price_1TbUjB2LoEeIEPVEa3AEQywy` | £49 | — | — |
-| 🔥 Builder | `price_1TbUjN2LoEeIEPVEEyy4FxrL` | £97 | `price_1TbUjT2LoEeIEPVECfWtHePf` | £12/mo |
-| 🏛️ Architect | `price_1TbUjf2LoEeIEPVEyHtcTurh` | £167 | `price_1TbUjl2LoEeIEPVEKKa17fza` | £18/mo |
-| ⚛️ Hyper Legend | `price_1TbUjw2LoEeIEPVEIU4LKdZp` | £247 | `price_1TbUk22LoEeIEPVEB6hpSFZt` | £25/mo |
+| Tier | One-Time Price ID | Amount | Monthly Price ID | Amount | Tokens |
+|---|---|---|---|---|---|
+| 🌱 Starter | `price_1TbUiz2LoEeIEPVE51tuHofX` | £29 | — | — | 100 |
+| ⚡ Pro | `price_1TbUjB2LoEeIEPVEa3AEQywy` | £49 | — | — | 300 |
+| 🔥 Builder | `price_1TbUjN2LoEeIEPVEEyy4FxrL` | £97 | `price_1TbUjT2LoEeIEPVECfWtHePf` | £12/mo | 800 |
+| 🏛️ Architect | `price_1TbUjf2LoEeIEPVEyHtcTurh` | £167 | `price_1TbUjl2LoEeIEPVEKKa17fza` | £18/mo | 1500 |
+| ⚛️ Hyper Legend | `price_1TbUjw2LoEeIEPVEIU4LKdZp` | £247 | `price_1TbUk22LoEeIEPVEB6hpSFZt` | £25/mo | 2500 |
 
 ---
 
@@ -53,11 +66,29 @@
 
 | Priority | Task | Status |
 |---|---|---|
-| 🔴 1 | Wire `CatchStragglers.jsx` into Mission Control main panel | 🔜 Todo |
-| 🔴 2 | `mc_events` event sourcing migration (Supabase) | 🔜 Todo |
-| 🟡 3 | Register `catch_stragglers` router in FastAPI `main.py` | 🔜 Todo |
-| 🟡 4 | Verify Sprint 4 — `useAnonymousProgress` + `migrateAnonProgress` | 🔜 Todo |
-| 🟡 5 | Smoke-test Grant Tokens + Refund end-to-end | 🔜 Todo |
+| 🔴 1 | **£1 smoke test** — buy, check `enrollments` + `token_transactions` rows | 🔜 Do first |
+| 🔴 2 | Wire `CatchStragglers.jsx` into Mission Control main panel | 🔜 Todo |
+| 🔴 3 | `mc_events` event sourcing migration (Supabase) | 🔜 Todo |
+| 🟡 4 | Register `catch_stragglers` router in FastAPI `main.py` | 🔜 Todo |
+| 🟡 5 | Verify Sprint 4 — `useAnonymousProgress` + `migrateAnonProgress` | 🔜 Todo |
+
+---
+
+## 🧪 Smoke Test Instructions (run after £1 purchase)
+```sql
+-- Confirm enrollment was created
+select * from enrollments order by created_at desc limit 5;
+
+-- Confirm tokens were awarded
+select * from token_transactions order by created_at desc limit 10;
+```
+Both should have a fresh row. If yes — **revenue switch is ON** 🟢
+
+Then run refund in Stripe and confirm:
+```sql
+select status from enrollments where user_id = '<your-user-id>';
+-- should return 'revoked'
+```
 
 ---
 
