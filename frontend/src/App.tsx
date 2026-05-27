@@ -48,6 +48,7 @@ const Level4Compare = lazy(() => import('./pages/vibe-labs/Level4Compare'));
 const Level5FullStack = lazy(() => import('./pages/vibe-labs/Level5FullStack'));
 const EarlyAccess = lazy(() => import('./pages/EarlyAccess'));
 const SignupsDashboard = lazy(() => import('./pages/admin/signups'));
+const CatchStragglersPage = lazy(() => import('./pages/admin/catch-stragglers'))
 const MissionControl = lazy(() => import('./pages/MissionControl'));
 
 function RouteFallback() {
@@ -190,6 +191,7 @@ function App() {
                   <Route path="admin" element={<Admin />} />
                   <Route path="admin/signups" element={<SignupsDashboard />} />
                   <Route path="admin/mission-control" element={<MissionControl />} />
+                  <Route path="admin/mission-control/catch-stragglers" element={<CatchStragglersPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Route>

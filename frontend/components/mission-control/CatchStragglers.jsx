@@ -2,6 +2,8 @@
 import { useState } from 'react'
 
 const TONE_EMOJI = { warm: '🤗', curious: '🤔', terse: '⚡' }
+const API_BASE = ((import.meta.env.VITE_MISSION_CONTROL_API_URL || '') + '').replace(/\/$/, '')
+const api = (path) => (API_BASE ? `${API_BASE}${path}` : path)
 
 export default function CatchStragglers() {
   const [drafts, setDrafts] = useState([])
@@ -14,7 +16,7 @@ export default function CatchStragglers() {
   const fetchStragglers = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/agent/catch-stragglers')
+      const res = await fetch(api('/api/agent/catch-stragglers'))
       const data = await res.json()
       setDrafts(data.drafts)
       const tones = {}
@@ -33,7 +35,7 @@ export default function CatchStragglers() {
   }
 
   const handleSend = async (draft) => {
-    await fetch('/api/agent/send-dm', {
+    await fetch(api('/api/agent/send-dm'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -48,7 +50,7 @@ export default function CatchStragglers() {
   }
 
   const handleSnooze = async (userId) => {
-    await fetch('/api/agent/snooze-dm', {
+    await fetch(api('/api/agent/snooze-dm'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId })

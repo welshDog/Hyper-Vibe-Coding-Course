@@ -4,6 +4,12 @@
 
 > Run this BEFORE promoting to production. Path A first — it’s the cleanest test.
 
+## ✅ New: £1 Smoke Proof (TEST → LIVE)
+
+If today’s goal is “prove revenue is live”, use the dedicated smoke runbook:
+
+- [`rewrites/SMOKE_TEST_RUNBOOK_GBP1_2026-05-27.md`](./SMOKE_TEST_RUNBOOK_GBP1_2026-05-27.md)
+
 ---
 
 ## ⚠️ #1 GOTCHA — Read This First

@@ -18,6 +18,7 @@
 // Bundle: route-level lazy-loaded; lucide-react icons are tree-shaken
 // from the existing vendor-ui chunk (no new dep).
 import { ExternalLink, Rocket, UserCheck, Stethoscope, Sunrise, Activity, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom'
 
 // Env-driven so prod can swap the host without a code change.
 // Defaults to the dev port (5174) so a local admin clicking `weird`
@@ -95,15 +96,23 @@ export default function MissionControl() {
                 → {MC_URL}
               </p>
             </div>
-            <a
-              href={MC_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-hfz-cyan/10 border border-hfz-cyan/40 text-hfz-cyan font-bold hover:bg-hfz-cyan/20 hover:border-hfz-cyan transition-colors shrink-0"
-            >
-              Open Mission Control
-              <ExternalLink className="w-4 h-4" aria-hidden="true" />
-            </a>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+              <Link
+                to="/admin/mission-control/catch-stragglers"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-hfz-violet-light/10 border border-hfz-violet-light/40 text-hfz-violet-light font-bold hover:bg-hfz-violet-light/20 hover:border-hfz-violet-light transition-colors"
+              >
+                Open Catch Stragglers (local)
+              </Link>
+              <a
+                href={MC_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-hfz-cyan/10 border border-hfz-cyan/40 text-hfz-cyan font-bold hover:bg-hfz-cyan/20 hover:border-hfz-cyan transition-colors"
+              >
+                Open Mission Control
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
+              </a>
+            </div>
           </div>
         </section>
 
