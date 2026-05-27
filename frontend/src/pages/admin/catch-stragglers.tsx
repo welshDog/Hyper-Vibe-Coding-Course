@@ -1,3 +1,4 @@
+// @ts-ignore - Suppress implicit any type error for JSX component import
 import CatchStragglers from '../../../components/mission-control/CatchStragglers.jsx'
 
 export default function CatchStragglersPage() {
