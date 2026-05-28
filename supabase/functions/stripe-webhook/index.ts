@@ -3,21 +3,26 @@
 // Listens for Stripe payment events → awards BROski$ tokens
 // Deploy: supabase functions deploy stripe-webhook
 // =============================================================
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@14?target=deno';
+import { serve } from 'https://deno.land/std@0.220.1/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import Stripe from 'https://esm.sh/stripe@16.6.0?target=deno';
 
 // Price ID → tier config (mirrors stripe/products.config.ts)
 const PRICE_TO_TIER: Record<string, { tier: string; tokens: number; modules: number[] }> = {
-  'price_1TXn1T2LoEeIEPVE2YULkFsI': { tier: 'starter',      tokens: 200,  modules: [1,2,3,4] },
-  'price_1TXn1Z2LoEeIEPVEHSj3TDBF': { tier: 'builder',      tokens: 800,  modules: [1,2,3,4,5,6,7,8,9,10,11] },
-  'price_1TXn1e2LoEeIEPVE00MmiaYj': { tier: 'builder',      tokens: 800,  modules: [1,2,3,4,5,6,7,8,9,10,11] },
-  'price_1TXn1j2LoEeIEPVEjzzhcJny': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
-  'price_1TXn1o2LoEeIEPVEWICzEMHV': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
+  'price_1TbUiz2LoEeIEPVE51tuHofX': { tier: 'starter',      tokens: 100,  modules: [1] },
+  'price_1TbUjB2LoEeIEPVEa3AEQywy': { tier: 'pro',          tokens: 300,  modules: [1,2,3,4] },
+  'price_1TbUjN2LoEeIEPVEEyy4FxrL': { tier: 'builder',      tokens: 800,  modules: [1,2,3,4,5,6,7,8,9] },
+  'price_1TbUjT2LoEeIEPVECfWtHePf': { tier: 'builder',      tokens: 800,  modules: [1,2,3,4,5,6,7,8,9] },
+  'price_1TbUjf2LoEeIEPVEyHtcTurh': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
+  'price_1TbUjl2LoEeIEPVEKKa17fza': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
+  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
+  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
 };
 
 serve(async (req: Request) => {
-  const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
+  const stripeSecret = (Deno.env.get('STRIPE_SECRET_KEY') ?? '').trim()
+  const webhookSecret = (Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '').trim()
+  const stripe = new Stripe(stripeSecret, {
     apiVersion: '2024-04-10',
     httpClient: Stripe.createFetchHttpClient(),
   });
@@ -27,20 +32,39 @@ serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  const signature = req.headers.get('stripe-signature');
+  const signature = req.headers.get('stripe-signature') ?? req.headers.get('Stripe-Signature');
   const body = await req.text();
 
   // ✓ Verify the webhook signature — rejects anything not from Stripe
   let event: Stripe.Event;
   try {
+    if (!signature) {
+      throw new Error('missing_stripe_signature_header')
+    }
+    if (!webhookSecret) {
+      throw new Error('missing_stripe_webhook_secret')
+    }
     event = stripe.webhooks.constructEvent(
       body,
-      signature ?? '',
-      Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? ''
+      signature,
+      webhookSecret
     );
   } catch (err) {
+    const message = err instanceof Error ? err.message : 'unknown_error'
+    const error =
+      message === 'missing_stripe_signature_header' || message === 'missing_stripe_webhook_secret'
+        ? message
+        : 'signature_verification_failed'
     console.error('❌ Webhook signature verification failed:', err);
-    return new Response('Webhook signature invalid', { status: 400 });
+    return new Response(
+      JSON.stringify({
+        error,
+        has_signature: Boolean(signature),
+        has_webhook_secret: Boolean(webhookSecret),
+        has_stripe_secret_key: Boolean(stripeSecret),
+      }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    )
   }
 
   // ✓ Idempotency guard — skip already-processed events

@@ -1,8 +1,34 @@
 # NEXT_SESSION_HANDOVER — 2026-05-27
 > Single source of truth for the next AI session. Read this FIRST.
-> Last updated: 01:38 BST
+> Last updated: 2026-05-27 (post-session Stripe webhook findings)
 
 ---
+
+## 🔥 Update: Stripe Webhook Reality Check (post-session)
+
+### What we proved
+- Stripe CLI `stripe trigger checkout.session.completed` reaches Supabase Edge Function `stripe-webhook` (function is currently ACTIVE at version 44).
+- Supabase edge logs show the request landing on v44 but returning HTTP 400.
+
+### What that means
+- The blocker is no longer “Stripe isn’t delivering”.
+- The blocker is now “Stripe signature verification is failing” (or missing signature header).
+
+### Most likely cause (based on Stripe CLI behavior)
+- `stripe trigger ...` emits TEST-mode events.
+- Signature verification only passes if Supabase `STRIPE_WEBHOOK_SECRET` matches the signing secret for the TEST webhook endpoint that received the event.
+- If Supabase is using a LIVE endpoint secret (or a different endpoint’s secret), verification will 400 every time.
+
+### Morning plan (do this fresh)
+1. Stripe Dashboard → Developers → Webhooks → switch to TEST mode.
+2. Open the endpoint that points to `https://yhtmuibgdnxhbgboajhc.supabase.co/functions/v1/stripe-webhook`.
+3. Copy the endpoint Signing secret (`whsec_...`) and ensure Supabase Edge Function secret `STRIPE_WEBHOOK_SECRET` matches it exactly.
+4. Trigger a TEST event from Stripe Dashboard (“Send test event”) or re-run:
+   - `stripe trigger checkout.session.completed`
+5. Confirm Supabase Edge Function logs show a v44 entry returning 200 (not 400).
+
+### Extra note (avoid a trap)
+- `stripe listen --forward-to ...` uses its own generated signing secret, which will not match the Dashboard endpoint signing secret unless you temporarily swap `STRIPE_WEBHOOK_SECRET` to the CLI’s printed `whsec_...`.
 
 ## ✅ What Was Done This Session (May 27, 01:00–01:38 BST)
 
@@ -66,11 +92,12 @@
 
 | Priority | Task | Status |
 |---|---|---|
-| 🔴 1 | **£1 smoke test** — buy, check `enrollments` + `token_transactions` rows | 🔜 Do first |
-| 🔴 2 | Wire `CatchStragglers.jsx` into Mission Control main panel | 🔜 Todo |
-| 🔴 3 | `mc_events` event sourcing migration (Supabase) | 🔜 Todo |
-| 🟡 4 | Register `catch_stragglers` router in FastAPI `main.py` | 🔜 Todo |
-| 🟡 5 | Verify Sprint 4 — `useAnonymousProgress` + `migrateAnonProgress` | 🔜 Todo |
+| 🔴 1 | Fix `stripe-webhook` 400s (signature verification) so revenue path can be trusted | 🔜 Blocker |
+| 🔴 2 | **£1 smoke test** — buy, check `enrollments` + `token_transactions` rows | 🔜 After webhook is 200 |
+| 🔴 3 | Wire `CatchStragglers.jsx` into Mission Control main panel | 🔜 Todo |
+| 🔴 4 | `mc_events` event sourcing migration (Supabase) | 🔜 Todo |
+| 🟡 5 | Register `catch_stragglers` router in FastAPI `main.py` | 🔜 Todo |
+| 🟡 6 | Verify Sprint 4 — `useAnonymousProgress` + `migrateAnonProgress` | 🔜 Todo |
 
 ---
 
