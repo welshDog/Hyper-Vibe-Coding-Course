@@ -26,6 +26,7 @@ serve(async (req: Request) => {
     apiVersion: '2024-04-10',
     httpClient: Stripe.createFetchHttpClient(),
   });
+  const cryptoProvider = Stripe.createSubtleCryptoProvider()
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
@@ -44,11 +45,13 @@ serve(async (req: Request) => {
     if (!webhookSecret) {
       throw new Error('missing_stripe_webhook_secret')
     }
-    event = stripe.webhooks.constructEvent(
+    event = await stripe.webhooks.constructEventAsync(
       body,
       signature,
-      webhookSecret
-    );
+      webhookSecret,
+      undefined,
+      cryptoProvider,
+    )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown_error'
     const error =
