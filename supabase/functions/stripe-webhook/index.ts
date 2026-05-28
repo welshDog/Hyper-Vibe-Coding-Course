@@ -67,37 +67,54 @@ serve(async (req: Request) => {
     )
   }
 
-  // ✓ Idempotency guard — skip already-processed events
+  const handledTypes = new Set([
+    'checkout.session.completed',
+    'payment_intent.succeeded',
+    'customer.subscription.created',
+    'invoice.payment_succeeded',
+    'charge.refunded',
+    'charge.dispute.created',
+  ])
+
+  if (!handledTypes.has(event.type)) {
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   const { data: existingEvent } = await supabase
     .from('token_transactions')
     .select('id')
     .eq('source_id', event.id)
     .maybeSingle();
   if (existingEvent) {
-    console.log(`⏭️ Skipping already-processed event: ${event.id}`);
     return new Response(JSON.stringify({ received: true, skipped: true }), {
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // ✓ Handle successful one-time payment
-  if (event.type === 'checkout.session.completed' || event.type === 'payment_intent.succeeded') {
+  if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
-    const customerEmail = session.customer_details?.email ?? (session as any).receipt_email;
-    // Payment Links: set metadata.price_id on each link in Stripe dashboard
-    const priceId = (session as any).line_items?.data?.[0]?.price?.id
-      ?? (session as any).metadata?.price_id;
-    const courseId = (session as any).client_reference_id
-      ?? (session as any).metadata?.course_id
-      ?? null;
+    const customerEmail = session.customer_details?.email ?? (session as any).customer_email ?? (session as any).receipt_email;
+    let priceId =
+      (session as any).metadata?.price_id
+      ?? (session as any).line_items?.data?.[0]?.price?.id;
+    const courseId = (session as any).client_reference_id ?? (session as any).metadata?.course_id ?? null;
+
+    if (!priceId && session.id) {
+      try {
+        const items = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+        priceId = items.data?.[0]?.price?.id;
+      } catch (_err) {
+        priceId = priceId ?? null;
+      }
+    }
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
       await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
     } else if (customerEmail && courseId) {
       await enrollVerifiedBuyer(supabase, customerEmail, courseId);
     } else {
-      console.error('❌ Missing email or priceId — logging for manual review', { customerEmail, priceId, courseId, eventId: event.id });
-      // Store failed event for manual admin review
       await supabase.from('token_transactions').insert({
         user_id: '00000000-0000-0000-0000-000000000000',
         amount: 0,
@@ -105,6 +122,20 @@ serve(async (req: Request) => {
         source_id: event.id,
         created_at: new Date().toISOString(),
       });
+    }
+  }
+
+  if (event.type === 'payment_intent.succeeded') {
+    const intent = event.data.object as Stripe.PaymentIntent;
+    const customerEmail =
+      (intent as any).receipt_email
+      ?? (intent as any).charges?.data?.[0]?.billing_details?.email
+      ?? null;
+    const priceId = (intent as any).metadata?.price_id ?? null;
+    const courseId = (intent as any).metadata?.course_id ?? null;
+
+    if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
     }
   }
 
