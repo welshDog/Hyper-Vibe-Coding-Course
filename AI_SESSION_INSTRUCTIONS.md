@@ -168,6 +168,22 @@ No additional verification needed — `vibe-labs-anon-flow.spec.ts` is 3/3 green
 
 ---
 
+## 💳 STRIPE WEBHOOK — VERIFIED REALITY (May 2026)
+
+| Outcome | Meaning |
+|--------|---------|
+| `stripe listen ...` shows `POST 401` | `stripe-webhook` has `verify_jwt=true` and is blocking Stripe/CLI |
+| `stripe listen ...` shows `POST 400` with signature flags true | Wrong `STRIPE_WEBHOOK_SECRET` for the sender (Dashboard vs CLI secret mismatch) |
+| `stripe listen ...` shows `POST 200` | Webhook verification is working |
+
+Rules:
+- Stripe CLI events use the signing secret printed by `stripe listen`
+- Stripe Dashboard endpoint uses the signing secret shown on that endpoint page
+- Webhooks must be deployed with `--no-verify-jwt`
+- Fixture events usually won’t match real `price_...` mapping; they should be logged as `payments.status='unmatched'`
+
+---
+
 ## 🚀 HOW TO START A SESSION
 
 **Lyndz will say something like:**

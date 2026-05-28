@@ -115,16 +115,17 @@ serve(async (req: Request) => {
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
       await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
-    } else if (customerEmail && courseId) {
-      await enrollVerifiedBuyer(supabase, customerEmail, courseId);
     } else {
-      await supabase.from('token_transactions').insert({
-        user_id: '00000000-0000-0000-0000-000000000000',
-        amount: 0,
-        reason: `⚠️ WEBHOOK_UNMATCHED — no user found for payment`,
-        source_id: event.id,
-        created_at: new Date().toISOString(),
-      });
+      await logUnmatchedPayment(supabase, {
+        userEmail: customerEmail ?? null,
+        stripeSessionId: event.id,
+        amountPence: session.amount_total ?? 0,
+        currency: (session.currency ?? 'gbp').toLowerCase(),
+        status: 'unmatched',
+      })
+      if (customerEmail && courseId) {
+        await enrollVerifiedBuyer(supabase, customerEmail, courseId);
+      }
     }
   }
 
@@ -139,6 +140,14 @@ serve(async (req: Request) => {
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
       await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
+    } else {
+      await logUnmatchedPayment(supabase, {
+        userEmail: customerEmail ?? null,
+        stripeSessionId: event.id,
+        amountPence: (intent as any).amount_received ?? intent.amount ?? 0,
+        currency: ((intent as any).currency ?? 'gbp').toLowerCase(),
+        status: 'unmatched',
+      })
     }
   }
 
@@ -191,14 +200,13 @@ async function awardTokensAndUnlock(
 
   if (profileError || !profile) {
     console.error('❌ User not found for email:', email, '| event:', eventId);
-    // Dead-letter log so admin can manually fix
-    await supabase.from('token_transactions').insert({
-      user_id: '00000000-0000-0000-0000-000000000000',
-      amount: 0,
-      reason: `⚠️ WEBHOOK_USER_NOT_FOUND — email: ${email}`,
-      source_id: eventId,
-      created_at: new Date().toISOString(),
-    });
+    await logUnmatchedPayment(supabase, {
+      userEmail: email,
+      stripeSessionId: eventId,
+      amountPence: 0,
+      currency: 'gbp',
+      status: 'unmatched',
+    })
     return;
   }
 
@@ -301,12 +309,28 @@ async function enrollUser(
   const ids = await resolveCourseIds(supabase, courseId);
   if (ids.length === 0) return;
 
-  const { error } = await supabase.from('enrollments').upsert(
-    ids.map((cid) => ({ user_id: userId, course_id: cid, progress_percentage: 0 })),
-    { onConflict: 'user_id,course_id' }
-  );
-  if (error) console.error('❌ Failed to upsert enrollments:', error);
-  else console.log(`✅ Enrolled user ${userId} in ${ids.length} course(s)`);
+  let inserted = 0
+  for (const cid of ids) {
+    const { data: existing } = await supabase
+      .from('enrollments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('course_id', cid)
+      .maybeSingle()
+
+    if (existing) continue
+
+    const { error } = await supabase.from('enrollments').insert({
+      user_id: userId,
+      course_id: cid,
+      progress_percentage: 0,
+      status: 'active',
+    })
+    if (error) console.error('❌ Failed to insert enrollment:', error)
+    else inserted += 1
+  }
+
+  if (inserted > 0) console.log(`✅ Enrolled user ${userId} in ${inserted} course(s)`)
 }
 
 // Verified single-course purchase with no tier mapping in PRICE_TO_TIER
@@ -327,4 +351,28 @@ async function enrollVerifiedBuyer(
   }
 
   await enrollUser(supabase, profile.id, courseId);
+}
+
+async function logUnmatchedPayment(
+  supabase: ReturnType<typeof createClient>,
+  input: {
+    userEmail: string | null
+    stripeSessionId: string
+    amountPence: number
+    currency: string
+    status: string
+  }
+) {
+  const { error } = await supabase.from('payments').insert({
+    user_id: null,
+    user_email: input.userEmail,
+    amount_pence: input.amountPence,
+    currency: input.currency,
+    stripe_session_id: input.stripeSessionId,
+    status: input.status,
+    created_at: new Date().toISOString(),
+  })
+  if (error && (error as any).code !== '23505') {
+    console.error('❌ Failed to log unmatched payment:', error)
+  }
 }

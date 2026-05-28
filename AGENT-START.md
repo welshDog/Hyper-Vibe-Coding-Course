@@ -78,6 +78,22 @@ Skills live at: **https://github.com/welshDog/HYPER-SILLs-By-WelshDog** (this is
 
 ---
 
+## 💳 STRIPE WEBHOOK QUICK-RUNBOOK (Stripe → Supabase)
+
+| Signal | Meaning | Action |
+|--------|---------|--------|
+| `POST 401` in `stripe listen --forward-to ...` | Supabase function is requiring JWT | Re-deploy with `supabase functions deploy stripe-webhook --no-verify-jwt` (webhooks must be public) |
+| `POST 400` + `signature_verification_failed` | Wrong signing secret for the sender | If using Stripe CLI, use the `whsec_...` printed by `stripe listen`; if using Dashboard endpoint, use that endpoint’s Signing secret |
+| `POST 200` | Webhook accepted | Move to DB proof: `payments` and `token_transactions` |
+
+Smoke test flow:
+1. `stripe listen --latest --forward-to https://<project>.supabase.co/functions/v1/stripe-webhook`
+2. Copy the printed `whsec_...` into Supabase `STRIPE_WEBHOOK_SECRET`
+3. `stripe trigger checkout.session.completed`
+4. If price/email don’t match your real products/users, expect `payments.status='unmatched'` rows (still a win: delivery + parsing is proven)
+
+---
+
 ## 🌐 THE 6-REPO ECOSYSTEM
 
 | Repo | What it is |
