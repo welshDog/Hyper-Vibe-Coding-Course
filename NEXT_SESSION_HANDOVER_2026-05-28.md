@@ -9,6 +9,10 @@
 ### Proof
 - Stripe CLI forwarding now returns `POST 200` to Supabase `stripe-webhook`.
 - Supabase Edge Function `stripe-webhook` is ACTIVE with `verify_jwt=false`.
+- DB side-effects proven:
+  - `token_transactions.source_id = evt_1TcAF52LoEeIEPVEXVvCaqT1` (starter grant)
+  - `users.subscription_tier = starter` and `subscription_status = active`
+  - Enrollment backfilled for `lyndzwills@gmail.com` → `hyper-vibe-course-01`
 
 ### What was fixed
 - **JWT gate removed:** `stripe-webhook` deployed with `--no-verify-jwt` so Stripe/CLI can call it.
@@ -42,3 +46,12 @@ select id, user_email, amount_pence, stripe_session_id, status, created_at from 
 - Dashboard endpoint signing secret ≠ Stripe CLI listen signing secret.
 - Fixture triggers often won’t match real `PRICE_TO_TIER` mapping; `payments.status='unmatched'` is expected and still counts as delivery proof.
 
+---
+
+## ✅ Phase 3 Locked: Checkout Session Metadata (no listLineItems fallback)
+
+All checkout sessions must include metadata:
+- Token checkout: `metadata.price_id = <price_...>`
+- Course checkout: `metadata.price_id = course_inline` and `metadata.course_id = <course_id>`
+
+Proof: HyperCode-V2.4 sets these fields in `backend/app/services/stripe_service.py` (commit `f00c0fc`).
