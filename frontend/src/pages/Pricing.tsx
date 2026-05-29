@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import { useAuthStore } from '../context/auth'
+import { createCheckoutSession } from '../lib/payments'
+import { STRIPE_PRICE_IDS } from '../lib/stripe-price-ids'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe Payment Link URLs — set in Vercel env vars per environment (R2 in
@@ -226,32 +229,64 @@ function resolveCheckoutUrl(tier: Tier, billing: BillingMode): string | undefine
   return STRIPE_LINKS[tier.oneTimeKey]
 }
 
+/** Resolve the Stripe Price ID for Checkout Session fallback. */
+function resolveStripePriceId(tier: Tier): string | undefined {
+  const tierKey = tier.id as keyof typeof STRIPE_PRICE_IDS
+  const prices = STRIPE_PRICE_IDS[tierKey]
+  if (!prices) return undefined
+  return prices.once
+}
+
 export default function Pricing() {
   const [billing, setBilling] = useState<BillingMode>('once')
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
+  const user = useAuthStore((s) => s.user)
 
   const monthlyOnlyTiersHidden = useMemo(
     () => TIERS.filter((t) => t.monthlyKey !== null).length,
     [],
   )
 
-  const handleCheckout = (tier: Tier) => {
+  const handleCheckout = async (tier: Tier) => {
     // Starter / Pro have no monthly key — fall back to their one-time link
     // even if the global toggle is on "monthly".
-    const effectiveBilling: BillingMode =
+    let effectiveBilling: BillingMode =
       billing === 'monthly' && tier.monthlyKey ? 'monthly' : 'once'
-    const url = resolveCheckoutUrl(tier, effectiveBilling)
+    let url = resolveCheckoutUrl(tier, effectiveBilling)
+
+    if (!url && effectiveBilling === 'monthly') {
+      effectiveBilling = 'once'
+      url = resolveCheckoutUrl(tier, effectiveBilling)
+    }
 
     if (url) {
       setCheckoutError(null)
       window.location.assign(url)
       return
     }
-    // Env var missing — surface clearly, never silently 404. Security: do not
-    // route to /payment-success without a real Stripe session.
-    setCheckoutError(
-      `Checkout for ${tier.name} (${effectiveBilling === 'monthly' ? 'monthly' : 'one-time'}) isn't configured yet. Ping the team on Discord and we'll sort your access.`,
-    )
+
+    // Payment Link not configured → fall back to API-created Checkout Session.
+    // Security: only redirect to /payment-success via Stripe-hosted flow.
+    if (!user?.id) {
+      setCheckoutError('Log in to checkout — your purchase needs to link to your account.')
+      return
+    }
+
+    const stripePriceId = resolveStripePriceId(tier)
+    if (!stripePriceId) {
+      setCheckoutError(
+        `Checkout for ${tier.name} (${effectiveBilling === 'monthly' ? 'monthly' : 'one-time'}) isn't configured yet. Ping the team on Discord and we'll sort your access.`,
+      )
+      return
+    }
+
+    try {
+      setCheckoutError(null)
+      const checkoutUrl = await createCheckoutSession(stripePriceId, user.id)
+      window.location.assign(checkoutUrl)
+    } catch {
+      setCheckoutError("Hmm, let's try that again 🔄 — checkout failed. Ping support if it sticks.")
+    }
   }
 
   return (
@@ -385,7 +420,7 @@ export default function Pricing() {
                 {/* CTA */}
                 <button
                   type="button"
-                  onClick={() => handleCheckout(tier)}
+                  onClick={() => void handleCheckout(tier)}
                   className={`w-full py-3 px-6 rounded-xl font-black text-lg mb-6 transition-all duration-200 bg-gradient-to-r ${tier.gradient} ${tier.ctaText} shadow-lg hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40`}
                 >
                   Get {tier.name} {tier.emoji}

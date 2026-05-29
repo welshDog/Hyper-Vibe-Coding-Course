@@ -83,5 +83,4 @@ When clicking a tier CTA:
 
 ## Follow-up (Next P0)
 
-- Verify Stripe webhook signing secret alignment for TEST mode and Stripe CLI events <mccoremem id="01KSP3JFX740370YRDHAAN38G9" />
-
+- Verify Stripe webhook signing secret alignment for TEST mode and Stripe CLI events.
