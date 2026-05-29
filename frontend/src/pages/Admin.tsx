@@ -290,16 +290,6 @@ export default function Admin() {
       },
     ];
 
-    setServiceStates((prev) => {
-      const next: Record<string, ServiceState> = { ...prev };
-      for (const tile of tiles) {
-        if (!tile.href) next[tile.id] = { status: 'not_configured' };
-        else if (tile.healthUrl) next[tile.id] = { status: 'checking' };
-        else next[tile.id] = { status: 'up', lastCheckedIso: new Date().toISOString() };
-      }
-      return next;
-    });
-
     const checks = tiles
       .filter((t) => t.healthUrl)
       .map(async (tile) => {
@@ -365,6 +355,13 @@ export default function Admin() {
        data.playtest.filter((r) => r.overall_rating).length).toFixed(1)
     : '—';
 
+  const renderNowIso = new Date().toISOString();
+  const courseApiUrl = resolveCourseApiUrl();
+  const coursePrismaUrl = resolveCoursePrismaStudioUrl();
+  const hypercodeApiUrl = resolveHypercodeApiUrl();
+  const missionControlUrl = resolveMissionControlUrl();
+  const missionUiUrl = resolveMissionUiUrl();
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="bg-gray-950 min-h-screen">
@@ -427,8 +424,8 @@ export default function Admin() {
               </div>
               <div className="space-y-3">
                 {[
-                  { id: 'course-api', label: 'API', href: resolveCourseApiUrl() },
-                  { id: 'course-prisma', label: 'Prisma Studio', href: resolveCoursePrismaStudioUrl() },
+                  { id: 'course-api', label: 'API', href: courseApiUrl, healthUrl: courseApiUrl ? `${courseApiUrl}/health` : null },
+                  { id: 'course-prisma', label: 'Prisma Studio', href: coursePrismaUrl, healthUrl: null },
                 ].map((t) => (
                   <div key={t.id} className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -436,7 +433,13 @@ export default function Admin() {
                       <p className="text-xs text-gray-500 truncate">{t.href ?? 'Not configured'}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {statusBadge(serviceStates[t.id])}
+                      {statusBadge(
+                        !t.href
+                          ? { status: 'not_configured' }
+                          : t.healthUrl
+                            ? (serviceStates[t.id] ?? { status: 'checking' })
+                            : { status: 'up', lastCheckedIso: renderNowIso },
+                      )}
                       {t.href && (
                         <a
                           href={t.href}
@@ -475,9 +478,9 @@ export default function Admin() {
               </div>
               <div className="space-y-3">
                 {[
-                  { id: 'hypercode-core', label: 'Core API', href: resolveHypercodeApiUrl() },
-                  { id: 'hypercode-mission-control', label: 'Mission Control', href: resolveMissionControlUrl() },
-                  { id: 'hypercode-mission-ui', label: 'Mission UI', href: resolveMissionUiUrl() },
+                  { id: 'hypercode-core', label: 'Core API', href: hypercodeApiUrl, healthUrl: hypercodeApiUrl ? `${hypercodeApiUrl}/health` : null },
+                  { id: 'hypercode-mission-control', label: 'Mission Control', href: missionControlUrl, healthUrl: null },
+                  { id: 'hypercode-mission-ui', label: 'Mission UI', href: missionUiUrl, healthUrl: null },
                 ].map((t) => (
                   <div key={t.id} className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -485,7 +488,13 @@ export default function Admin() {
                       <p className="text-xs text-gray-500 truncate">{t.href ?? 'Not configured'}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {statusBadge(serviceStates[t.id])}
+                      {statusBadge(
+                        !t.href
+                          ? { status: 'not_configured' }
+                          : t.healthUrl
+                            ? (serviceStates[t.id] ?? { status: 'checking' })
+                            : { status: 'up', lastCheckedIso: renderNowIso },
+                      )}
                       {t.href && (
                         <a
                           href={t.href}

@@ -28,55 +28,17 @@
 | BUG-010 | `CourseCatalog.tsx` | 🟡 MEDIUM | No Ordering | ✅ Fixed | `.order('created_at', { ascending: false })` |
 | BUG-011 | `learning.spec.ts` | 🟡 MEDIUM | Flaky Test | ⏭️ Skipped | Catch-all route interceptor — see fix below |
 | BUG-012 | `Dashboard.tsx` | 🟡 MEDIUM | Tech Debt | ✅ Fixed | `@ts-expect-error` removed |
-| BUG-013 | `Auth.tsx` | 🟢 LOW | No Password Validation | ❌ Open | Add Zod `.min(8)` + regex rules |
-| BUG-014 | `Auth.tsx` | 🟢 LOW | Silent Post-Signup UX | ❌ Open | Show success toast before redirect |
+| BUG-013 | `Auth.tsx` | 🟢 LOW | No Password Validation | ✅ Fixed | Client-side password rules + leaked-password check |
+| BUG-014 | `Auth.tsx` | 🟢 LOW | Silent Post-Signup UX | ✅ Fixed | Post-signup success screen (no silent redirect) |
 | BUG-015 | `migrations/init_schema.sql` | 🔴 CRITICAL | RLS + Trigger | ✅ Fixed | Migration `20260312000002` |
 
-**Score: 13/15 fixed. 2 open bugs remain.**
+**Score: 15/15 fixed. 0 open bugs remain.**
 
 ---
 
 ## Open Bug Details
 
-### BUG-013 — No Password Strength Validation
-**File:** `frontend/src/pages/Auth.tsx` → Register form  
-**Severity:** 🟢 LOW  
-
-No minimum password length client-side. Users get a confusing Supabase server error instead of a friendly inline message.
-
-**Fix:**
-```tsx
-// In Register form Zod schema:
-const registerSchema = z.object({
-  email: z.string().email('Valid email required'),
-  password: z.string()
-    .min(8, 'At least 8 characters')
-    .regex(/[A-Z]/, 'One uppercase letter required')
-    .regex(/[0-9]/, 'One number required'),
-  full_name: z.string().min(2, 'Name required'),
-})
-```
-
----
-
-### BUG-014 — Silent Redirect After Signup
-**File:** `frontend/src/pages/Auth.tsx` → Register submit handler  
-**Severity:** 🟢 LOW  
-
-After successful registration, user is silently redirected to `/login`. If email confirmation is required, they won't know to check their inbox.
-
-**Fix:**
-```tsx
-// After successful signUp() call — before navigate():
-// Option A: toast (if toast lib added)
-toast.success('Account created! Check your email to confirm. 🚀')
-
-// Option B: inline success state (no extra lib needed)
-const [successMsg, setSuccessMsg] = useState<string | null>(null)
-// ...
-setSuccessMsg('Account created! Check your inbox to confirm before logging in.')
-// Don't navigate immediately — let user read the message
-```
+No open bugs currently tracked.
 
 ---
 

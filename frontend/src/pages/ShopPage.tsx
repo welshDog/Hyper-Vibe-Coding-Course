@@ -517,7 +517,10 @@ function ItemCard({ item, owned, consumable, ownedCount, purchase, balance, tier
   const flashRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const onEndRef = useRef(onCelebrationEnd);
-  onEndRef.current = onCelebrationEnd;
+
+  useEffect(() => {
+    onEndRef.current = onCelebrationEnd;
+  }, [onCelebrationEnd]);
 
   useEffect(() => {
     if (!celebrate) return;

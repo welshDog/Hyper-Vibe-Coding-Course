@@ -8,7 +8,7 @@
 // Refuses to mint if the species CID is still a placeholder — protects users
 // from spending 100 BROski$ on a CID the contract would later treat as junk.
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useAccount } from 'wagmi'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
