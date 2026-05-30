@@ -36,7 +36,7 @@
 
 ### The biggest “teaching gap” right now is delivery, not writing
 - The course review says the next step is wiring rewrite markdown into Supabase `hv_modules.content`. See [VIBE_COURSE_REVIEW.md](file:///h:/HYPERFOCUSZONE/HperCore/Hyper-Vibe-Coding-Course/VIBE_COURSE_REVIEW.md#L125-L133).
-- Until that happens, learners can hit slug pages that don’t show real lesson content, which reads as “the course is empty”.
+- Update: `hv_modules` already has content populated (all modules marked ready). The remaining issue is delivery: slug matching, permissions/RLS, or the frontend rendering path not receiving `content`.
 
 ---
 
@@ -57,7 +57,7 @@
 ## 📌 Recommended Next Actions (Ranked)
 ### P0 (Ship blockers)
 - Ensure `/courses/:slug` renders unmistakably different content from `/courses` (distinct header/content/skeleton) and verify the module markdown is actually loaded from Supabase.
-- Wire `rewrites/MODULE_*_REWRITE.md` into Supabase `hv_modules.content` and confirm slug pages render that content for real users.
+- Confirm the `/courses/:slug` request returns `hv_modules.content` to the browser (not null/blocked) and renders it for real users.
 - Decide one canonical content source (prefer `rewrites/`) and prevent `scripts/` from appearing in the learner pipeline.
 
 ### P1 (Retention + trust)
@@ -71,4 +71,3 @@
 - A logged-in tester can click a course, land on `/courses/:slug`, and instantly see distinct module content (not the list view).
 - Quests + Leaderboard never look blank: loading state → empty state with explanation → real data when available.
 - No “scary” console errors from normal interactions (copy referral, navigation).
-
