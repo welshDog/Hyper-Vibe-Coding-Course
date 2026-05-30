@@ -1,7 +1,7 @@
 # 🧠 AI SESSION INSTRUCTIONS
 ## *Read this FIRST. Every session. No exceptions.*
 > For: Perplexity, Claude, ChatGPT, Cursor, or any AI partner working with @welshDog
-> Last Updated: May 23, 2026
+> Last Updated: May 30, 2026
 
 ---
 
@@ -66,10 +66,10 @@
   > ⚠️ NOT Next.js — do not generate Next.js / App Router code for this repo. Use Vite + React patterns.
 - **Status:** 🟢 Course audit complete — all 10 modules rewritten. Sprint 4 (Anon → Signup) LIVE since May 19 (`a12ecd0`). See CLAUDE.md §0b.
 - **KEY FILES TO READ (in order):**
-  1. `rewrites/NEXT_SESSION_HANDOVER_2026-05-23.md` — **live state, always wins**
+  1. `NEXT_SESSION_HANDOVER_2026-05-30.md` — **live state, always wins**
   2. `CLAUDE.md` — sacred rules + tech gotchas
   3. `WHATS_DONE.md` — full history, never rebuild what's here
-  4. `rewrites/SESSION_SNAPSHOT_2026-05-23.md` — sprint history
+  4. `rewrites/SESSION_SNAPSHOT_2026-05-30.md` — sprint history
   5. `AGENT-START.md` — load skills + start task
 
 ### The Brain — BROski-Obsidian-Brain
@@ -125,6 +125,20 @@ No additional verification needed — `vibe-labs-anon-flow.spec.ts` is 3/3 green
 > Single source of truth: `rewrites/NOTEBOOKLM_MASTER_PACK.md`
 
 ---
+
+## 🏁 TONIGHT'S SCORECARD (May 30, 2026)
+
+| Ship | Status |
+|---|---|
+| Quests skeleton + delayed-fetch test | ✅ |
+| Leaderboard skeleton + delayed-fetch test | ✅ |
+| WebKit empty-state flake stabilised | ✅ |
+| `/courses/:slug` content blank — root cause found + retry fix + test | ✅ |
+| `hv_modules.content` security decision locked (anon blocked) | ✅ |
+| QA Report written + updated | ✅ |
+
+Key rule from this session:
+- Keep `anon` blocked on `hv_modules.content` (prevents REST scraping). `CourseModule.tsx` retries fetching content once auth is present.
 
 ## 🛠️ TOOLS IN USE
 
