@@ -77,3 +77,4 @@ test-results/
 
 .vercel
 .env*.local
+.env*

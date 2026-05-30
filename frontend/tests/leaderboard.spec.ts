@@ -21,6 +21,8 @@ const wantsObject = (route: Route) =>
   Boolean(route.request().headers()['accept']?.includes('application/vnd.pgrst.object+json'));
 
 test.describe('/leaderboard — Rankings Page', () => {
+  let delayLeaderboardMs = 0;
+
   test.beforeEach(async ({ page }) => {
     await page.route('**/rest/v1/**', async (route) => {
       const request = route.request();
@@ -45,6 +47,9 @@ test.describe('/leaderboard — Rankings Page', () => {
       }
 
       if (url.pathname.startsWith('/rest/v1/leaderboard')) {
+        if (delayLeaderboardMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayLeaderboardMs));
+        }
         await fulfillJson(route, asObject ? null : []);
         return;
       }
@@ -99,5 +104,12 @@ test.describe('/leaderboard — Rankings Page', () => {
       .isVisible()
       .catch(() => false);
     expect(hasRows || hasEmptyState).toBeTruthy();
+  });
+
+  test('shows a loading skeleton while leaderboard fetch is delayed', async ({ page }) => {
+    delayLeaderboardMs = 1500;
+    await page.goto('/leaderboard');
+    await expect(page.getByTestId('leaderboard-loading')).toBeVisible();
+    delayLeaderboardMs = 0;
   });
 });

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
 import {
@@ -33,10 +33,25 @@ const LEVEL_TONE: Record<string, TagColor> = {
 
 export default function Courses() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [modules, setModules] = useState<HvModuleRow[]>([]);
   const [completedModuleIds, setCompletedModuleIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
+
+  const preloadCourseModule = () => import('./CourseModule');
+
+  const handleStartQuest = (slug: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    if (pendingSlug) return;
+    setPendingSlug(slug);
+    void preloadCourseModule()
+      .catch(() => {})
+      .finally(() => {
+        navigate(`/courses/${slug}`);
+      });
+  };
 
   useEffect(() => {
     async function fetchModules() {
@@ -109,6 +124,14 @@ export default function Courses() {
 
   return (
     <div className="bg-hfz-space-black min-h-screen py-12 sm:py-16">
+      {pendingSlug ? (
+        <div
+          data-testid="route-loading"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        >
+          <div className="text-hfz-text-secondary text-base">Wiring up the Z0ne…</div>
+        </div>
+      ) : null}
       <div className="max-w-hfz-page mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10 max-w-[65ch]">
@@ -206,7 +229,11 @@ export default function Courses() {
                     </div>
 
                     <div className="mt-4">
-                      <Link to={`/courses/${mod.slug}`} className="block no-underline">
+                      <Link
+                        to={`/courses/${mod.slug}`}
+                        className="block no-underline"
+                        onClick={handleStartQuest(mod.slug)}
+                      >
                         <HVZButton variant="primary" size="sm" fullWidth>
                           {isCompleted ? 'Replay quest →' : 'Start quest →'}
                         </HVZButton>

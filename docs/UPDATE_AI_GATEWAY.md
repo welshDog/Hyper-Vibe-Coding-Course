@@ -19,6 +19,42 @@ vercel ai-gateway create hyper-vibe-course-gateway
 
 ---
 
+## ✅ 2026-05-29 Update (OIDC / No Gateway Key Needed Locally)
+
+If you just want to smoke-test Vercel AI Gateway locally without managing an explicit AI Gateway API key:
+
+1. Install deps (repo root):
+   - `npm install`
+
+2. Authenticate + link:
+   - `vercel login`
+   - `vercel link`
+
+3. Pull env vars locally (creates `.env.local`, gitignored):
+   - `vercel env pull .env.local`
+   - This pulls `VERCEL_OIDC_TOKEN` for local requests
+
+4. Run the included smoke test:
+   - `node --env-file=.env.local index.mjs`
+   - Or: `npm run ai-gateway:smoke`
+
+## Dev-only helpers
+
+- Summarize a doc:
+  - `npm run ai-gateway:summarize -- <path-to-file>`
+- Triage a playtest report into a ranked buglist:
+  - `AI_GATEWAY_OUT=rewrites/AI_GATEWAY_TRIAGE.md npm run ai-gateway:triage -- <path-to-report>`
+
+Notes:
+- `.env.local` is intentionally used (never overwrite the repo’s `.env` / stack env).
+- Default smoke-test model is `openai/gpt-4.1-mini` (cheap).
+- Some models (e.g. `openai/gpt-4o`) can be restricted unless you top up paid credits.
+- Override locally:
+  - `AI_GATEWAY_MODEL=openai/gpt-4.1-mini`
+  - `AI_GATEWAY_PROMPT="..."` (keep prompts short to protect credits)
+
+---
+
 ### 2. HyperAgent-SDK Patch (20 mins)
 Update `@w3lshdog/hyper-agent@0.1.7` → `0.1.8`:
 

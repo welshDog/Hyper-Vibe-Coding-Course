@@ -15,6 +15,28 @@ function normalizeName(value: string) {
   return value.trim().toLowerCase();
 }
 
+function LeaderboardSkeleton() {
+  return (
+    <div className="space-y-3" aria-hidden>
+      {Array.from({ length: 6 }).map((_, idx) => (
+        <div
+          key={idx}
+          className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 motion-safe:animate-pulse"
+        >
+          <div className="h-5 w-10 rounded bg-white/10" />
+          <div className="flex-1">
+            <div className="h-4 w-2/5 rounded bg-white/10" />
+            <div className="mt-2 h-3 w-1/5 rounded bg-white/5" />
+          </div>
+          <div className="h-4 w-10 rounded bg-white/10" />
+          <div className="h-4 w-16 rounded bg-white/10" />
+          <div className="h-4 w-14 rounded bg-white/10" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Leaderboard() {
   const { user } = useAuthStore();
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
@@ -50,7 +72,10 @@ export default function Leaderboard() {
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="text-gray-300">Loading leaderboard...</div>
+        <div data-testid="leaderboard-loading" className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div className="text-gray-300 mb-5">Loading leaderboard...</div>
+          <LeaderboardSkeleton />
+        </div>
       </div>
     );
   }

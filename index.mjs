@@ -11,14 +11,22 @@
 
 import { streamText } from 'ai';
 
-const result = streamText({
-  // Any AI Gateway model id, e.g. 'openai/gpt-4o' or 'anthropic/claude-sonnet-4-5'.
-  // (The original snippet's 'openai/gpt-5.5' is not a real model — swap freely.)
-  model: 'openai/gpt-4o',
-  prompt: 'Explain quantum computing in simple terms.',
-});
+const model = process.env.AI_GATEWAY_MODEL || 'openai/gpt-4.1-mini';
+const prompt = process.env.AI_GATEWAY_PROMPT || 'Explain quantum computing in simple terms.';
 
-for await (const chunk of result.textStream) {
-  process.stdout.write(chunk);
+try {
+  const result = streamText({
+    model,
+    prompt,
+    maxOutputTokens: 120,
+  });
+
+  for await (const chunk of result.textStream) {
+    process.stdout.write(chunk);
+  }
+  process.stdout.write('\n');
+} catch (err) {
+  process.stderr.write(String(err));
+  process.stderr.write('\n');
+  process.exitCode = 1;
 }
-process.stdout.write('\n');

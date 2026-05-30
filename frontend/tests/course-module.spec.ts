@@ -304,4 +304,18 @@ test.describe('/courses/:slug — Module Detail', () => {
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
     await expect(page.getByRole('button', { name: /mark as complete|completed/i })).toBeVisible({ timeout: 15_000 });
   });
+
+  test('shows loading state when module route chunk is delayed', async ({ page }) => {
+    await installSupabaseMocks(page, { authenticated: false });
+    await page.goto('/courses');
+    await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
+
+    await page.route('**/src/pages/CourseModule.tsx*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.continue();
+    });
+
+    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
+    await expect(page.getByTestId('route-loading')).toBeVisible();
+  });
 });

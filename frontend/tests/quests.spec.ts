@@ -27,6 +27,8 @@ test.describe('/quests — Quest Tracker', () => {
     fullName: 'Test User',
   };
 
+  let delayUserQuestsMs = 0;
+
   const navigateClient = async (page: Page, path: string) => {
     await page.evaluate((nextPath) => {
       window.history.pushState({}, '', nextPath);
@@ -206,6 +208,9 @@ test.describe('/quests — Quest Tracker', () => {
       }
 
       if (url.pathname.startsWith('/rest/v1/user_quests')) {
+        if (delayUserQuestsMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, delayUserQuestsMs));
+        }
         await fulfillJson(route, asObject ? null : []);
         return;
       }
@@ -246,11 +251,20 @@ test.describe('/quests — Quest Tracker', () => {
     await loginAsTestUser(page);
     await navigateClient(page, '/quests');
     await expect(page.getByRole('heading', { name: /quests/i })).toBeVisible();
+    await expect(page.getByTestId('quests-loading')).toBeHidden();
     const hasQuests = (await page.locator('[data-testid="quest-item"]').count()) > 0;
     const hasEmpty = await page
       .getByText(/no active quests/i)
       .isVisible()
       .catch(() => false);
     expect(hasQuests || hasEmpty).toBeTruthy();
+  });
+
+  test('shows a loading skeleton while quests fetch is delayed', async ({ page }) => {
+    delayUserQuestsMs = 1500;
+    await loginAsTestUser(page);
+    await navigateClient(page, '/quests');
+    await expect(page.getByTestId('quests-loading')).toBeVisible();
+    delayUserQuestsMs = 0;
   });
 });
