@@ -50,6 +50,8 @@ test.describe('/courses/:slug — Module Detail', () => {
     },
   ];
 
+  let failModuleContentOnce = false;
+
   const installSupabaseMocks = async (page: Page, options: { authenticated: boolean }) => {
     await page.route('**/auth/v1/**', async (route) => {
       const request = route.request();
@@ -146,6 +148,11 @@ test.describe('/courses/:slug — Module Detail', () => {
       }
 
       if (url.pathname.startsWith('/rest/v1/hv_modules')) {
+        if (failModuleContentOnce && url.search.includes('content')) {
+          failModuleContentOnce = false;
+          await fulfillJson(route, { message: 'permission denied for column content' }, 403);
+          return;
+        }
         if (url.search.includes('slug=eq.')) {
           await fulfillJson(route, asObject ? modules[0] : [modules[0]]);
           return;
@@ -317,5 +324,14 @@ test.describe('/courses/:slug — Module Detail', () => {
 
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
     await expect(page.getByTestId('route-loading')).toBeVisible();
+  });
+
+  test('recovers module content when first content fetch fails', async ({ page }) => {
+    failModuleContentOnce = true;
+    await loginAsTestUser(page);
+    await navigateClient(page, '/courses');
+    await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
+    await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
+    await expect(page.getByText('Welcome to M1.')).toBeVisible({ timeout: 15_000 });
   });
 });

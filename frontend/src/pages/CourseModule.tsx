@@ -76,6 +76,7 @@ export default function CourseModule() {
 
   const [moduleRow, setModuleRow] = useState<(HvModuleRow & { content?: string | null }) | null>(null);
   const [content, setContent] = useState<string | null>(null);
+  const [needsContentRetry, setNeedsContentRetry] = useState(false);
   const [quiz, setQuiz] = useState<HvQuizPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -94,6 +95,7 @@ export default function CourseModule() {
       setError(null);
       setModuleRow(null);
       setContent(null);
+      setNeedsContentRetry(false);
       setQuiz(null);
       setAnswers({});
       setSubmitted(false);
@@ -121,6 +123,7 @@ export default function CourseModule() {
         const row = withoutContent.data as HvModuleRow;
         setModuleRow(row);
         setContent(null);
+        setNeedsContentRetry(true);
         setLoading(false);
         return;
       }
@@ -139,6 +142,28 @@ export default function CourseModule() {
 
     void fetchModule();
   }, [slug]);
+
+  useEffect(() => {
+    async function retryContent() {
+      if (!slug) return;
+      if (!user?.id) return;
+      if (!needsContentRetry) return;
+
+      const result = await supabase
+        .from('hv_modules')
+        .select('content')
+        .eq('slug', slug)
+        .single();
+
+      if (!result.error) {
+        setContent(((result.data as { content?: string | null } | null)?.content ?? null) as string | null);
+      }
+
+      setNeedsContentRetry(false);
+    }
+
+    void retryContent();
+  }, [needsContentRetry, slug, user?.id]);
 
   useEffect(() => {
     async function fetchQuiz() {
