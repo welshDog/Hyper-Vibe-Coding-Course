@@ -7,9 +7,9 @@
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react'
-import { useHUD } from '@/context/HUDContext'
-import { getPetPersonality } from '../../../lib/petPersonalities'
-import type { SpeciesId, MoodTrigger } from '../../../lib/petPersonalities'
+import { useHUD } from '../../context/HUDContext'
+import { getPetPersonality } from '../../lib/petPersonalities'
+import type { SpeciesId, MoodTrigger } from '../../lib/petPersonalities'
 
 // ---- Types ------------------------------------------------
 
