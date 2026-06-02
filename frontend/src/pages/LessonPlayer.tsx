@@ -11,6 +11,10 @@ import { useAchievements, BADGES } from '../hooks/useAchievements';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { QuizWidget } from '../components/QuizWidget';
 import { useAutoQuestTriggers } from '../hooks/useAutoQuestTriggers';
+import PetMentorBubble from '../components/pets/PetMentorBubble';
+import { usePetMoodSync } from '../hooks/usePetMoodSync';
+import { useMyPets } from '../hooks/useMyPets';
+import type { SpeciesId } from '../lib/petPersonalities';
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
@@ -66,6 +70,21 @@ export default function LessonPlayer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  // ── Pet Mentor state ─────────────────────────────────────────────────────
+  const [quizFailed, setQuizFailed] = useState(false);
+  const [moduleComplete, setModuleComplete] = useState(false);
+
+  // Get student's first pet species for the bubble — fallback to power_pup
+  const { pets } = useMyPets();
+  const activeSpeciesId: SpeciesId =
+    (pets?.[0]?.species_id as SpeciesId) ?? 'power_pup';
+
+  const { activeMood, clearMood } = usePetMoodSync({
+    xp: 0, // totalXp wired below after hook order fix
+    quizFailed,
+    moduleComplete,
+  });
 
   const { onLessonCompleted, totalXp, earnedBadges } = useAchievements();
   const { trackLessonStarted, trackLessonCompleted, trackBadgeEarned } = useAnalytics();
@@ -185,6 +204,18 @@ export default function LessonPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLessonIndex, course, lessons]);
 
+  // ── Reset mood flags after bubble handles them ───────────────────────────
+  useEffect(() => {
+    if (!activeMood) return;
+    // Give bubble 500ms to read the mood then clear the source flag
+    const t = setTimeout(() => {
+      setQuizFailed(false);
+      setModuleComplete(false);
+      clearMood();
+    }, 500);
+    return () => clearTimeout(t);
+  }, [activeMood, clearMood]);
+
   const currentLesson = lessons[currentLessonIndex];
 
   // ── Mark lesson complete ─────────────────────────────────────────────────
@@ -234,8 +265,10 @@ export default function LessonPlayer() {
       .eq('user_id', user.id)
       .eq('course_id', courseId);
 
+    // Fire module_complete mood trigger if all lessons done
     if (newCompleted.size === lessons.length) {
       await triggerQuest('COURSE_COMPLETE');
+      setModuleComplete(true);
     }
 
     // Analytics
@@ -465,7 +498,11 @@ export default function LessonPlayer() {
 
               {/* Quiz — only shown when enrolled (not preview) */}
               {!isPreview && user && (
-                <QuizWidget lessonId={currentLesson.id} userId={user.id} />
+                <QuizWidget
+                  lessonId={currentLesson.id}
+                  userId={user.id}
+                  onQuizFail={() => setQuizFailed(true)}
+                />
               )}
             </div>
           </div>
@@ -494,6 +531,15 @@ export default function LessonPlayer() {
 
       {/* Toast stack — outside layout so it's never clipped */}
       <ToastStack toasts={toasts} onDismiss={removeToast} />
+
+      {/* 🐾 Pet Mentor Bubble — only for enrolled students, not preview */}
+      {!isPreview && user && (
+        <PetMentorBubble
+          speciesId={activeSpeciesId}
+          currentModule={course.title}
+          triggerMood={activeMood}
+        />
+      )}
     </>
   );
 }
