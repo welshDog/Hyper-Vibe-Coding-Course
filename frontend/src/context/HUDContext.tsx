@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { createContext, useState, useEffect, useRef, useCallback, useContext, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface HUDState {
@@ -15,6 +15,12 @@ interface HUDState {
 }
 
 export const HUDContext = createContext<HUDState | null>(null);
+
+export function useHUD(): HUDState {
+  const ctx = useContext(HUDContext);
+  if (!ctx) throw new Error('useHUD must be used inside HUDProvider');
+  return ctx;
+}
 
 interface HUDProviderProps {
   children: ReactNode;
