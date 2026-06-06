@@ -1,8 +1,13 @@
 # REVENUE SMOKE TEST — RESULTS — 2026-06-06
 
 > Manual Stripe webhook smoke test executed on the prod Supabase Edge Function
-> via a Workbench resend of a real LIVE-mode `checkout.session.completed`
-> event. No new charges created. Idempotency proven end-to-end.
+> via a Workbench resend of a real `checkout.session.completed` event.
+> Idempotency proven end-to-end. **No new charges created — confirmed 2026-06-07
+> the entire Course Stripe integration is currently in TEST mode** (every
+> `price_*` ID in `PRICE_TO_TIER` resolves to a `dashboard.stripe.com/test/prices/...`
+> URL, and Stripe price IDs are mode-scoped). The code-path proof in this doc
+> is valid as-is, but where it originally said "LIVE" it should be read as TEST.
+> CLAUDE.md's "Stripe LIVE 💳" claim has been corrected separately.
 
 ---
 
@@ -26,16 +31,18 @@
 | Supabase project | `yhtmuibgdnxhbgboajhc` (course) |
 | Edge Function | `stripe-webhook` v56, `verify_jwt: false` (ACTIVE) |
 | Webhook URL | `https://yhtmuibgdnxhbgboajhc.supabase.co/functions/v1/stripe-webhook` |
-| Stripe account | `acct_1QUHFk2LoEeIEPVE` (WelshDog, LIVE mode) |
-| Test method | Stripe Workbench "Resend" on an existing LIVE event |
-| Target event | `evt_1TeZt82LoEeIEPVEDqDCHXPt` (pro tier purchase, 2026-06-04) |
+| Stripe account | `acct_1QUHFk2LoEeIEPVE` (WelshDog, **TEST mode** — corrected 2026-06-07) |
+| Test method | Stripe Workbench "Resend" on an existing TEST event |
+| Target event | `evt_1TeZt82LoEeIEPVEDqDCHXPt` (pro tier purchase, 2026-06-04, TEST mode) |
 | Original row in DB | `token_transactions.id = d038a20a-4de5-4a7c-94c0-00487d3a586f` |
 
-### Why Workbench resend (not Stripe CLI / new test charge)
+### Why Workbench resend (not Stripe CLI / synthetic event)
 
 - Stripe public API has **no** "resend event" operation (dashboard / Workbench only).
-- Stripe MCP key is connected to LIVE mode — a fresh test would have created
-  a real charge.
+- At the time the smoke ran, we believed Stripe was in LIVE mode — Workbench
+  resend felt like the safe play. The 2026-06-07 audit later confirmed the
+  whole integration is actually TEST mode, so a fresh `stripe trigger` would
+  also have been safe; the choice happened to still be valid.
 - Supabase MCP scope doesn't expose Edge Function secrets, so a synthetic
   signed payload wasn't viable.
 - Resending an already-signed real event proves the **full** signed-receive
@@ -113,14 +120,13 @@ than `awardTokensAndUnlock`).
 
 ## What this does NOT prove
 
-- A **fresh** end-to-end write was not exercised in this session (we
-  intentionally avoided creating a new live charge). The positive case rests
-  on the 3 historical rows. If you want a brand-new write proven on demand,
-  the lowest-cost option is a Stripe TEST-mode payment_link + completing it
-  with a 4242 test card against a TEST-mode webhook endpoint configured to
-  point at the same Edge Function — that needs an additional Stripe webhook
-  endpoint (test secret) wired into the function, which is a separate piece
-  of work.
+- A **fresh** end-to-end write was not exercised in this session. The
+  positive case rests on the 3 historical rows. Now that we know the
+  integration is TEST mode, a brand-new write can be proven cheaply via
+  `stripe trigger checkout.session.completed --override checkout_session:customer_email=<existing>@example.com --override checkout_session:metadata.price_id=price_1TbUiz2LoEeIEPVE51tuHofX`
+  against the configured TEST webhook endpoint. No new infra needed.
+- **No revenue path is actually live yet.** Real (LIVE) customers cannot
+  buy until LIVE price IDs + a LIVE webhook endpoint are wired (see backlog).
 - Refund / dispute / subscription branches were not exercised here.
 - The `payments` table was NOT touched by this event in the first place —
   the `awardTokensAndUnlock` path doesn't write `payments` (only
@@ -132,17 +138,20 @@ than `awardTokensAndUnlock`).
 
 ## Outstanding (next-session backlog)
 
-- **TEST-mode endpoint.** Wire a Stripe Dashboard TEST-mode webhook endpoint
-  to the same Edge Function URL, store both LIVE and TEST webhook secrets,
-  and pick the correct one at runtime by `event.livemode`. Unlocks
-  charge-free fresh-write smoke via `stripe trigger`.
+- **Wire LIVE mode.** Add LIVE price IDs to `PRICE_TO_TIER`, create a LIVE
+  webhook endpoint in Stripe Dashboard pointing at the same Edge Function
+  URL, store both TEST and LIVE secrets, and pick the correct one at
+  runtime by `event.livemode`. Until this lands, real customers cannot buy.
+- **Correct CLAUDE.md.** Several places in `HyperCode-V2.4/CLAUDE.md` (and
+  by reference, this repo's `CLAUDE.md`) still claimed "Stripe LIVE 💳" —
+  patched 2026-06-07. Audit other status docs for the same stale claim.
 - **Refund / dispute smoke.** Resend a real `charge.refunded` or
   `charge.dispute.created` event and verify `enrollments.status = 'revoked'`
   for the buyer (`revokeAccess` branch).
-- **Cleanup of historical `payments` rows.** Three rows in `payments` are
-  all `status = 'unmatched'` from the early-purchase window — worth a one-
-  time audit to confirm whether they correspond to real buyers whose tokens
-  weren't credited (and if so, manual `awardTokensAndUnlock` replay).
+- ~~**Cleanup of historical `payments` rows.**~~ Audited 2026-06-07. All
+  three are TEST noise (two `stripe trigger` defaults, one PaymentIntent
+  sibling of the successful TEST starter checkout `evt_1TcAF52`). No real
+  revenue lost. Safe to leave or delete as table hygiene.
 
 ---
 
