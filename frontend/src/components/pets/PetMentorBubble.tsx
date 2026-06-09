@@ -79,7 +79,7 @@ export default function PetMentorBubble({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
+      className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 pointer-events-none"
       aria-label={`${personality.displayName} pet mentor`}
     >
       {/* Speech bubble */}
@@ -106,6 +106,7 @@ export default function PetMentorBubble({
                 <button
                   onClick={handleStuck}
                   className="
+                    pointer-events-auto
                     mt-1 text-xs text-purple-400 hover:text-purple-200
                     underline underline-offset-2 transition-colors
                   "
@@ -117,6 +118,7 @@ export default function PetMentorBubble({
                 <button
                   onClick={() => setIsStuck(false)}
                   className="
+                    pointer-events-auto
                     mt-1 text-xs text-gray-500 hover:text-gray-300
                     underline underline-offset-2 transition-colors
                   "
@@ -134,6 +136,7 @@ export default function PetMentorBubble({
         onClick={toggle}
         title={`${personality.displayName} — your mentor`}
         className="
+          pointer-events-auto
           w-14 h-14 rounded-full
           bg-gray-900 border-2 border-purple-500/60
           shadow-lg shadow-purple-900/40
