@@ -110,8 +110,10 @@ export function useProgress() {
           // already_claimed / locked → skip; server is the gate.
         }
         clearAnonProgress()
-        if (!cancelled && banked > 0) {
+        if (banked > 0) {
           setReconciliation({ banked, xp, coins })
+        }
+        if (!cancelled && banked > 0) {
           await refreshUser()
         }
       }

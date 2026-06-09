@@ -1,6 +1,28 @@
 # ✅ WHATS_DONE.md — HyperCode Ecosystem
 > One file. Short bullets. No walls of text.
-> **Updated: May 25, 2026** — update this every session.
+> **Updated: June 9, 2026** — update this every session.
+
+---
+
+## 🎯 JUNE 9 — SHOP FULFILLMENT E2E + ANON→LOGIN RECONCILE E2E ✅
+
+Two complete E2E suites shipped. Full suite now 168/168 green across chromium/firefox/webkit.
+
+### 🛒 Shop Fulfillment v2 E2E (commit `389997b`)
+- **42/42 tests, 14 spec groups** covering: auth gate, item load, GBP pricing, tier discounts, modal, frame/food/pet-cosmetic/agent-access purchases, consumable repeat-buy, server discount intercept, fulfillment polling, error notification
+- Root causes fixed in `ShopPage.tsx`: added `data-testid="shop-notification"` + `data-testid="shop-balance"` to production DOM for reliable targeting
+- Key fix: ASCII `-` in notification text (`-450 🪙`) vs Unicode minus `−` — regex `/−450/i` → `/-450/i`
+- Strict mode race condition on `invokedBody`: body assertion moved after `await expect(notification)` to guarantee route handler has completed
+
+### 🔄 Anon→Login Reconcile E2E (new file `frontend/tests/vibe-labs-reconcile.spec.ts`)
+- **15/15 tests** (5 scenarios × 3 browsers)
+- Covers: 2-level bank ascending + banner copy, singular "level" label, already-claimed skip, empty store no-op, tampered store server gate
+- Root cause discovered + fixed in `useProgress.ts` (line 113): React 18 StrictMode double-invokes effects in dev; cleanup fired `cancelled = true` during the RPC awaits, blocking `setReconciliation`. Fix: split the guard — `setReconciliation` called unconditionally when `banked > 0`; only `refreshUser()` stays behind the `!cancelled` guard (safe: React 18 ignores setState on unmounted components)
+- `PetMentorBubble` pointer-events fix (commit `173744e`): overlay was intercepting clicks on lesson UI
+
+### 🔢 E2E Totals
+- Before: 111 tests across 10 spec files
+- After: 168 tests across 12 spec files (+57 new, 0 failures)
 
 ---
 
