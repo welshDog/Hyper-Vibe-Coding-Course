@@ -196,7 +196,7 @@ Late-night push closed Mission Control to **5/6 Agent Actions live end-to-end** 
 - `requireAdmin` JWT middleware ✅ (v0.6.0)
 - `emitEvent()` helper ✅ (v0.6.0) — every audit action flows through one function
 - Health Pulse, Morning Brief, Catch Stragglers ✅ (built, needs smoke + prod deploy)
-- Running locally port 5174 — NOT yet deployed to prod
+- **DEPLOYED** — Vercel SPA live + Render API live at `https://welshdog-mc-api.onrender.com` (confirmed June 7, commit `999afef`)
 - Footer easter egg — `weird` → `/admin/mission-control` launchpad ✅
 
 ### Course Frontend
