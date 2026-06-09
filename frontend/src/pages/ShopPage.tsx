@@ -150,6 +150,7 @@ function NotificationBanner({ note, onDismiss }: { note: Notification; onDismiss
   return (
     <div
       role="status"
+      data-testid="shop-notification"
       className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-hfz-md text-sm font-medium"
       style={{
         background: isSuccess ? 'rgba(16,245,160,0.12)' : 'rgba(239,68,68,0.12)',
@@ -931,6 +932,7 @@ export default function ShopPage() {
               <HVZTag color="violet">Reach Silver → 5% off 🔓</HVZTag>
             )}
             <div
+              data-testid="shop-balance"
               className="flex items-center gap-2 px-4 py-2 rounded-hfz-full font-bold font-mono"
               style={{
                 background: 'rgba(245,158,11,0.12)',
