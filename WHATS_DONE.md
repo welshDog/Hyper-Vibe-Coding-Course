@@ -206,7 +206,7 @@ Late-night push closed Mission Control to **5/6 Agent Actions live end-to-end** 
 - `frontend/src/lib/supabase/client.ts` — `@supabase/supabase-js` only (NOT `@supabase/ssr`) ✅
 
 ### HyperAgent-SDK
-- Published: `@w3lshdog/hyper-agent@0.1.7` ✅
+- Published: `@w3lshdog/hyper-agent@0.4.0` ✅ (bumped from 0.1.7 — graduate build + web3/dNFT block)
 
 ---
 
@@ -220,7 +220,7 @@ Redis DB split:  DB 1 = cache  |  DB 2 = rate limits
 Stripe webhook:  ALWAYS rate-limit exempt
 Supabase proj:   yhtmuibgdnxhbgboajhc
 Course site:     https://hyper-vibe-coding-course.vercel.app
-Mission Control: Local port 5174 — NOT yet deployed to prod
+Mission Control: DEPLOYED — Vercel SPA + Render API https://welshdog-mc-api.onrender.com
 Discord bot:     DISCORD_BOT_TOKEN in .env only — never commit
 Supabase client: ALWAYS use @supabase/supabase-js — @supabase/ssr is NOT installed
 Catch Stragglers: BUILT in MC repo — do NOT rebuild. Smoke test only.
