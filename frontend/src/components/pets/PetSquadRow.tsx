@@ -109,6 +109,7 @@ export function PetSquadRow() {
                     imageUrl={species.imageUrl}
                     alt={species.displayName}
                     size="lg"
+                    rarity={p.rarity}
                     equipped={equipped}
                     className="ring-2 ring-hfz-gold/40"
                   />
@@ -149,6 +150,7 @@ export function PetSquadRow() {
                       imageUrl={species.imageUrl}
                       alt={species.displayName}
                       size="sm"
+                      rarity={p.rarity}
                       equipped={equipped}
                     />
                     <div className="flex-1 min-w-0">
