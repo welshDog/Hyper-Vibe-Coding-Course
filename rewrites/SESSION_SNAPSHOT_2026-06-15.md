@@ -41,11 +41,21 @@ The BROskiPet open-supply dNFT contract was deployed to Base Sepolia and the ful
 
 ---
 
+## ✅ Also Done This Session
+
+### 5. First BROskiPet minted on prod ✅
+
+- **Pet:** Hopper the Sonic Spider
+- **Tx:** `0x9bdac34481f6c3449545ba8ce152e7892fc915c6b5f3f0bc4783562a37213ded`
+- **Chain:** Base Sepolia 84532
+- **BaseScan verdict:** "Mint 1 of BROskiPet | Success"
+- **Playwright** `pets-mint-gate.spec.ts` — 3/3 green (chromium/firefox/webkit)
+
 ## 🔴 Still Needed
 
-1. **Test the live mint** — needs 100 BROski$ + MetaMask connected to Base Sepolia on the prod site
-2. **Playwright E2E mint test** — currently blocked on MetaMask automation (human-only gate per CLAUDE.md §4c)
-3. **Vercel rebuild** — this commit triggers the rebuild that picks up the new `VITE_BROSKIPET_CONTRACT_ADDRESS` at build time
+1. **Playwright E2E mint test with wallet** — MetaMask automation is a human-only gate
+2. **EEP cosmetics** — `python scripts/mint_all_eeps.py` (EEPVengers evolution stage art)
+3. **CDP key secret** — paste `CDP_API_KEY_ID` + `CDP_API_KEY_SECRET` into BROskiPets `.env` at build time
 
 ---
 
