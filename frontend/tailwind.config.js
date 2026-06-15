@@ -214,6 +214,14 @@ export default {
           '0%':   { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // Legendary rarity ring — cycles through holographic spectrum.
+        legendaryRing: {
+          '0%':   { boxShadow: '0 0 0 2px #D946EF, 0 0 16px rgba(217, 70, 239, 0.5)' },
+          '25%':  { boxShadow: '0 0 0 2px #A855F7, 0 0 16px rgba(168, 85, 247, 0.5)' },
+          '50%':  { boxShadow: '0 0 0 2px #00D4FF, 0 0 16px rgba(0, 212, 255, 0.5)' },
+          '75%':  { boxShadow: '0 0 0 2px #FCD34D, 0 0 16px rgba(252, 211, 77, 0.5)' },
+          '100%': { boxShadow: '0 0 0 2px #D946EF, 0 0 16px rgba(217, 70, 239, 0.5)' },
+        },
         // BROski$ earn callout — pop in (springy), hover, then drift up + fade out.
         tokenPop: {
           '0%':   { opacity: '0', transform: 'translateY(0) scale(0.6)' },
@@ -241,6 +249,7 @@ export default {
         shimmer:      'shimmer 1.5s linear infinite',
         'gold-sweep': 'goldSweep 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'fade-in-up': 'fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'legendary-ring': 'legendaryRing 3s ease infinite',
       },
 
       // ---------- BACKDROP BLUR ----------

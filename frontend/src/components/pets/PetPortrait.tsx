@@ -11,7 +11,8 @@
 //
 // Cosmetic layers are size-agnostic via `scale-*` (no per-size calc math).
 
-import type { ReactNode } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
+import type { Rarity } from '../../lib/species'
 
 export type PetCosmeticSlot = 'aura' | 'frame' | 'badge' | 'background'
 
@@ -19,6 +20,13 @@ export type PetCosmeticSlot = 'aura' | 'frame' | 'badge' | 'background'
 export type EquippedCosmetics = Partial<
   Record<PetCosmeticSlot, { image_url: string | null; name: string }>
 >
+
+const RARITY_RING: Record<Rarity, CSSProperties> = {
+  common:    { boxShadow: '0 0 0 2px #60A5FA, 0 0 8px #3B82F6' },
+  uncommon:  { boxShadow: '0 0 0 2px #10F5A0, 0 0 8px rgba(16, 245, 160, 0.5)' },
+  rare:      { boxShadow: '0 0 0 2px #A855F7, 0 0 12px #7B2FBE' },
+  legendary: {}, // handled by animate-legendary-ring CSS animation
+}
 
 const SIZE = {
   lg: {
@@ -37,6 +45,7 @@ type Props = {
   imageUrl: string
   alt:      string
   size:     keyof typeof SIZE
+  rarity?:  Rarity
   equipped?: EquippedCosmetics
   /** Bottom-right node shown only when no badge cosmetic is equipped. */
   cornerFallback?: ReactNode
@@ -48,6 +57,7 @@ export function PetPortrait({
   imageUrl,
   alt,
   size,
+  rarity,
   equipped,
   cornerFallback,
   className = '',
@@ -57,9 +67,14 @@ export function PetPortrait({
   const aura  = equipped?.aura?.image_url
   const frame = equipped?.frame?.image_url
   const badge = equipped?.badge
+  const ringStyle   = rarity ? RARITY_RING[rarity] : {}
+  const legendaryRingClass = rarity === 'legendary' ? 'motion-safe:animate-legendary-ring' : ''
 
   return (
-    <div className={`relative shrink-0 ${s.box} ${s.rounded} ${className}`}>
+    <div
+      className={`relative shrink-0 ${s.box} ${s.rounded} ${legendaryRingClass} ${className}`}
+      style={ringStyle}
+    >
       {bg && (
         <img
           src={bg}
@@ -84,10 +99,18 @@ export function PetPortrait({
         src={imageUrl}
         alt={alt}
         loading="lazy"
-        className={`relative h-full w-full ${s.rounded} ${
+        className={`relative h-full w-full ${s.rounded} motion-safe:animate-idle-breath ${
           bg ? 'object-contain p-1' : 'object-cover'
         }`}
       />
+
+      {rarity === 'legendary' && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-hfz-md bg-hfz-holographic motion-safe:animate-holographic opacity-[0.07] mix-blend-overlay"
+          style={{ backgroundSize: '200% 200%' }}
+        />
+      )}
 
       {frame && (
         <img

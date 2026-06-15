@@ -96,6 +96,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
             imageUrl={species.imageUrl}
             alt={species.displayName}
             size="sm"
+            rarity={pet.rarity}
             equipped={equipped}
           />
           <div className="flex-1 min-w-0">
@@ -174,6 +175,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
           imageUrl={species.imageUrl}
           alt={species.displayName}
           size="lg"
+          rarity={pet.rarity}
           equipped={equipped}
           className={isEvolving ? 'motion-safe:animate-border-pulse' : undefined}
           cornerFallback={

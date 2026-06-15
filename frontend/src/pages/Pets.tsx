@@ -327,7 +327,7 @@ export default function Pets() {
             <section aria-labelledby="step3" className="flex flex-col gap-3">
               <h2 id="step3" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
                 Step 3 — Mint · Your BROski${' '}
-                <span data-mint-broski className="font-mono font-bold">
+                <span data-mint-broski className="font-mono font-bold text-hfz-gold">
                   {tokens.toLocaleString()}
                 </span>{' '}
                 / 100 needed
