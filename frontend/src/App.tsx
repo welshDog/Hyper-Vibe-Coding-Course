@@ -50,6 +50,7 @@ const EarlyAccess = lazy(() => import('./pages/EarlyAccess'));
 const SignupsDashboard = lazy(() => import('./pages/admin/signups'));
 const CatchStragglersPage = lazy(() => import('./pages/admin/catch-stragglers'))
 const MissionControl = lazy(() => import('./pages/MissionControl'));
+const DiscordCallback = lazy(() => import('./pages/DiscordCallback'));
 
 function RouteFallback() {
   return (
@@ -105,6 +106,8 @@ function App() {
               <Route path="/vibe-labs/level-5" element={<Level5FullStack />} />
               {/* Founding-member waitlist — standalone dark chrome, anon-friendly */}
               <Route path="/early-access" element={<EarlyAccess />} />
+              {/* Discord OAuth callback — standalone, no Layout chrome */}
+              <Route path="/auth/discord/callback" element={<DiscordCallback />} />
               {/* First-login onboarding — full-bleed, skips Layout */}
               <Route
                 path="/welcome"

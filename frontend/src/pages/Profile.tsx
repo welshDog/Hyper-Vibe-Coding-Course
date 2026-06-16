@@ -12,6 +12,7 @@ import {
   HVZTag,
   HVZProgress,
 } from '../components/ui/hvz';
+import DiscordLinkSection from '../components/DiscordLinkSection';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -380,6 +381,17 @@ export default function Profile() {
               </div>
             </form>
           </HVZCard>
+        </section>
+
+        {/* Connected accounts */}
+        <section>
+          <h2
+            className="font-display font-bold text-hfz-h3 text-hfz-text-primary mb-4"
+            style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+          >
+            Connected accounts
+          </h2>
+          <DiscordLinkSection />
         </section>
 
         {/* My courses */}
