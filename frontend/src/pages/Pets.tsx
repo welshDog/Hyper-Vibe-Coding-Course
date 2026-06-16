@@ -228,6 +228,7 @@ export default function Pets() {
                     pet={p}
                     freshMint={p.mint_tx_hash === justMintedTx}
                     equipped={resolveEquipped(p)}
+                    onEvolved={() => { void refetch() }}
                   />
                   <PetCosmeticsPanel
                     pet={p}

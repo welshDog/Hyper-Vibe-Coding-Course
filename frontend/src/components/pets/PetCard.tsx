@@ -26,6 +26,7 @@ import {
   type PetCosmeticSlot,
   type EquippedCosmetics,
 } from './PetPortrait'
+import { EvolveButton } from './EvolveButton'
 
 // Re-exported for back-compat — these types now live in PetPortrait.
 export type { PetCosmeticSlot, EquippedCosmetics }
@@ -62,6 +63,8 @@ type Props = {
   freshMint?:  boolean
   /** Resolved cosmetic art for this pet's equipped slots. */
   equipped?:   EquippedCosmetics
+  /** Called after a successful evolve_pet RPC so the parent can refetch. */
+  onEvolved?:  () => void
 }
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
@@ -71,7 +74,7 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
   legendary: 'gold',
 }
 
-export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped }: Props) {
+export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped, onEvolved }: Props) {
   // ⚠️  All hooks declared up top — Rules of Hooks. Even though `tilt` only
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
@@ -226,6 +229,10 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
               ↗ BaseScan
             </a>
           </footer>
+
+          {onEvolved && (
+            <EvolveButton pet={pet} onEvolved={onEvolved} />
+          )}
         </div>
       </div>
     </HVZCard>
