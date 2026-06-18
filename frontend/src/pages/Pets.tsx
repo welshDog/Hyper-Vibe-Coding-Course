@@ -19,8 +19,9 @@ import { HVZCard, HVZButton } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
 import { WalletStatusBadge } from '../components/WalletStatusBadge'
-import { PetCard } from '../components/pets/PetCard'
+import { PetCard, type Pet } from '../components/pets/PetCard'
 import { PetCardSkeleton } from '../components/pets/PetCardSkeleton'
+import { XpFeed } from '../components/pets/XpFeed'
 import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { PetSquadRow } from '../components/pets/PetSquadRow'
 import { PetCosmeticsPanel } from '../components/pets/PetCosmeticsPanel'
@@ -36,6 +37,27 @@ import {
 } from '../lib/species'
 
 import { usePetNotifications } from '../hooks/usePetNotifications'
+
+// Showcase pet for logged-out visitors. Not a real on-chain pet — PetCard's
+// `demo` flag swaps the BaseScan link for a "Preview" marker. Rarity stays
+// honest (rare, not a fabricated "Epic" tier) and the gold/Legend treatment is
+// reserved for real pets. xpOverride sits mid-Learner so the bar reads ~60%.
+const DEMO_PET: Pet = {
+  id:              'demo',
+  pet_id:          'broski_demo',
+  species_id:      'power_pup',
+  pet_name:        'Nimble Wolf',
+  rarity:          'rare',
+  stage:           'learner',
+  mood:            'hyperfocus',
+  evolution_count: 1,
+  last_evolved_at: null,
+  mint_tx_hash:    '0x0000000000000000000000000000000000000000000000000000000000000000',
+  ipfs_cid:        '',
+  chain_id:        84532,
+  created_at:      new Date().toISOString(),
+}
+const DEMO_PET_XP = 1100
 
 export default function Pets() {
   const [speciesId, setSpeciesId] = useState<SpeciesId | null>(null)
@@ -244,38 +266,52 @@ export default function Pets() {
         </section>
       )}
 
+      {/* Recent XP activity — the cause→effect feed (authenticated only) */}
+      {userId && (
+        <section aria-labelledby="recent-xp" className="flex flex-col gap-3">
+          <h2 id="recent-xp" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+            Recent activity
+          </h2>
+          <XpFeed />
+        </section>
+      )}
+
       {/* Steps 1–3 — Mint flow (login-gated) */}
       {!userId ? (
-        /* 🔒 Login gate — mint is members-only */
-        <section aria-labelledby="mint-gate" className="flex flex-col gap-3">
-          <h2 id="mint-gate" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
-            Mint a BROski Pet
+        /* 🐾 Demo showcase — logged-out visitors meet an aspirational pet,
+           with one clear primary action (Claim your pet). */
+        <section aria-labelledby="demo-pet" className="flex flex-col gap-3">
+          <h2 id="demo-pet" className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+            Meet your coding companion
           </h2>
-          <HVZCard>
-            <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <span className="text-4xl" aria-hidden>🔒</span>
-              <p className="text-hfz-text-primary font-bold text-lg">
-                Log in to mint your BROskiPet
-              </p>
-              <p className="text-hfz-text-secondary text-sm max-w-sm">
-                Create a free account to pick a species, name your companion, and mint it on Base.
-              </p>
-              <div className="flex gap-3 mt-2">
-                <Link
-                  to="/login"
-                  className="inline-flex rounded-hfz-md bg-hfz-violet-light hover:opacity-90 transition-opacity px-5 py-2 text-white text-sm font-semibold"
-                >
-                  Sign in
-                </Link>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-stretch">
+            <PetCard pet={DEMO_PET} demo xpOverride={DEMO_PET_XP} />
+            <HVZCard>
+              <div className="flex h-full flex-col justify-center gap-4 text-center sm:text-left">
+                <div>
+                  <p className="text-lg font-bold text-hfz-text-primary">
+                    This could be yours.
+                  </p>
+                  <p className="mt-1 text-sm text-hfz-text-secondary leading-relaxed">
+                    Mint a BROskiPet on Base, then watch it evolve through 6 stages as you
+                    earn XP from quests and modules. Yours forever, on-chain.
+                  </p>
+                </div>
                 <Link
                   to="/register"
-                  className="inline-flex rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black hover:bg-white/5 transition-colors px-5 py-2 text-hfz-text-primary text-sm font-semibold"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-hfz-md bg-hfz-violet-light px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-hfz-violet-light/40"
                 >
-                  Create account
+                  Claim your pet
                 </Link>
+                <p className="text-xs text-hfz-text-secondary">
+                  Already have an account?{' '}
+                  <Link to="/login" className="text-hfz-violet-light hover:underline">
+                    Sign in
+                  </Link>
+                </p>
               </div>
-            </div>
-          </HVZCard>
+            </HVZCard>
+          </div>
         </section>
       ) : (
         <>
