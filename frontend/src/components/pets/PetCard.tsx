@@ -65,6 +65,10 @@ type Props = {
   equipped?:   EquippedCosmetics
   /** Called after a successful evolve_pet RPC so the parent can refetch. */
   onEvolved?:  () => void
+  /** Showcase render for logged-out visitors — swaps the BaseScan tx link for
+   *  a "Preview" marker (the pet isn't real on-chain). Everything else, incl.
+   *  the holo tilt + rarity ring, stays identical so it feels desirable. */
+  demo?:       boolean
 }
 
 const RARITY_COLOR: Record<Rarity, TagColor> = {
@@ -74,7 +78,7 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
   legendary: 'gold',
 }
 
-export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped, onEvolved }: Props) {
+export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped, onEvolved, demo = false }: Props) {
   // ⚠️  All hooks declared up top — Rules of Hooks. Even though `tilt` only
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
@@ -219,18 +223,24 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
 
           <footer className="mt-3 flex flex-wrap items-center gap-2">
             <MoodBadge mood={pet.mood} />
-            <a
-              href={baseScanTxUrl(pet.mint_tx_hash, pet.chain_id)}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-xs text-hfz-violet-light hover:underline"
-            >
-              ↗ BaseScan
-            </a>
+            {demo ? (
+              <span className="text-xs text-hfz-text-secondary/70 select-none">
+                ✨ Preview pet
+              </span>
+            ) : (
+              <a
+                href={baseScanTxUrl(pet.mint_tx_hash, pet.chain_id)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs text-hfz-violet-light hover:underline"
+              >
+                ↗ BaseScan
+              </a>
+            )}
           </footer>
 
-          {onEvolved && (
+          {onEvolved && !demo && (
             <EvolveButton pet={pet} onEvolved={onEvolved} />
           )}
         </div>
