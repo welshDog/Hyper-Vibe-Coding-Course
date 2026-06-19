@@ -17,7 +17,8 @@ const PUBLIC_LINKS: { label: string; href: string }[] = [
 
 const AUTHED_LINKS: { label: string; href: string }[] = [
   { label: 'Dashboard', href: '/dashboard' },
-  { label: '⚔️ Quests', href: '/quests' },
+  // Hidden until Quests is populated (2026-06-19) — /quests route still live.
+  // { label: '⚔️ Quests', href: '/quests' },
   { label: '🛒 Shop', href: '/shop' },
 ];
 

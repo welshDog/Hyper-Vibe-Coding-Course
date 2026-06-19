@@ -867,7 +867,7 @@ function SiteFooter() {
           </div>
           {(
             [
-              { h: 'Product', links: [['Courses', '/courses'], ['BROski$Pets', '/pets'], ['Pricing', '/pricing'], ['Quests', '/quests']] },
+              { h: 'Product', links: [['Courses', '/courses'], ['BROski$Pets', '/pets'], ['Pricing', '/pricing']] }, // Quests hidden until populated (2026-06-19)
               { h: 'Community', links: [['Leaderboard', '/leaderboard'], ['Discord', '#'], ['GitHub', 'https://github.com/welshDog/Hyper-Vibe-Coding-Course'], ['Tokens', '/tokens']] },
               { h: 'Brand', links: [['Manifesto', '#'], ['Press kit', '#'], ['Contact', '#'], ['Made in Wales', '#']] },
             ] as { h: string; links: [string, string][] }[]
