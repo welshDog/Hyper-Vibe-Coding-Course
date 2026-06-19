@@ -10,7 +10,8 @@ const COLS: Col[] = [
       { label: 'Courses', href: '/courses' },
       { label: 'BROski$Pets', href: '/pets' },
       { label: 'Pricing', href: '/pricing' },
-      { label: 'Quests', href: '/quests' },
+      // Hidden until Quests is populated (2026-06-19) — /quests route still live.
+      // { label: 'Quests', href: '/quests' },
     ],
   },
   {
