@@ -18,8 +18,10 @@ import { useHUD } from '../../context/HUDContext'
 import { supabase } from '../../lib/supabase'
 import { getPetPersonality } from '../../lib/petPersonalities'
 import type { SpeciesId, MoodTrigger } from '../../lib/petPersonalities'
-import { useOwnedCosmetics, PET_SLOTS, type PetSlot } from '../../hooks/useOwnedCosmetics'
+import { useOwnedCosmetics, type PetSlot } from '../../hooks/useOwnedCosmetics'
 import { HVZButton } from '../ui/hvz'
+import { MoodBadge } from './MoodBadge'
+import { MOOD_LABEL, type PetMood } from '../../lib/evolution'
 
 // ---- Types ------------------------------------------------
 
@@ -34,6 +36,8 @@ type BubbleProps = {
   petId?: string
   /** Equipped cosmetics by slot → shop_item id (from pets.cosmetics). */
   cosmetics?: Partial<Record<PetSlot, string>>
+  /** The pet's current mood from pets.mood — seeds the avatar mood ring. */
+  initialMood?: PetMood
 }
 
 type ChatMessage = { id: string; role: 'user' | 'pet'; text: string }
@@ -45,6 +49,34 @@ function newId(): string {
   return `m-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+// Pet mood (PetMood) → avatar ring + glow, matching MoodBadge's colour mapping
+// (idle=cyan, learning=mint, hyperfocus=violet, evolving=gold).
+const MOOD_RING: Record<PetMood, { border: string; glow: string }> = {
+  idle:       { border: 'border-hfz-cyan',         glow: 'shadow-hfz-glow-cyan' },
+  learning:   { border: 'border-hfz-mint',         glow: 'shadow-hfz-glow-mint' },
+  hyperfocus: { border: 'border-hfz-violet-light', glow: 'shadow-hfz-glow-violet' },
+  evolving:   { border: 'border-hfz-gold',         glow: 'shadow-hfz-glow-gold' },
+}
+
+// Lesson events (MoodTrigger from the page) → the pet's persistent mood, so the
+// avatar reacts to quiz fails / module completes / milestones, not just chat.
+const TRIGGER_TO_MOOD: Partial<Record<MoodTrigger, PetMood>> = {
+  passed_module:    'evolving',
+  module_complete:  'evolving',
+  xp_milestone:     'evolving',
+  stuck_on_quiz:    'hyperfocus',
+  broken_code:      'hyperfocus',
+  gave_up:          'hyperfocus',
+  opened_hint:      'learning',
+  first_login:      'learning',
+  inactivity_10min: 'idle',
+}
+
+const PET_MOODS: PetMood[] = ['idle', 'learning', 'hyperfocus', 'evolving']
+function isPetMood(v: unknown): v is PetMood {
+  return typeof v === 'string' && (PET_MOODS as string[]).includes(v)
+}
+
 // ---- Component --------------------------------------------
 
 export default function PetMentorBubble({
@@ -53,6 +85,7 @@ export default function PetMentorBubble({
   triggerMood,
   petId,
   cosmetics,
+  initialMood,
 }: BubbleProps) {
   const { xp } = useHUD()
   const userId = useAuthStore((s) => s.user?.id)
@@ -63,6 +96,7 @@ export default function PetMentorBubble({
   const [thinking, setThinking] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
+  const [mood, setMood] = useState<PetMood>(initialMood ?? 'idle')
 
   const greetedRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -102,10 +136,14 @@ export default function PetMentorBubble({
   useEffect(() => {
     if (!triggerMood) return
     const line = personality.exampleLines[triggerMood]
-    if (!line) return
+    const mapped = TRIGGER_TO_MOOD[triggerMood]
+    if (!line && !mapped) return
     const timer = setTimeout(() => {
-      setMessages((prev) => [...prev, { id: newId(), role: 'pet', text: line }])
-      setOpen(true)
+      if (mapped) setMood(mapped)
+      if (line) {
+        setMessages((prev) => [...prev, { id: newId(), role: 'pet', text: line }])
+        setOpen(true)
+      }
     }, 0)
     return () => clearTimeout(timer)
   }, [triggerMood, personality])
@@ -153,6 +191,7 @@ export default function PetMentorBubble({
           personality.exampleLines.stuck_on_quiz ||
           `${personality.emoji} Let's take the next small step together.`
         setMessages((prev) => [...prev, { id: newId(), role: 'pet', text: reply }])
+        if (data && isPetMood(data.mood_update)) setMood(data.mood_update)
       } catch (e) {
         console.error('[pet-mentor-chat] invoke failed:', e)
         const fallback =
@@ -175,7 +214,6 @@ export default function PetMentorBubble({
   const frameArt = art('frame')
   const badgeArt = art('badge')
   const bgArt = art('background')
-  const hasCosmetics = PET_SLOTS.some((s) => art(s))
 
   // ---- Render -----------------------------------------------
 
@@ -213,6 +251,7 @@ export default function PetMentorBubble({
               </p>
               <p className="truncate text-xs text-hfz-text-secondary">your mentor · {currentModule}</p>
             </div>
+            <MoodBadge mood={mood} />
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -290,11 +329,10 @@ export default function PetMentorBubble({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        title={`${personality.displayName} — your mentor`}
-        aria-label={open ? 'Minimise mentor chat' : `Open chat with ${personality.displayName}`}
+        title={`${personality.displayName} — ${MOOD_LABEL[mood]}`}
+        aria-label={open ? 'Minimise mentor chat' : `Open chat with ${personality.displayName} (${MOOD_LABEL[mood]})`}
         aria-expanded={open}
-        className="pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-hfz-full border-2 border-hfz-border-violet-strong bg-hfz-midnight text-2xl shadow-hfz-card transition-all duration-hfz-fast ease-hfz-smooth hover:scale-110 hover:border-hfz-violet-light focus:outline-none focus:ring-2 focus:ring-hfz-violet-light"
-        style={hasCosmetics ? { boxShadow: 'var(--shadow-hfz-glow-violet, 0 0 20px rgba(168,85,247,0.4))' } : undefined}
+        className={`pointer-events-auto relative flex h-14 w-14 items-center justify-center rounded-hfz-full border-2 bg-hfz-midnight text-2xl transition-all duration-hfz-fast ease-hfz-smooth hover:scale-110 focus:outline-none focus:ring-2 focus:ring-hfz-violet-light ${MOOD_RING[mood].border} ${MOOD_RING[mood].glow} ${mood === 'evolving' ? 'motion-safe:animate-border-pulse' : ''}`}
       >
         {/* aura — soft glow ring behind the pet */}
         {auraArt?.image_url && (

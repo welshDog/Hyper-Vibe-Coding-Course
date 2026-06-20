@@ -541,6 +541,7 @@ export default function LessonPlayer() {
           triggerMood={activeMood}
           petId={activePet?.pet_id}
           cosmetics={activePet?.cosmetics}
+          initialMood={activePet?.mood}
         />
       )}
     </>

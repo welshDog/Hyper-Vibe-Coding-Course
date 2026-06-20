@@ -41,10 +41,28 @@ so this was the planned **Phase 2 upgrade**, not a new widget. No duplicate buil
 
 ---
 
+## 🎨 Update — `mood_update` wired into the avatar's visual state
+
+Second piece of work this session. The bubble now reflects the pet's **mood** (`PetMood`):
+- **Avatar ring + glow** by mood, reusing `MoodBadge`'s mapping: idle=cyan, learning=mint,
+  hyperfocus=violet, evolving=gold (+ `motion-safe` border-pulse on `evolving`).
+- **`MoodBadge`** added to the chat header (emoji + label).
+- Mood updates from **3 sources**: chat (`data.mood_update` via an `isPetMood` guard),
+  lesson events (`triggerMood` → mood mapping in the deferred effect), and a seed
+  (`initialMood={activePet?.mood}` from `LessonPlayer`).
+- A11y: mood is in the avatar `title`/`aria-label`; all motion is `motion-safe`.
+- ⚠️ The Edge Fn still returns the `'learning'` heuristic, so **chat replies show mint**;
+  variety comes from lesson events + seed. Chat-driven mood classification = small Edge Fn
+  change + redeploy (deferred).
+
+Files touched: `PetMentorBubble.tsx`, `LessonPlayer.tsx`. `tsc`/`eslint`/`vite build` (10.54s) all green.
+
+---
+
 ## 🟢 Verified
 
 - `npx tsc --noEmit` → exit 0, **0 errors**. `npx eslint` on touched files → **clean**.
-- `npm run build` (`vite build`) → **✓ built in 16.88s**, no errors, no wagmi pulled into main chunks.
+- `npm run build` (`vite build`) → **✓ built** (16.88s initial, 10.54s after mood wiring), no errors, no wagmi pulled into main chunks.
 - Edge Function **deployed** to `yhtmuibgdnxhbgboajhc` + secret `ANTHROPIC_API_KEY` set (CLI, value never echoed).
 - Function executes: authed POST with a non-user token → `{"error":"Unauthorized"}` — **identical to the prod-proven `get-pet-balance`**.
 
@@ -55,7 +73,7 @@ so this was the planned **Phase 2 upgrade**, not a new widget. No duplicate buil
 1. **Parallel git workflow committed + pushed this work** (commit `7d14983`) before I ran my own commit. Always `git fetch` + check `origin/main` first — the code was already on `main`. (Recurring pattern — see prior snapshots.)
 2. **Bare `curl OPTIONS` → 500**, but so does `get-pet-balance` (prod-proven); `shop-purchase` returns 204. This is the gateway's `verify_jwt` behaviour on an unauthenticated preflight, **not a code bug** (the OPTIONS branch returns 204 unconditionally). Kept `verify_jwt: true` to match `get-pet-balance`. If the browser ever shows a CORS error on chat, redeploy with `--no-verify-jwt` (in-code `auth.getUser()` already fully gates it, same model as `shop-purchase`).
 3. **Personalities now have 3 copies** (`/pet-mentor-brain` source → `/frontend/src/lib` → `/supabase/functions/pet-mentor-chat`). Deno can't import the Vite lib, hence the function-local copy. Annotated "keep in sync" — candidate to centralise later.
-4. **`mood_update`** is returned but the bubble doesn't yet visually react to it. Easy follow-up.
+4. **`mood_update` is now wired into the avatar** (see the Update section above). Remaining: have the Edge Fn classify mood from the message instead of the flat `'learning'` heuristic (small change + redeploy).
 
 ---
 
