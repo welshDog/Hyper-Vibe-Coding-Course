@@ -75,10 +75,11 @@ export default function LessonPlayer() {
   const [quizFailed, setQuizFailed] = useState(false);
   const [moduleComplete, setModuleComplete] = useState(false);
 
-  // Get student's first pet species for the bubble — fallback to power_pup
+  // Get student's first pet for the bubble — species + cosmetics + id.
   const { pets } = useMyPets();
+  const activePet = pets?.[0];
   const activeSpeciesId: SpeciesId =
-    (pets?.[0]?.species_id as SpeciesId) ?? 'power_pup';
+    (activePet?.species_id as SpeciesId) ?? 'power_pup';
 
   const { activeMood, clearMood } = usePetMoodSync({
     xp: 0, // totalXp wired below after hook order fix
@@ -538,6 +539,8 @@ export default function LessonPlayer() {
           speciesId={activeSpeciesId}
           currentModule={course.title}
           triggerMood={activeMood}
+          petId={activePet?.pet_id}
+          cosmetics={activePet?.cosmetics}
         />
       )}
     </>
