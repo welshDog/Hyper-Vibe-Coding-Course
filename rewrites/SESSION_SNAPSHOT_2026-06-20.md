@@ -59,6 +59,30 @@ Files touched: `PetMentorBubble.tsx`, `LessonPlayer.tsx`. `tsc`/`eslint`/`vite b
 
 ---
 
+## 📍 Update — bubble now persists across the whole course chrome
+
+The bubble was only rendering inside `LessonPlayer` (`/learn/:courseId`), which is **outside
+`<Layout>`**, so it was invisible on `/pets`, `/courses`, `/courses/:slug`, etc. Fixed by
+mounting it in the shared course chrome.
+
+- **New `PetMentorDock.tsx`** — thin wrapper: gates to signed-in users (chat needs a JWT),
+  pulls the active pet via `useMyPets`, and sets a **route-aware header label** via
+  `useLocation` (Your Pets / The Shop / Courses / Dashboard… → fallback "the Z0ne").
+- **`Layout.tsx`** renders `<PetMentorDock />` next to `<Outlet/>` → bubble on **all ~20
+  `<Layout>` routes** for logged-in users.
+- **Standalone routes excluded** (Landing, `/vibe-labs/*`, `/welcome`, **`/learn`**,
+  `/certificate`) — so it stays **inside the course chrome, not a global shell**
+  (**Sacred Rule #5 intact** — not hoisted to App root / main.tsx).
+- **`/learn` keeps its own richer mount** in `LessonPlayer` (lesson `triggerMood` events).
+  `/learn` is outside `<Layout>` → **no double-render** (separate subtrees).
+- Bubble persists across Layout navigation (Layout doesn't unmount) → chat state carries over.
+- Trade-off (chosen): it also shows on Layout utility routes (login/pricing/admin) for
+  signed-in users — inherent to "whole Layout"; add a pathname denylist later if needed.
+
+Files touched: `PetMentorDock.tsx` (new), `Layout.tsx`. `tsc`/`eslint`/`vite build` (11.64s) all green.
+
+---
+
 ## 🟢 Verified
 
 - `npx tsc --noEmit` → exit 0, **0 errors**. `npx eslint` on touched files → **clean**.
