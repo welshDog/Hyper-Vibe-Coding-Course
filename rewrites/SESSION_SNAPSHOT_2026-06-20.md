@@ -101,9 +101,33 @@ Files touched: `PetMentorDock.tsx` (new), `Layout.tsx`. `tsc`/`eslint`/`vite bui
 
 ---
 
+## ✅ Browser verification (2026-06-21)
+
+Verified the bubble in a real browser on `/pets` via Playwright (chromium) —
+**`frontend/tests/pets-mentor-bubble.spec.ts`** (commit `76752de`), mocking auth +
+REST + the `pet-mentor-chat` function (same pattern as `pets-xpfeed`). **2 passed.**
+
+Confirmed (screenshot eyeballed):
+- The bubble **renders on `/pets`** for a signed-in user — i.e. `PetMentorDock` in
+  `<Layout>` works; the pre-fix invisibility on `/pets` is gone.
+- Chat flow round-trips: greeting → user message → reply renders in-character.
+- **`mood_update` → MoodBadge flips `Idle` → `Hyperfocus`** + avatar glow ring follows.
+- Negative test: **no bubble for logged-out visitors** (anon gating holds).
+- Within course Navbar chrome; styling matches `CLAUDE_DESIGN_STYLE.md` (dark, violet/cyan).
+
+⚠️ **Caveat:** the reply was **mocked**, not a live Anthropic call — a mocked session
+can't pass the real Edge Function's JWT auth. This proves the **frontend** end-to-end;
+the **live LLM round-trip** still needs a real logged-in user (see below).
+
+---
+
 ## ⏭️ First task next session
 
-**Browser E2E:** log into a lesson page, open the 🐾 bubble, send a message — confirm a live in-character LLM reply (the only human-gated check; can't be done headless). Then optionally wire `mood_update` into the pet's visual state.
+**Live LLM round-trip (only remaining gate):** log in as a real user, open the 🐾 bubble
+(on `/pets` or a lesson), send a message — confirm a genuine in-character Anthropic reply.
+Everything else (render, chat flow, mood, gating) is now browser-verified.
+Optional polish: have the Edge Fn classify mood from the message instead of the flat
+`'learning'` heuristic (small change + redeploy).
 
 ---
 
