@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# HyperFocus Z0ne -- Hyper-Vibe-Coding-Course frontend-integrity pre-push GATE.
+#
+# Runs the production frontend build before a push and BLOCKS if it fails. A
+# build break (type/import error) ships a broken course site, so this gate keeps
+# the deployable surface green. Local replacement for billing-locked CI.
+#
+# (Style lint is intentionally NOT gated yet -- the repo carries eslint debt
+#  that doesn't break the app. Build = "does it actually break".)
+#
+# Install:   cp scripts/git_hooks/pre-push .git/hooks/pre-push   (chmod +x on *nix)
+# Override:  git push --no-verify          (emergency only)
+set -u
+
+if [ ! -d frontend/node_modules ]; then
+  echo "[course-eval] frontend deps missing -- skipping gate (npm --prefix frontend install)"
+  exit 0
+fi
+
+echo "[course-eval] building frontend (vite) ..."
+OUT="$(npm --prefix frontend run build 2>&1)"
+CODE=$?
+
+if [ "$CODE" -ne 0 ]; then
+  echo "[course-eval] PUSH BLOCKED -- frontend build failed:"
+  echo "$OUT" | tail -20
+  echo "[course-eval]   override (emergency): git push --no-verify"
+  exit 1
+fi
+
+echo "[course-eval] OK -- frontend builds clean, push proceeding."
+exit 0
