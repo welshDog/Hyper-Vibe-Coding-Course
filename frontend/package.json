@@ -17,7 +17,9 @@
     "src/**/*.{ts,tsx,css,json,md}": "prettier --write"
   },
   "overrides": {
-    "valtio": "^2.0.0"
+    "valtio": "^2.0.0",
+    "ws": "^8.21.0",
+    "uuid": "^11.1.1"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
