@@ -161,8 +161,8 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(npm run*)",
             "command": "python3 \"H:/HYPERFOCUSZONE/HperCore/Hyper-Vibe-Coding-Course/scripts/hvc_env_guard.py\"; exit 0",
+            "if": "Bash(npm run*)",
             "shell": "powershell",
             "timeout": 15,
             "statusMessage": "Checking Course env vars..."
@@ -224,5 +224,10 @@
         ]
       }
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "hyper-sills",
+    "github",
+    "filesystem"
+  ]
 }
