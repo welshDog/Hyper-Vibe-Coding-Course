@@ -1,0 +1,12 @@
+# HyperFocus Z0ne repo manifest - read by scripts/gen_repo_map.py
+# Edit this file, then re-run the generator. Never hand-edit the map.
+
+name: "Hyper-Vibe-Coding-Course"
+emoji: "🎓"
+tagline: "ND-first AI education platform — Course + HyperLabs funnel"
+category: "products"
+stack: "Vite + Supabase + Stripe"
+first_doc: "CLAUDE.md"
+tier: "LIVE"
+url: ""
+notes: "Stripe TEST mode; hosts Mission Control's mc_* tables too (old yhtmui project DELETED)"
