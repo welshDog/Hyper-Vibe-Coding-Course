@@ -107,7 +107,10 @@ export default function CourseModule() {
         .eq('slug', slug)
         .single();
 
-      if (withContent.error && withContent.error.message.toLowerCase().includes('content')) {
+      // `content` is a paywalled column: anon lacks the column GRANT (401) and,
+      // during a migration gap, it may not exist yet (400). Either way, fall back
+      // to the preview columns and let the logged-in retry below fetch content.
+      if (withContent.error) {
         const withoutContent = await supabase
           .from('hv_modules')
           .select('id, code, title, emoji, level, xp_reward, coin_reward, slug, summary, script_path')
@@ -124,12 +127,6 @@ export default function CourseModule() {
         setModuleRow(row);
         setContent(null);
         setNeedsContentRetry(true);
-        setLoading(false);
-        return;
-      }
-
-      if (withContent.error) {
-        setError('Could not load module.');
         setLoading(false);
         return;
       }
