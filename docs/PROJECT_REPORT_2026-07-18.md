@@ -122,7 +122,7 @@ WelshDog **Mission Control** (course-ops dashboard) owns **no database of its ow
 
 | # | Finding | Impact | Fix |
 |---|---|---|---|
-| 5 | 🟡 **Quizzes — partially resolved (2026-07-19).** `hv_quizzes` seeded for **M3 + M4** (5 Qs each, grounded in live lesson text) via committed migration → survives rebuilds. Remaining: M1, M2, M5–M12 `hv_quizzes` + the separate `quiz_questions` lesson system (still 0). | M3/M4 render; rest won't yet | Author remaining from LIVE module content — `docs/QUIZ_SEED_HANDOFF_2026-07-18.md` |
+| 5 | ✅ **RESOLVED (2026-07-19).** `hv_quizzes` **12/12 seeded** — every module has a 5-question quiz grounded in its own live lesson content, committed to git (migrations `20260718210000` + `20260719140000`) so it survives rebuilds. The separate `quiz_questions` lesson system stays 0 **by design** — that LMS path holds only generic demo courses (see `docs/SUPABASE_AUDIT_2026-07-19.md`). | — | done |
 | 6 | ✅ **RESOLVED (2026-07-18)** — `CLAUDE.md` + `AGENT-START` repointed to `tlavrxiaegbtyfmjfdcz`; env vars fixed to `VITE_`; Vite/Next contradiction resolved | — | done |
 | 7 | ⚠️ **2 new security warnings** — `touch_mc_missions_updated_at` + `mc_events_block_mutations` have mutable `search_path` (from today's MC migrations) | Minor hardening gap | Pin `search_path` on both functions |
 | 8 | ⚠️ `mc_missions_authed_all` RLS is `USING(true)` for ALL | Intentional (behind AdminAuth) but flagged | Harden to `is_admin()` when convenient |
