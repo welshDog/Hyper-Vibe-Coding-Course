@@ -13,7 +13,7 @@
 - **The neurodivergent-first AI coding education platform**
 - Stack: **Vite + React** (NOT Next.js — never generate Next.js / App Router code here)
 - Deployed on: **Vercel** → `hyper-vibe-coding-course.vercel.app`
-- DB: **Supabase** (project: `yhtmuibgdnxhbgboajhc`)
+- DB: **Supabase** (project: `tlavrxiaegbtyfmjfdcz`) — ⚠️ old `yhtmuibgdnxhbgboajhc` was DELETED + rebuilt 2026-07-18
 - Payments: **Stripe** + BROski$ token economy
 - Course mission: *"Stop apologising for your brain. Start building."*
 
@@ -35,7 +35,13 @@
 
 ## 🎯 CURRENT SPRINT — Sprint 4 (Anon → Signup Conversion)
 
-### Status as of 2026-06-01
+> ⚠️ **This board is from 2026-06-01 and is SUPERSEDED.** Items 2 (CatchStragglers wire)
+> and 3 (`mc_events` migration) are **done**. For the true current state — including the
+> Supabase rebuild and open items — read `docs/PROJECT_REPORT_2026-07-18.md` first.
+> The file paths below (`app/.../page.tsx`) are **phantom Next.js leftovers** — the real
+> app is Vite under `frontend/src/`. There is no `app/` directory.
+
+### Status as of 2026-06-01 (historical)
 
 | Priority | Task | Status |
 |---|---|---|
@@ -158,11 +164,11 @@ stripe trigger checkout.session.completed
 
 ### Env vars needed (check `.env.example`)
 ```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+VITE_SUPABASE_URL          ← Vite convention, NOT NEXT_PUBLIC_ (this is a Vite app)
+VITE_SUPABASE_ANON_KEY
 STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
-DISCORD_BOT_TOKEN         ← Add to Vercel env vars (Sprint 4 P4)
+DISCORD_BOT_TOKEN          ← server/edge only, never commit
 ```
 
 ---

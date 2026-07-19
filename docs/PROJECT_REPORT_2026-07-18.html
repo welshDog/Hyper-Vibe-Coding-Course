@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hyper Vibe Coding Course — Status · 2026-07-18</title>
+<style>
+  :root{
+    --dark:#0f0c29; --panel:#17143a; --panel2:#1e1a4d;
+    --accent:#00f2ea; --pink:#ff0058; --violet:#a78bfa;
+    --green:#34d399; --amber:#fbbf24; --red:#fb7185;
+    --ink:#e8e6ff; --muted:#8b88b8; --line:rgba(255,255,255,.09);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(160deg,#0f0c29,#16123a 60%,#0d0b24);
+    color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;
+    line-height:1.5;padding:0 0 80px}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  header{padding:40px 20px 28px;border-bottom:1px solid var(--line);margin-bottom:32px;
+    background:radial-gradient(1200px 300px at 50% -80px,rgba(0,242,234,.10),transparent)}
+  .eyebrow{font-family:'Fira Code',monospace;font-size:11px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--muted)}
+  h1{font-size:30px;font-weight:900;margin:8px 0 4px;
+    background:linear-gradient(90deg,var(--accent),#fff 60%,var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:13px}
+  .statusline{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid}
+  .chip.ready{background:rgba(52,211,153,.14);color:var(--green);border-color:rgba(52,211,153,.4)}
+  .chip.pre{background:rgba(167,139,250,.14);color:var(--violet);border-color:rgba(167,139,250,.4)}
+  .chip.test{background:rgba(251,191,36,.14);color:var(--amber);border-color:rgba(251,191,36,.4)}
+  h2{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+    margin:38px 0 14px;font-family:'Fira Code',monospace}
+  .grid{display:grid;gap:14px}
+  .cards{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .kpi{font-size:32px;font-weight:900;line-height:1;letter-spacing:-.02em}
+  .kpi.warn{color:var(--red)} .kpi.good{color:var(--green)} .kpi.acc{color:var(--accent)}
+  .klabel{font-size:11px;color:var(--muted);margin-top:8px;font-family:'Fira Code',monospace;
+    text-transform:uppercase;letter-spacing:.1em}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;
+    letter-spacing:.08em;padding:0 12px 10px;border-bottom:1px solid var(--line)}
+  td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .mono{font-family:'Fira Code',monospace;font-size:12.5px}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap}
+  .t-ok{background:rgba(52,211,153,.14);color:var(--green)}
+  .t-warn{background:rgba(251,191,36,.14);color:var(--amber)}
+  .t-red{background:rgba(251,113,133,.16);color:var(--red)}
+  .t-muted{background:rgba(255,255,255,.06);color:var(--muted)}
+  .num{font-family:'Fira Code',monospace;font-weight:700}
+  .pilehead{display:flex;align-items:center;gap:9px;margin:26px 0 10px;font-weight:800;font-size:15px}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .d-red{background:var(--red)} .d-amber{background:var(--amber)} .d-green{background:var(--green)}
+  .item{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line);
+    border-radius:12px;padding:14px 16px;margin-bottom:10px}
+  .item.red{border-left-color:var(--red)} .item.amber{border-left-color:var(--amber)}
+  .item.green{border-left-color:var(--green)}
+  .item h4{margin:0 0 4px;font-size:14px}
+  .item p{margin:0;color:var(--muted);font-size:12.5px}
+  ul.rules{list-style:none;padding:0;margin:0;font-size:13px}
+  ul.rules li{padding:9px 0 9px 26px;position:relative;border-bottom:1px solid rgba(255,255,255,.05)}
+  ul.rules li:last-child{border-bottom:none}
+  ul.rules li::before{content:"▸";position:absolute;left:6px;color:var(--accent)}
+  .callout{background:linear-gradient(135deg,rgba(0,242,234,.08),rgba(167,139,250,.06));
+    border:1px solid rgba(0,242,234,.25);border-radius:14px;padding:16px 18px;font-size:13.5px}
+  code{font-family:'Fira Code',monospace;background:rgba(0,242,234,.10);color:var(--accent);
+    padding:1px 6px;border-radius:5px;font-size:12px}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:44px;
+    font-family:'Fira Code',monospace}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Internal status · handover dashboard</div>
+    <h1>🎓 Hyper Vibe Coding Course</h1>
+    <div class="sub">Live snapshot from <span class="mono">tlav</span> Supabase · 2026-07-18 · numbers queried, not remembered</div>
+    <div class="statusline">
+      <span class="chip ready">✅ Production-ready</span>
+      <span class="chip pre">🌱 Pre-launch (0 students)</span>
+      <span class="chip test">💳 Stripe TEST mode</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="callout">
+    <strong>Read this first.</strong> The schema and most content survived the
+    <span class="mono">yhtmui → tlav</span> rebuild — but <strong>quiz data did not</strong>,
+    and there's <strong>no real student activity yet</strong>. Treat this as a freshly-rebuilt,
+    pre-launch database that is fully wired and waiting for launch. "Production-ready,"
+    not "has traffic."
+  </div>
+
+  <h2>At a glance</h2>
+  <div class="grid cards">
+    <div class="card"><div class="kpi acc">71</div><div class="klabel">migrations</div></div>
+    <div class="card"><div class="kpi acc">37</div><div class="klabel">tables · all RLS'd</div></div>
+    <div class="card"><div class="kpi good">10</div><div class="klabel">edge functions</div></div>
+    <div class="card"><div class="kpi acc">2<span style="font-size:15px">/12</span></div><div class="klabel">quizzes seeded 🟡</div></div>
+    <div class="card"><div class="kpi">0</div><div class="klabel">students</div></div>
+    <div class="card"><div class="kpi good">0<span style="font-size:15px"> err</span></div><div class="klabel">security errors</div></div>
+  </div>
+
+  <h2>What it is</h2>
+  <div class="panel">
+    <p style="margin:0 0 14px;font-size:14px">One Vite/React app, <strong>three surfaces sharing one Supabase backend</strong> — warm cold traffic through free labs, convert to the paid course, retain via the token economy + on-chain pets. No global shell by design.</p>
+    <table>
+      <tr><th>Surface</th><th>Purpose</th><th>Audience</th></tr>
+      <tr><td><strong>Funnel / Landing</strong></td><td>Hero + CTA + progress band — cold-traffic entry</td><td class="mono">visitors</td></tr>
+      <tr><td><strong>VibeLabs</strong> (L1–5)</td><td>Free interactive coding labs — the hook</td><td class="mono">free users</td></tr>
+      <tr><td><strong>Paid Course</strong></td><td>The ND-first AI coding curriculum</td><td class="mono">students</td></tr>
+      <tr><td><strong>BROski$ Shop + Pets</strong></td><td>Token economy + Web3 AI pets — retention</td><td class="mono">members</td></tr>
+    </table>
+  </div>
+
+  <h2>Stack</h2>
+  <div class="panel">
+    <table>
+      <tr><th>Layer</th><th>Tech</th><th>Note</th></tr>
+      <tr><td>Frontend</td><td class="mono">Vite 8 · React 19.2 · TS 5.9</td><td>lazy routes + Suspense + ErrorBoundary</td></tr>
+      <tr><td>Backend</td><td class="mono">Supabase · Postgres 17</td><td><span class="tag t-ok">tlav · ACTIVE_HEALTHY</span></td></tr>
+      <tr><td>Serverless</td><td class="mono">10 Edge Functions (Deno)</td><td>payments · shop · pets · discord · sync</td></tr>
+      <tr><td>Payments</td><td class="mono">Stripe</td><td><span class="tag t-warn">TEST — no live without sign-off</span></td></tr>
+      <tr><td>Web3</td><td class="mono">wagmi 2.19 · Base Sepolia</td><td><span class="tag t-warn">/pets route ONLY — never global</span></td></tr>
+      <tr><td>Hosting</td><td class="mono">Vercel</td><td>hyper-vibe-coding-course.vercel.app</td></tr>
+    </table>
+  </div>
+
+  <h2>Database — live counts</h2>
+  <div class="two">
+    <div class="panel">
+      <table>
+        <tr><th>Content table</th><th>Rows</th><th></th></tr>
+        <tr><td class="mono">courses</td><td class="num">3</td><td><span class="tag t-ok">seeded</span></td></tr>
+        <tr><td class="mono">hv_modules</td><td class="num">12</td><td><span class="tag t-ok">seeded</span></td></tr>
+        <tr><td class="mono">lessons</td><td class="num">3</td><td><span class="tag t-warn">partial</span></td></tr>
+        <tr><td class="mono">shop_items</td><td class="num">50</td><td><span class="tag t-ok">stocked</span></td></tr>
+        <tr><td class="mono">quests</td><td class="num">7</td><td><span class="tag t-ok">seeded</span></td></tr>
+        <tr><td class="mono">hv_quizzes</td><td class="num" style="color:var(--amber)">2</td><td><span class="tag t-warn">M3+M4 seeded</span></td></tr>
+        <tr><td class="mono">quiz_questions</td><td class="num" style="color:var(--red)">0</td><td><span class="tag t-red">EMPTY 🔴</span></td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <table>
+        <tr><th>Activity table</th><th>Rows</th><th></th></tr>
+        <tr><td class="mono">users</td><td class="num">1</td><td><span class="tag t-muted">admin only</span></td></tr>
+        <tr><td class="mono">enrollments</td><td class="num">0</td><td><span class="tag t-muted">pre-launch</span></td></tr>
+        <tr><td class="mono">payments</td><td class="num">0</td><td><span class="tag t-muted">pre-launch</span></td></tr>
+        <tr><td class="mono">token_transactions</td><td class="num">0</td><td><span class="tag t-muted">pre-launch</span></td></tr>
+        <tr><td class="mono">user_xp</td><td class="num">0</td><td><span class="tag t-muted">pre-launch</span></td></tr>
+        <tr><td class="mono">pets</td><td class="num">0</td><td><span class="tag t-muted">none minted</span></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>Open items — by what actually matters</h2>
+
+  <div class="pilehead"><span class="dot d-red"></span> Demo-breakers — fix before showing anyone</div>
+  <div class="item green"><h4>#5 · Quizzes — <span style="color:var(--green)">M3 + M4 live</span> 🟡 2/12</h4><p>Root-caused + fixed: quiz content now a committed seed migration (survives rebuilds). M3 (Prompt Like a Pro) + M4 (Build Your First App) grounded in live lesson text and applied to tlav. <strong>Demoable now.</strong> Remaining 10 modules author from live content, not the pack.</p></div>
+  <div class="item red"><h4>#2 · Finish Mission Control deploy</h4><p>DB side rebuilt. Still needs <code>.env.local</code> + Render + Vercel env pointing at tlav, then a Vercel redeploy + smoke test.</p></div>
+
+  <div class="pilehead"><span class="dot d-amber"></span> Diligence-hurt — fix before anyone reads the repo</div>
+  <div class="item amber"><h4>"Production LIVE" vs "0 students"</h4><p>Framing. Use <strong>"production-ready, pre-launch."</strong> Pre-launch + fully wired is a stronger raise than fake traction.</p></div>
+  <div class="item amber"><h4>#6 · Stale project ref in docs</h4><p><span class="tag t-ok">FIXED 2026-07-18</span> CLAUDE.md + AGENT-START now point at tlav; env vars corrected to <code>VITE_</code>; Vite/Next contradiction resolved.</p></div>
+  <div class="item amber"><h4>#7 · 2 new function search_path warnings</h4><p>From today's MC migrations. Pin <code>search_path</code> on <code>touch_mc_missions_updated_at</code> + <code>mc_events_block_mutations</code>.</p></div>
+
+  <div class="pilehead"><span class="dot d-green"></span> Real, but after funding</div>
+  <div class="item green"><h4>Discord OAuth · V2.4 sync URL · token-sync webhook · leaked-password (Pro-gated)</h4><p>All non-blocking, fail-soft, or paywalled. None affect a demo or a pitch. Don't let them eat time now.</p></div>
+
+  <h2>Sacred rules (condensed)</h2>
+  <div class="panel">
+    <ul class="rules">
+      <li><strong>NEVER</strong> <code>supabase db push</code> — filenames desynced. Use MCP <code>apply_migration</code>.</li>
+      <li>Course dev = <code>npm run dev:frontend</code>, never <code>npm run dev</code>.</li>
+      <li><code>wagmi</code>/<code>rainbowkit</code> only inside <code>/pets</code> — never global (bloats funnel ~900 kB).</li>
+      <li><strong>No orange</strong> anywhere in UI (HFZ brand). <strong>No framer-motion</strong> — CSS motion only.</li>
+      <li>Stripe stays <strong>TEST</strong> until Companies House clears.</li>
+      <li>Shop discount source of truth = <strong>server</strong>, never client.</li>
+      <li><code>setState</code> in <code>useEffect</code> = ESLint error. Never <code>--no-verify</code>.</li>
+    </ul>
+  </div>
+
+  <h2>Do next (priority order)</h2>
+  <div class="panel">
+    <table>
+      <tr><th>#</th><th>Action</th><th>Why</th></tr>
+      <tr><td class="num">1</td><td><s>Re-seed quizzes M3/M4</s> · author M1/M2/M5–M12 from live content</td><td><span class="tag t-ok">M3/M4 done</span> pipeline proven, 2/12</td></tr>
+      <tr><td class="num">2</td><td>Finish Mission Control deploy</td><td>env + redeploy + smoke test</td></tr>
+      <tr><td class="num">3</td><td><s>Fix CLAUDE.md ref</s></td><td><span class="tag t-ok">done</span> stops next agent chasing dead project</td></tr>
+      <tr><td class="num">4</td><td>Close Discord OAuth + Stripe 200 confirm</td><td>quick, non-blocking</td></tr>
+      <tr><td class="num">5</td><td>Pin search_path on 2 MC functions</td><td>matches the course's own hardening convention</td></tr>
+    </table>
+  </div>
+
+  <footer>
+    🐶♾️ Stop apologising for your brain. Start building.<br>
+    Generated against live infrastructure · re-run the DB queries any time for fresh numbers.
+  </footer>
+</div>
+</body>
+</html>

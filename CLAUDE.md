@@ -78,7 +78,8 @@
 
 - **Repo:** https://github.com/welshDog/Hyper-Vibe-Coding-Course
 - **Live:** https://hyper-vibe-coding-course.vercel.app
-- **Stack:** Vite + React + TypeScript · Supabase (`yhtmuibgdnxhbgboajhc`) · Stripe · Vercel
+- **Stack:** Vite + React + TypeScript · Supabase (`tlavrxiaegbtyfmjfdcz`) · Stripe · Vercel
+  - ⚠️ Old project `yhtmuibgdnxhbgboajhc` was **DELETED + rebuilt** on `tlavrxiaegbtyfmjfdcz` (2026-07-18). Confirm the ref in the dashboard before any migration.
 
 | Key file | What it is |
 |---|---|
