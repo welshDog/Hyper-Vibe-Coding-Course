@@ -3,18 +3,29 @@
 // What these cover:
 //   1. Balance gate:  authenticated user with <100 tokens can't reach the mint button.
 //   2. Name gate:     mint button stays disabled until the user types a pet name.
-//   3. Relay path:    full mint flow when VITE_MINT_VIA_RELAY=true — no MetaMask
-//                     interaction required; the edge function submits the tx and
-//                     returns tx_hash directly; the success card appears.
+//   3. Relay API:     mint-pet-auth accepts relay:true and returns a tx_hash.
+//   4. Happy path:    connected wallet → mint → success card. The full authenticated
+//                     journey, end to end (added 2026-07-23).
 //
-// "Relay path" note
-//   wallet connection is STILL required in relay mode (the NFT needs a
-//   destination address), but the user never SIGNS a tx. We fake the wallet by
-//   (a) setting window.ethereum to a stub provider and (b) seeding wagmi.store in
-//   localStorage before page load so wagmi auto-reconnects the injected connector.
-//   If wagmi's internal uid doesn't match what we seeded (wagmi version changes),
-//   the wallet-connect screen appears instead of the mint button and the relay
-//   assertion will time-out with a clear error.
+// How the wallet gets connected (test 4)
+//   Tests 1-3 could never connect a wallet, and the note that used to live here
+//   blamed an unpredictable RainbowKit connector uid. That diagnosis was wrong.
+//   `reconnect()` (@wagmi/core/actions/reconnect) never connects using the
+//   connector recorded in `wagmi.store` — it walks the config's REAL connectors and
+//   calls `isAuthorized()` on each. Seeding `wagmi.store` only reorders that walk,
+//   which is why it looked like it did nothing.
+//
+//   So instead of seeding storage we announce an EIP-6963 provider. wagmi's
+//   multiInjectedProviderDiscovery (on by default) turns each announced provider
+//   into a connector whose `target` is set, and a targeted connector's
+//   `isAuthorized()` skips the `injected.connected` storage flag and simply asks
+//   the provider for `eth_accounts`. Return an address there and wagmi reconnects
+//   on its own — no app code, no MetaMask, no RainbowKit internals.
+//
+//   Receipts are a separate mock: useWaitForTransactionReceipt reads through the
+//   chain's http transport (https://sepolia.base.org), NOT through the wallet, so
+//   the JSON-RPC endpoint is intercepted too. Without that the success card can
+//   never render, because `isDone` needs `receiptConfirmed`.
 
 import { test, expect, type Route } from '@playwright/test'
 
@@ -129,6 +140,129 @@ function setupRestMock(page: import('@playwright/test').Page, tokens: number) {
     if (url.pathname.startsWith('/rest/v1/enrollments'))          { await fulfillJson(route, asObj ? null : []); return }
     if (url.pathname.startsWith('/rest/v1/rpc/'))                 { await fulfillJson(route, null); return }
     await fulfillJson(route, asObj ? null : [])
+  })
+}
+
+// ── wallet helper (EIP-6963) ──────────────────────────────────────────────────
+//
+// Announces a stub provider the way a real extension does. wagmi discovers it,
+// builds a targeted connector from it, and auto-reconnects because our
+// `eth_accounts` returns an address. See the header note for why this works when
+// seeding `wagmi.store` did not.
+
+function connectWallet(page: import('@playwright/test').Page) {
+  return page.addInitScript((args) => {
+    const { wallet, chainHex } = args as { wallet: string; chainHex: string }
+
+    const provider = {
+      isMetaMask: true,
+      request: async ({ method }: { method: string }) => {
+        switch (method) {
+          // Both are answered: `isAuthorized()` uses eth_accounts, and an
+          // explicit user connect would use eth_requestAccounts.
+          case 'eth_accounts':
+          case 'eth_requestAccounts':      return [wallet]
+          case 'eth_chainId':              return chainHex
+          case 'net_version':              return String(parseInt(chainHex, 16))
+          case 'wallet_switchEthereumChain': return null
+          case 'wallet_getPermissions':
+          case 'wallet_requestPermissions': return [{ parentCapability: 'eth_accounts' }]
+          default:                         return null
+        }
+      },
+      on: () => {}, removeListener: () => {}, addListener: () => {}, emit: () => {},
+    }
+
+    // Kept for any code path that still reads the legacy global directly.
+    ;(window as unknown as { ethereum: unknown }).ethereum = provider
+
+    const detail = Object.freeze({
+      info: {
+        uuid: '7f8e9d0c-1b2a-4c3d-8e5f-6a7b8c9d0e1f',
+        name: 'E2E Mock Wallet',
+        // A 1x1 transparent gif — mipd requires a data: URI, not the contents.
+        icon: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
+        rdns: 'zone.hyperfocus.e2ewallet',
+      },
+      provider,
+    })
+
+    const announce = () =>
+      window.dispatchEvent(new CustomEvent('eip6963:announceProvider', { detail }))
+
+    // Announce on request (wagmi asks on init) and once eagerly, in case wagmi
+    // subscribed before this script ran.
+    window.addEventListener('eip6963:requestProvider', announce)
+    announce()
+  }, { wallet: FAKE_WALLET, chainHex: '0x14a34' })
+}
+
+// ── chain RPC mock ────────────────────────────────────────────────────────────
+//
+// viem talks JSON-RPC over POST and may batch calls into an array, so both
+// shapes are handled. Only the methods waitForTransactionReceipt actually needs
+// are answered; anything else returns null, which viem tolerates.
+
+const RECEIPT_BLOCK = 42_900_000
+
+function setupChainRpcMock(page: import('@playwright/test').Page) {
+  // A regex, not a glob: viem POSTs to bare `https://sepolia.base.org` with no
+  // path, which `**/sepolia.base.org/**` does not match.
+  return page.route(/sepolia\.base\.org/, async (route) => {
+    if (route.request().method() === 'OPTIONS') { await allowCors(route); return }
+
+    let payload: unknown
+    try { payload = JSON.parse(route.request().postData() ?? '{}') } catch { payload = {} }
+
+    const answer = (req: { id?: number; method?: string }) => {
+      const result = (() => {
+        switch (req.method) {
+          case 'eth_chainId':     return '0x14a34'
+          // Report a block ahead of the receipt so the default 1-confirmation
+          // requirement is already satisfied and viem stops polling.
+          case 'eth_blockNumber': return `0x${(RECEIPT_BLOCK + 3).toString(16)}`
+          case 'eth_getBlockByNumber':
+            return {
+              number: `0x${(RECEIPT_BLOCK + 3).toString(16)}`,
+              hash: '0x' + 'bb'.repeat(32),
+              parentHash: '0x' + 'aa'.repeat(32),
+              timestamp: '0x66000000',
+              transactions: [],
+              baseFeePerGas: '0x7',
+            }
+          case 'eth_getTransactionReceipt':
+            return {
+              transactionHash: FAKE_TX,
+              transactionIndex: '0x0',
+              blockHash: '0x' + 'cc'.repeat(32),
+              blockNumber: `0x${RECEIPT_BLOCK.toString(16)}`,
+              from: FAKE_WALLET,
+              to: '0x4daf9e1e9ebe9240758692fdd50318a18173a69a',
+              cumulativeGasUsed: '0x30d40',
+              gasUsed: '0x30d40',
+              contractAddress: null,
+              logs: [],
+              logsBloom: '0x' + '00'.repeat(256),
+              status: '0x1',
+              effectiveGasPrice: '0x7',
+              type: '0x2',
+            }
+          default: return null
+        }
+      })()
+      return { jsonrpc: '2.0', id: req.id ?? 1, result }
+    }
+
+    const body = Array.isArray(payload)
+      ? payload.map((r) => answer(r as { id?: number; method?: string }))
+      : answer(payload as { id?: number; method?: string })
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify(body),
+    })
   })
 }
 
@@ -300,7 +434,10 @@ test.describe('Pets relay mint smoke', () => {
     }).catch(() => null)
     // The env var value is baked into the bundle at build time, so we can read it from
     // the page's global scope. If unavailable, use the known project URL directly.
-    const fnBase = supabaseUrl ?? 'https://yhtmuibgdnxhbgboajhc.supabase.co'
+    // NOTE: the fallback must be the LIVE project ref. yhtmuibgdnxhbgboajhc is the
+    // old dead project — a fallback pointing there sends the request past our
+    // page.route mock to a host that no longer exists.
+    const fnBase = supabaseUrl ?? 'https://tlavrxiaegbtyfmjfdcz.supabase.co'
 
     const relayResult = await page.evaluate(async (args) => {
       const resp = await fetch(`${args.base}/functions/v1/mint-pet-auth`, {
@@ -335,5 +472,98 @@ test.describe('Pets relay mint smoke', () => {
     expect(capturedBody!['pet_name']).toBe('FrostbitePW')
     expect(capturedBody!['expected_contract']).toMatch(/^0x[0-9a-fA-F]{40}$/)
     expect(capturedBody!['expected_chain_id']).toBe(CHAIN_ID)
+  })
+
+  // ── Test 4: full authenticated happy path ────────────────────────────────
+  //
+  // Tests 1-3 stop at a gate. This one walks the whole journey a paying user
+  // takes — signed in, wallet connected, species picked, name typed, mint
+  // clicked — and asserts the success card the user is actually waiting for.
+  //
+  // If this fails at the "Mint Your Pet" step, the wallet did not connect:
+  // check the EIP-6963 announcement in connectWallet() against the wagmi
+  // version. If it fails at the success card, the receipt mock is the suspect.
+
+  test('happy path: connected wallet mints via relay and the pet lands in the collection', async ({ page }) => {
+    await connectWallet(page)
+    await setupAuthMock(page)
+    await setupRestMock(page, 150)
+    await setupChainRpcMock(page)
+
+    let mintCalled = false
+    await page.route('**/functions/v1/mint-pet-auth**', async (route) => {
+      if (route.request().method() === 'OPTIONS') { await allowCors(route); return }
+      mintCalled = true
+      await fulfillJson(route, {
+        auth: {
+          to: FAKE_WALLET, petId: 'broski_42',
+          ipfsCID: 'bafkreib4w5w6rnyufxkbywxspb266r74lwbumjdhlnzzp2netkkdkfdft4',
+          nonce: '12345678901234567890',
+          expiry: String(Math.floor(Date.now() / 1000) + 300),
+        },
+        signature: '0xfakedeadbeef00000000000000000000',
+        cost_paid: 100,
+        chain_id:  CHAIN_ID,
+        contract:  '0x4daF9e1e9Ebe9240758692Fdd50318a18173A69a',
+        rarity:    'uncommon',
+        relayed:   true,
+        tx_hash:   FAKE_TX,
+      })
+    })
+
+    // Fires once the receipt confirms. Relay mode short-circuits inside
+    // confirmMint, but the route is mocked so a real call can never leak out.
+    await page.route('**/functions/v1/mint-pet-confirm**', async (route) => {
+      if (route.request().method() === 'OPTIONS') { await allowCors(route); return }
+      await fulfillJson(route, { persisted: true, pet_id: 'broski_42', tx_hash: FAKE_TX })
+    })
+
+    await signIn(page)
+    await page.goto('/pets')
+
+    // ── Step 1: pick a species ──
+    await expect(page.getByRole('heading', { name: /pick a species/i })).toBeVisible({ timeout: 20_000 })
+    await page.getByRole('button', { name: /choose blizzard lizard/i }).click()
+
+    // ── Step 2: name it ──
+    await expect(page.getByText(/step 2.*name your blizzard lizard/i)).toBeVisible({ timeout: 15_000 })
+    await page.getByPlaceholder(/e\.g\./i).fill('FrostbitePW')
+
+    // ── Step 3: mint ──
+    // The wallet is connected, so this is the real mint button — not the
+    // "Connect wallet to mint" fallback that tests 1-3 always landed on.
+    const mintBtn = page.getByRole('button', { name: /mint your pet/i })
+    await expect(mintBtn).toBeVisible({ timeout: 20_000 })
+    await expect(mintBtn).toBeEnabled()
+    await mintBtn.click()
+
+    // ── The payoff ──
+    //
+    // Deliberately NOT asserted: MintPetButton's "hatched as a…" success card.
+    // It renders, but once onMinted fires Pets.tsx refetches and swaps the whole
+    // mint flow for the collection view, so asserting the card is a race against
+    // that refetch. The collection is the durable end state a user is left
+    // looking at, and reaching it proves the card's preconditions held anyway
+    // (isDone requires a confirmed receipt).
+
+    const collection = page.getByRole('region', { name: /your pets/i })
+    await expect(collection).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByRole('heading', { name: /^your pets \(1\)$/i })).toBeVisible()
+
+    // The minted pet, with the traits the edge function handed back.
+    // `exact` matters: the cosmetics panel also renders "🎨 Customise FrostbitePW".
+    await expect(page.getByRole('heading', { name: 'FrostbitePW', exact: true })).toBeVisible()
+    await expect(collection.getByText(/broski_42 · Blizzard Lizard/i)).toBeVisible()
+    await expect(collection.getByText(/^uncommon$/i)).toBeVisible()
+    await expect(collection.getByText(/stage:\s*baby/i)).toBeVisible()
+
+    // The on-chain receipt is surfaced to the user, pointing at the real tx.
+    await expect(collection.getByRole('link', { name: /basescan/i })).toHaveAttribute(
+      'href',
+      `https://sepolia.basescan.org/tx/${FAKE_TX}`,
+    )
+
+    // The mint genuinely went through the relay endpoint rather than a wallet signature.
+    expect(mintCalled, 'mint-pet-auth was never called').toBe(true)
   })
 })

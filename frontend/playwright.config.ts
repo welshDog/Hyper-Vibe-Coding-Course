@@ -82,5 +82,17 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: false,
+    /* Pin the mint config for E2E.
+     *
+     * vite.config.ts sets `envDir` to the REPO ROOT, so `frontend/.env.local` is
+     * never read — a contract address written there is silently ignored and
+     * `IS_BROSKIPET_CONFIGURED` comes out false, which renders the mint button as
+     * "Mint temporarily unavailable". Pinning it here keeps the mint specs
+     * deterministic instead of depending on whichever env files a given machine
+     * happens to have. Vite picks up VITE_-prefixed vars from process.env. */
+    env: {
+      VITE_BROSKIPET_CONTRACT_ADDRESS: '0x4daF9e1e9Ebe9240758692Fdd50318a18173A69a',
+      VITE_MINT_VIA_RELAY: 'true',
+    },
   },
 });
