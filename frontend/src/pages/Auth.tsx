@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { pwnedPasswordCount } from '../lib/hibp';
@@ -129,12 +129,20 @@ export function Login() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-semibold text-hfz-text-primary mb-2"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-hfz-text-primary"
+              >
+                Password
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-hfz-text-secondary hover:text-hfz-cyan transition-colors font-medium"
+              >
+                Forgot?
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
@@ -363,6 +371,337 @@ export function Register() {
             aria-busy={loading}
           >
             {loading ? 'Wiring up the Z0ne...' : "Let's GO →"}
+          </HVZButton>
+        </form>
+      </HVZCard>
+    </AuthShell>
+  );
+}
+
+/**
+ * Request a password-reset email.
+ *
+ * This half of the flow always worked (Supabase's resetPasswordForEmail +
+ * its own recovery email). What was missing was ResetPassword below — the
+ * page the emailed link actually lands on — so add both together or a user
+ * who requests a reset still has nowhere to finish it.
+ */
+export function ForgotPassword() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      setSent(true);
+    } catch (err: unknown) {
+      // Supabase returns a real error here (e.g. rate limited) — a
+      // non-existent email still resolves success, by design, so this
+      // never confirms or denies whether an account exists.
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went sideways — try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <AuthShell tag="📬 Check your inbox">
+        <HVZCard padding={32} glow="mint">
+          <div className="text-center">
+            <div className="text-5xl mb-4" aria-hidden>📬</div>
+            <h1
+              className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Link sent!
+            </h1>
+            <p className="text-base text-hfz-text-primary/85 mb-2">
+              If <strong className="text-hfz-cyan">{email}</strong> has an account, a reset link is on its way.
+            </p>
+            <p className="text-sm text-hfz-text-secondary mb-6">
+              No email in a couple of minutes? Check spam — it sometimes ends up there.
+            </p>
+            <Link to="/login">
+              <HVZButton type="button" variant="primary" size="md" fullWidth>
+                Back to sign in →
+              </HVZButton>
+            </Link>
+          </div>
+        </HVZCard>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell tag="🔑 Let's get you back in">
+      <HVZCard padding={32}>
+        <h1
+          className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-2 text-center"
+          style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+        >
+          Reset your password
+        </h1>
+        <p className="text-center text-sm text-hfz-text-secondary mb-6">
+          Remembered it?{' '}
+          <Link to="/login" className="text-hfz-cyan hover:text-hfz-violet-light transition-colors font-medium">
+            Sign in →
+          </Link>
+        </p>
+
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+          {error && <ErrorBox message={error} />}
+
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@build.different"
+            />
+          </div>
+
+          <HVZButton type="submit" variant="primary" size="md" disabled={loading} fullWidth aria-busy={loading}>
+            {loading ? 'Sending...' : 'Send reset link →'}
+          </HVZButton>
+        </form>
+      </HVZCard>
+    </AuthShell>
+  );
+}
+
+/**
+ * Where the recovery email's link actually redirects to.
+ *
+ * Supabase's client auto-parses the recovery token from the URL and
+ * establishes a session before this component's effects run (getSession()
+ * awaits that internally) — no manual token handling needed. Without this
+ * page, that session existed with nowhere to call updateUser(), which was
+ * the actual bug: recovery emails sent and worked, but could never end in a
+ * lasting password change.
+ */
+export function ResetPassword() {
+  const navigate = useNavigate();
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [hasSession, setHasSession] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      setHasSession(!!data.session);
+      setCheckingSession(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    setPasswordError(e.target.value ? validatePassword(e.target.value) : null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+      setPasswordError(pwErr);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Those two don't match — give it another go.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const breachCount = await pwnedPasswordCount(password);
+      if (breachCount > 0) {
+        setPasswordError(
+          `This password turned up in ${breachCount.toLocaleString()} known data breaches — pick a fresh one.`,
+        );
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      setSuccess(true);
+      setTimeout(() => navigate('/dashboard'), 1500);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went sideways — try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (checkingSession) {
+    return (
+      <AuthShell>
+        <HVZCard padding={32}>
+          <p className="text-center text-sm text-hfz-text-secondary">Checking your link...</p>
+        </HVZCard>
+      </AuthShell>
+    );
+  }
+
+  if (!hasSession) {
+    return (
+      <AuthShell tag="⏰ That link's had it">
+        <HVZCard padding={32}>
+          <div className="text-center">
+            <h1
+              className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Link expired or already used
+            </h1>
+            <p className="text-sm text-hfz-text-secondary mb-6">
+              Reset links are one-time and time-limited. Request a fresh one below.
+            </p>
+            <Link to="/forgot-password">
+              <HVZButton type="button" variant="primary" size="md" fullWidth>
+                Send a new link →
+              </HVZButton>
+            </Link>
+          </div>
+        </HVZCard>
+      </AuthShell>
+    );
+  }
+
+  if (success) {
+    return (
+      <AuthShell tag="✅ All set">
+        <HVZCard padding={32} glow="mint">
+          <div className="text-center">
+            <div className="text-5xl mb-4 hfz-celebrate" aria-hidden>🎉</div>
+            <h1
+              className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-3"
+              style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+            >
+              Password updated!
+            </h1>
+            <p className="text-sm text-hfz-text-secondary">Taking you to your dashboard...</p>
+          </div>
+        </HVZCard>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell tag="🔒 Almost there">
+      <HVZCard padding={32}>
+        <h1
+          className="font-display font-bold text-2xl sm:text-3xl text-hfz-text-primary mb-2 text-center"
+          style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+        >
+          Set a new password
+        </h1>
+        <p className="text-center text-sm text-hfz-text-secondary mb-6">
+          Make it one only you'd know.
+        </p>
+
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+          {error && <ErrorBox message={error} />}
+
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              New password
+            </label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={PASSWORD_MIN_LENGTH}
+              value={password}
+              onChange={handlePasswordChange}
+              placeholder="Make it solid"
+              className={passwordError ? 'border-hfz-danger focus:border-hfz-danger focus:shadow-[0_0_0_3px_rgba(239,68,68,0.25)]' : ''}
+              aria-invalid={!!passwordError}
+              aria-describedby="password-help"
+            />
+            <p
+              id="password-help"
+              aria-live="polite"
+              className={`mt-2 text-xs ${
+                passwordError ? 'text-hfz-danger' : 'text-hfz-text-secondary'
+              }`}
+            >
+              {passwordError ?? 'Min 8 chars, one uppercase, one number'}
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-semibold text-hfz-text-primary mb-2"
+            >
+              Confirm new password
+            </label>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Type it again"
+            />
+          </div>
+
+          <HVZButton
+            type="submit"
+            variant="primary"
+            size="md"
+            fullWidth
+            disabled={loading || !!passwordError}
+            aria-busy={loading}
+          >
+            {loading ? 'Updating...' : 'Update password →'}
           </HVZButton>
         </form>
       </HVZCard>

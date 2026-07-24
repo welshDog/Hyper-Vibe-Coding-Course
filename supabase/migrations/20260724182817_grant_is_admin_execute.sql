@@ -1,0 +1,20 @@
+-- Fix: every authenticated user's profile fetch 403'd on login.
+--
+-- public.users has two SELECT policies, both PERMISSIVE, combined with OR:
+--   "Users can view their own profile"  -- auth.uid() = id
+--   "Admins can read all users"         -- auth.uid() = id OR is_admin()
+--
+-- Postgres must evaluate every applicable permissive policy for a SELECT --
+-- it can't stop at the first one that would pass. Evaluating the second
+-- policy calls is_admin(), and the `authenticated` role had never been
+-- granted EXECUTE on that function, so the whole query died with
+-- "42501: permission denied for function is_admin" before Postgres ever
+-- got to the simple, correct policy. This blocked every signed-in user's
+-- own-profile read, not just one account.
+--
+-- is_admin() is SECURITY DEFINER, STABLE, and takes no parameters -- it
+-- only ever checks the calling user's own row (`id = auth.uid()`), so
+-- granting EXECUTE here does not expose any other user's data.
+--
+-- Incident report: verified live 2026-07-24, tlavrxiaegbtyfmjfdcz.
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;

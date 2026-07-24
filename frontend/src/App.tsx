@@ -14,6 +14,8 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Welcome = lazy(() => import('./pages/Welcome'));
 const Login = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Login })));
 const Register = lazy(() => import('./pages/Auth').then((m) => ({ default: m.Register })));
+const ForgotPassword = lazy(() => import('./pages/Auth').then((m) => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import('./pages/Auth').then((m) => ({ default: m.ResetPassword })));
 const CourseCatalog = lazy(() => import('./pages/CourseCatalog'));
 const CourseDetail = lazy(() => import('./pages/CourseDetail'));
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -120,6 +122,8 @@ function App() {
               <Route element={<Layout />}>
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />
+                <Route path="forgot-password" element={<ForgotPassword />} />
+                <Route path="reset-password" element={<ResetPassword />} />
                 <Route path="pricing" element={<Pricing />} />
                 <Route path="courses" element={<Courses />} />
                 <Route path="courses/:slug" element={<CourseModule />} />
