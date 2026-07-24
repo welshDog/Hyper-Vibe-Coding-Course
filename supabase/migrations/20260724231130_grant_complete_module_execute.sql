@@ -1,0 +1,24 @@
+-- Fix: clicking "Mark as Complete" on a course module silently did nothing —
+-- no XP, no BROski$, no completion record, no error shown to the user.
+--
+-- Root cause: identical pattern to is_admin() (20260724182817) and the still-open
+-- get_or_create_referral_code() finding -- public.complete_module(p_module_id uuid,
+-- p_quiz_score integer) is SECURITY DEFINER but `authenticated` had never been
+-- granted EXECUTE on it. Every call died with 42501 "permission denied for
+-- function complete_module" -- confirmed live via the actual network response.
+--
+-- The frontend made this worse (separately fixed, not by this migration):
+-- useModuleCompletion()'s completeModule() caught that RPC error and returned a
+-- fake { status: 'already_completed' } instead of surfacing it, and the caller
+-- treated 'already_completed' as good enough to flip the UI to "done" -- so a
+-- hard permission failure and a real completion looked identical on screen,
+-- while the database recorded nothing (verified: zero rows in module_completions,
+-- xp_events, token_transactions for a module the UI showed as complete).
+--
+-- Safe to grant, same reasoning as is_admin(): complete_module() takes no
+-- caller-supplied user_id -- it only ever writes against auth.uid() internally,
+-- so granting EXECUTE cannot let one user affect another user's XP/BROski$/
+-- completion rows.
+--
+-- Confirmed live 2026-07-25, tlavrxiaegbtyfmjfdcz.
+GRANT EXECUTE ON FUNCTION public.complete_module(uuid, integer) TO authenticated;

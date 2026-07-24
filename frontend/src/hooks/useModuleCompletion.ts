@@ -68,7 +68,11 @@ export function useModuleCompletion(moduleId: string) {
       });
 
       if (error) {
-        return { status: 'already_completed', xp: 0, coins: 0 };
+        // Don't coerce a failed write into a fake "already_completed" success —
+        // that previously made a 403/permission error look identical to a real
+        // completion (button went "done", nothing was ever saved). Let the
+        // caller see the real failure and decide how to surface it.
+        throw error;
       }
 
       const status = (data as { status?: unknown } | null)?.status;

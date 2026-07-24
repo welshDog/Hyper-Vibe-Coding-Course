@@ -82,6 +82,7 @@ export default function CourseModule() {
   const [submitted, setSubmitted] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [rewardBanner, setRewardBanner] = useState<{ xp: number; coins: number } | null>(null);
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isCompleted, isLoading: completionLoading, completeModule } = useModuleCompletion(
@@ -224,7 +225,7 @@ export default function CourseModule() {
     if (isCompleted) return;
 
     setCompleting(true);
-    setError(null);
+    setCompletionError(null);
     try {
       const result = await completeModule(grade?.percent);
       if (result.status === 'completed') {
@@ -234,6 +235,8 @@ export default function CourseModule() {
       if (result.status === 'already_completed') {
         setRewardBanner(null);
       }
+    } catch {
+      setCompletionError("That didn't save — nothing was lost, give it another try.");
     } finally {
       setCompleting(false);
     }
@@ -514,6 +517,11 @@ export default function CourseModule() {
               {quiz && !submitted ? (
                 <div className="mt-3 text-sm text-purple-200">
                   Submit the quiz to unlock module completion.
+                </div>
+              ) : null}
+              {completionError ? (
+                <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-2 text-sm text-red-200">
+                  {completionError}
                 </div>
               ) : null}
             </>
