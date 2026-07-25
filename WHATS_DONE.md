@@ -43,6 +43,18 @@ record. Traced, root-caused, fixed, and shipped as `3a04d0c`, pushed to `origin/
   correct rows; `/courses` progress ticks up, module card shows "✓ Quest
   complete"; `/pets` Recent Activity shows "📚 Module complete · +N BROski$";
   all of it persists across a full page reload.
+- **First real pet minted on this account, verified across all four layers**
+  (chain, DB, IPFS, UI) — Luna the Blizzard Lizard, Base Sepolia, contract
+  `0x4daF9e1e...73A69a`, token ID 3. RPC receipt shows a genuine ERC-721 mint
+  (status success, Transfer from the zero address); a live `ownerOf(3)` call
+  confirms current custody, not just mint history; pinned IPFS metadata
+  matches the DB row; block timestamp and DB `created_at` agree to within 2
+  seconds. Bonus proof point: 5 real `module_complete` entries in her Recent
+  Activity feed from actual use, confirming the completion-bug fix above holds
+  under real usage. **Minor cosmetic note, not a bug:** the pinned metadata's
+  "Minted At" trait is a shared baby-stage template placeholder (reads May
+  2026), not per-token — harmless now, would need real per-token timestamps if
+  rarity/provenance tooling is ever built on top of that trait.
 - **Flagged, not fixed — needs its own scoped task, not a same-session patch:**
   `/profile` still shows "0 Courses / 0 Badges" for hv_modules completions.
   That stat block and the "My courses" list read `public.enrollments`/

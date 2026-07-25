@@ -41,6 +41,15 @@
   (left on disk, just untracked), and force-pushed with `--force-with-lease`.
   Pre-push hook rebuilt the frontend clean before allowing the push.
 - Updated `WHATS_DONE.md` with the full root-cause writeup for tonight's third fix.
+- **First real pet minted on this account** — Luna, a Blizzard Lizard, on Base
+  Sepolia. Verified across all four layers before calling it confirmed: the raw
+  transaction receipt via RPC (status success, correct contract, real ERC-721
+  Transfer from the zero address), a live `ownerOf(3)` call (current custody,
+  not just mint history), the pinned IPFS metadata, and the DB row — block
+  timestamp and DB `created_at` agreed to within 2 seconds. Bonus: five real
+  `module_complete` entries in her Recent Activity feed from actual use (not
+  test clicks) — the best possible live proof that tonight's completion-bug fix
+  holds up under real usage, not just a single re-test.
 
 ---
 
@@ -114,6 +123,12 @@ carried over from the 2026-07-24 auth batch, still not started.
   `🐛 Bug Report — Hyper Vibe Coding Course`) are still sitting untracked in the
   repo root — fine to leave, but they'll show up in `git status` until moved,
   deleted, or gitignored.
+- Pet metadata templates share a placeholder mint timestamp — Luna's pinned IPFS
+  metadata carries a "Minted At" trait reading May 2026, from a shared
+  baby-stage template, not her actual mint time (which the chain and DB both
+  correctly record as 2026-07-25). Cosmetic only, no action needed — but if
+  rarity/provenance tooling ever gets built off that trait, it'll need real
+  per-token timestamps instead of the shared template.
 
 ---
 
