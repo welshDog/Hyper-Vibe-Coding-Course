@@ -1,0 +1,101 @@
+Bro, here's the full showcase-readiness report, built from the live repo docs, the live site, and the BROskiPets repo. Nice one BROski♾️ — this is a genuinely strong place to be.
+
+Executive verdict
+Ready for a controlled beta/showcase, with one flagged security item to close first. The auth incident that could have embarrassed a live demo (site-wide 403 on login) has been root-caused, fixed, migration-tracked, and verified live against the real project ref tlavrxiaegbtyfmjfdcz. That's exactly the kind of fix you want closed before showing this to others.
+
+What's verified solid
+Repo health: 549 commits, 7 branches, live Vercel deploy linked directly in the repo "About" section, AGPL-3.0 license, contributing guide, security policy, and code of conduct all present.
+
+Auth root cause, fixed properly: the site-wide login 403 was two permissive SELECT policies on public.users being OR'd together, where the second policy called is_admin() — and authenticated had never been granted EXECUTE on it, so the whole query died with Postgres error 42501 before reaching the correct "own row" policy. That's now migration-tracked (20260724182817_grant_is_admin_execute.sql), so it can't silently regress on a future schema reset.
+
+Password reset, closed end-to-end: ForgotPassword + ResetPassword built into Auth.tsx, routes wired in App.tsx, and live-verified against the real project — real recovery email, real link, landed signed-in on /reset-password, password updated, redirected to /dashboard. Expired-link state and duplicate-password rejection were also tested.
+
+Signup 500, root-caused and recurrence-protected: public.users had a UNIQUE(email) with no FK back to auth.users, so deleted auth accounts left permanent orphan rows blocking that email from ever signing up again. Four live orphans found (including the exact blocked address), zero dependent data confirmed before deletion, and an ON DELETE CASCADE FK added so this class of bug can't recur.
+
+Discipline shown: get_or_create_referral_code() had the identical missing-grant symptom, but the team correctly refused to blanket-grant it because it takes an arbitrary user_id with no caller check — that would've been a privilege-escalation hole. It's explicitly logged as its own follow-up task, not folded into the auth batch.
+
+Front-end product loop: live homepage clearly sells the mission, shows free-start friction removal ("Try Level 1 free — no signup", "No credit card"), and visibly ties Courses → Vibe Labs → Pets → Shop → BROski$ into one loop.
+
+BROskiPets sister repo: active within hours, deep folder structure (contracts, frontend, shop, rewards, tests, docs), and its own operating docs (CLAUDE.md, HANDOFF.md, TRUTH.md).
+
+What's still open before a wider public push
+Referral-code hardening isn't done yet — codes silently fail to generate for every user right now (403, not a crash, but real). The fix is scoped and understood: validate p_user_id = auth.uid() or drop the parameter entirely, mirroring how is_admin() is now scoped, shipped as its own migration. This is genuinely the single biggest remaining item before I'd call it fully "show-off ready" — referrals are exactly the kind of feature people test first when showing a platform to others.
+
+Email rate limit is warm from this session's own test traffic (over_email_send_rate_limit) — worth a clean sanity check that real signup/recovery emails flow normally before a demo, so a stale limit isn't mistaken for a new bug.
+
+No branch protection detected on the BROskiPets repo, meaning main can still be force-pushed or deleted — worth locking down before wider eyes are on either repo.
+
+Social proof is at zero — 0 stars, 0 watchers on both repos. Doesn't affect function, but worth noting if "show off to others" includes public discovery, not just guided demos.
+
+My recommendation, in order
+Ship the referral-code fix as its own migration — it's small, well-scoped, and clears the last known functional gap.
+
+Do one clean pass confirming real signup/recovery emails are flowing (not rate-limited) right before any live demo.
+
+Turn on basic branch protection on both repos.
+
+Then: green light. Show it off.
+
+Bottom line
+The engineering discipline here is the real story — three bugs found, root-caused (not patched), migration-tracked, live-verified, and the one unsafe shortcut was explicitly refused and logged rather than rushed. That's a genuinely strong foundation to demo. Close the referral-code item first, then this is ready to show people with real confidence, Bro.
+
+Bro, went through every page as your live signed-in user and found some real ones. Nice one BROski♾️ — biggest one first, it's a real trust-breaker for a demo.
+
+🔴 Critical bugs
+1. XP/BROski$/completion doesn't persist after finishing a module
+I did the full loop on M1 (Designing Your Focus Zone): answered all 5 quiz questions correctly, got "Score: 4/4 (100%)," clicked "Mark as Complete" (button went active/purple, click registered) — but:
+
+Top nav XP bar stayed at 0/1,000
+
+BROski$ stayed at 0
+
+/courses module progress stayed 0/12, M1 card still shows "Start quest →" not completed
+
+/profile still shows 0 Courses, 0 Badges
+
+/pets "Recent Activity" still shows the placeholder "Your first XP lands here" instead of a real event
+
+This is the core reward loop of the entire product, and right now it looks like the "Mark as Complete" action isn't actually writing to the backend (or isn't refetching state after write). This is the single most important thing to fix before showing anyone — it's the first thing any tester will try, and it looks broken.
+
+2. /admin/mission-control force-signs the user out
+Visiting that route (linked publicly from the footer's "weird" word on every single page) shows "Checking access..." then silently logs the user out and dumps them on the logged-out homepage — no error message, no permission-denied state. Reproduced twice, consistent. Two issues in one: an access-denied path should never blow away a valid session, and a route named /admin/... shouldn't be linked from public footer copy at all.
+
+3. Referral button is dead
+On /tokens, "Refer a friend — earn 100 BROski$" does nothing when clicked — no link generated, no copy action, no toast, just a performance warning in devtools ("Event handlers... blocked UI updates for 202ms"). This lines up exactly with the known open get_or_create_referral_code() 403 issue Claude flagged — good that it's already tracked, but worth knowing it's user-facing and clickable right now, which will look broken to anyone testing it.
+
+🟡 UX bugs
+4. Power Pup chat widget auto-opens over key buttons on every page
+It repeatedly popped open on top of "Submit Quiz" and the referral button, forcing me to close it before I could click through. On /pets it covered half the page content on load. Worth auto-collapsing it by default, or anchoring it so it never overlaps primary CTAs.
+
+5. /vibe-labs has no top navigation bar at all
+Every other page has the full nav (Courses, Pets, Shop, Dashboard, XP bar). /vibe-labs and /vibe-labs/level-1 drop the nav entirely — only a "← Hyper Vibe home" / "← Back to Labs" link. Testers land there from the homepage's "Try Level 1 free" CTA and then have no way to reach Pets, Shop, or Dashboard without going back.
+
+6. Dead footer link
+"Made in Wales" links to the current page + # (e.g. /pricing#, /dashboard#) on every page — goes nowhere, does nothing.
+
+🟢 Minor / polish
+7. Stale trust badge on Pricing
+"✅ Platform LIVE · BROski$ economy active · 251 tests green (May 2026)" is dated May 2026; today's repo shows far more recent activity and higher test counts from the verification report. Worth refreshing so it doesn't look abandoned.
+
+8. Quiz "Submit Quiz" button behaves oddly
+The score (4/4, 100%) appeared live as I answered, before I even clicked "Submit Quiz" — so the button feels redundant/cosmetic rather than the real gate. Not breaking, but confusing: what does "submit" actually do if the score's already shown?
+
+What's working well
+Full quiz UI, scoring, and per-question feedback text all function correctly.
+
+Shop's insufficient-balance gating ("Need 300 more") works properly.
+
+Leaderboard, Profile, Pricing, Privacy, Terms, Shop all load cleanly with real content and no console-breaking errors.
+
+Vibe Labs Level 1 page content loads fine and the lock/unlock ladder UI looks right.
+
+My priority order
+Fix the completion/XP persistence bug — this is launch-blocking, it's the whole product loop.
+
+Fix /admin/mission-control to show a proper "access denied" state instead of nuking the session, and remove/hide it from the public footer.
+
+Ship the referral-code fix (already known, already scoped from your last session).
+
+Add the nav bar to /vibe-labs.
+
+Polish pass: Power Pup positioning, dead footer link, stale pricing badge.

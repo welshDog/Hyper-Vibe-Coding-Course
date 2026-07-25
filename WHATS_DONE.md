@@ -1,6 +1,62 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-07-24 by Claude (Cowork) ⚡
+> Last synced: 2026-07-25 by Claude (Cowork) ⚡
+
+## 2026-07-25 — Module completion write path: root-caused + fixed + verified live
+
+A live QA pass ("befor beta testing report" / Comet bug report) flagged module
+completion as launch-blocking: clicking "Mark as Complete" looked like it worked
+(button went active, no error) but wrote nothing — no XP, no BROski$, no completion
+record. Traced, root-caused, fixed, and shipped as `3a04d0c`, pushed to `origin/main`.
+
+- **Third instance tonight of the same missing-EXECUTE-grant pattern** as
+  `is_admin()` and the still-open `get_or_create_referral_code()` finding —
+  `public.complete_module(uuid, integer)` is SECURITY DEFINER but `authenticated`
+  had never been (re-)granted EXECUTE. Confirmed via the live network response:
+  `{"code":"42501","message":"permission denied for function complete_module"}`.
+  Notably, the *original* migration (`20260426220000_module_completion.sql`)
+  already contained the correct grant — this is migration-history-vs-live-DB
+  drift (same class as the tlav rebuild history), not a developer oversight.
+  Re-granted and migration-tracked:
+  `supabase/migrations/20260724231130_grant_complete_module_execute.sql`.
+  Safe to grant — same shape as `is_admin()`: no caller-supplied `user_id`, only
+  ever acts on `auth.uid()`.
+- **Frontend was silently masking the failure** — `useModuleCompletion.ts` caught
+  the RPC error and returned a fake `{status: 'already_completed'}`, and the
+  caller flipped `isCompleted` to `true` on that status too. A hard permission
+  failure and a real completion looked pixel-identical on screen while the
+  database recorded nothing. Fixed: the hook now throws the real error;
+  `CourseModule.tsx` catches it into a dedicated `completionError` state with an
+  inline "That didn't save — nothing was lost, give it another try" message
+  (kept separate from the page-level `error` state, which is for load failures
+  and would otherwise nuke the whole module view on a completion-click failure).
+- **`/pets` "Recent activity" fixed as a same-session follow-up** — the XpFeed
+  component reads `public.xp_events`, which already had a `module_complete`
+  event mapping ready to render but nothing ever inserted into it.
+  `complete_module()` now logs an `xp_events` row alongside its existing writes
+  (`amount` = BROski$ coins, matching what `EventRow` renders):
+  `supabase/migrations/20260724232353_complete_module_logs_xp_event.sql`
+  (`CREATE OR REPLACE`, same OID, grant preserved — verified).
+- **Verified live end to end, twice** — completed two real modules (M1, M2)
+  through the actual UI. RPC returns `200` with real `{status, xp, coins}`;
+  `module_completions`/`user_xp`/`users.broski_tokens`/`xp_events` all show the
+  correct rows; `/courses` progress ticks up, module card shows "✓ Quest
+  complete"; `/pets` Recent Activity shows "📚 Module complete · +N BROski$";
+  all of it persists across a full page reload.
+- **Flagged, not fixed — needs its own scoped task, not a same-session patch:**
+  `/profile` still shows "0 Courses / 0 Badges" for hv_modules completions.
+  That stat block and the "My courses" list read `public.enrollments`/
+  `public.achievements` (the older lesson-based system, `LessonPlayer.tsx` /
+  `/learn/:courseId`), which `complete_module()` never touches. This is an
+  architecture question — which system is source of truth for "a course" —
+  not a bug, and deserves a deliberate decision rather than a rushed bridge.
+- **Queued, not urgent:** given three separate functions tonight (`is_admin()`,
+  `complete_module()`, and the still-open `get_or_create_referral_code()`) all
+  hit the identical migration-history-vs-live-grant drift, a full audit —
+  diff every `GRANT`/`REVOKE` statement across migration history against
+  `has_function_privilege()` on the live DB for every SECURITY DEFINER
+  function — would catch any other silently-broken function before a user
+  finds it. Worth doing, not blocking anything right now.
 
 ## 2026-07-24 — Auth hardening batch (beta-readiness upgrade)
 

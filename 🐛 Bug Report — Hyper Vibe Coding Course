@@ -1,0 +1,107 @@
+🐛 Bug Report — Hyper Vibe Coding Course (Live QA Pass)
+Date: 2026-07-24 · Tester: Comet (browser QA pass) · Environment: Production — hyper-vibe-coding-course-psovpv4ic-bro-skis.vercel.app · Account: Lyndon (signed in, Bronze tier)
+
+🔴 P0 — Launch-blocking
+BUG-1: Module completion / XP / BROski$ does not persist
+Severity: Critical — breaks the core product loop
+Repro steps:
+
+Sign in, go to /courses/designing-your-focus-zone (M1)
+
+Answer all 5 quiz questions correctly → UI shows "Score: 4/4 (100%)" live, before submitting
+
+Click "Submit Quiz"
+
+Click "✅ Mark as Complete" (button becomes enabled/purple, click registers)
+
+Check top nav XP bar, /courses, /profile, /pets
+
+Expected: XP +30, BROski$ +10, M1 marked complete, module progress ticks to 1/12
+Actual:
+
+Top nav XP bar stays at 0 / 1,000
+
+BROski$ balance stays at 0
+
+/courses module progress stays 0/12, M1 card still shows "Start quest →"
+
+/profile still shows 0 Courses, 0 Badges
+
+/pets "Recent Activity" still shows placeholder "Your first XP lands here"
+
+Likely cause: Mark as Complete write either isn't hitting Supabase, isn't awaited before UI reads stale cache, or the read-side query isn't refetching after mutation. Worth checking RLS on the write path too, given the recent is_admin() / 42501 history — same "authenticated user can't write/read their own row" pattern could be at play here.
+Suggested fix: Trace the Mark as Complete handler end to end — confirm the Supabase insert/update actually commits (check table directly), then confirm the frontend refetches XP/BROski$/profile state after a successful write rather than relying on cached client state.
+
+BUG-2: /admin/mission-control force-signs the user out instead of denying access
+Severity: Critical — security/session integrity issue
+Repro steps:
+
+While signed in, navigate to /admin/mission-control
+
+Page shows "Checking access..." briefly
+
+Reproduced twice, consistent
+
+Expected: A proper 403/"not authorized" state, session untouched
+Actual: Session is destroyed; user lands fully signed out on the homepage
+Extra concern: This route is linked from every page's footer — the word "weird" in "Keep it weird, keep it Welsh" hyperlinks straight to /admin/mission-control. So any curious visitor clicking that footer word gets booted out of their own session.
+Suggested fix:
+
+Fix the access-check to return an in-place "access denied" UI, not a sign-out.
+
+Remove the /admin/mission-control link from the public footer entirely, or gate the link's visibility to admins only.
+
+🟡 P1 — User-facing broken feature
+BUG-3: Referral button is non-functional
+Severity: High — visible dead CTA
+Repro steps: Go to /tokens, click "Refer a friend — earn 100 BROski$"
+Actual: Nothing happens. DevTools shows an INP warning: "Event handlers on this element blocked UI updates for 202.2ms." No link generated, no copy action, no error shown to user.
+Note: This matches the already-known open issue — get_or_create_referral_code() is missing a safe EXECUTE grant (403 for all users). Flagging here because it's a live, clickable, user-facing dead button right now, not just a backend symptom.
+Suggested fix: Ship the already-scoped fix — validate p_user_id = auth.uid() internally (or drop the parameter) before granting EXECUTE — then add a proper error toast for future failures instead of a silent no-op.
+
+🟡 P2 — UX issues
+BUG-4: /vibe-labs and /vibe-labs/level-1 have no top navigation
+Severity: Medium — navigation dead-end
+Detail: Every other route keeps the full nav bar (Courses, Pets, Shop, Dashboard, XP bar, Sign out). /vibe-labs drops it completely, leaving only a "← Hyper Vibe home" link. Since the homepage's primary free-start CTA ("Try Level 1 free — no signup") lands here, new users can get stuck with no way to reach Pets/Shop/Dashboard except browser back.
+Suggested fix: Reuse the shared layout/nav component on the Vibe Labs routes.
+
+BUG-5: Power Pup chat widget auto-opens and overlaps primary CTAs
+Severity: Medium — repeated friction
+Detail: On /courses/designing-your-focus-zone, the widget opened over the "Submit Quiz" button. On /tokens, it opened over the referral button. On /pets, it covered half the page on load. Had to manually close it each time to interact with the page underneath.
+Suggested fix: Default to collapsed/minimized on page load; if it auto-opens, position it so it never overlaps primary CTAs (bottom-right floating, not overlaying center content).
+
+BUG-6: Dead footer link — "Made in Wales"
+Severity: Low
+Detail: Links to [current-page]# on every page (e.g. /pricing#, /dashboard#) — goes nowhere.
+Suggested fix: Point to a real Wales/about page, or remove the link styling if there's no destination yet.
+
+🟢 P3 — Polish
+BUG-7: Stale trust badge on /pricing
+Detail: Badge reads "✅ Platform LIVE · BROski$ economy active · 251 tests green (May 2026)" — dated May 2026, but repo activity and test counts are materially higher/more recent now.
+Suggested fix: Auto-generate this badge from CI/latest test run count rather than hardcoding a date.
+
+BUG-8: "Submit Quiz" button feels redundant
+Detail: Score (e.g. "4/4 (100%)") displays live as questions are answered, before "Submit Quiz" is ever clicked — makes the submit action feel cosmetic rather than the real completion gate.
+Suggested fix: Either hide the score until actual submit, or clarify what submit does differently (e.g., "locks in" the attempt for the completion record).
+
+✅ Confirmed working well
+Quiz UI, per-question scoring and feedback text
+
+Shop's insufficient-balance gating ("Need 300 more" disabled state)
+
+Leaderboard, Profile, Pricing, Privacy, Terms, Shop pages — all load cleanly, no console-breaking errors
+
+Vibe Labs Level 1 content and lock/unlock ladder UI
+
+Recommended fix order
+BUG-1 (completion persistence) — blocks the entire reward loop, fix first
+
+BUG-2 (admin route sign-out + public footer exposure) — security/session integrity
+
+BUG-3 (referral button) — already scoped from last session, just ship it
+
+BUG-4 (Vibe Labs nav) — quick layout fix
+
+BUG-5, 6, 7, 8 — polish pass once the above are closed
+
+Nice one BROski♾️ — that's the full sweep.
