@@ -828,6 +828,25 @@ export default function ShopPage() {
     setCelebrateId(null);
 
     try {
+            // Guard: ensure the auth session is fully resolved (has a valid
+      // JWT `sub` claim) before invoking the Edge Function. A session that
+      // is still refreshing can produce a token the Supabase gateway
+      // rejects with 401 before the request reaches shop-purchase, which
+      // surfaces to users as a generic "Failed to send a request".
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      let activeSession = sessionData?.session ?? null;
+      if (sessionError || !activeSession?.user?.id) {
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        activeSession = refreshed?.session ?? null;
+        if (refreshError || !activeSession?.user?.id) {
+          setNotification({
+            type: 'error',
+            text: "Still signing you in — give it a sec and try again 🔄",
+          });
+          return;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke<PurchaseResult>('shop-purchase', {
         body: { item_id: itemId },
       });
