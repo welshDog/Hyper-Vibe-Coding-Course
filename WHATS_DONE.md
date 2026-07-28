@@ -1,6 +1,41 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-07-25 by Claude (Cowork) ⚡
+> Last synced: 2026-07-28 by Claude (Cowork) ⚡
+
+## 2026-07-28 — Profile progress now tells the truth for hv_modules users
+
+The `/profile` page no longer tells a user with real hv_modules completions that
+they have `0 Courses` just because the legacy `enrollments` table is empty.
+Fixed as a read-side-only change, exactly per the architecture decision: **treat
+`module_completions` as the source of truth for hv_modules progress, do not backfill
+`enrollments`, and do not mint fake achievements.**
+
+- **Root cause:** `Profile.tsx` was reading only `public.enrollments` and
+  `public.achievements`, which are the older lesson/course surfaces. The real
+  hv_modules quest path (`/courses/:slug` → `complete_module()`) writes
+  `module_completions`, `user_xp`, `users.broski_tokens`, and `xp_events` — so
+  a learner could have genuine module progress and still see a misleading zero
+  in Profile.
+- **Fix:** added a tiny read-side adapter
+  (`frontend/src/lib/profileProgress.ts`) and wired `Profile.tsx` to do two
+  extra direct client reads that match existing repo patterns:
+  `hv_modules` for total module count and `module_completions` for the signed-in
+  user's completed count. No RPC, no view, no schema change, no write-path change.
+- **UI now separates truthfully:** the stat strip shows `Progress` (`3/12`,
+  etc.) instead of pretending hv_modules are legacy purchased courses, while
+  the existing `Badges` stat still reflects only real `achievements`. The
+  `My courses` empty state now explicitly says legacy enrollments live there and
+  shows the learner's real module progress instead of a misleading blank state.
+- **Legacy behavior preserved:** the legacy enrollment list still reads
+  `public.enrollments`, and badges still read `public.achievements`. This fix
+  does **not** bridge the two systems and does **not** auto-award anything.
+- **Verification:** a new unit test covers the progress-summary adapter
+  (`frontend/unit-tests/profileProgress.test.ts`), a mocked Playwright regression
+  covers the signed-in `/profile` route
+  (`frontend/tests/profile-progress.spec.ts`), and the frontend production build
+  is green. Full app `tsc --noEmit` is still red in unrelated pre-existing files
+  (`src/hooks/useOwnedCosmetics.ts`, `src/pages/LessonPlayer.tsx`) and was not
+  changed by this fix.
 
 ## 2026-07-25 — Module completion write path: root-caused + fixed + verified live
 

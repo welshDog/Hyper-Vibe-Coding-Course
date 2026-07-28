@@ -4,6 +4,10 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
 import { Input } from '../components/ui/Input';
 import { LoyaltyTierBadge } from '../components/LoyaltyTierBadge';
+import {
+  buildModuleProgressSummary,
+  type ModuleProgressSummary,
+} from '../lib/profileProgress';
 import type { Enrollment, Course } from '../types/database';
 import { PlayCircle, CheckCircle, Award, ShoppingBag } from 'lucide-react';
 import {
@@ -17,6 +21,14 @@ import DiscordLinkSection from '../components/DiscordLinkSection';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type EnrolledCourse = Enrollment & { courses: Course };
+
+type HvModuleRow = {
+  id: string;
+};
+
+type ModuleCompletionRow = {
+  module_id: string;
+};
 
 type Achievement = {
   id: string;
@@ -112,6 +124,7 @@ export default function Profile() {
 
   const [enrollments, setEnrollments] = useState<EnrolledCourse[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [moduleProgress, setModuleProgress] = useState<ModuleProgressSummary | null>(null);
   const [loyaltyTier, setLoyaltyTier] = useState<LoyaltyTierRow | null>(null);
   const [shopPurchases, setShopPurchases] = useState<ShopPurchaseWithItem[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -128,7 +141,7 @@ export default function Profile() {
   useEffect(() => {
     if (!user) return;
     async function fetchData() {
-      const [enrollRes, achRes, tierRes, purchasesRes] = await Promise.all([
+      const [enrollRes, achRes, tierRes, purchasesRes, modulesRes, completionsRes] = await Promise.all([
         supabase
           .from('enrollments')
           .select('*, courses(*)')
@@ -149,11 +162,29 @@ export default function Profile() {
           .select('id, item_id, spent_tokens, purchased_at, fulfillment_metadata, shop_items(name, category, metadata)')
           .eq('user_id', user!.id)
           .order('purchased_at', { ascending: false }),
+        supabase
+          .from('hv_modules')
+          .select('id')
+          .order('code', { ascending: true }),
+        supabase
+          .from('module_completions')
+          .select('module_id')
+          .eq('user_id', user!.id),
       ]);
       if (!enrollRes.error) setEnrollments((enrollRes.data ?? []) as EnrolledCourse[]);
       if (!achRes.error) setAchievements(achRes.data ?? []);
       if (!tierRes.error && tierRes.data) setLoyaltyTier(tierRes.data as LoyaltyTierRow);
       if (!purchasesRes.error) setShopPurchases((purchasesRes.data ?? []) as ShopPurchaseWithItem[]);
+      if (!modulesRes.error && !completionsRes.error) {
+        setModuleProgress(
+          buildModuleProgressSummary({
+            totalModules: ((modulesRes.data ?? []) as HvModuleRow[]).length,
+            completedModules: ((completionsRes.data ?? []) as ModuleCompletionRow[]).length,
+          }),
+        );
+      } else {
+        setModuleProgress(null);
+      }
       setLoadingData(false);
     }
     void fetchData();
@@ -292,10 +323,10 @@ export default function Profile() {
             </Link>
             <div className="flex flex-col items-center justify-center py-5 px-3 sm:border-r border-hfz-border-violet">
               <span className="font-display font-extrabold text-2xl text-hfz-violet-light">
-                {enrollments.length}
+                {moduleProgress?.statValue ?? '—'}
               </span>
               <span className="text-xs text-hfz-text-secondary mt-1 font-mono uppercase tracking-hfz-label">
-                {enrollments.length === 1 ? 'Course' : 'Courses'}
+                Progress
               </span>
             </div>
             <div className="flex flex-col items-center justify-center py-5 px-3 border-t sm:border-t-0 border-r border-hfz-border-violet">
@@ -415,8 +446,21 @@ export default function Profile() {
             <HVZCard padding={32}>
               <div className="text-center">
                 <p className="text-base text-hfz-text-secondary mb-3">
-                  Your courses will show up here — go pick one! 🎯
+                  Legacy course enrollments will show up here when you pick one. 🎯
                 </p>
+                {moduleProgress && (
+                  <div className="max-w-sm mx-auto mb-4">
+                    <HVZProgress
+                      value={moduleProgress.completedModules}
+                      max={moduleProgress.totalModules}
+                      gradient="mint"
+                      label="📚 Module progress"
+                    />
+                    <p className="text-sm text-hfz-text-secondary mt-3 mb-0">
+                      {moduleProgress.summaryLabel}
+                    </p>
+                  </div>
+                )}
                 <Link to="/courses" className="no-underline">
                   <HVZButton variant="ghost" size="sm">
                     Browse the catalog →
