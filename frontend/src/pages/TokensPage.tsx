@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '../context/auth';
 import { supabase } from '../lib/supabase';
 import { createCheckoutSession } from '../lib/payments';
+import { useReferralLink } from '../hooks/useReferralLink';
 import type { TokenTransaction } from '../types/database';
 import { HVZButton, HVZCard, HVZTag, type TagColor } from '../components/ui/hvz';
 
@@ -67,27 +68,7 @@ function MilestoneBanner({ balance }: { balance: number }) {
 
 // ── Referral card ─────────────────────────────────────────────────────────────
 function ReferralCard() {
-  const [broCode, setBroCode] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    async function fetchCode() {
-      const { data } = await supabase.rpc('get_or_create_referral_code');
-      if (data) setBroCode(data as string);
-    }
-    void fetchCode();
-  }, [userId]);
-
-  const referralUrl = broCode
-    ? `${window.location.origin}/register?ref=${broCode}`
-    : null;
-
-  function handleCopy() {
-    if (!referralUrl) return;
-    void navigator.clipboard.writeText(referralUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+  const { referralLink, copied, error, copyReferralLink } = useReferralLink();
 
   return (
     <HVZCard padding={24} glow="violet">
@@ -98,17 +79,28 @@ function ReferralCard() {
           <p className="text-sm text-hfz-text-secondary mt-2 mb-4">
             Share your link. When a friend signs up, you both win instantly.
           </p>
-          {referralUrl ? (
+          {referralLink ? (
             <div className="flex items-center gap-2">
               <code className="flex-1 text-xs bg-hfz-midnight border border-hfz-border-violet rounded-hfz-sm px-3 py-2 text-hfz-cyan font-mono truncate">
-                {referralUrl}
+                {referralLink}
               </code>
-              <HVZButton variant="primary" size="sm" onClick={handleCopy}>
+              <HVZButton
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  void copyReferralLink();
+                }}
+              >
                 {copied ? '✅ Copied!' : '📋 Copy'}
               </HVZButton>
             </div>
           ) : (
             <div className="h-8 rounded-hfz-sm bg-hfz-midnight animate-pulse w-full" />
+          )}
+          {error && (
+            <span className="sr-only" role="status" aria-live="polite">
+              {error}
+            </span>
           )}
         </div>
       </div>

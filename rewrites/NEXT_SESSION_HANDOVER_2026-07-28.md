@@ -17,6 +17,10 @@
   - unauthenticated call now fails clearly
   - execute removed from `PUBLIC`, granted only to `authenticated`
   - frontend callers updated in `Welcome.tsx`, `Dashboard.tsx`, `TokensPage.tsx`
+- Referral frontend duplication removed without changing copy/design:
+  - shared hook: `frontend/src/hooks/useReferralLink.ts`
+  - shared helper: `frontend/src/lib/referralLink.ts`
+  - all three referral surfaces now use the same load/copy/origin logic
 
 ## Exact migration applied
 
@@ -26,6 +30,8 @@
 
 - Focused frontend regression passed:
   `frontend/tests/referral-rpc.spec.ts`
+- Focused unit test passed:
+  `frontend/unit-tests/referralLink.test.ts`
 - Frontend build passed:
   `npm run build`
 - Live RPC probe passed:
@@ -42,5 +48,5 @@
 
 ## First task next session
 
-Decide whether to extract the duplicated referral-link load/copy flow into a
-small shared hook/helper used by Dashboard, Welcome, and TokensPage.
+If we want one more tiny cleanup, extract the repeated referral card markup into
+a shared presentational component while leaving the new hook/helper untouched.

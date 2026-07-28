@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Coins, Trophy, Sparkles, Users, Copy, Check, ArrowRight, Rocket } from 'lucide-react';
 import { useAuthStore } from '../context/auth';
 import { supabase } from '../lib/supabase';
+import { useReferralLink } from '../hooks/useReferralLink';
 import {
   HVZBrand,
   HVZButton,
@@ -85,32 +85,9 @@ function PerkCard({
 export default function Welcome() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [referralCode, setReferralCode] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { referralLink, copied, error, copyReferralLink } = useReferralLink();
 
   const firstName = (user?.full_name || user?.email || 'BROski♾️').split(' ')[0];
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    supabase.rpc('get_or_create_referral_code').then(({ data }) => {
-      if (!cancelled && data) setReferralCode(data as string);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  const referralLink = referralCode
-    ? `${window.location.origin}/register?ref=${referralCode}`
-    : null;
-
-  const handleCopy = async () => {
-    if (!referralLink) return;
-    await navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const enterMissionControl = async () => {
     await markOnboarded();
@@ -353,7 +330,9 @@ export default function Welcome() {
                     </code>
                     <button
                       type="button"
-                      onClick={handleCopy}
+                      onClick={() => {
+                        void copyReferralLink();
+                      }}
                       aria-label="Copy referral link"
                       className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-hfz-sm transition-colors"
                       style={{
@@ -382,6 +361,11 @@ export default function Welcome() {
                       )}
                     </button>
                   </div>
+                )}
+                {error && (
+                  <span className="sr-only" role="status" aria-live="polite">
+                    {error}
+                  </span>
                 )}
               </div>
             </div>

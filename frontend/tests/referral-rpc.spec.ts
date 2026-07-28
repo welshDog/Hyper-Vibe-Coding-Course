@@ -203,7 +203,7 @@ async function installMocks(page: Page) {
 }
 
 test.describe('Referral RPC', () => {
-  test('uses the zero-argument referral RPC and keeps the same code across repeated signed-in reads', async ({ page }) => {
+  test('uses the zero-argument referral RPC and keeps the same code across dashboard, welcome, and tokens', async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.clear();
       window.sessionStorage.clear();
@@ -219,11 +219,15 @@ test.describe('Referral RPC', () => {
     await expect(page).toHaveURL(/\/dashboard/);
     await expect(page.getByText(`${APP_ORIGIN}/register?ref=${REFERRAL_CODE}`)).toBeVisible();
 
+    await navigateClient(page, '/welcome');
+    await expect(page).toHaveURL(/\/welcome/);
+    await expect(page.getByText(`${APP_ORIGIN}/register?ref=${REFERRAL_CODE}`)).toBeVisible();
+
     await navigateClient(page, '/tokens');
     await expect(page).toHaveURL(/\/tokens/);
     await expect(page.getByText(`${APP_ORIGIN}/register?ref=${REFERRAL_CODE}`)).toBeVisible();
 
-    expect(referralBodies.length).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => referralBodies.length).toBeGreaterThanOrEqual(3);
     expect(referralBodies).toEqual(
       referralBodies.map((body) => {
         expect(body).not.toHaveProperty('p_user_id');

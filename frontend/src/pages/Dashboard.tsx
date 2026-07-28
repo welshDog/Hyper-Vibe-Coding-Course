@@ -1,6 +1,7 @@
 import { useAuthStore } from '../context/auth';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useReferralLink } from '../hooks/useReferralLink';
 import type { Enrollment, Course } from '../types/database';
 import { Link } from 'react-router-dom';
 import { PlayCircle, Coins, Award, Copy, Check, Users } from 'lucide-react';
@@ -19,20 +20,19 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const [enrollments, setEnrollments] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralCount, setReferralCount] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [xpTotal, setXpTotal] = useState<number | null>(null);
   const [xpLevel, setXpLevel] = useState<number | null>(null);
+  const { referralLink, loading: referralLoading, error: referralError, copied, copyReferralLink } =
+    useReferralLink();
 
   useEffect(() => {
     if (!user) return;
 
     async function fetchData() {
-      const [{ data: enrollData, error: enrollErr }, { data: refCode }, { count: refCount }] =
+      const [{ data: enrollData, error: enrollErr }, { count: refCount }] =
         await Promise.all([
           supabase.from('enrollments').select('*, courses (*)').eq('user_id', user!.id),
-          supabase.rpc('get_or_create_referral_code'),
           supabase
             .from('referrals')
             .select('*', { count: 'exact', head: true })
@@ -44,7 +44,6 @@ export default function Dashboard() {
       } else {
         setEnrollments(enrollData as EnrolledCourse[]);
       }
-      if (refCode) setReferralCode(refCode as string);
       setReferralCount(refCount ?? 0);
       setLoading(false);
     }
@@ -83,22 +82,11 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  const referralLink = referralCode
-    ? `${window.location.origin}/register?ref=${referralCode}`
-    : null;
-
   const levelThresholds = [0, 100, 250, 500, 1000, 2000];
   const safeLevel = Math.max(1, Math.min(xpLevel ?? 1, 6));
   const safeTotal = Math.max(0, xpTotal ?? 0);
   const currentFloor = levelThresholds[safeLevel - 1] ?? 0;
   const nextFloor = safeLevel < 6 ? levelThresholds[safeLevel] ?? 2000 : null;
-
-  const handleCopy = async () => {
-    if (!referralLink) return;
-    await navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   if (!user) {
     return (
@@ -204,7 +192,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Referral */}
-        {referralCode && (
+        {(referralLoading || referralLink || referralError) && (
           <HVZCard padding={24}>
             <div className="flex items-start gap-4">
               <div
@@ -234,45 +222,56 @@ export default function Dashboard() {
                     </>
                   )}
                 </p>
-                <div className="mt-4 flex items-center gap-2 flex-wrap">
-                  <code
-                    className="text-xs px-3 py-2 rounded-hfz-sm font-mono truncate max-w-xs"
-                    style={{
-                      background: 'rgba(0,212,255,0.08)',
-                      border: '1px solid rgba(0,212,255,0.2)',
-                      color: 'var(--color-neon-cyan)',
-                    }}
-                  >
-                    {referralLink}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    aria-label="Copy referral link"
-                    className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-hfz-sm transition-colors min-h-[36px]"
-                    style={{
-                      background: copied ? 'rgba(16,245,160,0.12)' : 'rgba(168,85,247,0.12)',
-                      border: `1px solid ${
-                        copied ? 'rgba(16,245,160,0.4)' : 'rgba(168,85,247,0.3)'
-                      }`,
-                      color: copied
-                        ? 'var(--color-success-mint)'
-                        : 'var(--color-violet-lt)',
-                    }}
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        Copy link
-                      </>
-                    )}
-                  </button>
-                </div>
+                {referralLink ? (
+                  <div className="mt-4 flex items-center gap-2 flex-wrap">
+                    <code
+                      className="text-xs px-3 py-2 rounded-hfz-sm font-mono truncate max-w-xs"
+                      style={{
+                        background: 'rgba(0,212,255,0.08)',
+                        border: '1px solid rgba(0,212,255,0.2)',
+                        color: 'var(--color-neon-cyan)',
+                      }}
+                    >
+                      {referralLink}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void copyReferralLink();
+                      }}
+                      aria-label="Copy referral link"
+                      className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-hfz-sm transition-colors min-h-[36px]"
+                      style={{
+                        background: copied ? 'rgba(16,245,160,0.12)' : 'rgba(168,85,247,0.12)',
+                        border: `1px solid ${
+                          copied ? 'rgba(16,245,160,0.4)' : 'rgba(168,85,247,0.3)'
+                        }`,
+                        color: copied
+                          ? 'var(--color-success-mint)'
+                          : 'var(--color-violet-lt)',
+                      }}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          Copy link
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 h-9 rounded-hfz-sm bg-hfz-midnight animate-pulse w-full max-w-xs" />
+                )}
+                {referralError && (
+                  <span className="sr-only" role="status" aria-live="polite">
+                    {referralError}
+                  </span>
+                )}
               </div>
             </div>
           </HVZCard>

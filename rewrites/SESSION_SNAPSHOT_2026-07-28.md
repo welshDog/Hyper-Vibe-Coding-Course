@@ -44,6 +44,28 @@
   - temp probe user deleted after the check
 - `WHATS_DONE.md` updated with the referral hardening details.
 
+- Extracted the duplicated referral-link frontend logic into one tiny shared
+  hook + helper pair:
+  - `frontend/src/hooks/useReferralLink.ts`
+  - `frontend/src/lib/referralLink.ts`
+- The shared referral layer now owns:
+  - zero-argument `get_or_create_referral_code` loading
+  - loading and error state
+  - referral URL construction from the current app origin
+  - clipboard copy behavior plus short-lived copied state
+- All three pages now consume the same behavior:
+  - `frontend/src/pages/Welcome.tsx`
+  - `frontend/src/pages/Dashboard.tsx`
+  - `frontend/src/pages/TokensPage.tsx`
+- Added focused unit coverage for the zero-argument RPC contract:
+  - `frontend/unit-tests/referralLink.test.ts`
+- Expanded the focused Playwright regression so it proves the same zero-arg
+  referral behavior across Dashboard, Welcome, and Tokens:
+  - `frontend/tests/referral-rpc.spec.ts`
+- One friendly failure mode is now handled in the shared layer:
+  - if `navigator.clipboard` fails, copy falls back to a hidden textarea copy
+    path instead of silently giving up
+
 ---
 
 ## 🔴 BLOCKED / NEEDS DECISION
@@ -63,8 +85,8 @@
 
 ## 🎯 NEXT SESSION — START HERE
 
-**First task:** decide whether to add a tiny shared referral hook/helper so the
-same referral-link loading/copy logic stops living in three separate pages.
+**First task:** if we want to keep tightening this area, add one tiny presentational
+referral card component so the shared logic and the shared markup both live once.
 
 *Session by welshDog 🐶♾️ + Claude | Llanelli, Wales*
 *"Stop apologising for your brain. Start building."*
