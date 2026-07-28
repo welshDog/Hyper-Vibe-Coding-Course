@@ -32,7 +32,7 @@ export default function Dashboard() {
       const [{ data: enrollData, error: enrollErr }, { data: refCode }, { count: refCount }] =
         await Promise.all([
           supabase.from('enrollments').select('*, courses (*)').eq('user_id', user!.id),
-          supabase.rpc('get_or_create_referral_code', { p_user_id: user!.id }),
+          supabase.rpc('get_or_create_referral_code'),
           supabase
             .from('referrals')
             .select('*', { count: 'exact', head: true })

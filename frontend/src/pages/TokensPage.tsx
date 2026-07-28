@@ -66,15 +66,13 @@ function MilestoneBanner({ balance }: { balance: number }) {
 }
 
 // ── Referral card ─────────────────────────────────────────────────────────────
-function ReferralCard({ userId }: { userId: string }) {
+function ReferralCard() {
   const [broCode, setBroCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     async function fetchCode() {
-      const { data } = await supabase.rpc('get_or_create_referral_code', {
-        p_user_id: userId,
-      });
+      const { data } = await supabase.rpc('get_or_create_referral_code');
       if (data) setBroCode(data as string);
     }
     void fetchCode();
@@ -250,7 +248,7 @@ export default function TokensPage() {
         <MilestoneBanner balance={balance} />
 
         {/* Referral card */}
-        {user?.id && <ReferralCard userId={user.id} />}
+        {user?.id && <ReferralCard />}
 
         {/* Buy packs */}
         <section>

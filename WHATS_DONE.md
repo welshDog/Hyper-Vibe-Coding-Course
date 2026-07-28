@@ -2,6 +2,50 @@
 
 > Last synced: 2026-07-28 by Claude (Cowork) ⚡
 
+## 2026-07-28 — Referral-code RPC hardened against cross-user UUID targeting
+
+The referral-link RPC is now locked to the signed-in user and no longer accepts
+an arbitrary UUID from the client. This closes the IDOR-shaped hole where a
+future execute grant on `get_or_create_referral_code(p_user_id uuid)` would have
+let a caller target another user's referral-code row.
+
+- **Root cause:** the original referral migration created
+  `public.get_or_create_referral_code(p_user_id uuid)` as a
+  `SECURITY DEFINER` function in `public`, but the function body trusted the
+  caller-supplied UUID completely. That meant the function shape itself was
+  unsafe even before the missing-grant issue was fixed.
+- **DB fix shipped as one migration:**  
+  `supabase/migrations/20260728215609_harden_referral_code_rpc.sql`
+  - explicitly drops the old `public.get_or_create_referral_code(uuid)`
+  - creates `public.get_or_create_referral_code()` with **no args**
+  - binds `v_user_id` to `auth.uid()`
+  - raises a clear exception for unauthenticated calls
+  - keeps `SECURITY DEFINER`, but narrows exposure with  
+    `REVOKE ALL ... FROM PUBLIC` and  
+    `GRANT EXECUTE ... TO authenticated`
+  - uses `SET search_path = pg_catalog, public`
+- **Frontend callers updated:** the three user-facing referral surfaces now call
+  the zero-argument RPC only:
+  - `frontend/src/pages/Welcome.tsx`
+  - `frontend/src/pages/Dashboard.tsx`
+  - `frontend/src/pages/TokensPage.tsx`
+- **Test-first proof added:** new focused Playwright regression
+  `frontend/tests/referral-rpc.spec.ts` first failed against the old body shape
+  because the request still posted `p_user_id`, then passed once the callers
+  were switched to `supabase.rpc('get_or_create_referral_code')`.
+- **Live verification against project `tlavrxiaegbtyfmjfdcz`:**
+  - authenticated temp user call #1 → `200` with code `BROB1DCB353`
+  - authenticated temp user call #2 → `200` with the **same** code
+  - anonymous call → `400` / `P0001` with message  
+    `"Authentication required to get or create a referral code."`
+  - attempted old-shape call with `p_user_id` → `404` / `PGRST202`  
+    (`Could not find the function ... (p_user_id) in the schema cache`)
+  - temp probe user was deleted after verification
+- **Deployment/apply path:** the first Supabase MCP `apply_migration` path timed
+  out while initializing the history table, so the migration was applied via
+  the repo-approved fallback connector `supabase_apply_migration` against the
+  same live project. No `supabase db push` used.
+
 ## 2026-07-28 — Profile progress now tells the truth for hv_modules users
 
 The `/profile` page no longer tells a user with real hv_modules completions that

@@ -93,7 +93,7 @@ export default function Welcome() {
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    supabase.rpc('get_or_create_referral_code', { p_user_id: user.id }).then(({ data }) => {
+    supabase.rpc('get_or_create_referral_code').then(({ data }) => {
       if (!cancelled && data) setReferralCode(data as string);
     });
     return () => {

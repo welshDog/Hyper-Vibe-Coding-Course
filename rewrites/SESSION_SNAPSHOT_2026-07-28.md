@@ -7,30 +7,42 @@
 
 - Fixed the `/profile` truth gap for hv_modules learners without touching the
   write path or bridging old/new data models.
-- Kept the agreed architecture intact:
+- Kept the agreed architecture intact for Profile:
   - `module_completions` = source of truth for hv_modules progress
   - `enrollments` = legacy enrollment/access only
   - `achievements` = real awards only
-- Added a tiny read-side adapter at
-  `frontend/src/lib/profileProgress.ts` to derive:
-  - completed module count
-  - total module count
-  - completion percent
-  - human-friendly summary copy
-- Wired `frontend/src/pages/Profile.tsx` to read `hv_modules` +
-  `module_completions` directly, matching the existing repo pattern already used
-  in `/courses` and `useModuleCompletion`.
-- Updated the Profile stat strip so users now see `Progress` (`3/12`, etc.)
-  instead of a misleading `0 Courses` when legacy enrollments are empty.
-- Kept the legacy `My courses` and `Badges` surfaces honest:
-  - legacy enrollments still render from `public.enrollments`
-  - badges still render from `public.achievements`
-  - empty legacy-course state now explains itself and shows real module progress
-- Added verification:
+- Added `frontend/src/lib/profileProgress.ts` and wired
+  `frontend/src/pages/Profile.tsx` to show honest hv_modules progress while
+  preserving legacy enrollments and badges.
+- Verification for that slice:
   - unit test: `frontend/unit-tests/profileProgress.test.ts`
   - Playwright regression: `frontend/tests/profile-progress.spec.ts`
-  - production build: green
-- Updated `WHATS_DONE.md` with the fix and verification notes.
+  - frontend build: green
+
+- Hardened the referral-link RPC against cross-user UUID targeting.
+- Created and applied migration:
+  - `supabase/migrations/20260728215609_harden_referral_code_rpc.sql`
+- DB changes shipped:
+  - dropped old `public.get_or_create_referral_code(uuid)`
+  - created zero-argument `public.get_or_create_referral_code()`
+  - bound the function to `auth.uid()`
+  - added a clear unauthenticated guard
+  - revoked `PUBLIC` execute and granted execute only to `authenticated`
+- Frontend callers updated to zero-argument RPC only:
+  - `frontend/src/pages/Welcome.tsx`
+  - `frontend/src/pages/Dashboard.tsx`
+  - `frontend/src/pages/TokensPage.tsx`
+- Added focused frontend regression:
+  - `frontend/tests/referral-rpc.spec.ts`
+  - first failed correctly because the app still posted `p_user_id`
+  - now passes and proves repeated signed-in reads use the same returned code
+- Live production probe passed against `tlavrxiaegbtyfmjfdcz`:
+  - authenticated call #1 → `200` with referral code
+  - authenticated call #2 → same `200` code
+  - anonymous call → `400` with clear auth-required message
+  - attempted old `p_user_id` call → `404` because that signature is gone
+  - temp probe user deleted after the check
+- `WHATS_DONE.md` updated with the referral hardening details.
 
 ---
 
@@ -51,9 +63,8 @@
 
 ## 🎯 NEXT SESSION — START HERE
 
-**First task:** fix `get_or_create_referral_code(p_user_id uuid)` properly.
-Do the real code fix (`auth.uid()` validation or drop the parameter) instead of
-papering over it with a permission grant.
+**First task:** decide whether to add a tiny shared referral hook/helper so the
+same referral-link loading/copy logic stops living in three separate pages.
 
 *Session by welshDog 🐶♾️ + Claude | Llanelli, Wales*
 *"Stop apologising for your brain. Start building."*
