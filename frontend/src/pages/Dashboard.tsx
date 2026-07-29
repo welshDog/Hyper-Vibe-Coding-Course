@@ -5,6 +5,7 @@ import { useReferralLink } from '../hooks/useReferralLink';
 import type { Enrollment, Course } from '../types/database';
 import { Link } from 'react-router-dom';
 import { PlayCircle, Coins, Award, Copy, Check, Users } from 'lucide-react';
+import { buildModuleProgressSummary, type ModuleProgressSummary } from '../lib/profileProgress';
 import {
   HVZButton,
   HVZCard,
@@ -19,6 +20,7 @@ type EnrolledCourse = Enrollment & {
 export default function Dashboard() {
   const { user } = useAuthStore();
   const [enrollments, setEnrollments] = useState<EnrolledCourse[]>([]);
+  const [moduleProgress, setModuleProgress] = useState<ModuleProgressSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [referralCount, setReferralCount] = useState(0);
   const [xpTotal, setXpTotal] = useState<number | null>(null);
@@ -30,13 +32,20 @@ export default function Dashboard() {
     if (!user) return;
 
     async function fetchData() {
-      const [{ data: enrollData, error: enrollErr }, { count: refCount }] =
+      const [
+        { data: enrollData, error: enrollErr },
+        { count: refCount },
+        { data: modulesData, error: modulesErr },
+        { data: completionsData, error: completionsErr },
+      ] =
         await Promise.all([
           supabase.from('enrollments').select('*, courses (*)').eq('user_id', user!.id),
           supabase
             .from('referrals')
             .select('*', { count: 'exact', head: true })
             .eq('referrer_user_id', user!.id),
+          supabase.from('hv_modules').select('id').order('code', { ascending: true }),
+          supabase.from('module_completions').select('module_id').eq('user_id', user!.id),
         ]);
 
       if (enrollErr) {
@@ -44,6 +53,31 @@ export default function Dashboard() {
       } else {
         setEnrollments(enrollData as EnrolledCourse[]);
       }
+
+      if (modulesErr) {
+        console.error('Error fetching modules for dashboard progress:', modulesErr);
+        setModuleProgress(null);
+      } else if (completionsErr) {
+        console.error('Error fetching module completions for dashboard progress:', completionsErr);
+        setModuleProgress(null);
+      } else {
+        const totalModules = Array.isArray(modulesData) ? modulesData.length : 0;
+        const completedModules = Array.isArray(completionsData)
+          ? new Set(
+              completionsData
+                .map((row) => row.module_id)
+                .filter((value): value is string => typeof value === 'string'),
+            ).size
+          : 0;
+
+        setModuleProgress(
+          buildModuleProgressSummary({
+            completedModules,
+            totalModules,
+          }),
+        );
+      }
+
       setReferralCount(refCount ?? 0);
       setLoading(false);
     }
@@ -87,6 +121,7 @@ export default function Dashboard() {
   const safeTotal = Math.max(0, xpTotal ?? 0);
   const currentFloor = levelThresholds[safeLevel - 1] ?? 0;
   const nextFloor = safeLevel < 6 ? levelThresholds[safeLevel] ?? 2000 : null;
+  const hasHvModuleProgress = (moduleProgress?.completedModules ?? 0) > 0;
 
   if (!user) {
     return (
@@ -300,7 +335,7 @@ export default function Dashboard() {
                 />
               ))}
             </div>
-          ) : enrollments.length === 0 ? (
+          ) : enrollments.length === 0 && !hasHvModuleProgress ? (
             <HVZCard padding={32}>
               <div className="text-center">
                 <p className="text-base text-hfz-text-secondary mb-4">
@@ -309,6 +344,53 @@ export default function Dashboard() {
                 <Link to="/courses" className="no-underline">
                   <HVZButton variant="primary" size="md">
                     Browse courses →
+                  </HVZButton>
+                </Link>
+              </div>
+            </HVZCard>
+          ) : enrollments.length === 0 && moduleProgress ? (
+            <HVZCard padding={16}>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div
+                    className="h-16 w-16 rounded-hfz-md overflow-hidden flex-shrink-0 flex items-center justify-center text-2xl"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(123,47,190,0.25), rgba(0,212,255,0.18))',
+                      border: '1px solid rgba(168,85,247,0.3)',
+                    }}
+                  >
+                    ⚡
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      className="font-display font-bold text-base text-hfz-text-primary truncate m-0"
+                      style={{ background: 'none', WebkitTextFillColor: 'unset' }}
+                    >
+                      Vibe Code The Hyper Way
+                    </h3>
+                    <p className="text-sm text-hfz-text-secondary mt-1 mb-2">
+                      {moduleProgress.summaryLabel}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 sm:w-32">
+                        <HVZProgress
+                          value={moduleProgress.completionPercent}
+                          max={100}
+                          gradient="xp"
+                          height={6}
+                        />
+                      </div>
+                      <span className="text-xs text-hfz-text-secondary font-mono">
+                        {moduleProgress.completionPercent}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <Link to="/courses" className="no-underline">
+                  <HVZButton variant="primary" size="sm">
+                    <PlayCircle className="h-4 w-4" />
+                    Continue
                   </HVZButton>
                 </Link>
               </div>
