@@ -1,0 +1,384 @@
+# Hyper-Vibe Coding Course Live Truth Audit (GitHub · Supabase · Vercel · Stripe)
+
+## Executive overview
+
+The Hyper-Vibe Coding Course stack (GitHub repo, Supabase project `tlavrxiaegbtyfmjfdcz`, Vercel deployment, Stripe TEST-mode) is now in a materially safer state than before this session.
+Two real learner-facing production blockers were fixed:
+
+- M1 quiz no longer flashes a false "Quiz coming soon." empty state; it uses an explicit loading state and renders the live hv_quizzes payload consistently.
+- Dashboard "My learning" no longer stays empty for learners with module completions; it now surfaces HV module progress when legacy enrollments are empty.
+
+The browser Supabase client has migrated from legacy `anon` JWT-style keys to the new **publishable** key family (`sb_publishable_*`) with no requests to the deleted `yhtmui` project and no legacy-`anon` marker left in the built frontend bundle.[^1]
+
+A hard gate around M11/M12 ensures their legacy vs AI Agents 2.0 curriculum decision is explicitly deferred and protected from accidental edits.
+
+Supabase’s API key migration model is now aligned with the project’s real state: legacy `anon` and `service_role` keys coexist with new publishable and secret keys, and the system is part-way through a deliberate staged migration in line with Supabase’s deprecation timeline.[^2][^3]
+
+The remaining serious risk is **unretired legacy server-side keys**, particularly the Stripe webhook and other Edge Functions, Discord bot code, agents, and scripts still referencing `SUPABASE_SERVICE_ROLE_KEY` or shared secret naming.
+
+***
+
+## 1. Curriculum authority and M11/M12 gate
+
+### 1.1 Canonical source for current live course
+
+For M0–M10 and the legacy M11/M12 track, the canonical live learner-facing course source is:
+
+- Supabase project `tlavrxiaegbtyfmjfdcz`:
+  - `public.hv_modules` for module titles, slugs, ordering, rewards, script_path, and delivered content.
+  - `public.hv_quizzes` for quiz metadata and payloads.
+
+Recent live traces against `hv_modules` confirm that module `M1` and legacy `M11`/`M12` rows exist in `tlavrxiaegbtyfmjfdcz`, with the expected slugs and content fields.
+
+### 1.2 M11/M12 curriculum decision gate
+
+A **hard decision gate** is now in effect for M11 and M12:
+
+- Live canonical track = legacy M11 "Ship, Scale & Graduate" and M12 "The Ride or Die Contribution" stored in `hv_modules` + `hv_quizzes` on `tlav`.
+- Top-level repo scripts for M11/M12 are the AI Agents 2.0 track and are explicitly **non-live**.
+- Live `script_path` values for M11/M12 point to archived legacy files; they are traceability pointers, not learners’ current source of truth.
+- No changes to titles, slugs, content, quizzes, or script_path are allowed until there is an explicit decision to either retain legacy or promote AI Agents 2.0.
+
+This gate is enforced by current session notes and handover files, and has already constrained multiple audits and fixes away from any M11/M12 mutation.
+
+***
+
+## 2. GitHub repo state and recent code ships
+
+### 2.1 Repo and local workspace
+
+The Hyper-Vibe Coding Course codebase lives in:
+
+- Local: `H:\HYPERFOCUSZONE\HperCore\Hyper-Vibe-Coding-Course` as the working directory.
+- GitHub: `welshDog/Hyper-Vibe-Coding-Course` as the tracked repo for the course frontend, Supabase migrations, Edge Functions and scripts.
+
+The root `AGENT-START.md` in HperCore documents the authority map and confirms that HperCore is a non-git workspace hub, while the actual course repo is git-tracked inside the subfolder.[^4]
+
+### 2.2 Recent production-facing commits
+
+Key commits shipped during this audit window:
+
+- `42a1552` — `fix(dashboard): show HV module progress fallback`: Dashboard now imports a shared module-progress helper, pulls `hv_modules` + `module_completions`, and shows a HV progress card when enrollments are empty.
+- `dba8ccf` — `fix(frontend): migrate browser Supabase client to publishable key`: frontend Supabase client now uses `VITE_SUPABASE_PUBLISHABLE_KEY`, removing dependence on legacy `anon` keys.[^1]
+- Handovers and snapshots updated: `NEXT_SESSION_HANDOVER_2026-07-28.md` and `SESSION_SNAPSHOT_2026-07-28.md` record the live state of these changes and their production proof.
+
+Existing CI and Playwright test harnesses (`frontend/tests/*`) remain in place and were extended with new focused regressions for course-module quiz loading and Dashboard progress behavior.
+
+***
+
+## 3. Frontend behavior and Vercel deployment
+
+### 3.1 Vercel deployment and env alignment
+
+The Hyper-Vibe Coding Course frontend is deployed to Vercel, with environment variables configured for Development, Preview, and Production, and with Supabase and Stripe keys defined via Vercel’s secrets management.[^5]
+
+Recent inventory confirmed that Production currently has:
+
+- Legacy/public: `VITE_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_ANON_KEY`.
+- New/public: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_PUBLISHABLE_KEY`.
+- Legacy/server: `SUPABASE_SERVICE_ROLE_KEY`.
+- New/server: `SUPABASE_SECRET_KEY`.
+- Common URLs: `SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `VITE_SUPABASE_URL`.
+
+`VITE_SUPABASE_PUBLISHABLE_KEY` was missing before browser migration but has now been added to Vercel so the new client code can resolve the publishable key correctly.[^1]
+
+### 3.2 Browser Supabase client migration
+
+The frontend previously instantiated its Supabase client with `VITE_SUPABASE_ANON_KEY`. After this audit’s migration step, the browser Supabase client now uses `VITE_SUPABASE_PUBLISHABLE_KEY` instead:
+
+- Supabase’s API Keys docs describe publishable keys (`sb_publishable_*`) as safe for browser and public components when RLS is configured.[^3]
+- Supabase’s migration guide explicitly maps `anon` → publishable key and `service_role` → secret key for existing projects.[^1]
+
+Browser-level verification included:
+
+- Fresh sign-in proof against production.
+- M1 quiz load and completion.
+- Dashboard and Profile progress display.
+- Network trace confirming no requests to the old `yhtmui` project; all data traffic goes to `tlavrxiaegbtyfmjfdcz`.
+- Scanning `frontend/dist` for legacy `anon` markers and old-host references; none were found.
+
+### 3.3 M1 quiz false empty-state fix
+
+Previously, `CourseModule.tsx` kicked off the `hv_quizzes` fetch but rendered `!quiz ? "Quiz coming soon."` immediately while the request was in flight, causing a false empty state on slower connections.
+
+The fix adds:
+
+- `quizLoading` state that is true while the `hv_quizzes` request is pending and false once it completes (success or failure).
+- A guarded async effect with a `cancelled` flag to avoid setting state after unmount.
+- A render branch that shows `Loading quiz...` while `quizLoading` is true and `Quiz coming soon.` only when loading is finished and no valid quiz exists.
+
+Focused Playwright tests were added (`course-module.spec.ts`) to assert that:
+
+- The page does not show `Quiz coming soon.` while `hv_quizzes` is delayed.
+- A valid payload eventually renders the quiz once the request completes.
+
+Production smoke tests with an authenticated throwaway learner confirmed the behavior:
+
+- Repeated hard refreshes on `/courses/designing-your-focus-zone` settled on the real quiz without the false empty-state message.
+
+### 3.4 Dashboard "My learning" HV progress fallback
+
+Dashboard previously loaded only `enrollments` and showed the empty-state message even when `module_completions` contained rows.
+
+The patch:
+
+- Imports and reuses the shared `buildModuleProgressSummary` helper from `profileProgress.ts`.
+- Fetches `hv_modules` and `module_completions` for the learner.
+- Constructs a synthetic HV progress card when enrollments are empty but module progress exists.
+- Keeps legacy enrollment cards unchanged and only shows the old empty-state message when both sources are empty.
+
+Focused regression (`dashboard-progress.spec.ts`) was added to assert:
+
+- Given `enrollments = []`, `hv_modules = 12`, `module_completions = [M1]`, My learning does **not** show the empty-state message.
+- The card shows `1 of 12 modules complete` and a Continue CTA linking to `/courses`.
+
+Production proof with the same throwaway learner:
+
+- `/dashboard` hard-refresh in a fresh browser context repeatedly showed **Vibe Code The Hyper Way**, **1 of 12 modules complete**, and a working Continue → `/courses` path.
+- Profile showed `1 of 12 modules complete` consistent with module progress.
+
+***
+
+## 4. Supabase project, schema, and key migration status
+
+### 4.1 Correct project ref and live health
+
+The course database is hosted on Supabase project `tlavrxiaegbtyfmjfdcz`, confirmed via:
+
+- Supabase CLI linking and live health status.
+- Environment variables (`SUPABASE_URL`, `VITE_SUPABASE_URL`) pointing to `tlavrxiaegbtyfmjfdcz.supabase.co`.
+
+Supabase’s dashboard shows `tlav` as the active project and exposes both legacy and new key families.[^3]
+
+### 4.2 Legacy and new keys coexistence
+
+Per Supabase’s API-key migration docs and discussions:
+
+- Legacy `anon` and `service_role` keys remain available until late 2026, when they will be deleted from docs and dashboard.[^2][^3]
+- New projects now receive both legacy and new keys to ease migration; older projects can opt-in by generating new keys manually.[^2][^1]
+- Both key types work simultaneously; deactivating legacy keys is a separate manual step in Settings → API Keys.[^3][^1]
+
+The Hyper-Vibe Course project is currently in the **coexistence phase**:
+
+- Live secrets include `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_KEYS`, `SUPABASE_SECRET_KEYS`, and `SUPABASE_URL`.
+- Browser clients now use the publishable key; server/admin paths still lean on legacy `service_role` naming and shared secret-key structures.
+
+### 4.3 Edge Functions and Stripe webhook seam
+
+Supabase Edge Functions in this repo include:
+
+- `stripe-webhook`
+- `shop-purchase`
+- `generate-v2-config`
+- `discord-link`
+- `course-profile`
+- `mint-pet-auth`
+- `mint-pet-confirm`
+- `sync-tokens-to-v24`
+- `pet-mentor-chat`
+- `get-pet-balance`
+
+The `stripe-webhook` function is particularly sensitive because it handles Stripe events and must be rate-limit exempt.[^4]
+
+Current state:
+
+- `supabase/functions/stripe-webhook/index.ts` still instantiates its privileged Supabase client from `SUPABASE_SERVICE_ROLE_KEY`.
+- `supabase/functions/stripe-webhook/README.md` still documents the legacy service-role secret.
+- `scripts/STRIPE_E2E_RUNBOOK.md` still references the deleted `yhtmui` project.
+
+Supabase’s functions secrets docs specify:
+
+- `SUPABASE_SECRET_KEYS` is a JSON dictionary of secret keys that can be used in Edge Functions.[^6]
+- Secret keys (`sb_secret_*`) are intended for backend components, including Edge Functions, and bypass RLS.[^3]
+
+A safe migration design has been sketched (but not yet fully implemented):
+
+- New resolver helper for admin keys:
+  - Prefer `SUPABASE_SECRET_KEYS["stripe_webhook"]`.
+  - Fallback to local `SUPABASE_SECRET_KEY` for CLI/local tests.
+  - Never fall back to `SUPABASE_SERVICE_ROLE_KEY`.
+  - Fail fast with explicit configuration errors when no valid source exists.
+- Preserve Stripe signature verification and `verify_jwt = false` semantics for the webhook, in line with Supabase’s guidance that external providers like Stripe do not send Supabase JWTs and should be authenticated via their own signature mechanisms.[^7]
+
+A naming constraint was discovered:
+
+- Supabase’s API-key UI only allows names containing lowercase letters, digits, and underscores, rejecting `stripe-webhook` but accepting `stripe_webhook`.[^8]
+- The design has been adjusted to use `stripe_webhook` as the hosted secret-key identifier.
+
+### 4.4 Server/admin consumers of Supabase keys
+
+Current known server/admin consumers still using legacy naming:
+
+- Edge Functions listed above.
+- Discord bot code (`discord-bot/config.py`, `discord-bot/db.py`).
+- Agent tooling (`agents/course-content-agent/src/tools/supabase.ts`).
+- Local admin/test scripts (`scripts/Test-ShopPurchase.ps1`).
+
+These will need sequential migration from `SUPABASE_SERVICE_ROLE_KEY` to scoped `sb_secret_*` keys, one component at a time, with dedicated smoke tests and rollback paths.
+
+***
+
+## 5. Stripe TEST-mode and webhook behavior
+
+### 5.1 Stripe test-mode context
+
+Stripe is configured in TEST mode for this course ecosystem; Supabase docs and Stripe’s own best practices recommend confirming webhook behavior with test events before live mode.[^9][^3]
+
+Current guarantees:
+
+- Stripe checkout flows and webhooks are run in TEST mode only.
+- Stripe’s dashboard and CLI are available to resend or trigger test events directly to the production endpoint.[^10][^11]
+
+### 5.2 Webhook proof strategy
+
+Given the sensitivity of Stripe’s webhook and the desire not to mutate production course tiers or token mappings unnecessarily, the audit adopted this strategy:
+
+- Use `stripe trigger checkout.session.completed` as a **transport/auth proof** — confirming that the webhook receives signed test events and responds appropriately.[^11]
+- Use real `client_reference_id` and test email pointing at a throwaway learner account to ensure the event is structurally similar to real course checkouts.
+- Avoid forcing new course/tier mutations during this first migration step; treat missing course metadata in fixture events as neutral rather than failure.
+
+Any subsequent business-proof run can leverage Stripe Dashboard’s **Resend** feature on a known test-mode event to confirm idempotent behavior and actual enrollment logic without manufacturing artificial state.[^10][^9]
+
+***
+
+## 6. Security posture and legacy-key retirement plan
+
+### 6.1 Supabase key deprecation timeline and mandate
+
+Supabase has publicly documented a deprecation timeline for legacy API keys:
+
+- Legacy `anon` and `service_role` keys remain available but will be fully removed from docs/dashboard by late 2026.[^12][^2]
+- New publishable and secret keys are available now; both key families can coexist during migration.[^3][^1]
+- Projects are strongly encouraged to migrate before older keys stop working; some guidance suggests legacy keys may be fully disabled by October 2025 for certain application types.[^13]
+
+This makes key migration not just best practice but a medium-term requirement.
+
+### 6.2 Current key migration status
+
+Status per layer:
+
+- **Browser/public path:** migrated from legacy `anon` to publishable key; build and runtime verification complete.
+- **Trusted server/admin path:** still mostly using shared legacy `SUPABASE_SERVICE_ROLE_KEY` naming; new `SUPABASE_SECRET_KEY` and `SUPABASE_SECRET_KEYS` exist but are not consistently consumed.
+- **Unsafe browser secret exposure:** none found; no `sb_secret_*` or `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` usage inside browser-delivered code.[^6][^3]
+- **Secret-store parallelism:** yes; supabase project, Vercel, and local envs keep both old and new key families live.
+- **Old deleted-project runtime reference:** yes — at least one `frontend/index.html` preconnect to `yhtmui` was present and has been removed as part of browser migration.
+
+### 6.3 Planned retirement steps
+
+A safe staged retirement plan aligns with Supabase’s migration guide:[^1]
+
+1. **Browser-first (completed):**
+   - Swap all `anon` usages in public code to publishable key.
+   - Add `VITE_SUPABASE_PUBLISHABLE_KEY` to Vercel for all environments.
+   - Remove old `yhtmui` references.
+   - Smoke-test full learner journey (sign-in, M1 quiz, completion, Dashboard, Profile).
+
+2. **Server-side one component at a time (in progress):**
+   - Stripe webhook (`stripe-webhook`) first, with a dedicated `sb_secret_*` key named `stripe_webhook` resolved via `SUPABASE_SECRET_KEYS`.
+   - Then `shop-purchase`, `discord-link`, `course-profile`, pets flow, Discord bot, course-content-agent, and local scripts.
+   - Each component gets its own scoped secret key and focused smoke test.
+
+3. **Legacy-key deactivation (future step):**
+   - Confirm no environment, script, Edge Function, worker, or bot still uses legacy `anon`/`service_role`.
+   - Deactivate legacy keys in Supabase Dashboard → Settings → API Keys.
+   - Retain the ability to re-activate temporarily if an overlooked client appears.
+
+***
+
+## 7. Documentation and handover alignment
+
+### 7.1 Current handover and snapshot
+
+`NEXT_SESSION_HANDOVER_2026-07-28.md` and `SESSION_SNAPSHOT_2026-07-28.md` are now updated to reflect:
+
+- M1 quiz fix deployed and proven.
+- Dashboard progress fallback deployed and proven.
+- Browser Supabase client migrated to publishable key and proven.
+- Supabase dashboard and Vercel environment states confirming correct project and env names.
+
+`AGENT-START.md` at root continues to describe authority precedence (newest handover and status files win over older CLAUDE docs, etc.).[^4]
+
+### 7.2 Remaining doc drift
+
+There is still doc/config noise referring to:
+
+- Old project `yhtmui` in some runbooks and skills documentation.
+- Legacy-key examples in older docs that do not yet reflect the new publishable/secret model.
+
+These drifts are non-blocking but could mislead future agents or humans if left unresolved; they should be cleaned once key migration moves further along but without racing ahead of actual runtime changes.
+
+***
+
+## 8. Consolidated state table
+
+| Area | State | Evidence | Risk / Next action |
+|------|-------|----------|--------------------|
+| Production learner path (M1 → Dashboard → Profile) | **Green** | Deployed commits `42a1552`, `dba8ccf`; fresh throwaway learner smoke; no false quiz empty state; progress card and Profile count consistent. | Continue using this path as primary UX test; extend tests to other modules as needed. |
+| Browser Supabase client (keys + host) | **Green** | Frontend now uses publishable key; Vercel env updated; dist bundle contains no legacy `anon` marker or `yhtmui` host; network trace hits only `tlav`. | Maintain this as baseline; do not reintroduce legacy key usage in browser code.[^1][^3] |
+| M11/M12 curriculum & script_path | **Decision-gated** | Live `tlav` content and quizzes are legacy; AI Agents 2.0 scripts are non-live; script_path points to archive; gate recorded in handovers. | No edit until explicit decision; treat any M11/M12 work as blocked. |
+| Dashboard "My learning" HV progress | **Green** | Dashboard reads module progress when enrollments empty; regression tests in all browsers; production proof with throwaway learner. | None; next improvements can be purely UX/visual, not correctness fixes. |
+| Supabase key migration (browser) | **Green** | Browser path now uses publishable key; docs and migration guides confirm this is the intended replacement for `anon`. | Keep verifying after future frontend changes; treat any reintroduction of legacy `anon` as regression.[^1][^3] |
+| Supabase key migration (server/admin) | **Amber** | Legacy `service_role` naming still used; secret keys exist but not consistently consumed; Stripe webhook still wired to `SUPABASE_SERVICE_ROLE_KEY`. | Migrate Stripe webhook first to `SUPABASE_SECRET_KEYS["stripe_webhook"]`, then migrate other components sequentially.[^6][^1] |
+| Stripe webhook auth & transport | **Amber** | Webhook handler still uses legacy key; plain `checkout.session.completed` triggers used as transport/auth proof; no business-level course/tier mutation test yet. | Implement secret-key resolver, redeploy `stripe-webhook`, then use Stripe Dashboard resend for end-to-end business proof in TEST mode.[^7][^10] |
+| Supabase legacy-key retirement | **Amber** | Legacy keys co-exist with new keys; Supabase timelines make retirement mandatory by late 2026; some guidance suggests earlier cutoffs in 2025. | Complete browser + server migrations, then deactivate legacy keys prior to deprecation milestones.[^2][^13] |
+| Documentation (handover/snapshot vs runtime) | **Mostly green** | Latest handover/snapshot updated to reflect deployed state; AGENT-START authority map followed. | Clean remaining references to `yhtmui` and legacy-key examples once server-key migrations have progressed.[^4] |
+
+***
+
+## 9. Recommended next task
+
+The next safe, high-leverage task is:
+
+> **Complete the scoped Stripe webhook secret-key migration and end-to-end TEST-mode proof.**
+
+Specifically:
+
+1. Implement the resolver helper in `stripe-webhook/index.ts`:
+   - Prefer `SUPABASE_SECRET_KEYS["stripe_webhook"]`.
+   - Allow local fallback to `SUPABASE_SECRET_KEY` for CLI/local dev.
+   - Throw explicit configuration errors if neither is present.
+   - Remove dependence on `SUPABASE_SERVICE_ROLE_KEY`.
+2. Update `stripe-webhook` README and `STRIPE_E2E_RUNBOOK.md` to:
+   - Reflect `tlav` as the current project.
+   - Document the new key name and resolution behavior.
+3. Create the named secret key `stripe_webhook` in Supabase Dashboard → Settings → API Keys.
+4. Redeploy only `stripe-webhook`.
+5. Use Stripe Dashboard **Resend** on a known test-mode `checkout.session.completed` event to:
+   - Confirm signed delivery.
+   - Confirm the function uses the new secret key.
+   - Confirm the handler’s business branch behaves as expected (process or idempotent skip).
+6. Rerun the full learner smoke matrix (login, M1 quiz, completion, Dashboard, Profile).
+7. Update handover/snapshot with the new state and evidence.
+
+This continues the pattern established in this audit: smallest possible surface area, fully tested, reversible, aligned with Supabase’s migration guidance and Stripe’s webhook best practices.[^7][^10][^1]
+
+---
+
+## References
+
+1. [Migrating to publishable and secret API keys](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys) - In most cases, you can get keys from API Keys section of the Dashboard and select the Publishable an...
+
+2. [Upcoming changes to Supabase API Keys #29260](https://github.com/orgs/supabase/discussions/29260) - It's easy to start using the new API keys. You can opt in in the Supabase dashboard. This will creat...
+
+3. [Understanding API keys | Supabase Docs](https://supabase.com/docs/guides/getting-started/api-keys) - For new keys, open the API Keys tab, if you don't have a publishable key already, click Create new A...
+
+4. [AGENT-START.md](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_d7801145-04fa-49e7-bb7f-472902be04e3/41c3151f-d40c-4d5c-b30e-d83162d6c16c/AGENT-START.md?AWSAccessKeyId=ASIA2F3EMEYERDSMWBE4&Signature=eGEWmjCyA4R8mTYWxKs4Y5gGd%2B4%3D&x-amz-security-token=IQoJb3JpZ2luX2VjELX%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJIMEYCIQCx66jjIhUzqw4xfQyDo%2BJE7bNwlBI6DjISNDlBheZ2BQIhANhl24q%2B3NVNQPrUTpsi5Wy1hC23VaY2rwg4JWpOFkhSKvMECH4QARoMNjk5NzUzMzA5NzA1IgwB5EAfdardM62J0aAq0ATa1mjrOydbMJkpE4bYcubfCQlBMELLpd5lUGdhCFQyHf89ljCDRr1n5Ye46BJJQXFjjjtORgzN2C2VhozHPJEUWHlljxes2VxG9Z5MHwaT%2F2ddZFdydnHLpyyfAPHrvbEv5xyFk9aSJXRBzxxDREqyagx1%2BOd3QOaQijV%2F5td%2F%2FrTvMTQwSGvA5%2F2hf%2FDfcoh%2FBkzDWzFpDAvKLw34Rn2LKHc%2FLkqn3dPrIb6gCImG77aDF1Mc4vry0v6Dc2IoJ%2FmJqE0SjhN2NsD7Jv0wAkQ6Ii1SaKDBCYY2anCKgfUFHjtctnNEpy5fIKP5%2Fe7C13UoExTTHWIGzxlferYxzcBuubi9tzyt3d1A%2FBmxoTXoXxLl1VEQK6o1z2f6pQZsHMENKXNgWzNuiJLRWBWaNt78nEYlqUzamo1cD6q2ZtYQ6uWKr11weR9bA8ipp4MsyMr2FjlAo9BAglEDNQLBZDGBABXHiItYJRO9zjY0XNaPvXO5m5QUCOQw1pfHXGw3EsnSWxdg6nPF06trNi1tcpklsOrllwCduHvHnLW%2BlHha4NJQjM3QrTdfLbUeWQid%2Bh0dDAq01NiV1bFjyhQuAkwoow0V2bHUDT1cWX3AgKlAkh20B1D1EFGHE%2BOuGrJHsnE49j7Bf7SoxQSbWnh%2FuchyV8NtKmH%2FNC32%2FKA%2BZpUju4EzfLgbLVgcMbhaQdfLsAzECkyh%2BIgRqI9FcnVK84O0XBsSRtxLp7FLfzaI5%2BoulMb%2Fukk4zoYKf9EsJKmi%2B38WNSchyBucHN%2FziWObh%2FOYMIHip9MGOpcBv5d%2Bxusie2GLeLO%2Bp140aefe%2Fj%2BrQwjg%2BRPc%2BhoRvsfhOLO%2BaPbSFmGZnOZrKX%2BwZpw%2BQi8UPZy0EBNy3pDjb68GhkWzyR7gzse7aedd86mOscpfe%2B4%2FjlCY45brmavuseCMRnOuv0ccfhsMhWrxR7sxPcC91KqIBcCCLKuZjnZctYjFa425Rejwc09LqXO9tG3EhDhVVg%3D%3D&Expires=1785331412) - --- cssclass broski-zone ---
+
+5. [How to Deploy Your Vibe Coding Projects for Free](https://www.codecademy.com/article/deploy-your-vibe-coding-projects) - Setting up environment variables on Vercel. Access the Vercel dashboard, select the project, and nav...
+
+6. [Environment Variables | Supabase Docs](https://supabase.com/docs/guides/functions/secrets) - The secret keys JSON dictionary for your Supabase API. This is safe to use in Edge Functions, but it...
+
+7. [Securing Edge Functions | Supabase Docs](https://supabase.com/docs/guides/functions/auth) - Stripe Webhooks. Edge Function make calls with a secret key on the apikey header rather than a user ...
+
+8. [Supabase - Merge](https://docs.merge.dev/merge-agent-handler/connectors/supabase) - Create a new API key for a Supabase project. Name must be lowercase alphanumeric/underscores only (e...
+
+9. [Receive Stripe events in your webhook endpoint](https://docs.stripe.com/webhooks) - To send test events, trigger an event type that your event destination is subscribed to by manually ...
+
+10. [Receive Stripe events in your webhook endpoint](https://docs.stripe.com/webhooks?locale=en-GB) - In the Stripe Dashboard, click Resend when looking at a specific event. This works for up to 15 days...
+
+11. [Use the Stripe CLI](https://docs.stripe.com/stripe-cli/use-cli) - Trigger a webhook event while testing. Trigger the checkout.session.completed event to create the AP...
+
+12. [API Key Rotation for Self-Hosted Supabase - Supascale](https://www.supascale.app/blog/api-key-rotation-for-selfhosted-supabase-a-complete-security) - Supabase has announced that legacy API keys will be deprecated—making migration to the new key syste...
+
+13. [Supabase API Key Changes Explained: Why You MUST ...](https://www.youtube.com/watch?v=2-iG_tSqzoU) - In this step-by-step Supabase guide, you'll learn why and how to migrate to the new Supabase API key...
+
