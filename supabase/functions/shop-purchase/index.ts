@@ -27,14 +27,11 @@
 //   (verify_jwt is ON by default — do NOT pass --no-verify-jwt)
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { resolveSupabaseAdminKey } from '../_shared/supabaseAdminKey.mjs';
 
-const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')             ?? '';
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const V24_API_URL              = Deno.env.get('V24_API_URL')              ?? '';
-const SHOP_SYNC_SECRET         = Deno.env.get('SHOP_SYNC_SECRET')         ?? '';
-
-// Admin client — service_role bypasses RLS on all tables
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
+const V24_API_URL       = Deno.env.get('V24_API_URL')  ?? '';
+const SHOP_SYNC_SECRET  = Deno.env.get('SHOP_SYNC_SECRET') ?? '';
 
 // ── Response helpers ────────────────────────────────────────────────────────…
 
@@ -137,6 +134,17 @@ Deno.serve(async (req: Request) => {
     if (req.method !== 'POST') {
       return jsonHttpError('Method not allowed', 405);
     }
+
+    // Resolved per-request so a rotated/new named secret key takes effect
+    // without a redeploy — mirrors stripe-webhook's resolver.
+    const supabaseAdminKey = resolveSupabaseAdminKey(
+      {
+        SUPABASE_SECRET_KEYS: Deno.env.get('SUPABASE_SECRET_KEYS') ?? '',
+        SUPABASE_SECRET_KEY: Deno.env.get('SUPABASE_SECRET_KEY') ?? '',
+      },
+      'shop_purchase',
+    );
+    const supabaseAdmin = createClient(SUPABASE_URL, supabaseAdminKey);
 
     // ── 1. Verify caller identity ─────────────────────────────────────────────
     const authHeader = req.headers.get('Authorization');
