@@ -52,7 +52,10 @@ test.describe('/courses/:slug — Module Detail', () => {
 
   let failModuleContentOnce = false;
 
-  const installSupabaseMocks = async (page: Page, options: { authenticated: boolean }) => {
+  const installSupabaseMocks = async (
+    page: Page,
+    options: { authenticated: boolean; quizDelayMs?: number },
+  ) => {
     await page.route('**/auth/v1/**', async (route) => {
       const request = route.request();
       const url = new URL(request.url());
@@ -165,6 +168,9 @@ test.describe('/courses/:slug — Module Detail', () => {
         if (!options.authenticated) {
           await fulfillJson(route, asObject ? null : []);
           return;
+        }
+        if (options.quizDelayMs) {
+          await new Promise((resolve) => setTimeout(resolve, options.quizDelayMs));
         }
         const quizRow = {
           id: 'quiz-1',
@@ -333,5 +339,20 @@ test.describe('/courses/:slug — Module Detail', () => {
     await expect(page.locator('[data-testid="module-card"]').first()).toBeVisible();
     await page.locator('[data-testid="module-card"]').first().getByRole('link', { name: /start quest/i }).click();
     await expect(page.getByText('Welcome to M1.')).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('shows quiz loading state while hv_quizzes is pending, then renders the quiz', async ({ page }) => {
+    await installSupabaseMocks(page, { authenticated: true, quizDelayMs: 1500 });
+    await page.goto('/login');
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', 'Password123');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/dashboard/);
+    await navigateClient(page, '/courses/m1');
+
+    const quizCard = page.getByTestId('quiz');
+    await expect(quizCard).toContainText('Loading quiz...', { timeout: 15_000 });
+    await expect(quizCard).not.toContainText('Quiz coming soon.');
+    await expect(quizCard).toContainText('Quiz: Module 1', { timeout: 15_000 });
   });
 });

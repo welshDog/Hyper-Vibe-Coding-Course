@@ -78,6 +78,7 @@ export default function CourseModule() {
   const [content, setContent] = useState<string | null>(null);
   const [needsContentRetry, setNeedsContentRetry] = useState(false);
   const [quiz, setQuiz] = useState<HvQuizPayload | null>(null);
+  const [quizLoading, setQuizLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [submitted, setSubmitted] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -98,6 +99,7 @@ export default function CourseModule() {
       setContent(null);
       setNeedsContentRetry(false);
       setQuiz(null);
+      setQuizLoading(false);
       setAnswers({});
       setSubmitted(false);
       setRewardBanner(null);
@@ -164,33 +166,51 @@ export default function CourseModule() {
   }, [needsContentRetry, slug, user?.id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchQuiz() {
-      if (!user?.id) return;
-      if (!moduleRow?.id) return;
-
-      const { data, error } = await supabase
-        .from('hv_quizzes')
-        .select('payload')
-        .eq('module_id', moduleRow.id)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        setQuiz(null);
+      if (!user?.id || !moduleRow?.id) {
+        setQuizLoading(false);
         return;
       }
 
-      const payload = (data as { payload?: unknown } | null)?.payload;
-      if (!isQuizPayload(payload)) {
-        setQuiz(null);
-        return;
-      }
+      setQuizLoading(true);
 
-      setQuiz(payload);
+      try {
+        const { data, error } = await supabase
+          .from('hv_quizzes')
+          .select('payload')
+          .eq('module_id', moduleRow.id)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error) {
+          setQuiz(null);
+          return;
+        }
+
+        const payload = (data as { payload?: unknown } | null)?.payload;
+        if (!isQuizPayload(payload)) {
+          setQuiz(null);
+          return;
+        }
+
+        setQuiz(payload);
+      } finally {
+        if (!cancelled) {
+          setQuizLoading(false);
+        }
+      }
     }
 
     void fetchQuiz();
+
+    return () => {
+      cancelled = true;
+    };
   }, [moduleRow?.id, user?.id]);
 
   const grade = useMemo(() => {
@@ -389,6 +409,13 @@ export default function CourseModule() {
               >
                 Sign in
               </Link>
+            </div>
+          </div>
+        ) : quizLoading ? (
+          <div data-testid="quiz" className="rounded-2xl bg-white/5 border border-white/10 p-6 text-gray-300">
+            <div className="flex items-center gap-3">
+              <div className="h-3 w-3 rounded-full bg-purple-400/70 motion-safe:animate-pulse" aria-hidden />
+              <span>Loading quiz...</span>
             </div>
           </div>
         ) : !quiz ? (
