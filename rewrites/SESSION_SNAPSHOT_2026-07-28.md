@@ -66,6 +66,33 @@
   - if `navigator.clipboard` fails, copy falls back to a hidden textarea copy
     path instead of silently giving up
 
+- Migrated the browser Supabase runtime from the legacy Vite anon env to the
+  publishable-key path.
+- Added shared browser config resolver:
+  - `frontend/src/lib/supabase/config.ts`
+- Updated browser/runtime consumers to the new contract:
+  - `frontend/src/lib/supabase.ts`
+  - `frontend/src/lib/supabase/client.ts`
+  - `frontend/src/lib/supabase/server.ts`
+  - `frontend/src/main.tsx`
+- Removed the stale deleted-project preconnect from:
+  - `frontend/index.html`
+- Added focused regression coverage for the new browser env contract:
+  - `frontend/tests/supabase-browser-config.spec.ts`
+- Browser migration verification passed:
+  - frontend build: `npm --prefix frontend run build`
+  - bundle scan: no legacy JWT anon marker in `frontend/dist`
+  - bundle scan: no `yhtmuibgdnxhbgboajhc` host in `frontend/dist`
+  - Vercel deploy: `dba8ccf` live in production
+  - fresh signed-in learner smoke passed:
+    - login succeeded
+    - M1 quiz loaded from `tlavrxiaegbtyfmjfdcz`
+    - Dashboard showed `Vibe Code The Hyper Way`
+    - Dashboard showed `1 of 12 modules complete`
+    - Dashboard `Continue` resolved to `/courses`
+    - Profile showed `1 of 12 modules complete`
+    - browser network capture showed no requests to the deleted `yhtmui` project
+
 ---
 
 ## 🔴 BLOCKED / NEEDS DECISION
@@ -85,8 +112,9 @@
 
 ## 🎯 NEXT SESSION — START HERE
 
-**First task:** if we want to keep tightening this area, add one tiny presentational
-referral card component so the shared logic and the shared markup both live once.
+**First task:** continue the staged server-side key migration with the Stripe
+webhook first and alone, then smoke-test a known Stripe test-mode event before
+moving to shop purchase, Discord, pets, tooling, and local scripts.
 
 *Session by welshDog 🐶♾️ + Claude | Llanelli, Wales*
 *"Stop apologising for your brain. Start building."*

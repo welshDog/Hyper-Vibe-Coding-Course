@@ -7,7 +7,7 @@
 - Active Supabase project confirmed during this session:
   `tlavrxiaegbtyfmjfdcz`
 - Latest deployed frontend hardening commit:
-  `42a1552` (`fix(dashboard): show HV module progress fallback`)
+  `dba8ccf` (`fix(frontend): migrate browser Supabase client to publishable key`)
 
 ## Shipped this session
 
@@ -37,6 +37,15 @@
     `/courses`
   - only shows the old empty state when both legacy enrollments and hv module
     progress are absent
+- Browser Supabase runtime migrated to the new public env contract:
+  - browser client setup now reads `VITE_SUPABASE_PUBLISHABLE_KEY`
+  - shared resolver lives in `frontend/src/lib/supabase/config.ts`
+  - `frontend/src/lib/supabase.ts`, `frontend/src/lib/supabase/client.ts`,
+    `frontend/src/lib/supabase/server.ts`, and `frontend/src/main.tsx` all use
+    the same publishable-key path
+  - stale `yhtmuibgdnxhbgboajhc` preconnect removed from `frontend/index.html`
+  - `VITE_SUPABASE_PUBLISHABLE_KEY` added in Vercel Production, Preview, and
+    Development
 
 ## Exact migration applied
 
@@ -52,6 +61,8 @@
   `frontend/tests/course-module.spec.ts`
 - Focused dashboard progress regression passed:
   `frontend/tests/dashboard-progress.spec.ts`
+- Focused browser config regression passed:
+  `frontend/tests/supabase-browser-config.spec.ts`
 - Frontend build passed:
   `npm --prefix frontend run build`
 - Live RPC probe passed:
@@ -70,6 +81,19 @@
     - old empty-state message absent every pass
     - `Continue` href = `/courses`
     - click-through lands on `https://hypervibe.online/courses`
+- Vercel production deploy passed for commit `dba8ccf`
+- Browser-key production proof passed in a fresh signed-in browser context:
+  - fresh sign-in succeeded with throwaway learner on `https://hypervibe.online/login`
+  - M1 (`/courses/designing-your-focus-zone`) loaded the real quiz payload from
+    `hv_quizzes` in `tlavrxiaegbtyfmjfdcz`
+  - already-completed learner path remained valid for the smoke matrix
+  - `/dashboard` showed `Vibe Code The Hyper Way` and `1 of 12 modules complete`
+  - Dashboard `Continue` link resolved to `/courses`
+  - `/profile` still showed `1 of 12 modules complete`
+  - captured browser network log contained no requests to
+    `yhtmuibgdnxhbgboajhc`
+  - local built frontend output contained no legacy JWT-style anon marker and
+    no `yhtmuibgdnxhbgboajhc` host references
 
 ## Known non-blockers
 
@@ -85,8 +109,7 @@
 
 ## First task next session
 
-Complete the legacy-key revocation safely:
-- inventory every remaining use of legacy `anon` / `service_role` keys
-- migrate browser uses to publishable keys and server uses to `sb_secret_*`
-- deploy and smoke-test
-- only then deactivate the legacy keys in Supabase API Keys
+Continue the staged key migration server-side:
+- migrate the Stripe webhook first and alone to a scoped `sb_secret_*` key
+- smoke-test a known Stripe test-mode event before touching shop purchase,
+  Discord, pets, tooling, or local scripts
