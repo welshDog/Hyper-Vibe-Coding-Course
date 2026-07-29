@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { setupErrorTracking } from './utils/errorHandler'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import { Analytics } from '@vercel/analytics/react'
+import { resolveBrowserSupabaseConfig } from './lib/supabase/config'
 
 // Web3 (wagmi/rainbowkit/metamask-sdk + its react-query peer) is NOT mounted
 // here anymore. It lives in src/components/Web3Provider.tsx, lazy-loaded by
@@ -16,16 +17,10 @@ import { Analytics } from '@vercel/analytics/react'
 setupErrorTracking();
 
 function validateEnvironment() {
-  const required = [
-    'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_ANON_KEY',
-  ];
-
-  const missing = required.filter(key => !import.meta.env[key]);
-
-  if (missing.length > 0) {
-    throw new Error(`Missing env vars: ${missing.join(', ')}`);
-  }
+  resolveBrowserSupabaseConfig({
+    VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  })
 }
 
 validateEnvironment();
