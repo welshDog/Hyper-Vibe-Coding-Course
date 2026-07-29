@@ -1,8 +1,8 @@
 # 🧪 Stripe E2E Test Runbook
 
-> **Purpose:** verify the full purchase loop — `stripe trigger` → Supabase Edge Function `stripe-webhook` → enrollment row in DB.
+> **Purpose:** verify the full purchase loop — Stripe event or Dashboard resend → Supabase Edge Function `stripe-webhook` → expected DB effect.
 >
-> **Architecture:** payments are wired Stripe → `vibe-hook` (Stripe Dashboard webhook) → `https://yhtmuibgdnxhbgboajhc.supabase.co/functions/v1/stripe-webhook` → Supabase tables.
+> **Architecture:** payments are wired Stripe → configured Stripe webhook endpoint → `https://tlavrxiaegbtyfmjfdcz.supabase.co/functions/v1/stripe-webhook` → Supabase tables.
 
 ---
 
@@ -73,27 +73,26 @@ ORDER BY created_at DESC;
 
 ---
 
-## Path B — Live deployed edge function (use sparingly)
+## Path B — Live deployed edge function via Dashboard resend (recommended)
 
-Only when you need to confirm the **deployed** function's behaviour on production.
+Best for the production proof because it exercises the actual configured Stripe
+endpoint, its signing secret, the deployed Supabase function, and the live
+database effect together.
 
-### Pre-req
+### Pre-flight
 
-A **test-mode** webhook endpoint must be registered in Stripe Dashboard pointing at:
-```
-https://yhtmuibgdnxhbgboajhc.supabase.co/functions/v1/stripe-webhook
-```
+- Confirm the Stripe test-mode webhook endpoint points at:
+  `https://tlavrxiaegbtyfmjfdcz.supabase.co/functions/v1/stripe-webhook`
+- Confirm the Supabase project is `tlavrxiaegbtyfmjfdcz`.
+- Open the Stripe Dashboard event that you want to resend.
+- Prefer an already-successfully-processed test event from the last 15 days so
+  the expected safe result is a 2xx plus an idempotent skip or equivalent dedup.
 
-If `vibe-hook` is your live-mode webhook, add a separate test-mode one and copy its signing secret to a Supabase secret called `STRIPE_WEBHOOK_SECRET_TEST` (function must check both — confirm in `index.ts`).
+### Resend the event
 
-### Fire the trigger
-
-```powershell
-stripe trigger checkout.session.completed `
-  --api-key sk_test_... `
-  --add checkout_session:client_reference_id=COURSE_UUID `
-  --add checkout_session:customer_details.email=test+e2e@hyper-vibe.dev
-```
+1. In Stripe Dashboard, open the chosen **test-mode** event.
+2. Click **Resend** for the `stripe-webhook` endpoint.
+3. Watch for a `2xx` delivery result in Stripe.
 
 ### Watch the function logs
 
@@ -101,7 +100,34 @@ stripe trigger checkout.session.completed `
 supabase functions logs stripe-webhook --tail
 ```
 
-Look for the event_id and the `[200 OK]` response. Then run the same DB queries as Path A.
+Look for the event id and a `2xx` response. For a replayed event, a successful
+idempotent result such as `skipped: true` is a pass.
+
+### Verify in DB
+
+Use the narrowest query that matches the replayed event's expected effect:
+
+```sql
+-- Existing processed payment should stay deduped by source_id
+SELECT id, user_id, amount, reason, source_id, created_at
+FROM token_transactions
+WHERE source_id = '<stripe_event_id>';
+```
+
+```sql
+-- Course access should already exist or remain unchanged
+SELECT id, user_id, course_id, status, created_at
+FROM enrollments
+WHERE user_id = '<expected_user_id>'
+ORDER BY created_at DESC;
+```
+
+```sql
+-- Unmatched payment logging path, if applicable
+SELECT id, user_email, stripe_session_id, status, created_at
+FROM payments
+WHERE stripe_session_id = '<stripe_event_id>';
+```
 
 ---
 
@@ -153,6 +179,7 @@ DELETE FROM auth.users WHERE email LIKE 'test+%@hyper-vibe.dev';
 | Signal | Meaning |
 |---|---|
 | Function returns `200` | Signature verified, event accepted |
+| Function returns `200` + `skipped: true` | Replay hit dedup path safely |
 | `enrollments` row appears | Course flow complete ✅ |
 | `pending_enrollments` row appears | Buyer not yet registered (expected for new emails) |
 | Function returns `400` | Bad signature — check `STRIPE_WEBHOOK_SECRET` matches the listen secret |

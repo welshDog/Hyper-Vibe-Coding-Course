@@ -9,17 +9,45 @@ This Supabase Edge Function receives Stripe payment events and automatically:
 ## Deploy
 
 ```bash
-supabase functions deploy stripe-webhook
+supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
-## Required Secrets (add in Supabase Dashboard → Edge Functions → Secrets)
+`verify_jwt` stays off for this endpoint because Stripe does not send Supabase
+credentials. The webhook authenticates requests by verifying Stripe's signed
+payload internally.
+
+## Required configuration
+
+### Hosted runtime
+
+- Create a named secret API key in Supabase Settings -> API Keys called
+  `stripe_webhook`.
+- Hosted Edge Functions expose named secret keys through
+  `SUPABASE_SECRET_KEYS`, and this function reads
+  `SUPABASE_SECRET_KEYS["stripe_webhook"]`.
+- Supabase's dashboard validator currently requires underscores in API key
+  names, so this component uses `stripe_webhook` rather than a hyphenated
+  label.
+- Do not paste or store the secret key in repo files or browser-exposed env
+  vars.
+
+### Function secrets (Dashboard -> Edge Functions -> Secrets)
 
 ```
 STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx  ← get from Stripe Dashboard → Webhooks
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=xxx
 ```
+
+### Local-only fallback
+
+For local `supabase functions serve`, this function accepts:
+
+```
+SUPABASE_SECRET_KEY=sb_secret_xxx
+```
+
+It does not fall back to `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Stripe Events Handled
 

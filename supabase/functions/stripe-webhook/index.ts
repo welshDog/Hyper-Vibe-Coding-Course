@@ -6,6 +6,7 @@
 import { serve } from 'https://deno.land/std@0.220.1/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 import Stripe from 'https://esm.sh/stripe@16.6.0?target=deno';
+import { resolveSupabaseAdminKey } from './supabaseAdminKey.mjs';
 
 // Price ID → tier config (mirrors stripe/products.config.ts)
 const PRICE_TO_TIER: Record<string, { tier: string; tokens: number; modules: number[] }> = {
@@ -27,10 +28,14 @@ serve(async (req: Request) => {
     httpClient: Stripe.createFetchHttpClient(),
   });
   const cryptoProvider = Stripe.createSubtleCryptoProvider()
+  const supabaseAdminKey = resolveSupabaseAdminKey({
+    SUPABASE_SECRET_KEYS: Deno.env.get('SUPABASE_SECRET_KEYS') ?? '',
+    SUPABASE_SECRET_KEY: Deno.env.get('SUPABASE_SECRET_KEY') ?? '',
+  });
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    supabaseAdminKey
   );
 
   const signature = req.headers.get('stripe-signature') ?? req.headers.get('Stripe-Signature');
