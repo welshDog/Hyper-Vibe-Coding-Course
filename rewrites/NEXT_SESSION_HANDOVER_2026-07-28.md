@@ -6,6 +6,8 @@
 - Course frontend live site: `https://hypervibe.online/`
 - Active Supabase project confirmed during this session:
   `tlavrxiaegbtyfmjfdcz`
+- Latest deployed frontend hardening commit:
+  `42a1552` (`fix(dashboard): show HV module progress fallback`)
 
 ## Shipped this session
 
@@ -21,6 +23,20 @@
   - shared hook: `frontend/src/hooks/useReferralLink.ts`
   - shared helper: `frontend/src/lib/referralLink.ts`
   - all three referral surfaces now use the same load/copy/origin logic
+- Referral-card audit complete: retain page-local cards; shared behaviour lives
+  in `useReferralLink`, and full-card extraction fails the `<=5 props / >=60%
+  duplication` threshold.
+- `CourseModule` no longer flashes a false `Quiz coming soon.` state while the
+  real `hv_quizzes` payload is still loading.
+- `/dashboard` now bridges hv module progress on the read side when legacy
+  `enrollments` are empty:
+  - keeps legacy enrollment cards unchanged
+  - reuses `buildModuleProgressSummary` from `profileProgress.ts`
+  - shows one fallback card:
+    `Vibe Code The Hyper Way` -> `1 of 12 modules complete` -> `Continue` ->
+    `/courses`
+  - only shows the old empty state when both legacy enrollments and hv module
+    progress are absent
 
 ## Exact migration applied
 
@@ -32,21 +48,45 @@
   `frontend/tests/referral-rpc.spec.ts`
 - Focused unit test passed:
   `frontend/unit-tests/referralLink.test.ts`
+- Focused quiz-loading regression passed:
+  `frontend/tests/course-module.spec.ts`
+- Focused dashboard progress regression passed:
+  `frontend/tests/dashboard-progress.spec.ts`
 - Frontend build passed:
-  `npm run build`
+  `npm --prefix frontend run build`
 - Live RPC probe passed:
   - authenticated call #1 → `200`
   - authenticated call #2 → same referral code
   - anonymous call → `400` with auth-required message
   - old `p_user_id` call → `404` / function signature gone
+- Vercel production deploy passed for commit `42a1552`
+- Live learner proof passed on production with throwaway learner:
+  - M1 hard refreshes resolve to real quiz, not the false empty state
+  - M1 completion lands `+10 BROski$`
+  - `/profile` shows `1 of 12 modules complete`
+  - `/dashboard` hard-refreshed 4 times in a fresh browser context:
+    - `Vibe Code The Hyper Way` visible every pass
+    - `1 of 12 modules complete` visible every pass
+    - old empty-state message absent every pass
+    - `Continue` href = `/courses`
+    - click-through lands on `https://hypervibe.online/courses`
 
 ## Known non-blockers
 
 - Repo-wide frontend typecheck is still red in unrelated pre-existing files:
   - `src/hooks/useOwnedCosmetics.ts`
   - `src/pages/LessonPlayer.tsx`
+- Immediate containment is done for server-side secrets:
+  local/Vercel `SUPABASE_SERVICE_ROLE_KEY` now points to an `sb_secret_*`
+  value.
+- Full revocation is still outstanding:
+  legacy JWT-style `anon` / `service_role` keys remain valid until explicitly
+  deactivated in Supabase after a complete usage inventory and migration.
 
 ## First task next session
 
-If we want one more tiny cleanup, extract the repeated referral card markup into
-a shared presentational component while leaving the new hook/helper untouched.
+Complete the legacy-key revocation safely:
+- inventory every remaining use of legacy `anon` / `service_role` keys
+- migrate browser uses to publishable keys and server uses to `sb_secret_*`
+- deploy and smoke-test
+- only then deactivate the legacy keys in Supabase API Keys
