@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-29
+
+### Security
+- **stripe-webhook Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model.
+  - Created `stripe_webhook` named secret key in Supabase API Keys (`sb_secret_Ujv9AY4OAbxzhvqWo2ZVGQ_*`).
+  - `SUPABASE_SECRET_KEYS` is a Supabase-managed reserved env var, auto-injected as JSON dict into every Edge Function invocation — no custom secret or redeploy required.
+  - Resolver helper `supabaseAdminKey.mjs` added: checks `SUPABASE_SECRET_KEYS["stripe_webhook"]` → falls back to `SUPABASE_SECRET_KEY` → throws — never touches `SUPABASE_SERVICE_ROLE_KEY`.
+  - Proof: `checkout.session.completed` resent via Stripe Dashboard at 14:13 BST, returned `200 OK` (Delivered · Recovered).
+  - Supabase project ref: `tlavrxiaegbtyfmjfdcz` · Stripe webhook destination: `vibe-hook` (`we_1TKi442LoEeIEPVE6Xh13QOR`).
+
+### Infrastructure
+- **Browser client** — migrated from legacy `anon` key to `sb_publishable_*` key (completed 2026-07-18).
+- **Legacy key retirement** — `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_ANON_KEY` marked deprecated on Supabase dashboard. Retirement deadline: late 2026.
+- **Remaining legacy consumers** — Discord bot, agent scripts, other Edge Functions still on legacy keys. Migrate one-at-a-time after `stripe-webhook` is proven stable.
+
+### Fixed
+- M1 quiz false "coming soon" bug resolved.
+- Dashboard "My Learning" now shows HV module progress when enrollments table is empty.
+
+
 ## [0.4.0] - 2026-05-01
 
 ### Fixed
