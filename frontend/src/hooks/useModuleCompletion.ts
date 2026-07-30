@@ -2,16 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../context/auth';
 
-type CompletionStatus = 'completed' | 'already_completed';
+type CompletionStatus = 'completed' | 'already_completed' | 'failed_quiz';
 
 type CompleteModuleResult = {
   status: CompletionStatus;
   xp: number;
   coins: number;
+  quizScore: number | null;
 };
 
 function isCompletionStatus(value: unknown): value is CompletionStatus {
-  return value === 'completed' || value === 'already_completed';
+  return value === 'completed' || value === 'already_completed' || value === 'failed_quiz';
 }
 
 export function useModuleCompletion(moduleId: string) {
@@ -57,14 +58,17 @@ export function useModuleCompletion(moduleId: string) {
   }, [moduleId, user?.id]);
 
   const completeModule = useCallback(
-    async (quizScore?: number): Promise<CompleteModuleResult> => {
+    async (answers?: Record<string, number | boolean>): Promise<CompleteModuleResult> => {
       if (!user?.id) {
-        return { status: 'already_completed', xp: 0, coins: 0 };
+        return { status: 'already_completed', xp: 0, coins: 0, quizScore: null };
       }
 
+      // Grading happens server-side in complete_module() against the real
+      // answer key — the client only ever sends the user's raw selections,
+      // never a precomputed score (that was spoofable via direct RPC calls).
       const { data, error } = await supabase.rpc('complete_module', {
         p_module_id: moduleId,
-        p_quiz_score: typeof quizScore === 'number' ? quizScore : null,
+        p_answers: answers ?? {},
       });
 
       if (error) {
@@ -78,11 +82,13 @@ export function useModuleCompletion(moduleId: string) {
       const status = (data as { status?: unknown } | null)?.status;
       const xp = (data as { xp?: unknown } | null)?.xp;
       const coins = (data as { coins?: unknown } | null)?.coins;
+      const quizScoreRaw = (data as { quiz_score?: unknown } | null)?.quiz_score;
 
       const next: CompleteModuleResult = {
         status: isCompletionStatus(status) ? status : 'already_completed',
         xp: typeof xp === 'number' ? xp : 0,
         coins: typeof coins === 'number' ? coins : 0,
+        quizScore: typeof quizScoreRaw === 'number' ? quizScoreRaw : null,
       };
 
       if (next.status === 'completed' || next.status === 'already_completed') {

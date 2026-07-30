@@ -27,7 +27,9 @@ interface HvQuizQuestion {
   type: QuizQuestionType;
   prompt: string;
   choices?: string[];
-  answer_index: number | null;
+  // answer_index is intentionally never sent to the client — grading happens
+  // server-side in complete_module() so the correct answer can't be read out
+  // of the network response before the quiz is attempted.
   explanation?: string | null;
 }
 
@@ -83,6 +85,7 @@ export default function CourseModule() {
   const [submitted, setSubmitted] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [rewardBanner, setRewardBanner] = useState<{ xp: number; coins: number } | null>(null);
+  const [quizFailBanner, setQuizFailBanner] = useState<{ score: number } | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +106,7 @@ export default function CourseModule() {
       setAnswers({});
       setSubmitted(false);
       setRewardBanner(null);
+      setQuizFailBanner(null);
 
       const withContent = await supabase
         .from('hv_modules')
@@ -177,13 +181,11 @@ export default function CourseModule() {
       setQuizLoading(true);
 
       try {
-        const { data, error } = await supabase
-          .from('hv_quizzes')
-          .select('payload')
-          .eq('module_id', moduleRow.id)
-          .order('version', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        // get_quiz_for_module strips answer_index server-side — the client
+        // never receives the correct answers, only the questions to render.
+        const { data, error } = await supabase.rpc('get_quiz_for_module', {
+          p_module_id: moduleRow.id,
+        });
 
         if (cancelled) return;
 
@@ -192,13 +194,12 @@ export default function CourseModule() {
           return;
         }
 
-        const payload = (data as { payload?: unknown } | null)?.payload;
-        if (!isQuizPayload(payload)) {
+        if (!isQuizPayload(data)) {
           setQuiz(null);
           return;
         }
 
-        setQuiz(payload);
+        setQuiz(data);
       } finally {
         if (!cancelled) {
           setQuizLoading(false);
@@ -212,22 +213,6 @@ export default function CourseModule() {
       cancelled = true;
     };
   }, [moduleRow?.id, user?.id]);
-
-  const grade = useMemo(() => {
-    if (!quiz) return null;
-
-    const gradable = quiz.questions.filter((q) => typeof q.answer_index === 'number');
-    const total = gradable.length;
-    if (total === 0) return { total: 0, correct: 0, percent: 100 };
-
-    let correct = 0;
-    for (const q of gradable) {
-      const a = answers[q.id];
-      if (typeof a === 'number' && a === q.answer_index) correct += 1;
-    }
-    const percent = Math.round((correct / total) * 100);
-    return { total, correct, percent };
-  }, [answers, quiz]);
 
   const allAnswered = useMemo(() => {
     if (!quiz) return false;
@@ -246,14 +231,18 @@ export default function CourseModule() {
 
     setCompleting(true);
     setCompletionError(null);
+    setQuizFailBanner(null);
     try {
-      const result = await completeModule(grade?.percent);
+      const result = await completeModule(answers);
       if (result.status === 'completed') {
         awardXP(result.xp);
         setRewardBanner({ xp: result.xp, coins: result.coins });
       }
       if (result.status === 'already_completed') {
         setRewardBanner(null);
+      }
+      if (result.status === 'failed_quiz') {
+        setQuizFailBanner({ score: result.quizScore ?? 0 });
       }
     } catch {
       setCompletionError("That didn't save — nothing was lost, give it another try.");
@@ -327,6 +316,11 @@ export default function CourseModule() {
         {rewardBanner ? (
           <div className="mt-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-5 py-4 text-emerald-200 font-semibold">
             🎉 Module Complete! +{rewardBanner.xp} XP&nbsp;&nbsp;🪙 +{rewardBanner.coins} BROski$
+          </div>
+        ) : null}
+        {quizFailBanner ? (
+          <div className="mt-6 rounded-xl bg-amber-500/10 border border-amber-500/30 px-5 py-4 text-amber-200 font-semibold">
+            Scored {quizFailBanner.score}% — need 70% to pass. Review the explanations below and try again.
           </div>
         ) : null}
       </div>
@@ -428,11 +422,9 @@ export default function CourseModule() {
               <h3 className="text-white font-semibold text-lg">
                 {quiz.title ?? `Quiz: ${moduleRow.title}`}
               </h3>
-              {grade ? (
-                <span className="text-sm text-purple-200">
-                  Passing score: 70%
-                </span>
-              ) : null}
+              <span className="text-sm text-purple-200">
+                Passing score: 70%
+              </span>
             </div>
 
             <div className="mt-6 space-y-6">
@@ -503,12 +495,9 @@ export default function CourseModule() {
                 Submit Quiz
               </button>
 
-              {submitted && grade ? (
+              {submitted ? (
                 <div className="text-sm text-gray-200">
-                  Score:{' '}
-                  <span className="font-semibold text-yellow-300">
-                    {grade.correct}/{grade.total} ({grade.percent}%)
-                  </span>
+                  Click <span className="font-semibold">Mark as Complete</span> below to grade your quiz.
                 </div>
               ) : null}
             </div>

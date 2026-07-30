@@ -164,33 +164,47 @@ test.describe('/courses/:slug — Module Detail', () => {
         return;
       }
 
-      if (url.pathname.startsWith('/rest/v1/hv_quizzes')) {
+      // Quiz reads go through get_quiz_for_module(), which strips answer_index
+      // server-side — the client never receives correct answers directly.
+      if (url.pathname.startsWith('/rest/v1/rpc/get_quiz_for_module')) {
         if (!options.authenticated) {
-          await fulfillJson(route, asObject ? null : []);
+          await fulfillJson(route, { message: 'Authentication required to load a quiz.' }, 403);
           return;
         }
         if (options.quizDelayMs) {
           await new Promise((resolve) => setTimeout(resolve, options.quizDelayMs));
         }
-        const quizRow = {
-          id: 'quiz-1',
-          module_id: modules[0].id,
-          version: 1,
-          payload: {
-            title: 'Quiz: Module 1',
-            questions: [
-              {
-                id: 'q1',
-                type: 'multiple_choice',
-                prompt: 'What is 2 + 2?',
-                choices: ['3', '4'],
-                answer_index: 1,
-                explanation: '2 + 2 = 4',
-              },
-            ],
-          },
-        };
-        await fulfillJson(route, asObject ? quizRow : [quizRow]);
+        await fulfillJson(route, {
+          title: 'Quiz: Module 1',
+          questions: [
+            {
+              id: 'q1',
+              type: 'multiple_choice',
+              prompt: 'What is 2 + 2?',
+              choices: ['3', '4'],
+              explanation: '2 + 2 = 4',
+            },
+          ],
+        });
+        return;
+      }
+
+      // Grading + reward now happens inside complete_module() itself against
+      // raw submitted answers — this mock stands in for a passing attempt.
+      if (url.pathname.startsWith('/rest/v1/rpc/complete_module')) {
+        await fulfillJson(route, {
+          status: 'completed',
+          xp: modules[0].xp_reward,
+          coins: modules[0].coin_reward,
+          quiz_score: 100,
+        });
+        return;
+      }
+
+      if (url.pathname.startsWith('/rest/v1/hv_quizzes')) {
+        // No longer read directly by the app (superseded by the RPC above);
+        // left as a harmless fallback.
+        await fulfillJson(route, asObject ? null : []);
         return;
       }
 

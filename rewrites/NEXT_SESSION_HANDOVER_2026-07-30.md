@@ -75,7 +75,7 @@
   `sync-tokens-to-v24`). CHANGELOG's own guidance: migrate one at a time
   *after* each is proven stable, same pattern as `stripe-webhook`.
 
-## First task next session
+## First task next session (superseded — see Session 2 below for current priority)
 
 Two candidates, pick one:
 1. Create the `shop_purchase` named secret key in Supabase (code already
@@ -84,3 +84,135 @@ Two candidates, pick one:
    or a real test-mode purchase).
 2. Pick the next legacy consumer off the list above and migrate it the same
    way: shared resolver + named secret key + proof before moving on.
+
+---
+
+# Session 2 — Security Hardening (2026-07-30, same day, live session)
+
+Started from the `shop_purchase` key task above, hit a real bug along the way,
+then ran a full Supabase security-advisor audit that surfaced a live token-
+economy exploit. All DB changes below were applied via `apply_migration`
+against `tlavrxiaegbtyfmjfdcz` and verified live — not just written and hoped.
+
+## `shop_purchase` key — done, but a real bug surfaced and is still open
+
+- The named secret key `shop_purchase` was created via the Supabase Dashboard
+  (Settings → API Keys → Secret keys), same pattern as `stripe_webhook`.
+- **Open bug, not root-caused**: testing the `shop-purchase` Edge Function via
+  the live UI threw `Failed to send a request to the Edge Function`. Checked
+  `shop-purchase/index.ts` — `resolveSupabaseAdminKey` runs inside the
+  top-level `try`, and the `catch` always returns `200` with CORS headers
+  intact, so a missing/misconfigured key would surface as a normal app-level
+  error, not this. Edge Function logs showed the `OPTIONS` preflight
+  succeeding (`204`) with **no matching `POST` afterward at all** — not even a
+  failed one — which points to the real request being blocked at the
+  browser/CORS layer before it left the client, not a backend problem. Never
+  got the Network-tab detail needed to pin it down further. **Still
+  unresolved — pick this up first if shop purchases are still broken.**
+- Along the way: found a `.env` line
+  `SUPABASE_SECRET_KEYS["shop_purchase"]=...` that does nothing — hosted Edge
+  Functions never read the repo's `.env` (it's local-process-only), and
+  `.env` files don't support bracket-indexed keys anyway. Not the cause of
+  the bug above, just a dead line. `.env` itself is correctly gitignored and
+  was never committed (verified against git history) — but it's carrying a
+  lot of live plaintext secrets, including what looks like a raw wallet
+  private key (`DEPLOYER_KEY=0xd26e...`). Worth knowing it's sitting there in
+  the clear on disk.
+
+## Security audit — what's now safely shipped
+
+**`mc_missions` RLS**
+- Before: `FOR ALL TO authenticated USING (true) WITH CHECK (true)` — any
+  logged-in student could read/write/delete ops-audit rows via
+  `/rest/v1/mc_missions` directly, completely bypassing the admin-only
+  `/admin/mission-control` frontend route gate.
+- Now: policy rebuilt to `USING (public.is_admin()) WITH CHECK (public.is_admin())`.
+  Only admins can see or mutate missions. Table had 0 rows at fix time — no
+  data was ever touched.
+
+**`get_or_create_referral_code()`**
+- Before: explicit `anon:EXECUTE` grant still present despite the 07-28
+  session's `REVOKE ... FROM PUBLIC` — revoking from `PUBLIC` and revoking
+  from a specific role (`anon`) are independent in Postgres; the earlier fix
+  only did the former.
+- Now: `REVOKE EXECUTE ... FROM anon` applied. Advisor warning cleared.
+  Function is unchanged otherwise — it already guarded itself internally.
+
+**`hv_quizzes` exposure (found while scoping the `complete_module` fix below)**
+- Before: `hv_quizzes_read_anon` let *fully anonymous, logged-out* requests
+  read every quiz's `payload` — including `answer_index`, the real answer
+  key — straight from `/rest/v1/hv_quizzes`. `authenticated` also had a
+  direct-read policy exposing the same data, plus stray table-level
+  `INSERT/UPDATE/DELETE/TRUNCATE` grants with no matching RLS policy
+  (harmless only because RLS was on and default-denied).
+- Now: new `get_quiz_for_module(p_module_id)` RPC (`SECURITY DEFINER`,
+  requires `auth.uid()`) returns the quiz payload with `answer_index`
+  stripped from every question. Both direct-read policies dropped; stray
+  write grants revoked. All quiz reads now go through the RPC only.
+
+**`complete_module()` — the real exploit**
+- Before: accepted a client-computed `p_quiz_score` and never checked it
+  against anything — awarded the module's full `xp_reward`/`coin_reward`
+  *unconditionally*, regardless of score, for any `module_id` that existed.
+  The UI already displayed "Passing score: 70%" (`CourseModule.tsx:433`) —
+  it was just never enforced anywhere, client or server. Net effect: any
+  signed-in user could script a loop over every `hv_modules.id` and mint
+  arbitrary XP + BROski$ without ever touching a quiz.
+- Now: signature changed to `complete_module(p_module_id, p_answers jsonb)`.
+  Grades the submitted answers server-side against the real answer key
+  (fetched internally, never exposed to the caller), computes the real
+  percent, and only awards XP/coins at ≥70%. Returns a new `failed_quiz`
+  status + score below threshold — no `module_completions` row is written on
+  failure, so retries are safe. **Old `complete_module(uuid, integer)`
+  signature was dropped**, not left running in parallel — the score-trusting
+  entry point no longer exists at all.
+- Both new functions initially picked up an unwanted `anon:EXECUTE` grant
+  from Supabase's default-privileges-on-create behavior (same gotcha as the
+  referral-code fix above) — caught via `get_advisors` immediately after
+  applying and closed with an explicit `REVOKE ... FROM anon` follow-up
+  migration.
+
+## What's verified
+
+- `get_advisors(type: security)` re-run after every change — confirmed each
+  target warning cleared and no new ones introduced (aside from the expected,
+  correct `authenticated_security_definer_function_executable` notices on
+  `is_admin()`, `get_or_create_referral_code()`, and `complete_module()` —
+  those three are legitimate uses, not holes).
+- `select public.get_quiz_for_module(...)` and `select public.complete_module(...)`
+  both execute cleanly through their `auth.uid()` guard when called with no
+  JWT context — confirms the plpgsql compiled and runs correctly, not just
+  that `CREATE FUNCTION` parsed.
+- `frontend/src/pages/CourseModule.tsx` and
+  `frontend/src/hooks/useModuleCompletion.ts` rewired to the new
+  `get_quiz_for_module` / answer-submitting `complete_module` contract.
+- `npm --prefix frontend run build` — clean.
+- `frontend/tests/course-module.spec.ts` — updated mocks to the new RPC
+  contract, **18/18 passing** across chromium/firefox/webkit.
+
+## Known open items
+
+1. **`shop-purchase` "Failed to send a request" bug — unresolved** (see
+   above). Highest-priority pickup.
+2. Quiz `explanation` text still travels to the client in the initial
+   payload (only `answer_index` is stripped) — haven't checked whether any
+   explanation phrases the correct answer clearly enough to read before
+   attempting. Lower severity, needs a content pass, not a code fix.
+3. No live human smoke test yet on `hypervibe.online` for the new quiz
+   grading: pass a real quiz ≥70% → confirm XP/BROski$ granted; fail one
+   <70% → confirm no reward and the retry UX makes sense. Everything above
+   is verified structurally (advisors, direct function calls, Playwright
+   with mocked RPCs) but not yet click-tested end-to-end by a human.
+4. `auth_leaked_password_protection` advisor warning — still open, still
+   Pro-gated, still deferred per the existing funding decision. Unchanged.
+
+## First task next session
+
+1. Root-cause and fix the `shop-purchase` "Failed to send a request" bug —
+   get real browser Network-tab detail (status, response headers) on the
+   failed POST, since the `OPTIONS`-succeeds/`POST`-never-logged pattern
+   points at a CORS/network-layer block, not the key or the code's error
+   handling.
+2. Then run the live quiz-grading smoke test described in Known Open Items
+   above with a throwaway account.
+3. If both pass, do the quiz-explanation content review.
