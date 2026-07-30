@@ -94,21 +94,42 @@ then ran a full Supabase security-advisor audit that surfaced a live token-
 economy exploit. All DB changes below were applied via `apply_migration`
 against `tlavrxiaegbtyfmjfdcz` and verified live — not just written and hoped.
 
-## `shop_purchase` key — done, but a real bug surfaced and is still open
+## `shop_purchase` key — done; the bug it surfaced is now fixed too
 
 - The named secret key `shop_purchase` was created via the Supabase Dashboard
   (Settings → API Keys → Secret keys), same pattern as `stripe_webhook`.
-- **Open bug, not root-caused**: testing the `shop-purchase` Edge Function via
-  the live UI threw `Failed to send a request to the Edge Function`. Checked
-  `shop-purchase/index.ts` — `resolveSupabaseAdminKey` runs inside the
-  top-level `try`, and the `catch` always returns `200` with CORS headers
-  intact, so a missing/misconfigured key would surface as a normal app-level
-  error, not this. Edge Function logs showed the `OPTIONS` preflight
-  succeeding (`204`) with **no matching `POST` afterward at all** — not even a
-  failed one — which points to the real request being blocked at the
-  browser/CORS layer before it left the client, not a backend problem. Never
-  got the Network-tab detail needed to pin it down further. **Still
-  unresolved — pick this up first if shop purchases are still broken.**
+- **Bug found and fixed**: testing the `shop-purchase` Edge Function via the
+  live UI threw `Failed to send a request to the Edge Function`. Root cause,
+  confirmed via live `curl` against the deployed endpoint: `CORS_HEADERS` in
+  `shop-purchase/index.ts` only allowlisted `authorization, content-type`.
+  Every `supabase.functions.invoke()` call automatically attaches `apikey`
+  and `x-client-info` too (confirmed against `@supabase/supabase-js`'s own
+  shipped `cors.ts` reference module, which documents this exact
+  requirement). The `OPTIONS` preflight always succeeded (that part doesn't
+  check against the real request), but the browser then refused to send the
+  actual `POST` at all — it never reached the server, which is why nothing
+  showed up in the Edge Function logs, not even as an error.
+  - Six of the other seven hand-written Edge Functions in this repo
+    (`get-pet-balance`, `mint-pet-confirm`, `discord-link`,
+    `generate-v2-config`, `mint-pet-auth`, `pet-mentor-chat`) already had the
+    correct four-header allow-list — `shop-purchase` was the sole outlier.
+  - Fix: added `x-client-info` and `apikey` to `CORS_HEADERS`, redeployed
+    (`shop-purchase` v9 → v10, `verify_jwt: false` preserved). Verified live:
+    re-ran the same `curl` preflight and confirmed
+    `access-control-allow-headers` now includes all four; a follow-up `curl`
+    POST returned `"Missing or malformed Authorization header"` (the correct
+    app-level error for no JWT), which also confirms `resolveSupabaseAdminKey`
+    ran cleanly first — i.e. the `shop_purchase` key above is genuinely wired
+    up, not just created.
+  - **Could not get an automated regression test for this** — wrote one in
+    `frontend/tests/shop.spec.ts` using the exact broken header list and it
+    passed when it should have failed, because Playwright's
+    `route.fulfill()` mocking doesn't enforce real browser CORS preflight
+    semantics (confirmed empirically, then removed the misleading test
+    rather than leave false confidence in the suite). Verification rests on
+    live `curl` before/after, which is arguably more authoritative anyway,
+    but there's no regression guard against this ever slipping back in on a
+    future edit to `shop-purchase`'s `CORS_HEADERS`.
 - Along the way: found a `.env` line
   `SUPABASE_SECRET_KEYS["shop_purchase"]=...` that does nothing — hosted Edge
   Functions never read the repo's `.env` (it's local-process-only), and
@@ -192,27 +213,32 @@ against `tlavrxiaegbtyfmjfdcz` and verified live — not just written and hoped.
 
 ## Known open items
 
-1. **`shop-purchase` "Failed to send a request" bug — unresolved** (see
-   above). Highest-priority pickup.
+1. `shop-purchase` CORS fix has **no automated regression guard** — the fix
+   itself is verified live (curl before/after), but nothing in CI will catch
+   a future edit that narrows `CORS_HEADERS` again. Playwright can't test
+   this class of bug (see above). Would need either a real cross-origin
+   integration test outside Playwright, or just discipline + code review.
 2. Quiz `explanation` text still travels to the client in the initial
    payload (only `answer_index` is stripped) — haven't checked whether any
    explanation phrases the correct answer clearly enough to read before
    attempting. Lower severity, needs a content pass, not a code fix.
-3. No live human smoke test yet on `hypervibe.online` for the new quiz
-   grading: pass a real quiz ≥70% → confirm XP/BROski$ granted; fail one
-   <70% → confirm no reward and the retry UX makes sense. Everything above
-   is verified structurally (advisors, direct function calls, Playwright
-   with mocked RPCs) but not yet click-tested end-to-end by a human.
+3. No live human smoke test yet on `hypervibe.online` for either fix:
+   - Shop: buy a real item end-to-end in an actual browser, confirm it
+     completes (was previously blocked before ever reaching the server).
+   - Quiz grading: pass a real quiz ≥70% → confirm XP/BROski$ granted; fail
+     one <70% → confirm no reward and the retry UX makes sense.
+   Everything above is verified structurally (advisors, direct function
+   calls, live curl, Playwright with mocked RPCs) but not yet click-tested
+   end-to-end by a human in a real browser.
 4. `auth_leaked_password_protection` advisor warning — still open, still
    Pro-gated, still deferred per the existing funding decision. Unchanged.
 
 ## First task next session
 
-1. Root-cause and fix the `shop-purchase` "Failed to send a request" bug —
-   get real browser Network-tab detail (status, response headers) on the
-   failed POST, since the `OPTIONS`-succeeds/`POST`-never-logged pattern
-   points at a CORS/network-layer block, not the key or the code's error
-   handling.
-2. Then run the live quiz-grading smoke test described in Known Open Items
-   above with a throwaway account.
-3. If both pass, do the quiz-explanation content review.
+1. Live human smoke test on `hypervibe.online` with a throwaway account:
+   buy a shop item (confirms the CORS fix), then pass/fail a quiz (confirms
+   the grading gate).
+2. If both pass, do the quiz-explanation content review.
+3. Consider whether the `shop-purchase` CORS fix needs a non-Playwright
+   regression test (e.g. a small script that does a real cross-origin
+   fetch against a local `supabase functions serve` instance).

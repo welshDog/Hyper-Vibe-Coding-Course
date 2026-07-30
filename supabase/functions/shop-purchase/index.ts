@@ -35,10 +35,16 @@ const SHOP_SYNC_SECRET  = Deno.env.get('SHOP_SYNC_SECRET') ?? '';
 
 // ── Response helpers ────────────────────────────────────────────────────────…
 
+// Every supabase-js client automatically attaches `apikey` and `x-client-info`
+// on top of `authorization`/`content-type` — omitting any of them here means
+// the preflight OPTIONS succeeds, but the browser then refuses to send the
+// real request at all (it never reaches this function, not even as an
+// error). Matches @supabase/supabase-js's own shipped `cors.ts` reference
+// list and the other six hand-written Edge Functions in this repo.
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 function jsonOk(data: unknown): Response {
