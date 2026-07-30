@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Security
+- **course-profile Edge Function** — closed an access-control gap and migrated off legacy `SUPABASE_SERVICE_ROLE_KEY`.
+  - Before: `verify_jwt: true` required *some* valid Supabase JWT, but the function did zero caller-identity checks — any signed-in student could query any `discord_id` via `GET /functions/v1/course-profile?discord_id=<snowflake>` and get back that student's BROski$ balance, loyalty tier, XP, lessons completed, and (if they had no `full_name` set) their raw email.
+  - Investigated actual usage first: nothing in the repo (frontend, Discord bot, anywhere) currently calls this endpoint. `RISK_FLAGS.md` (R5/R13) documents the intended caller as V2.4's own backend (`hypercode_sync.py` cog / reconciliation cron) — a service-to-service bridge call, never meant to be end-user facing. `verify_jwt` was the wrong mechanism for this from the start.
+  - Fix: `verify_jwt` switched to `false`; function now requires a shared-secret `X-Sync-Secret` header matched against a new dedicated `V24_SYNC_SECRET`, mirroring the existing Course↔V2.4 pattern (`SHOP_SYNC_SECRET`/`COURSE_SYNC_SECRET`) but with its own secret for this direction so a leak doesn't cross-expose the others.
+  - Named secret key `course_profile` created for the Supabase admin client, resolved via `resolveSupabaseAdminKey()`.
+  - Deployed (v10 → v11) and verified live: no `X-Sync-Secret` → `401`; wrong secret → `401`; correct secret → `200` with a real DB-backed response (which also confirms the key resolved — a failed resolver returns `503`, not a successful query).
 - **mint-pet-confirm Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern.
   - Named secret key `mint_pet_confirm` created in Supabase API Keys.
   - Also dropped the `../deno-shims.d.ts` side-effect import (editor-only ambient types, zero runtime effect) for the same "fragile in single-function deploys" reason `mint-pet-auth` already dropped it.
