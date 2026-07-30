@@ -1,6 +1,6 @@
 # 🧠 CLAUDE.md — Hyper-Vibe-Coding-Course
 > For Claude, Perplexity, ChatGPT, Cursor, or any AI partner.
-> Last updated: June 9, 2026 · Built by @welshDog + AI
+> Last updated: July 30, 2026 · Built by @welshDog + AI
 > **Read this FIRST. Every session. No exceptions.**
 
 ---
@@ -55,6 +55,7 @@
 | 9 | **Lab pages = `hfz-*` tokens. Landing page = inline styles + CSS vars** | Two different idioms by design |
 | 10 | **No `framer-motion` in this repo** | Not installed — CSS-only motion |
 | 11 | **Course dev from repo root = `npm run dev:frontend` NOT `npm run dev`** | Repo-root `npm run dev` ≠ frontend |
+| 12 | **NEVER `SUPABASE_SERVICE_ROLE_KEY` in a new Edge Function** | Use `resolveSupabaseAdminKey()` from `supabase/functions/_shared/supabaseAdminKey.mjs` + a named secret key (Dashboard → Settings → API Keys). All 8 functions migrated off the legacy key 2026-07-29/30 — don't reintroduce it |
 
 ### 2b. HyperCode V2.4 rules
 > See `HyperCode-V2.4/CLAUDE.md` §4 for the full list.
@@ -114,9 +115,16 @@
 - Visual QA on physical devices
 
 **General:**
+- 🔴 **`main` requires a PR — since 2026-07-30, `enforce_admins: true`.** Direct
+  `git push origin main` is REJECTED by GitHub, including for the repo owner.
+  Flow: `git checkout -b <branch>` → push the branch → `gh pr create` →
+  `gh pr merge --merge --delete-branch` (0 approvals required, self-merge is
+  fine — the point is forcing a PR diff view, not review). This closed the
+  gap that let a corrupted commit (`84ddd2b`) land directly on `main` via the
+  GitHub web editor.
 - ALWAYS `git fetch` + check `origin/main` before pushing — parallel workflow running
 - NEVER force-push
-- Nothing is done until committed + pushed
+- Nothing is done until committed + pushed (merged, under the PR flow above)
 - Update SESSION_SNAPSHOT at end of every session
 
 ---
