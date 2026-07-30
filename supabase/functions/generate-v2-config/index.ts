@@ -1,12 +1,11 @@
 // @ts-ignore -- CDN import for Deno; no local types
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2?target=deno";
+// @ts-ignore -- relative Deno import; no local types
+import { resolveSupabaseAdminKey } from "../_shared/supabaseAdminKey.mjs";
 
 const SUPABASE_URL = (globalThis as any).Deno?.env?.get('SUPABASE_URL') ?? '';
-const SUPABASE_SERVICE_ROLE_KEY = (globalThis as any).Deno?.env?.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const V24_API_URL = (globalThis as any).Deno?.env?.get('V24_API_URL') ?? '';
 const SHOP_SYNC_SECRET = (globalThis as any).Deno?.env?.get('SHOP_SYNC_SECRET') ?? '';
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
@@ -68,6 +67,7 @@ type ProvisionResponse = {
 };
 
 async function resolveDiscordId(
+  supabaseAdmin: ReturnType<typeof createClient>,
   userId: string,
   providedDiscordId?: string,
 ): Promise<string | null> {
@@ -85,6 +85,7 @@ async function resolveDiscordId(
 }
 
 async function findLatestAgentAccessPurchase(
+  supabaseAdmin: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<{ purchaseId: string; v24Tier: string } | null> {
   const { data, error } = await supabaseAdmin
@@ -218,9 +219,24 @@ function buildReadme(displayName: string, agentNames: string[], missionControlUr
     return jsonHttpError('Method not allowed', 405);
   }
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return jsonAppError('Supabase admin env not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).');
+  if (!SUPABASE_URL) {
+    return jsonAppError('Supabase admin env not configured (SUPABASE_URL).');
   }
+
+  let supabaseAdminKey: string;
+  try {
+    supabaseAdminKey = resolveSupabaseAdminKey(
+      {
+        SUPABASE_SECRET_KEYS: (globalThis as any).Deno?.env?.get('SUPABASE_SECRET_KEYS') ?? '',
+        SUPABASE_SECRET_KEY: (globalThis as any).Deno?.env?.get('SUPABASE_SECRET_KEY') ?? '',
+      },
+      'generate_v2_config',
+    );
+  } catch (err) {
+    console.error('generate-v2-config: admin key resolution failed:', err instanceof Error ? err.message : err);
+    return jsonAppError('Server misconfigured — contact support.');
+  }
+  const supabaseAdmin = createClient(SUPABASE_URL, supabaseAdminKey);
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -244,7 +260,7 @@ function buildReadme(displayName: string, agentNames: string[], missionControlUr
     ? body.agent_names.filter((n) => typeof n === 'string' && n.trim()).map((n) => n.trim())
     : [];
 
-  const discordId = await resolveDiscordId(user.id, body.discord_id);
+  const discordId = await resolveDiscordId(supabaseAdmin, user.id, body.discord_id);
   if (!discordId) {
     return jsonAppError('No discord_id linked to your Course account yet. Link Discord first.');
   }
@@ -253,7 +269,7 @@ function buildReadme(displayName: string, agentNames: string[], missionControlUr
     return jsonAppError('V2.4 bridge not configured (V24_API_URL / SHOP_SYNC_SECRET).');
   }
 
-  const purchase = await findLatestAgentAccessPurchase(user.id);
+  const purchase = await findLatestAgentAccessPurchase(supabaseAdmin, user.id);
   if (!purchase) {
     return jsonAppError("No 'agent_access' purchase found for this user.");
   }

@@ -10,7 +10,14 @@ All notable changes to this project will be documented in this file.
   - Admin key now resolved right after the caller's JWT check, before the Discord OAuth round-trip, so a misconfigured key fails fast (500) instead of burning a one-time-use Discord auth code.
   - Proof: authenticated call reached the post-resolver `DISCORD_CLIENT_ID`/`SECRET` check (`503 Discord not configured`) rather than the resolver's own `500 Server misconfigured` — confirms the key resolved.
   - Side finding (pre-existing, unrelated to this migration): `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` are not set on this function at all, so Discord account-linking likely hasn't worked in any deployed version. Not fixed here — needs real Discord app credentials.
-  - Remaining legacy consumers: Discord bot (Python), agent scripts, `pet-mentor-chat`, `course-profile`, `generate-v2-config`, `mint-pet-auth`, `mint-pet-confirm`, `sync-tokens-to-v24`.
+  - Remaining legacy consumers: Discord bot (Python), agent scripts, `pet-mentor-chat`, `course-profile`, `mint-pet-auth`, `mint-pet-confirm`, `sync-tokens-to-v24`.
+- **generate-v2-config Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern.
+  - Named secret key `generate_v2_config` created in Supabase API Keys.
+  - Also fixed the module-level-client anti-pattern (admin client was built once at cold start from the service-role key; now resolved fresh per request, so a rotated key takes effect without a redeploy) — same fix already applied to `stripe-webhook`/`shop-purchase`. `resolveDiscordId`/`findLatestAgentAccessPurchase` now take the client as a parameter instead of closing over a module global.
+  - Proof: authenticated call reached the post-resolver "No discord_id linked" app error rather than the resolver's own "Server misconfigured" error — confirms the key resolved.
+  - **Two new findings surfaced while reading sibling functions, not fixed here:**
+    - `course-profile` has no caller-identity check at all — any authenticated user can query any `discord_id` and get back that student's BROski$ balance, tier, XP, and (if they have no `full_name` set) their raw email via a `full_name ?? email` display-name fallback. This is an access-control gap independent of key type.
+    - `sync-tokens-to-v24` runs with `--no-verify-jwt` and accepts any POST claiming to be a Supabase DB webhook with no signature/secret verification that it's genuinely from Supabase — a forged request could trigger a real token-award call to V2.4.
 
 ## [0.5.0] - 2026-07-29
 
