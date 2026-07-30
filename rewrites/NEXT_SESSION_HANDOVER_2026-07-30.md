@@ -351,16 +351,127 @@ now: create a branch → push the branch → open a PR → merge the PR (self-me
 is fine, 0 approvals required). This handover entry itself was shipped
 through that exact flow as the first real test of the new rule.
 
+## First task next session (superseded — see Session 4 below)
+
+1. ~~Quiz-explanation content review~~
+2. ~~`course-profile` access-control gap~~ — **done, see Session 4.**
+3. ~~`sync-tokens-to-v24` webhook forgeability~~ — **done, see Session 4.**
+4. ~~Pick the next legacy consumer~~ — **all 8 Edge Functions done, see
+   Session 4.** Discord bot / agent scripts investigated and found dormant.
+5. Consider whether `shop-purchase`'s CORS fix needs a non-Playwright
+   regression test — still open.
+
+---
+
+# Session 4 — mint-pet-auth/confirm, course-profile, sync-tokens-to-v24, legacy-consumer investigation, housekeeping (2026-07-30, same day)
+
+## Remaining Edge Function migrations — all shipped
+
+Same pattern as Sessions 1-3, each via its own branch → PR → merge:
+
+- **`mint-pet-auth`** (PR #26, `41a9cdb`) — admin client was already
+  per-request, pure credential swap. Verified live with a side-effect-free
+  invalid-`wallet_address` request (`400`, not the resolver's `503`) — no
+  tokens spent, no chain touched.
+- **`mint-pet-confirm`** (PR #27, `933a847`) — same pattern, plus dropped
+  the fragile `../deno-shims.d.ts` import (editor-only types, matching
+  `mint-pet-auth`). Verified live with an invalid-`tx_hash` request, same
+  no-side-effect logic.
+- **`course-profile`** (PR #28, `6650354`) — **real access-control gap
+  found and fixed**, not just a key swap. It had `verify_jwt: true` but
+  zero caller-identity check — any signed-in student could query any
+  `discord_id` and get back that student's BROski$/tier/XP/email.
+  Investigated actual usage first: nothing in the repo calls this
+  endpoint; `RISK_FLAGS.md` (R5/R13) documents the intended caller as
+  V2.4's own backend (service-to-service, never end-user-facing).
+  Switched to a shared-secret model: `verify_jwt: false`, new dedicated
+  `V24_SYNC_SECRET` checked via `X-Sync-Secret` header (its own secret,
+  not reusing `SHOP_SYNC_SECRET`/`COURSE_SYNC_SECRET`, so a leak doesn't
+  cross-expose the other direction). Verified live: no secret → `401`,
+  wrong secret → `401`, correct secret → `200` with real data (which also
+  confirms the key resolved).
+- **`sync-tokens-to-v24`** (PR #29, `44dabc4`) — **another real gap**:
+  `--no-verify-jwt` (correct, no user JWT exists for a DB webhook caller)
+  but zero verification the request came from Supabase at all — forgeable
+  token-award requests. Checked first: no DB Webhook trigger exists on
+  `token_transactions` yet (`information_schema.triggers` empty) — zero
+  live traffic, safe to harden outright. Added `WEBHOOK_SECRET` (named
+  without the `SUPABASE_` prefix — the dashboard rejects that reserved
+  prefix on custom secrets, caught after the first deploy attempt) +
+  `X-Webhook-Secret` header check. Verified live in two stages: secret
+  gate (401/401/pass), then proved the *key itself* resolved (not just
+  the secret gate) by temporarily inserting a real `discord_links` row
+  for a live test account and confirming the function actually found it
+  (got `503 V24_API_URL not configured` — i.e. got *past* the lookup) —
+  test row deleted immediately after, confirmed 0 rows remaining.
+
+**All 8 Edge Functions in this repo are now off `SUPABASE_SERVICE_ROLE_KEY`.**
+
+## Discord bot / agent scripts investigation
+
+Dispatched a research pass (not code changes) on the two remaining
+legacy consumers mentioned in earlier sessions:
+
+- **`discord-bot/`** (Python `discord.py`, 5 cogs: xp/leaderboard, badges,
+  quests, general commands, "Catch Stragglers" DM notifier) — holds a raw
+  `SUPABASE_SERVICE_ROLE_KEY` in `db.py`/`config.py` via `.env`. **No
+  evidence it's deployed anywhere** — no Dockerfile, Procfile, Railway
+  config, or docker-compose entry in this repo references it.
+- **`agents/course-content-agent/`** (Node CLI, syncs course markdown into
+  `hv_modules`/`hv_quizzes`) — same raw-key pattern, confirmed CLI-only
+  (`npm run sync-course`); the server/cron mode in its `manifest.json` was
+  never actually built.
+- **`scripts/Test-ShopPurchase.ps1`** — local developer E2E test script,
+  uses the key only for local test-data setup/teardown. Never leaves the
+  dev machine.
+
+**Detour that mattered**: asked whether "the Discord bot" was actually
+live, got pointed at a running Docker container
+(`d93796432e88`, name `broski-bot`). Investigated with direct `docker`
+CLI access (available in this environment) and found:
+- It is **not** this repo's `discord-bot/` — `docker inspect` showed
+  `com.docker.compose.project.config_files:
+  H:\HYPERFOCUSZONE\HperCore\HyperCode-V2.4\docker-compose.yml`. It's
+  `HyperCode-V2.4`'s own bot, a completely separate codebase
+  (`cogs.bot`, its own `main.py`/`core_client.py`/`alembic`).
+- Its logs are a continuous stream of `"Health check failed: ... Name or
+  service not known"`. Root cause found: `SUPABASE_URL` inside the
+  container points at `yhtmuibgdnxhbgboajhc` — **the Supabase project
+  deleted 2026-07-18.** It's been trying to reach a database that no
+  longer exists. Confirmed this is unrelated to anything from tonight
+  (`COURSE_PROFILE_EDGE_URL` is configured in its env but the container's
+  own Python source has zero references to it — dead config, and it
+  couldn't have called `course-profile` successfully anyway given the
+  dead `SUPABASE_URL`).
+- **Not fixed — different repo.** Flagged for a future `HyperCode-V2.4`
+  session, not touched here.
+
+Decision: none of the three Course-repo consumers are live, so no
+migration action taken on them — revisit whenever one actually gets
+deployed.
+
+## Housekeeping pass (this session, prompted by "are docs up to date")
+
+Audited the doc chain for drift — found real gaps and closed them:
+- `CLAUDE.md` had zero mention of the new branch-protection push flow or
+  the `SUPABASE_SERVICE_ROLE_KEY` ban — both added (§2a rule #12, §4).
+- `WHATS_DONE.md` was 2 days stale (last synced 07-28) — synced with a
+  full 07-30 entry.
+- `rewrites/SESSION_SNAPSHOT_2026-07-30.md` was **missing entirely**
+  despite being a mandatory session-end-checklist item — created.
+- This handover's "First task next session" list was itself stale
+  (listed already-fixed items as still-open) — corrected above.
+
 ## First task next session
 
-1. Quiz-explanation content review (`CourseModule.tsx` payload still ships
-   `explanation` text unstripped).
-2. `course-profile` access-control gap — needs a design decision before a
-   fix (see above).
-3. `sync-tokens-to-v24` webhook forgeability — needs a shared-secret/
-   signature check added.
-4. Pick the next legacy `SUPABASE_SERVICE_ROLE_KEY` consumer: Discord bot
-   (Python), agent scripts, `pet-mentor-chat`, `mint-pet-auth`,
-   `mint-pet-confirm`.
-5. Consider whether `shop-purchase`'s CORS fix needs a non-Playwright
-   regression test.
+1. Quiz-explanation content review — check whether any `explanation` text
+   in the quiz payload phrases the correct answer clearly enough to read
+   before attempting (only `answer_index` is stripped, not `explanation`).
+2. Decide whether `shop-purchase`'s CORS fix needs a non-Playwright
+   regression test (confirmed Playwright can't catch this bug class).
+3. Get real Discord app credentials configured so `discord-link`
+   (account-linking) actually works — found dormant/never-functional
+   during an earlier session's key migration.
+4. Whenever `discord-bot/`, `course-content-agent/`, or
+   `Test-ShopPurchase.ps1` actually get deployed: migrate them off
+   `SUPABASE_SERVICE_ROLE_KEY` at that point, not before.

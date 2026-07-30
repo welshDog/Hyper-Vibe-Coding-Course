@@ -1,6 +1,63 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-07-28 by Claude (Cowork) ⚡
+> Last synced: 2026-07-30 by Claude (Cowork) ⚡
+
+## 2026-07-30 — Security hardening marathon: live exploit closed, corrupted commit caught, all 8 Edge Functions off the legacy key
+
+Full detail lives in `CHANGELOG.md` `[Unreleased]` and
+`rewrites/NEXT_SESSION_HANDOVER_2026-07-30.md`. Summary:
+
+- **Closed a live token-economy exploit.** `complete_module()` trusted a
+  client-computed quiz score and awarded full XP/BROski$ for any module_id
+  regardless of score — a signed-in user could script-loop every module and
+  mint unlimited rewards. Rebuilt to grade answers server-side against the
+  real answer key (new `get_quiz_for_module()` RPC strips `answer_index`
+  before it reaches the browser) and gate reward on ≥70%, matching the UI's
+  own "Passing score: 70%" label that was never actually enforced. Verified
+  live: a real failing attempt (0%) wrote nothing and granted nothing; a
+  real passing attempt (100%) granted the exact XP/coin amounts.
+- **`mc_missions` RLS** — any authenticated student had full read/write/
+  delete on the admin-only ops table; now gated by `is_admin()`.
+- **`get_or_create_referral_code()` / `hv_quizzes`** — closed a leftover
+  `anon` execute grant and an anon-readable quiz-answers policy.
+- **Found and fixed a `shop-purchase` CORS bug** (unrelated to the above):
+  `Access-Control-Allow-Headers` was missing `apikey`/`x-client-info`, which
+  every `supabase.functions.invoke()` call sends automatically — preflight
+  always succeeded, but the browser silently refused to send the real
+  request, so purchases were failing with zero server-side trace. Fixed,
+  verified live with a real purchase.
+- **Caught and fixed a corrupted commit on `main`** (`84ddd2b`, a stray
+  GitHub web-editor paste that wiped `discord-link/index.ts` to one line)
+  — restored to match the already-live deploy, then **added branch
+  protection** (`enforce_admins: true`, PR required for everyone including
+  the owner) so a repeat can't land on `main` unreviewed again. See
+  `CLAUDE.md` §4 for the new required push flow.
+- **Migrated all 8 Edge Functions off `SUPABASE_SERVICE_ROLE_KEY`** onto
+  scoped named secret keys via the shared resolver
+  (`supabase/functions/_shared/supabaseAdminKey.mjs`): `stripe-webhook`,
+  `shop-purchase`, `discord-link`, `generate-v2-config`, `mint-pet-auth`,
+  `mint-pet-confirm`, `course-profile`, `sync-tokens-to-v24`. Every one
+  deployed and verified against production, not just theorized. Two of
+  them had real access-control bugs fixed alongside the key swap:
+  - `course-profile` had zero caller-identity check — any signed-in
+    student could query any other student's `discord_id` and get back
+    their BROski$ balance/tier/XP/email. Switched to a service-to-service
+    shared-secret model (it was never meant to be end-user-facing —
+    confirmed via `RISK_FLAGS.md` that the intended caller is V2.4's own
+    backend, which currently doesn't even exist as a live integration).
+  - `sync-tokens-to-v24` accepted any POST claiming to be a Supabase DB
+    webhook with no verification — forgeable token-award requests. Added
+    a `WEBHOOK_SECRET`/`X-Webhook-Secret` check. (Confirmed via
+    `information_schema.triggers` that the DB Webhook trigger doesn't
+    exist yet either — zero live traffic, safe to harden outright.)
+- **Investigated the remaining legacy consumers** (`discord-bot/`,
+  `agents/course-content-agent/`, `scripts/Test-ShopPurchase.ps1`) — all
+  three are dormant/local-only, not deployed anywhere. Left as-is; migrate
+  whenever they actually go live. Separately (different repo, not touched
+  here): found `HyperCode-V2.4`'s `broski-bot` container has been running
+  for a while pointed at the Supabase project that was deleted 2026-07-18
+  (`yhtmuibgdnxhbgboajhc`) — explains its ongoing health-check failures.
+  Flagged for a future `HyperCode-V2.4` session.
 
 ## 2026-07-28 — Referral-code RPC hardened against cross-user UUID targeting
 
