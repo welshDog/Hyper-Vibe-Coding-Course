@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Security
+- **mint-pet-confirm Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern.
+  - Named secret key `mint_pet_confirm` created in Supabase API Keys.
+  - Also dropped the `../deno-shims.d.ts` side-effect import (editor-only ambient types, zero runtime effect) for the same "fragile in single-function deploys" reason `mint-pet-auth` already dropped it.
+  - Admin client was already constructed per-request, so this was a pure credential-source swap — no behavior change to the idempotency check, on-chain receipt verification, or the `pets` insert.
+  - Deployed (v9 → v10) and verified live with a side-effect-free request (deliberately invalid `tx_hash`): got the post-resolver `400 Invalid tx_hash` rather than the resolver's own `503 Service misconfigured`, confirming the key resolved — without any DB write or on-chain lookup.
 - **mint-pet-auth Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern.
   - Named secret key `mint_pet_auth` created in Supabase API Keys.
   - Admin client was already constructed per-request (not module-level), so this was a pure credential-source swap — no behavior change to token spend/refund, petId allocation, nonce generation, EIP-712 signing, relay, or the `pets` insert.
