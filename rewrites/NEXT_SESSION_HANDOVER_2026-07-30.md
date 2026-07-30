@@ -222,23 +222,30 @@ against `tlavrxiaegbtyfmjfdcz` and verified live — not just written and hoped.
    payload (only `answer_index` is stripped) — haven't checked whether any
    explanation phrases the correct answer clearly enough to read before
    attempting. Lower severity, needs a content pass, not a code fix.
-3. No live human smoke test yet on `hypervibe.online` for either fix:
-   - Shop: buy a real item end-to-end in an actual browser, confirm it
-     completes (was previously blocked before ever reaching the server).
-   - Quiz grading: pass a real quiz ≥70% → confirm XP/BROski$ granted; fail
-     one <70% → confirm no reward and the retry UX makes sense.
-   Everything above is verified structurally (advisors, direct function
-   calls, live curl, Playwright with mocked RPCs) but not yet click-tested
-   end-to-end by a human in a real browser.
+3. ~~No live human smoke test~~ — **done.** Live-tested on `hypervibe.online`
+   via browser automation with account `lyndzwills00001@hotmail.co.uk`:
+   - Shop: bought "Lint Brush" (18 🪙) — succeeded, confirmed via
+     `shop_purchases` row, balance 30→12.
+   - Quiz fail: answered M8 (`soulful-entities-ai-pets`) all wrong (0/4
+     gradable) — UI showed "Scored 0% — need 70% to pass," zero
+     `module_completions` rows written, zero reward.
+   - Quiz pass: same module, all correct — "+70 XP 🪙 +25 BROski$" banner,
+     server confirmed `quiz_score: 100`, `xp_awarded: 70`,
+     `coins_awarded: 25`, exactly one `module_completions` row, balance
+     12→37, `total_xp` 345→415.
+   M8 is now marked complete on that account (8/12) — left as-is, not reset.
 4. `auth_leaked_password_protection` advisor warning — still open, still
    Pro-gated, still deferred per the existing funding decision. Unchanged.
 
 ## First task next session
 
-1. Live human smoke test on `hypervibe.online` with a throwaway account:
-   buy a shop item (confirms the CORS fix), then pass/fail a quiz (confirms
-   the grading gate).
-2. If both pass, do the quiz-explanation content review.
-3. Consider whether the `shop-purchase` CORS fix needs a non-Playwright
+1. Quiz-explanation content review (only remaining open item from tonight's
+   quiz-grading work) — check whether any `explanation` text phrases the
+   correct answer clearly enough to read before attempting, since that
+   field still travels to the client unstripped.
+2. Consider whether the `shop-purchase` CORS fix needs a non-Playwright
    regression test (e.g. a small script that does a real cross-origin
    fetch against a local `supabase functions serve` instance).
+3. Pick the next legacy consumer off the Session 1 list (Discord bot, agent
+   scripts, or one of the other Edge Functions) to migrate off
+   `SUPABASE_SERVICE_ROLE_KEY`.
