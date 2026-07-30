@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Security
+- **mint-pet-auth Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern.
+  - Named secret key `mint_pet_auth` created in Supabase API Keys.
+  - Admin client was already constructed per-request (not module-level), so this was a pure credential-source swap — no behavior change to token spend/refund, petId allocation, nonce generation, EIP-712 signing, relay, or the `pets` insert.
+  - Resolved right after the caller's JWT check, before any BROski$ spend or blockchain work, so a misconfigured key fails fast and cheap.
+  - Deployed (v8 → v9) and verified live with a side-effect-free request (deliberately invalid `wallet_address`): got the post-resolver `400 Invalid wallet address` rather than the resolver's own `503 Service misconfigured`, confirming the key resolved — without spending any tokens or touching the chain.
 - **discord-link Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern as `stripe-webhook`/`shop-purchase`.
   - Named secret key `discord_link` created in Supabase API Keys.
   - Admin key now resolved right after the caller's JWT check, before the Discord OAuth round-trip, so a misconfigured key fails fast (500) instead of burning a one-time-use Discord auth code.
