@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security
+- **discord-link Edge Function** — migrated off legacy `SUPABASE_SERVICE_ROLE_KEY` to scoped named secret key model, same pattern as `stripe-webhook`/`shop-purchase`.
+  - Named secret key `discord_link` created in Supabase API Keys.
+  - Admin key now resolved right after the caller's JWT check, before the Discord OAuth round-trip, so a misconfigured key fails fast (500) instead of burning a one-time-use Discord auth code.
+  - Proof: authenticated call reached the post-resolver `DISCORD_CLIENT_ID`/`SECRET` check (`503 Discord not configured`) rather than the resolver's own `500 Server misconfigured` — confirms the key resolved.
+  - Side finding (pre-existing, unrelated to this migration): `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` are not set on this function at all, so Discord account-linking likely hasn't worked in any deployed version. Not fixed here — needs real Discord app credentials.
+  - Remaining legacy consumers: Discord bot (Python), agent scripts, `pet-mentor-chat`, `course-profile`, `generate-v2-config`, `mint-pet-auth`, `mint-pet-confirm`, `sync-tokens-to-v24`.
+
 ## [0.5.0] - 2026-07-29
 
 ### Security

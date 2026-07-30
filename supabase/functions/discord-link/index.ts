@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { resolveSupabaseAdminKey } from '../_shared/supabaseAdminKey.mjs';
 
 const CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -34,6 +35,22 @@ Deno.serve(async (req) => {
     );
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) return json({ error: 'Unauthorized' }, 401);
+
+    // Resolved before the Discord round-trip below so a misconfigured key
+    // fails fast instead of burning a one-time-use Discord auth code.
+    let supabaseAdminKey: string;
+    try {
+        supabaseAdminKey = resolveSupabaseAdminKey(
+            {
+                SUPABASE_SECRET_KEYS: Deno.env.get('SUPABASE_SECRET_KEYS') ?? '',
+                SUPABASE_SECRET_KEY: Deno.env.get('SUPABASE_SECRET_KEY') ?? '',
+            },
+            'discord_link',
+        );
+    } catch (err) {
+        console.error('Admin key resolution failed:', err instanceof Error ? err.message : err);
+        return json({ error: 'Server misconfigured — contact support' }, 500);
+    }
 
     let body: { code: string; redirect_uri: string };
     try {
@@ -97,7 +114,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
         Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        supabaseAdminKey,
     );
 
     const { error: upsertError } = await admin.from('discord_links').upsert(
