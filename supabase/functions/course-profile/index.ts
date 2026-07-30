@@ -9,20 +9,48 @@
  * Deploy to: Hyper-Vibe-Coding-Course Supabase project
  * Invoke:    GET /functions/v1/course-profile?discord_id=<snowflake>
  *
+ * Trust model — service-to-service, NOT end-user facing:
+ *   Per RISK_FLAGS.md (R5/R13), the intended caller is V2.4's own backend
+ *   (the `hypercode_sync.py` cog / a reconciliation cron), polling this to
+ *   read a student's Course-side balance. It is not meant to be reachable
+ *   by student browsers or arbitrary signed-in users — there is no
+ *   per-caller identity check possible here (V2.4 doesn't hold a Supabase
+ *   user JWT for the student it's asking about), so auth is a shared
+ *   secret instead, mirroring the existing Course<->V2.4 pattern
+ *   (SHOP_SYNC_SECRET / COURSE_SYNC_SECRET) but in its own dedicated
+ *   secret for this direction so a leak doesn't cross-expose the others.
+ *   verify_jwt is OFF at the gateway — this header check is the real gate.
+ *
  * Env vars required:
- *   HYPERCODE_API_URL  — e.g. https://api.hypercode.dev  (or http://hypercode-core:8000 in local)
- *   SUPABASE_URL       — injected automatically by Supabase
- *   SUPABASE_ANON_KEY  — injected automatically by Supabase
+ *   HYPERCODE_API_URL     — e.g. https://api.hypercode.dev  (or http://hypercode-core:8000 in local)
+ *   V24_SYNC_SECRET        — shared secret V2.4 must send as X-Sync-Secret
+ *   SUPABASE_URL           — injected automatically by Supabase
+ *   SUPABASE_SECRET_KEYS   — hosted named secret keys (this fn uses "course_profile")
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { resolveSupabaseAdminKey } from "../_shared/supabaseAdminKey.mjs";
 
 const HYPERCODE_API_URL = Deno.env.get("HYPERCODE_API_URL") ?? "http://hypercode-core:8000";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 Deno.serve(async (req: Request) => {
+  const v24SyncSecret = Deno.env.get("V24_SYNC_SECRET");
+  if (!v24SyncSecret) {
+    console.error("[course-profile] V24_SYNC_SECRET is not configured");
+    return new Response(
+      JSON.stringify({ error: "Service misconfigured — contact admin" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  const providedSecret = req.headers.get("X-Sync-Secret");
+  if (!providedSecret || providedSecret !== v24SyncSecret) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   const url = new URL(req.url);
   const discordId = url.searchParams.get("discord_id");
 
@@ -39,11 +67,21 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
-  const supabaseKey = SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_ANON_KEY;
-  if (!supabaseKey) {
+
+  let supabaseKey: string;
+  try {
+    supabaseKey = resolveSupabaseAdminKey(
+      {
+        SUPABASE_SECRET_KEYS: Deno.env.get("SUPABASE_SECRET_KEYS") ?? "",
+        SUPABASE_SECRET_KEY: Deno.env.get("SUPABASE_SECRET_KEY") ?? "",
+      },
+      "course_profile",
+    );
+  } catch (err) {
+    console.error("[course-profile] Admin key resolution failed:", err instanceof Error ? err.message : err);
     return new Response(
-      JSON.stringify({ error: "Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY env var" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: "Service misconfigured — contact admin" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
     );
   }
 
