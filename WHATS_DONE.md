@@ -2,6 +2,43 @@
 
 > Last synced: 2026-07-30 by Claude (Cowork) ⚡
 
+## 2026-07-30 — BROski Course Bot deployed live for the first time (Railway)
+
+`discord-bot/` (Python `discord.py` gateway bot — `/link`, `/xp`,
+`/xp-leaderboard`, `/quest`, `/badges`, weekly quest auto-post, badge-unlock
+announcements) had existed in the repo but was never deployed anywhere.
+Investigated first (found no Dockerfile/Procfile/Railway config for it, and
+a Railway project someone assumed was it — `broski-bot` in `HyperCode-V2.4`
+— turned out to be a different repo entirely, itself pointed at a Supabase
+project deleted 2026-07-18, unrelated, flagged not fixed).
+
+- Migrated off `SUPABASE_SERVICE_ROLE_KEY` to a scoped named secret key
+  (`discord_bot`), renamed to `SUPABASE_ADMIN_KEY` in code so the name
+  itself signals it isn't the legacy key.
+- Deployed to a new dedicated Railway project (`hyper-vibe-discord-bot`).
+- Three real bugs hit and fixed during first deploy, each root-caused
+  properly rather than guessed at:
+  1. `ModuleNotFoundError: No module named 'audioop'` — Python 3.13
+     (Railway default) removed it from stdlib; `discord.py==2.3.2` still
+     imports it unconditionally. Fixed via `RAILPACK_PYTHON_VERSION=3.12`
+     (first tried `NIXPACKS_PYTHON_VERSION`, which silently no-opped —
+     this project's builder is Railpack, a different override var,
+     confirmed via Railway's own docs).
+  2. `discord.errors.LoginFailure: Improper token has been passed` — first
+     token value was missing its trailing character. Fixed with a freshly
+     reset token from the Discord Developer Portal.
+  3. `SupabaseException: Invalid API key` — thrown client-side, before any
+     network call. `supabase==2.4.0` predates the `sb_secret_*` key format
+     and rejects anything not shaped like a legacy JWT. Bumped to `2.31.0`
+     (verified `db.py`'s actual usage is core, stable PostgREST-client API,
+     unchanged across that range).
+- **Verified fully live** via real Discord gateway logs: logged in as
+  `BROski Course Bot#7951`, 10 slash commands synced to the guild, all 5
+  cogs loaded.
+- **Found, not fixed**: `signups` cog's background task queries
+  `users.subscription_tier`, a column that doesn't exist — doesn't crash
+  the bot, but the "Catch Stragglers" notifier silently never fires.
+
 ## 2026-07-30 — Security hardening marathon: live exploit closed, corrupted commit caught, all 8 Edge Functions off the legacy key
 
 Full detail lives in `CHANGELOG.md` `[Unreleased]` and
