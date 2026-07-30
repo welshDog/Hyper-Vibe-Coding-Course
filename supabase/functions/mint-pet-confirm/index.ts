@@ -26,9 +26,12 @@
 //   - Allocate a new pet_id: pet_id is whatever was signed in the auth payload
 //     and emitted on-chain. We just record it.
 
-import "../deno-shims.d.ts";
+// NOTE: ../deno-shims.d.ts (editor-only ambient types, zero runtime effect)
+// is intentionally omitted — same rationale as mint-pet-auth: a cross-dir
+// relative import is fragile in single-function deploys.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { resolveSupabaseAdminKey } from "../_shared/supabaseAdminKey.mjs";
 import {
   createPublicClient,
   decodeEventLog,
@@ -78,13 +81,29 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   const { data: { user }, error: userErr } = await userClient.auth.getUser();
   if (userErr || !user) return json({ error: "Unauthorized" }, 401);
+
+  // Resolved right after auth, before the on-chain receipt lookup, so a
+  // misconfigured key fails fast and cheap.
+  let supabaseAdminKey: string;
+  try {
+    supabaseAdminKey = resolveSupabaseAdminKey(
+      {
+        SUPABASE_SECRET_KEYS: Deno.env.get("SUPABASE_SECRET_KEYS") ?? "",
+        SUPABASE_SECRET_KEY: Deno.env.get("SUPABASE_SECRET_KEY") ?? "",
+      },
+      "mint_pet_confirm",
+    );
+  } catch (err) {
+    console.error("[mint-pet-confirm] Admin key resolution failed:", err instanceof Error ? err.message : err);
+    return json({ error: "Service misconfigured — contact admin" }, 503);
+  }
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    supabaseAdminKey,
+  );
 
   // 2. Parse + validate body
   let body: {
