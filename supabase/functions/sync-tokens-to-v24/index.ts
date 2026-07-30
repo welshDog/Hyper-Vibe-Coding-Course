@@ -6,9 +6,16 @@
 //          so the student's BROski$ wallet reflects their Course earnings in real time.
 //
 // Security:
-//   - Auth uses a shared COURSE_SYNC_SECRET sent as X-Sync-Secret header
-//   - V2.4 verifies it before awarding coins
-//   - Idempotency is enforced on the V2.4 side via course_sync_events.source_id UNIQUE
+//   - Inbound: this function's own public URL is otherwise unauthenticated
+//     (--no-verify-jwt, since Supabase's webhook caller has no user JWT), so it
+//     verifies an X-Webhook-Secret header against WEBHOOK_SECRET before
+//     trusting the payload at all. Without this, anyone who found the URL could
+//     POST a forged token_transactions INSERT and trigger a real award call to
+//     V2.4. Configure the same value as a custom header on the DB Webhook itself
+//     (Database -> Webhooks in the dashboard) when it's created.
+//   - Outbound: auth to V2.4 uses a shared COURSE_SYNC_SECRET sent as
+//     X-Sync-Secret header. V2.4 verifies it before awarding coins.
+//   - Idempotency is enforced on the V2.4 side via course_sync_events.source_id UNIQUE.
 //
 // DB Webhook payload format (Supabase sends this automatically):
 //   {
@@ -29,14 +36,16 @@
 // Setup:
 //   supabase functions deploy sync-tokens-to-v24 --no-verify-jwt
 //   supabase secrets set COURSE_SYNC_SECRET=<same-value-as-V2.4-COURSE_SYNC_SECRET>
+//   supabase secrets set WEBHOOK_SECRET=<random value>
 //   supabase secrets set V24_API_URL=https://<your-public-v24-url>
 //   Then register the Supabase DB Webhook in the Supabase dashboard:
 //     - Source table: public.token_transactions
 //     - Event: INSERT
 //     - URL: https://<your-project>.supabase.co/functions/v1/sync-tokens-to-v24
-//     - Headers: (none) — this edge function authenticates to V2.4 via X-Sync-Secret
+//     - Headers: X-Webhook-Secret: <same value as WEBHOOK_SECRET>
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { resolveSupabaseAdminKey } from "../_shared/supabaseAdminKey.mjs";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -82,25 +91,19 @@ function jsonError(message: string, status = 400): Response {
 
 async function resolveDiscordId(
   record: TokenTransactionRecord,
+  supabaseAdminKey: string | null,
 ): Promise<{ discordId: string | null; reason: "in_record" | "discord_links" | "missing" }> {
   if (record.discord_id) {
     return { discordId: record.discord_id, reason: "in_record" };
   }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!SUPABASE_URL) {
+  if (!SUPABASE_URL || !supabaseAdminKey) {
     return { discordId: null, reason: "missing" };
   }
 
-  const supabaseKey = SUPABASE_SERVICE_ROLE_KEY ?? SUPABASE_ANON_KEY;
-  if (!supabaseKey) {
-    return { discordId: null, reason: "missing" };
-  }
-
-  const supabase = createClient(SUPABASE_URL, supabaseKey);
+  const supabase = createClient(SUPABASE_URL, supabaseAdminKey);
 
   const { data, error } = await supabase
     .from("discord_links")
@@ -120,6 +123,37 @@ async function resolveDiscordId(
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return jsonError('Method not allowed', 405);
+  }
+
+  // ── 0. Verify the request genuinely came from Supabase's DB webhook ────────
+  // This function has no user JWT to check (--no-verify-jwt), so without this
+  // gate anyone who found the URL could POST a forged token_transactions
+  // INSERT and trigger a real award call to V2.4.
+  const webhookSecret = Deno.env.get("WEBHOOK_SECRET");
+  if (!webhookSecret) {
+    console.error('sync-tokens-to-v24: WEBHOOK_SECRET is not configured');
+    return jsonError('Service misconfigured — contact admin', 503);
+  }
+  const providedSecret = req.headers.get('X-Webhook-Secret');
+  if (!providedSecret || providedSecret !== webhookSecret) {
+    return jsonError('Unauthorized', 401);
+  }
+
+  // Resolved once per request, right after the webhook-secret gate, so a
+  // misconfigured key fails fast and cheap.
+  let supabaseAdminKey: string | null = null;
+  try {
+    supabaseAdminKey = resolveSupabaseAdminKey(
+      {
+        SUPABASE_SECRET_KEYS: Deno.env.get("SUPABASE_SECRET_KEYS") ?? "",
+        SUPABASE_SECRET_KEY: Deno.env.get("SUPABASE_SECRET_KEY") ?? "",
+      },
+      "sync_tokens_to_v24",
+    );
+  } catch (err) {
+    // Not fatal here — resolveDiscordId only needs this when record.discord_id
+    // is absent, and falls back to reason:"missing" (skip) rather than crash.
+    console.error('sync-tokens-to-v24: Admin key resolution failed:', err instanceof Error ? err.message : err);
   }
 
   // ── 1. Parse the DB webhook payload ────────────────────────────────────────
@@ -152,7 +186,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 3. Resolve discord_id ──────────────────────────────────────────────────
-  const { discordId, reason: discordIdSource } = await resolveDiscordId(record);
+  const { discordId, reason: discordIdSource } = await resolveDiscordId(record, supabaseAdminKey);
   if (!discordId) {
     console.log(`sync-tokens-to-v24: Skipping id=${record.id} — discord_id missing (${discordIdSource})`);
     return jsonOk({ ok: true, skipped: true, reason: 'no_discord_id' });
