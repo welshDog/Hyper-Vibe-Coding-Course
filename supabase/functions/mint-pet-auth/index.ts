@@ -44,6 +44,7 @@
 // cross-dir relative import is fragile in single-function deploys).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { resolveSupabaseAdminKey } from "../_shared/supabaseAdminKey.mjs";
 import { privateKeyToAccount } from "npm:viem@2.21.0/accounts";
 import { concatHex, createWalletClient, encodeFunctionData, http, parseAbi } from "npm:viem@2.21.0";
 import { baseSepolia, base } from "npm:viem@2.21.0/chains";
@@ -98,13 +99,29 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   const { data: { user }, error: userErr } = await userClient.auth.getUser();
   if (userErr || !user) return json({ error: "Unauthorized" }, 401);
+
+  // Resolved right after auth, before any minting work starts, so a
+  // misconfigured key fails fast and cheap.
+  let supabaseAdminKey: string;
+  try {
+    supabaseAdminKey = resolveSupabaseAdminKey(
+      {
+        SUPABASE_SECRET_KEYS: Deno.env.get("SUPABASE_SECRET_KEYS") ?? "",
+        SUPABASE_SECRET_KEY: Deno.env.get("SUPABASE_SECRET_KEY") ?? "",
+      },
+      "mint_pet_auth",
+    );
+  } catch (err) {
+    console.error("[mint-pet-auth] Admin key resolution failed:", err instanceof Error ? err.message : err);
+    return json({ error: "Service misconfigured — contact admin" }, 503);
+  }
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    supabaseAdminKey,
+  );
 
   // 2. Parse + validate body
   let body: {
