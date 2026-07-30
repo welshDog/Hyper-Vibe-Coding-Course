@@ -237,7 +237,7 @@ against `tlavrxiaegbtyfmjfdcz` and verified live — not just written and hoped.
 4. `auth_leaked_password_protection` advisor warning — still open, still
    Pro-gated, still deferred per the existing funding decision. Unchanged.
 
-## First task next session
+## First task next session (superseded — see Session 3 below)
 
 1. Quiz-explanation content review (only remaining open item from tonight's
    quiz-grading work) — check whether any `explanation` text phrases the
@@ -249,3 +249,118 @@ against `tlavrxiaegbtyfmjfdcz` and verified live — not just written and hoped.
 3. Pick the next legacy consumer off the Session 1 list (Discord bot, agent
    scripts, or one of the other Edge Functions) to migrate off
    `SUPABASE_SERVICE_ROLE_KEY`.
+
+---
+
+# Session 3 — generate-v2-config migration, a corrupted commit, and branch protection (2026-07-30, same day)
+
+## `generate-v2-config` migrated
+
+Same pattern as `stripe-webhook`/`shop-purchase`/`discord-link`: named secret
+key `generate_v2_config` created via Supabase Dashboard, function switched
+from a module-level `SUPABASE_SERVICE_ROLE_KEY` client to a per-request
+`resolveSupabaseAdminKey()` call. `resolveDiscordId`/
+`findLatestAgentAccessPurchase` now take the admin client as a parameter
+instead of closing over a module global. Deployed v6→v7. Verified live via
+an authenticated request through a real browser session — response was the
+post-resolver `"No discord_id linked to your Course account yet"` app error
+rather than the resolver's own `"Server misconfigured"` error, confirming
+the key resolved.
+
+**Two findings surfaced while reading sibling functions, not fixed —
+documented in `CHANGELOG.md` under `[Unreleased]`:**
+- `course-profile` has no caller-identity check at all. Any authenticated
+  user can query any `discord_id` via `GET
+  /functions/v1/course-profile?discord_id=<snowflake>` and get back that
+  student's BROski$ balance, loyalty tier, XP, lessons completed, and — if
+  they have no `full_name` set — their raw email (`display_name:
+  courseUser.full_name ?? courseUser.email ?? null`). Needs an actual
+  access-control decision (should this only be callable by the Discord bot
+  with a shared secret? should it verify the caller owns that discord_id?),
+  not a key-type swap.
+- `sync-tokens-to-v24` runs `--no-verify-jwt` (correct — it's meant to be
+  called by Supabase's own DB webhook system) but never verifies the
+  request actually came from Supabase — no shared secret or signature check
+  on the incoming payload. Anyone who finds the URL could POST a forged
+  `token_transactions` INSERT event and trigger a real award call to V2.4.
+
+## A corrupted commit landed on `main` — caught and fixed
+
+Commit `84ddd2b` — pushed directly via the GitHub web UI (not through this
+session, not through any local git client — confirmed via `git show -s
+--format=...`: author/committer email was
+`68136524+welshDog@users.noreply.github.com`, GitHub's auto-generated
+web-commit address, versus the real configured email
+`lyndzwills00001@Hotmail.co.uk` on every local commit including the ones
+this session made) — had the message `"fix(discord-link): migrate to named
+secret key generate_v2_config"` but the actual diff deleted the entire
+139-line `discord-link/index.ts` and replaced it with one line of stray
+text: `already committed locally`. Read as an accidental paste into
+GitHub's file editor. Confirmed accidental with the repo owner.
+
+- Live production was never affected — `discord-link` v7 (the real,
+  correct code) was already deployed and kept running regardless of what
+  the repo said.
+- Fixed by pulling, restoring the file to match what's live (byte-identical
+  to the v7 deploy), and pushing. That restore commit (`232167a`) ended up
+  bundling the `generate-v2-config` migration too, since both were staged
+  together — not a functional problem, just imprecise commit scoping.
+
+## Root cause: `main` had zero branch protection — now fixed
+
+`gh api repos/welshDog/Hyper-Vibe-Coding-Course/branches/main/protection`
+returned `404 Branch not protected` before this session. Nothing stopped
+any direct push — including a one-click GitHub web-UI edit-and-commit from
+the repo owner's own account — from landing straight on `main` with zero
+review. The existing `course-eval` pre-push hook
+(`.git/hooks/pre-push` / `scripts/git_hooks/pre-push`) never helps here: it
+is a **local-only** git hook (comment in the file: *"Local replacement for
+billing-locked CI"*), there is no `.github/workflows` directory at all, and
+local hooks never run for GitHub web-UI commits — which is exactly how
+`84ddd2b` got through.
+
+Fixed via `gh api --method PUT .../branches/main/protection`:
+```json
+{
+  "required_status_checks": null,
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 0,
+    "dismiss_stale_reviews": false,
+    "require_code_owner_reviews": false
+  },
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+```
+Verified live via `gh api .../protection` read-back: `enforce_admins: true`,
+`required_approving_review_count: 0`, `allow_force_pushes: false`.
+
+**`enforce_admins: true` was the deliberate, discussed choice** — the repo
+owner is the account that made the accidental commit, so a rule exempting
+admins would have done nothing for this exact incident. `0` required
+approvals means merges are still instant (no waiting on a second reviewer
+that doesn't exist on a solo repo) — the point isn't review, it's forcing
+every change, including accidental ones, through a PR diff view instead of
+a one-click direct commit.
+
+**Workflow change starting now, for every session including this one:**
+direct `git push origin main` will be **rejected** by GitHub. The flow is
+now: create a branch → push the branch → open a PR → merge the PR (self-merge
+is fine, 0 approvals required). This handover entry itself was shipped
+through that exact flow as the first real test of the new rule.
+
+## First task next session
+
+1. Quiz-explanation content review (`CourseModule.tsx` payload still ships
+   `explanation` text unstripped).
+2. `course-profile` access-control gap — needs a design decision before a
+   fix (see above).
+3. `sync-tokens-to-v24` webhook forgeability — needs a shared-secret/
+   signature check added.
+4. Pick the next legacy `SUPABASE_SERVICE_ROLE_KEY` consumer: Discord bot
+   (Python), agent scripts, `pet-mentor-chat`, `mint-pet-auth`,
+   `mint-pet-confirm`.
+5. Consider whether `shop-purchase`'s CORS fix needs a non-Playwright
+   regression test.
