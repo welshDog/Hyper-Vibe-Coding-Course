@@ -82,6 +82,31 @@
 - `WHATS_DONE.md` synced (was 2 days stale).
 - This snapshot created (was missing entirely for 07-30).
 
+**BROski Course Bot deployed live for the first time**
+- Read the user's AI-generated "phased rollout plan" doc fully before
+  reacting — found it significantly overlapped with (and misunderstood)
+  what already exists: `discord-bot/` already does most of "Phase 1" and
+  part of "Phase 3", just as a Python gateway bot, not the Edge-Function
+  architecture the plan assumed. Real gap: quest completion tracking.
+- Bigger finding: the bot had never been deployed anywhere at all —
+  confirmed via this repo and directly via Railway (only one unrelated
+  project existed). User chose to get it live over building anything new.
+- Migrated off `SUPABASE_SERVICE_ROLE_KEY` → scoped `SUPABASE_ADMIN_KEY`,
+  deployed to a new Railway project (`hyper-vibe-discord-bot`).
+- Three bugs hit and root-caused in sequence: Python 3.13 removed
+  `audioop` from stdlib (fixed via `RAILPACK_PYTHON_VERSION=3.12` — after
+  first trying the wrong override variable for the wrong builder,
+  Nixpacks vs. this project's actual Railpack builder); a transcribed
+  Discord bot token was missing its last character (fixed with a fresh
+  Reset Token); `supabase==2.4.0` predates the new secret-key format and
+  rejects it client-side (bumped to `2.31.0`, verified the actual API
+  surface used is stable across that range first).
+- **Verified fully live** via real Discord gateway logs: logged in,
+  10 slash commands synced, all 5 cogs loaded.
+- Found, not fixed: `signups` cog queries a `users.subscription_tier`
+  column that doesn't exist — doesn't crash the bot, but the "Catch
+  Stragglers" notifier silently never fires.
+
 ---
 
 ## 🔴 BLOCKED / NEEDS DECISION
@@ -92,6 +117,8 @@
 
 ## 🟡 IN PROGRESS (not finished)
 
+- `cogs/signups.py`'s `subscription_tier` column error (found tonight,
+  not fixed) — the one loose end from the bot deployment.
 - Quiz `explanation` text still ships to the client unstripped (only
   `answer_index` is stripped) — unchecked whether any explanation phrases
   the correct answer clearly enough to read before attempting.
@@ -100,9 +127,9 @@
   preflight semantics, so this bug class can't be caught by the existing
   suite.
 - `discord-link`'s `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` still
-  aren't configured — Discord account-linking has probably never worked
-  in any deployed version (found during the key migration, unrelated to
-  it).
+  aren't configured — Discord account-linking (the web app's OAuth flow,
+  separate from the bot's own working `/link` command) has probably never
+  worked in any deployed version.
 - `HyperCode-V2.4`'s `broski-bot` pointed at a deleted Supabase project —
   different repo, flagged not fixed.
 
@@ -110,13 +137,11 @@
 
 ## 🎯 NEXT SESSION — START HERE
 
-**First task, pick one:**
-1. Quiz-explanation content review.
-2. Decide whether the `shop-purchase` CORS fix needs a non-Playwright
-   regression test (e.g. a real cross-origin fetch against a local
-   `supabase functions serve` instance).
-3. Get real Discord app credentials into `discord-link` so account-linking
-   actually works.
+**First task:** fix `cogs/signups.py`'s `subscription_tier` column error —
+the one loose end from tonight's bot deployment. Then pick from: quiz-
+explanation content review, a non-Playwright regression test for the
+`shop-purchase` CORS fix, or real Discord OAuth credentials for
+`discord-link`.
 
 *Session by welshDog 🐶♾️ + Claude | Llanelli, Wales*
 *"Stop apologising for your brain. Start building."*

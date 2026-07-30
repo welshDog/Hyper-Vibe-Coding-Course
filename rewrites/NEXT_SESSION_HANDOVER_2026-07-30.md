@@ -462,16 +462,103 @@ Audited the doc chain for drift — found real gaps and closed them:
 - This handover's "First task next session" list was itself stale
   (listed already-fixed items as still-open) — corrected above.
 
+## First task next session (superseded — see Session 5 below)
+
+1. ~~Quiz-explanation content review~~ — still open, see below.
+2. ~~Decide whether shop-purchase's CORS fix needs a non-Playwright test~~ — still open.
+3. ~~Get real Discord app credentials configured~~ — **partially resolved**:
+   the bot token issue was root-caused and fixed during deployment (see
+   Session 5). `discord-link`'s OAuth-based linking specifically is
+   unrelated and still needs `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET`.
+4. ~~Whenever discord-bot/ actually gets deployed, migrate it~~ — **done,
+   see Session 5.** `course-content-agent/` and `Test-ShopPurchase.ps1`
+   remain dormant/local-only, still not migrated (correctly — no reason to
+   until they're actually deployed).
+
+---
+
+# Session 5 — BROski Course Bot deployed live for the first time (2026-07-30, same day)
+
+The user dropped in an AI-generated "phased rollout plan" doc proposing a
+new Edge-Function-based Discord bot architecture. Read it fully before
+reacting — it turned out to significantly overlap with, and in places
+misunderstand, what already exists: `discord-bot/` (a Python `discord.py`
+gateway bot) already implements most of "Phase 1" (`/link`, `/xp`,
+`/xp-leaderboard`) and part of "Phase 3" (weekly quest auto-post, badge
+announcements), just via a different architecture than the plan assumed.
+The one genuine gap found was "Phase 2" (quest completion tracking — no
+`/quest_complete`, no per-user state, despite a `quests` table existing
+that the bot doesn't even read from).
+
+**Bigger finding: `discord-bot/` had never been deployed anywhere.**
+Confirmed via this repo (no Dockerfile/Procfile/Railway config) and via
+Railway directly (`whoami` + `list-projects` — only one project existed,
+unrelated: Grafana/Prometheus/HYPER-SILLs). User chose to prioritize
+getting the existing bot live over building anything new.
+
+## What shipped
+
+- `discord-bot/config.py`/`db.py`/`.env.example` — `SUPABASE_SERVICE_ROLE_KEY`
+  → `SUPABASE_ADMIN_KEY`, reading a scoped `discord_bot` named secret key
+  instead (commit `f4b3b9d`, PR #31).
+- New Railway project `hyper-vibe-discord-bot` (ID
+  `f253beaa-c8a7-48a5-a344-80ccd346b9c4`), service `discord-bot` (ID
+  `e2b8af53-8448-4fd2-96b9-3b30444abfb4`), deployed from
+  `welshDog/Hyper-Vibe-Coding-Course` main branch, root directory
+  `/discord-bot`, start command `python bot.py`, `ON_FAILURE` restart
+  policy (max 3 retries).
+- Three bugs hit in sequence during first deploy, each root-caused before
+  fixing (not guessed at):
+  1. **`ModuleNotFoundError: No module named 'audioop'`** — Python 3.13
+     (Railway/Railpack default) removed `audioop` from stdlib;
+     `discord.py==2.3.2` imports it unconditionally for voice support the
+     bot never uses. First attempted fix (`NIXPACKS_PYTHON_VERSION=3.12`)
+     silently did nothing — this project's builder is **Railpack**, not
+     classic Nixpacks, confirmed by the build log showing
+     `railpack-v0.35.0`. Correct variable, found via Railway's own docs
+     (`search-docs`/`fetch-docs` + a `railpack.com` fetch):
+     `RAILPACK_PYTHON_VERSION=3.12`. Verified via wheel filenames in the
+     next build showing `cp312` tags.
+  2. **`discord.errors.LoginFailure: Improper token has been passed`** —
+     the first `DISCORD_BOT_TOKEN` value was missing its trailing
+     character vs. what was pasted earlier in the session (a transcription
+     gap, caught by comparing the two values character-by-character).
+     Fixed with a freshly Reset Token from the Discord Developer Portal.
+  3. **`supabase._sync.client.SupabaseException: Invalid API key`** —
+     thrown by the `supabase` Python package's own constructor, before any
+     network call. `supabase==2.4.0` (pinned in `requirements.txt`)
+     predates the `sb_secret_*`/`sb_publishable_*` key format and validates
+     keys look like legacy JWTs (three dot-separated segments) — the new
+     format doesn't match, so it's rejected client-side. Checked `db.py`'s
+     actual usage first (`.table/.select/.eq/.rpc/.upsert/.execute` — core,
+     stable PostgREST-client API) before bumping to `2.31.0` (commit
+     `ac94a36`, PR #32) to confirm the jump was safe.
+- **Verified fully live** via real Railway runtime logs (not just "build
+  succeeded"): `Logged in as BROski Course Bot#7951
+  (1492297844449873950)`, `Synced 10 slash commands to guild
+  1212443870856613949`, all 5 cogs (`xp`, `badges`, `quests`, `commands`,
+  `signups`) loaded without error.
+
+## Known open item from this work
+
+`cogs/signups.py`'s background task (`check_signups`, the "Catch
+Stragglers" new-signup notifier) queries `users.subscription_tier`, a
+column that doesn't exist — `postgrest.exceptions.APIError: column
+users.subscription_tier does not exist` (code `42703`). Doesn't crash the
+bot (discord.py's task-loop error handling catches and logs it), but the
+notifier silently never fires. Not fixed — flagged for next session per
+the user's explicit choice to bank tonight's win first.
+
 ## First task next session
 
-1. Quiz-explanation content review — check whether any `explanation` text
-   in the quiz payload phrases the correct answer clearly enough to read
-   before attempting (only `answer_index` is stripped, not `explanation`).
-2. Decide whether `shop-purchase`'s CORS fix needs a non-Playwright
-   regression test (confirmed Playwright can't catch this bug class).
-3. Get real Discord app credentials configured so `discord-link`
-   (account-linking) actually works — found dormant/never-functional
-   during an earlier session's key migration.
-4. Whenever `discord-bot/`, `course-content-agent/`, or
-   `Test-ShopPurchase.ps1` actually get deployed: migrate them off
-   `SUPABASE_SERVICE_ROLE_KEY` at that point, not before.
+1. Fix `cogs/signups.py`'s `subscription_tier` column error (see above) —
+   the one loose end from tonight's deploy.
+2. Quiz-explanation content review (`CourseModule.tsx` payload).
+3. Decide on a non-Playwright regression test for the `shop-purchase` CORS
+   fix, or accept the gap.
+4. Real Discord OAuth credentials for `discord-link` specifically (account
+   linking via the web app, separate from the bot's own `/link` command
+   which already works).
+5. If ever revisiting the Discord bot roadmap: the one genuine feature gap
+   found is real quest-completion tracking (`/quest_complete` + per-user
+   state) — the `quests` table exists but nothing reads from it yet.

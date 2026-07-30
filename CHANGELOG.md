@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Infrastructure
+- **`discord-bot/` deployed live for the first time**, to a new dedicated Railway project (`hyper-vibe-discord-bot`). Previously dormant — no Dockerfile, Procfile, or Railway config existed anywhere for it.
+  - Migrated off `SUPABASE_SERVICE_ROLE_KEY` to a scoped named secret key (`discord_bot`) as part of the same pass, renamed to `SUPABASE_ADMIN_KEY` in `config.py`/`db.py`/`.env.example` so the variable name itself signals it isn't the legacy key.
+  - Three real bugs found and fixed during first deploy, in order:
+    1. `ModuleNotFoundError: No module named 'audioop'` — Python 3.13 (Railway's default) removed `audioop` from the stdlib; pinned `discord.py==2.3.2` still imports it unconditionally for voice support the bot never uses. Fixed via `RAILPACK_PYTHON_VERSION=3.12` (not `NIXPACKS_PYTHON_VERSION` — this project's builder is Railpack, a different override variable, confirmed via Railway's own docs after the wrong one silently no-opped).
+    2. `discord.errors.LoginFailure: Improper token has been passed` — the first token value provided was missing its trailing character (a transcription/copy gap). Resolved with a freshly reset token from the Discord Developer Portal.
+    3. `supabase._sync.client.SupabaseException: Invalid API key` — thrown client-side by the `supabase` Python package itself, before any network call. `supabase==2.4.0` predates the `sb_secret_*`/`sb_publishable_*` key format and validates that keys look like legacy JWTs (three dot-separated segments), rejecting the new format outright. Bumped to `2.31.0` — `db.py`'s actual usage (`.table/.select/.eq/.rpc/.upsert/.execute`) is core, stable PostgREST-client API, unchanged across that range.
+  - **Verified fully live**: real Discord gateway logs — `Logged in as BROski Course Bot#7951 (1492297844449873950)`, `Synced 10 slash commands to guild 1212443870856613949`, all 5 cogs (`xp`, `badges`, `quests`, `commands`, `signups`) loaded successfully.
+  - **Known pre-existing bug found, not fixed** (unrelated to the deploy work): the `signups` cog's background task queries `users.subscription_tier`, a column that doesn't exist (`APIError 42703`). Doesn't crash the bot — discord.py's task-loop error handling catches it and logs it — but the "Catch Stragglers" new-signup notifier silently never fires.
+
 ### Security
 - **sync-tokens-to-v24 Edge Function** — closed a forgeable-webhook gap and migrated off legacy `SUPABASE_SERVICE_ROLE_KEY`.
   - Before: `--no-verify-jwt` (correct, since Supabase's own DB webhook caller has no user JWT) but the function never verified the request actually came from Supabase — anyone who found the public URL could POST a forged `token_transactions` INSERT payload and trigger a real token-award call to V2.4.
