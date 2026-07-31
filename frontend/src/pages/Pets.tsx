@@ -220,7 +220,7 @@ export default function Pets() {
           </span>
           <span className="h-4 w-px bg-pet-ink/20" aria-hidden />
           <span className="flex items-center gap-1.5 text-sm font-bold text-pet-wood-dark">
-            🔥 {streak}-day streak
+            🔥 {streak > 0 ? `${streak}-day streak` : 'Start your streak today'}
           </span>
         </div>
       </header>
@@ -396,28 +396,43 @@ export default function Pets() {
           </div>
         </section>
       ) : (
-        <>
-          {/* Step 1 — pick species */}
-          <section aria-labelledby="step1" className="flex flex-col gap-3">
-            <h2 id="step1" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
-              {pets.length > 0 ? 'Mint another' : `Step 1 — Pick a species (${SPECIES.length} available)`}
-            </h2>
-            <HVZCard>
-              <SpeciesPicker selected={speciesId} onSelect={setSpeciesId} />
-            </HVZCard>
-          </section>
+        // One gacha-style panel, not three stacked "Step N" text blocks — the
+        // rarity odds table sits up top and stays visible the whole time,
+        // like a prize table, instead of only appearing after picking a name.
+        <section aria-labelledby="mint-panel" className="flex flex-col gap-3">
+          <h2 id="mint-panel" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
+            🎰 {pets.length > 0 ? 'Mint Another Pet' : 'Mint Your First Pet'}
+          </h2>
+          <HVZCard variant="chunky">
+            <div className="flex flex-col gap-5">
+              <div className="rounded-pet-chunky border-2 border-pet-ink/20 bg-pet-lilac/40 px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-pet-ink-soft mb-2">
+                  🎲 Every mint rolls one of these — luck of the draw
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {MINT_RARITY_ROW.map((r) => (
+                    <HVZTag key={r.key} variant="chunky" color={r.color}>
+                      {RARITY_LABELS[r.key]}
+                    </HVZTag>
+                  ))}
+                </div>
+                <p className="text-[11px] text-pet-ink-soft mt-2">
+                  Revealed when your pet hatches. Every mint costs the same (100 BROski$).
+                </p>
+              </div>
 
-          {/* Step 2 — name + rarity */}
-          {species && (
-            <section aria-labelledby="step2" className="flex flex-col gap-3">
-              <h2 id="step2" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
-                Step 2 — Name your {species.displayName}
-              </h2>
-              <HVZCard>
-                <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft mb-2">
+                  1. Pick a species ({SPECIES.length} available)
+                </p>
+                <SpeciesPicker selected={speciesId} onSelect={setSpeciesId} />
+              </div>
+
+              {species && (
+                <div className="flex flex-col gap-4 border-t-2 border-pet-ink/10 pt-5">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
-                      Pet name (1–32 chars)
+                      2. Name your {species.displayName}
                     </span>
                     <input
                       type="text"
@@ -429,47 +444,22 @@ export default function Pets() {
                     />
                   </label>
 
-                  <div className="rounded-pet-chunky border-2 border-pet-ink/20 bg-pet-lilac/40 px-3 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-pet-ink-soft mb-2">
-                      🎲 Rarity rolled on mint — luck of the draw
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {MINT_RARITY_ROW.map((r) => (
-                        <HVZTag key={r.key} variant="chunky" color={r.color}>
-                          {RARITY_LABELS[r.key]}
-                        </HVZTag>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-pet-ink-soft mt-2">
-                      Revealed when your pet hatches. Every mint costs the same (100 BROski$).
-                    </p>
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
+                      3. Mint
+                    </span>
+                    <WalletStatusBadge />
+                    <MintPetButton
+                      species={species}
+                      petName={petName}
+                      onMinted={handleMinted}
+                    />
                   </div>
                 </div>
-              </HVZCard>
-            </section>
-          )}
-
-          {/* Step 3 — mint */}
-          {species && (
-            <section aria-labelledby="step3" className="flex flex-col gap-3">
-              <h2 id="step3" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
-                Step 3 — Mint · Your BROski${' '}
-                <span data-mint-broski className="font-mono font-bold text-pet-gold-dark">
-                  {tokens.toLocaleString()}
-                </span>{' '}
-                / 100 needed
-              </h2>
-              <WalletStatusBadge />
-              <HVZCard>
-                <MintPetButton
-                  species={species}
-                  petName={petName}
-                  onMinted={handleMinted}
-                />
-              </HVZCard>
-            </section>
-          )}
-        </>
+              )}
+            </div>
+          </HVZCard>
+        </section>
       )}
 
       {/* Section 4 — Evolution Path, educational. Only shown here when there's
@@ -484,22 +474,25 @@ export default function Pets() {
         </section>
       )}
 
-      {/* Section 5 — Top evolvers across the squad (public squad row) */}
-      <section aria-labelledby="top-evolvers" className="flex flex-col gap-3">
+      {/* Section 5 — Top evolvers across the squad (public squad row).
+          Lighter heading treatment than the hero/mint sections above — this
+          is supporting content, not another thing competing for top billing. */}
+      <section aria-labelledby="top-evolvers" className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 id="top-evolvers" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
+          <h2 id="top-evolvers" className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
             Top evolvers
           </h2>
-          <p className="text-[11px] text-pet-ink-soft">
+          <p className="text-[11px] text-pet-ink-soft/70">
             Most-evolved BROskiPets across the squad
           </p>
         </div>
         <PetSquadRow />
       </section>
 
-      {/* Section 6 — How XP feeds your pet (3-column education) */}
-      <section aria-labelledby="how-xp" className="flex flex-col gap-3">
-        <h2 id="how-xp" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
+      {/* Section 6 — How XP feeds your pet (3-column education). Same lighter
+          treatment — this is a once-read explainer, not a recurring focal point. */}
+      <section aria-labelledby="how-xp" className="flex flex-col gap-2">
+        <h2 id="how-xp" className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
           How XP feeds your pet
         </h2>
         <HVZCard>

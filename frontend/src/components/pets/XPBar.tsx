@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { HVZProgress } from '../ui/hvz'
-import { progressInStage, STAGE_BY_KEY } from '../../lib/evolution'
+import { progressInStage, EVOLUTION_STAGES } from '../../lib/evolution'
 
 type Props = {
   xp:           number
@@ -19,7 +19,11 @@ type Props = {
 
 export function XPBar({ xp, isEvolving = false }: Props) {
   const { stage, current, next, percent } = progressInStage(xp)
-  const stageInfo = STAGE_BY_KEY[stage]
+  // Current stage name/emoji already appears in the "Stage: X" caption
+  // PetCard renders right above this bar — the label here only names the
+  // *next* stage, so the two lines don't repeat the same stage twice.
+  const stageIdx = EVOLUTION_STAGES.findIndex((s) => s.key === stage)
+  const nextStage = EVOLUTION_STAGES[stageIdx + 1]
   const atMax = next === 0
 
   // Animate width from 0 → percent on first mount so the bar fills in.
@@ -36,8 +40,8 @@ export function XPBar({ xp, isEvolving = false }: Props) {
   }, [percent])
 
   const label = atMax
-    ? `${stageInfo.label} ${stageInfo.emoji} — Fully evolved`
-    : `${stageInfo.label} ${stageInfo.emoji} → next stage`
+    ? '👑 Fully evolved'
+    : `Next: ${nextStage.label} ${nextStage.emoji} · ${current.toLocaleString()} / ${next.toLocaleString()} XP`
 
   return (
     <div
@@ -47,7 +51,7 @@ export function XPBar({ xp, isEvolving = false }: Props) {
         value={atMax ? 100 : Math.round(renderedPct)}
         max={100}
         gradient={atMax ? 'gold' : 'xp'}
-        label={atMax ? label : `${label} · ${current.toLocaleString()} / ${next.toLocaleString()} XP`}
+        label={label}
         trackStyle={{ border: '2px solid #241C3D', background: '#FFF8EC' }}
       />
     </div>
