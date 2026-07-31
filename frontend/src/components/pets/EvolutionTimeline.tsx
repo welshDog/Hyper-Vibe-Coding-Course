@@ -44,8 +44,12 @@ export function EvolutionTimeline({ xpOverride }: Props) {
         Asymmetric grid:
           mobile: 2 cols, sm: 3 cols (no col-span — current stays normal width)
           lg: 7 cols total (5 stages × 1 col + current × 2 cols) so current has visual weight
-        Connector line sits behind tiles at lg only; lit portion ends at the
-        center of the current tile — `(currentIdx + 1) / 7 × 100%`.
+        Connector line sits behind tiles at lg only. Its fill is a genuine
+        progress bridge from the current stage toward the next — not just a
+        discrete per-stage jump — so being 415/500 XP through Baby shows as
+        partway across the Baby->Learner segment, not identical to being at
+        1/500. `stageProgressFraction` is the same current/next ratio the
+        HVZProgress bar below already uses, just applied to line position.
       */}
       <ol className="relative grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
         {/* Dim base trajectory — full width */}
@@ -57,7 +61,7 @@ export function EvolutionTimeline({ xpOverride }: Props) {
         <div
           aria-hidden
           className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 h-[3px] bg-pet-slime shadow-pet-outline z-0 motion-safe:transition-[width] motion-safe:duration-700 motion-safe:ease-out"
-          style={{ width: `${atMax ? 100 : ((currentIdx + 1) / 7) * 100}%` }}
+          style={{ width: `${atMax ? 100 : ((currentIdx + (next > 0 ? current / next : 0)) / 7) * 100}%` }}
         />
 
         {EVOLUTION_STAGES.map((s, i) => {
@@ -90,9 +94,16 @@ export function EvolutionTimeline({ xpOverride }: Props) {
                 <p className={`font-bold text-pet-ink ${isCurrent ? 'text-sm' : 'text-xs'}`}>
                   {s.label}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-pet-ink-soft font-mono">
-                  {s.minXp.toLocaleString()} XP
-                </p>
+                {/* The current tile's own threshold (e.g. Baby's "0 XP") reads
+                    as "your progress is 0" once you're already past it and
+                    sitting on real XP toward the *next* stage — that number
+                    belongs on the bridge/progress bar below, not here. Every
+                    other tile still shows its unlock requirement. */}
+                {!isCurrent && (
+                  <p className="text-[10px] uppercase tracking-wider text-pet-ink-soft font-mono">
+                    {s.minXp.toLocaleString()} XP
+                  </p>
+                )}
                 {isCurrent ? (
                   <HVZTag variant="chunky" color="gold">You are here</HVZTag>
                 ) : reached ? (
