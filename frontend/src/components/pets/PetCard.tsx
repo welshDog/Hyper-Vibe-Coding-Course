@@ -10,7 +10,6 @@
 
 import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { HVZCard, HVZTag, type TagColor } from '../ui/hvz'
-import { useHUD } from '../../hooks/useHUD'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { getSpecies, RARITY_LABELS, type Rarity, type SpeciesId } from '../../lib/species'
 import {
@@ -44,6 +43,7 @@ export type Pet = {
   stage:           PetStage
   mood:            PetMood
   evolution_count: number
+  xp:              number
   last_evolved_at: string | null
   mint_tx_hash:    `0x${string}`
   ipfs_cid:        string
@@ -86,10 +86,9 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
   const species = getSpecies(pet.species_id)
-  const hud = useHUD()
   const reduceMotion = usePrefersReducedMotion()
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50, active: false })
-  const xp = xpOverride ?? hud?.xp ?? 0
+  const xp = xpOverride ?? pet.xp ?? 0
   const stageInfo = STAGE_BY_KEY[pet.stage]
   const isLegend = pet.stage === 'legend'
   const isEvolving = pet.mood === 'evolving'
