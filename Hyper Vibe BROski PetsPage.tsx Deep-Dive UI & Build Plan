@@ -1,0 +1,180 @@
+# Hyper Vibe BROski PetsPage.tsx Deep-Dive UI & Build Plan
+## Overview
+This report analyses the current BROski Pets page, the desired Phase 2 feature set, and the Hyper Vibe visual style to produce a detailed UI/UX specification and a step‑by‑step implementation to‑do list for `PetsPage.tsx` and related components.
+
+It assumes:
+- Frontend stack: Vite + React + TypeScript, Tailwind or utility CSS.
+- Backend: Supabase with Edge Functions for pets, XP, mood, and minting.
+- UX goals: neurodivergent‑friendly, dopamine‑rich feedback, low cognitive load, and game‑like pet sim experience.[1]
+## 1. Current Pets Page Analysis
+### 1.1 Existing Information Architecture
+The live pets page already presents a clear learning‑game loop:
+- A **hero pet card** for one pet (e.g., Luna), with species name, pet stage, and XP progress toward the next stage.[1]
+- A **XP threshold bar** (e.g., 415 / 500 XP to reach Learner) and explicit stage labels (Baby, Learner, Builder, Legend) in an evolution path area.[1]
+- A **Customise section** reserved for cosmetic items, currently showing that cosmetics are not yet available.[1]
+- A **Recent Activity section** that surfaces course actions that affect the pet, reinforcing the link between learning and pet evolution.[1]
+- A **Mint Another Pet carousel or panel** that suggests multiple pets and rarities once conditions (e.g., XP thresholds) are met.[1]
+
+This structure already supports a foundational loop: learn → gain XP → evolve pet → unlock new options.
+### 1.2 UX Characteristics
+The current page follows the broader course tone:
+- Short, clear section headings (“YOUR PETS”, “EVOLUTION PATH”, etc.).[1]
+- Visible progress bars and thresholds, which are especially helpful for ADHD users who benefit from explicit goals and feedback.[1]
+- Limited on‑screen complexity: the page uses a small number of panels rather than a dense dashboard.[1]
+
+However, it still looks more like a standard web app than a fully game‑styled pet sim.
+## 2. Reference Pet Sim UI & Hyper Vibe Style
+### 2.1 Pet Sim Reference (Moy‑style)
+The provided pet game screenshot shows a classic mobile pet sim UI:[2]
+- Large central pet on a wooden floor, surrounded by big icon buttons.[2]
+- Pastel sky‑blue diamond wallpaper in the background.[2]
+- Thick black outlines and chunky rounded buttons for high readability.[2]
+- Clear resource counters (coins, items) and simple iconography for actions.[2]
+
+This aesthetic is simple, high‑contrast, and accessible, which aligns well with neurodivergent‑friendly principles.
+### 2.2 Generated BROski Pets Mockup
+![](https://user-gen-media-assets.s3.amazonaws.com/gemini_images/c6de6dab-145e-4597-88f6-0341ac7802df.png?AWSAccessKeyId=ASIA2F3EMEYEUNL6FVIS&Signature=JkwPbGhpgdtC2GNAyEmOQpCC2Ec%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEOX%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJGMEQCIChu4%2BxyqY6OQgAbvyOccFgi6Yo2QvbVNZGOV1glAGY5AiAeaE8PbTXRjToTQbq8njiVD1M0EYNwhbRk00m22gSZ7Cr8BAit%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F8BEAEaDDY5OTc1MzMwOTcwNSIMC6nmKZY0z%2FulxoLFKtAEK9YSCUaX%2FbjMHoSrhNvK4w9e7zR5kexzdquw%2F0HOgFCzvzz5yP1l4W0yLicaURhZf4RQWBjTUbYDnEpBOLC3ABxAxSqhHH2NSU5ZdVT8UNyEcvAbNzBHHuIERlToSFg77lSBhQ52d3qaCiNJAjaxzVjDG%2BKNnjG5Bm3dFaA%2BX1woP8n0nL50erEyyvpR6yuNebJXBepJvkfpyDvuCPUQYw2qE8oan2oNjch%2BCIb0Q1Xioi5R1Y0PHFwh86DhdT0PX4NewBTr2dwxWBV748O7cKcGVAqBP9QE%2FEUi04%2Fqfi0YCtwJg5qzbMcMcoaLc0J86yCpKgjTx9XQ%2F8izrtbJO0wio%2BpxtllUENdePWBwqce6L7FBo%2FtEi2Ijqb7xuLRU64vSYLgH1Yv%2BgMuF%2FX%2FWqPRDkhpVSJRBf30vLci2JCC3gx%2BVUv6Y8hOz47T8hN0wAS4%2FeuEBiMmHpu8E9QWqvcnyet4xjpVxNM24rt60bjrA2pawD0VvPXAKbCU34k7LlTNWTWuowgQmAZiPovq2UHixwXhLZ390Ir5D%2BLqN8swzHQyH1QEQt4IF%2FA4n4GvegZr%2FN5E7kR24JQP9Xgj%2FJ%2FmFoWZJK6Wto4XJXDbcAFrl9RHUQZnhXvOBhDR2XV85BnvhxJ1GKVy1zxhaXqvo5ZriKHwETmLrbt%2FqcuHXU0fXKStVX2ubIHAYJkj3x7L4%2BadGmeoDHaEf2XMCtVckvHweefiJgQjqQxEhPTRhBvYnTz%2FH7PyH2r270Qt9ASBTqFxuZcOBl%2B0jtDVEcxrNpDDdorLTBjqZAU%2FWZ0RvpFh1tKl%2BqscRmlXZoVt1Fo9v0NiOpt5focdyEHTl8UNVqo8zECp5Uh4cnWDaqgfIH0iQQv%2FhWB%2B2JbAUeasbRV96%2BVhs6wYVH0u9XQ2ER%2FUH9RSPR890f5IdXu4ztQbmBcrvdyST1SaIySHv95SJgf3xER44Ts7W%2FaNONdHiaTPJjxyXcp2gDzIUm%2BY2r1tbLZuG8A%3D%3D&Expires=1785503536)
+The generated mockup extends this into a modern desktop web app visual style:
+- A **top HUD bar** for XP, BROski$ coins, and streak, connecting the pet page to the overall learning economy.
+- A **large hero pet card** with centered pet art, XP bar, mood badge, and stage label.
+- Side/secondary panels for customise, recent activity, and evolution path, each in its own rounded card.
+- Palette: sky‑blue / lavender backgrounds, lilac primary cards, slime‑green XP bars, gold rewards, warm brown accents.
+
+This mockup demonstrates how to blend playful pet sim visuals with React/Tailwind product polish.
+## 3. Target UX Principles for PetsPage.tsx
+### 3.1 Neurodivergent‑Friendly UX
+The pets page should explicitly support ADHD, dyslexic, and autistic learners by:
+- Using **big section labels and icon‑led actions** to reduce cognitive load.[1][2]
+- Avoiding time‑limited interactions; XP and mood changes should be visible and predictable rather than rushed.[1]
+- Providing **instant feedback** on actions (XP gains, mood changes, accessory equips) with animations and microcopy.
+- Keeping the vertical stack of panels shallow (hero pet, evolution, customise, activity), avoiding nested navigation.[1]
+### 3.2 Motivation & Reward Loop
+The page should embody a clear reward loop:
+- Learn or complete quizzes → gain XP (with a consistent 70% pass threshold).[1]
+- XP → level/stage changes → mood boosts and new cosmetic slots.[1]
+- Evolution path → clear long‑term progression goals.[1]
+- Gacha minting → new pets and rarities when thresholds are met.[1]
+
+Visual design (colors, animations, badges) must reinforce this loop without overwhelming the user.
+## 4. UI Structure Specification for PetsPage.tsx
+### 4.1 High‑Level Layout
+The recommended layout for desktop (16:9) is:
+
+- **Header/HUD bar** (top):
+  - Left: small course logo + “BROski Pets” title.
+  - Center: XP streak indicator and current level summary.
+  - Right: BROski$ coin balance and quick link to Shop.[3]
+
+- **Main content grid** (two‑column):
+  - Left column (approx. 60% width): hero pet card + evolution path.
+  - Right column (approx. 40% width): customise panel + recent activity.
+
+- **Footer/secondary**: optional mint‑another‑pet carousel or call‑to‑action band spanning bottom.
+### 4.2 Hero Pet Card
+The hero card should contain:
+- Pet avatar art (e.g., Luna the Blizzard Lizard) centered and large.[1]
+- Pet name (display name) and species name stacked.[1]
+- Mood badge with text (Happy / Neutral / Sad) and color.
+- Activity status (Idle / Studying / Evolving) in smaller text.
+- XP bar with numeric label (e.g., “415 / 500 XP to Learner”).[1]
+- Stage chip (Baby, Learner, Builder, Shipper, Hyperfocus God, Legend).[1]
+- Quick actions row (e.g., “View Evolution Path”, “Customise Pet”).
+### 4.3 Evolution Path Panel
+Below or adjacent to the hero pet card, the evolution path panel should show:
+- Horizontal or vertical stage timeline from Baby to Legend.[1]
+- Icons or simple glyphs per stage (egg, book, shipping crate, etc.).
+- Highlighted current stage and a visual indication of the next stage.
+- Tooltip or description per stage (e.g., “Learner: unlocks basic cosmetics and gacha access”).
+### 4.4 Customise Panel
+In the right column, the customise panel should:
+- Show accessory slots grouped by type (Aura, Frame, Badge, Background, Head, Body).[3]
+- Display owned items with thumbnail previews and an equip button.
+- Provide a friendly link to the Shop (“Earn BROski$ to unlock more vibes”) rather than a hard sales push.[3]
+- Show current equipped items visually around the pet avatar when possible.
+### 4.5 Recent Activity Panel
+Also in the right column:
+- List recent XP events from the course (quiz passes, coding sessions, streaks).[1]
+- Use icon + short sentence formatting (e.g., “Quiz passed at 80% → +30 XP”).
+- Group events by day and highlight new ones since last visit.
+### 4.6 Mint Another Pet / Collection
+At the bottom or in a modal:
+- Show existing pets in a horizontally scrollable carousel.
+- Provide a mint‑another‑pet button when XP conditions are met.
+- Clearly indicate rarity probabilities for gacha mints (Common → Mythic).[1]
+## 5. Visual Style & Design Tokens
+### 5.1 Color Palette
+Based on the reference screenshot and generated mockup, the palette should include:[2]
+
+- Background:
+  - Sky blue (`bgSky`) and soft gradient (`bgSkySoft`) with subtle pattern.
+- Primary pet & cards:
+  - Lilac/pet purple for main cards and hero elements.
+  - Light lavender for card backgrounds.
+- Progress and success:
+  - Slime green for XP fills and success states.
+- Rewards:
+  - Coin gold and star yellow for level‑up badges, gacha rarity highlights.
+- Grounding:
+  - Warm brown wood for floor or footer accents.
+- Text & outlines:
+  - Dark ink color for text and outlines.
+
+These can be implemented as Tailwind theme extensions or design tokens in CSS.
+### 5.2 Typography and Iconography
+- Typography: playful but readable sans‑serif for body text and headings (e.g., rounded geometric), with thicker weights for headings.
+- Iconography: simple line or filled icons with stroke outlines, matching the pet sim vibe.[2]
+- Button labels: short verbs (“Mint”, “Equip”, “Boost XP”) to match the course’s friendly tone.[1]
+### 5.3 Motion & Feedback
+- XP bar animations on gain (smooth fill increase).
+- Gentle confetti or sparkles on level‑up.
+- Bounce or wiggle animation for the pet avatar when interacted with or when mood changes.[2]
+- Respect `prefers‑reduced‑motion` by offering static fallbacks.
+## 6. Data & Edge Function Integration
+### 6.1 Required Data for PetsPage.tsx
+`PetsPage.tsx` will need:
+
+- User’s pet collection from `user_pets` (id, base_pet_key, display_name, stage, xp, level, mood, activity_state, last_interaction_at).
+- Accessories catalog from `pet_accessories` (id, accessory_key, label, rarity, slot, description, asset_url, is_default).[3]
+- Equipped and owned accessories from `user_pet_accessories` (user_id, user_pet_id, accessory_id, is_owned, is_equipped).
+- XP events and streak data from course tables or edge functions.
+### 6.2 Edge Functions Involved
+PetsPage must call or react to:
+- `gain-pet-xp`: adjust XP based on quiz/completion events, respecting 70% pass threshold.
+- `update-pet-mood`: update mood based on interaction recency and activity.
+- `mint-pet-auth` and `mint-pet-confirm`: handle gacha minting and unlocking new pets.
+## 7. Implementation To‑Do List (Step‑by‑Step)
+### 7.1 Design Tokens & Theme
+1. Define a `petTheme` object or Tailwind theme extension with colors and radius derived from the Hyper Vibe palette (sky blue, lavender, lilac, green, gold, brown, ink).[2]
+2. Add typography choices (rounded playful sans‑serif) to the theme.
+3. Create utility classes for XP bar, mood badges, stage chips, and reward badges.
+### 7.2 Layout & Base Components
+4. Implement the **HUD bar** component with XP, BROski$ and streak display using the theme tokens.
+5. Build a `PetCard` component that renders the hero pet, XP bar, mood badge, and stage chip.
+6. Build an `EvolutionPath` component that draws the stage timeline and highlights current/next stages.
+7. Build a `PetCustomizePanel` component that lists accessory slots and owned/equipped items.
+8. Build a `RecentActivityPanel` component that lists XP events and streak changes.
+9. Build a `PetCollectionCarousel` component for multiple pets.
+### 7.3 Data Fetching & State Management
+10. Implement data fetching hooks (`useUserPets`, `usePetAccessories`, `useUserPetAccessories`, `usePetActivity`) that query Supabase and map results into structured props.
+11. Wire `PetsPage.tsx` to call these hooks on mount and on relevant actions (equip, mint, mood updates).
+12. Handle loading and error states with skeletons and friendly messages.
+### 7.4 Edge Function Integration
+13. Integrate `gain-pet-xp` into course events; on XP changes, optimistically update the XP bar and stage, then reconcile with server response.
+14. Integrate `update-pet-mood` whenever the user interacts with the pet (clicks, customises, or completes learning milestones).
+15. Integrate `mint-pet-auth` / `mint-pet-confirm` into mint‑another‑pet flows; show a gacha animation and update the pet collection on success.
+### 7.5 UX Enhancements & Motion
+16. Add subtle animations to XP bar changes, pet avatar reactions, and accessory equip actions.
+17. Implement a level‑up celebration (sparkles, confetti) when stage changes.
+18. Add microcopy messages (“Nice one, BROski♾! Luna just leveled up.”) near the hero card.
+### 7.6 Accessibility & Responsiveness
+19. Ensure all components are keyboard‑navigable and have clear focus states.
+20. Provide alt text for pet avatars and accessory images.
+21. Implement responsive layouts for mobile (single‑column stack) and tablet (two‑column grid with narrower side panels).
+### 7.7 Testing
+22. Write unit tests for data hooks and pet card logic (XP, stage, mood mapping).
+23. Write Playwright tests to verify pets page flows (view pet, gain XP, evolve, mint new pet, equip accessory).
+24. Validate that XP threshold behavior aligns with course quiz logic (70% pass required) and that UI surfaces this clearly.
+
+***
+
+This report is intended as a blueprint for evolving `PetsPage.tsx` into a coherent, Hyper Vibe‑styled pet sim experience tightly integrated with the course’s learning and reward systems.
