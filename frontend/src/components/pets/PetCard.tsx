@@ -160,7 +160,8 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
       variant="chunky"
       onClick={onClick}
       glow={isLegend ? 'gold' : undefined}
-      padding={isHero ? 28 : undefined}
+      padding={isHero ? 36 : undefined}
+      className={isHero ? 'h-full' : undefined}
       style={
         isHero
           ? { boxShadow: '8px 8px 0 #241C3D', background: '#FFF8EC' }
@@ -168,7 +169,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
       }
     >
       <div
-        className={`relative flex gap-4 ${isHero ? 'flex-col items-center text-center' : 'flex-col sm:flex-row'}`}
+        className={`relative flex gap-4 ${isHero ? 'h-full flex-col items-center justify-center text-center gap-6' : 'flex-col sm:flex-row'}`}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         style={tiltStyle}
@@ -227,8 +228,8 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
             <HVZTag variant="chunky" color={RARITY_COLOR[pet.rarity]}>{RARITY_LABELS[pet.rarity]}</HVZTag>
           </header>
 
-          <div className={`mt-3 ${isHero ? 'max-w-sm mx-auto' : ''}`}>
-            <p className="text-[11px] uppercase tracking-wider text-pet-wood-dark mb-1">
+          <div className={isHero ? 'max-w-sm mx-auto mt-5' : 'mt-3'}>
+            <p className={`uppercase tracking-wider text-pet-wood-dark ${isHero ? 'text-xs mb-1.5' : 'text-[11px] mb-1'}`}>
               Stage: {stageInfo.label} {stageInfo.emoji}
               {pet.evolution_count > 0 && (
                 <span className="ml-2 opacity-70">· {pet.evolution_count}× evolved</span>
@@ -237,7 +238,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
             <XPBar xp={xp} isEvolving={isEvolving} />
           </div>
 
-          <footer className={`mt-3 flex flex-wrap items-center gap-2 ${isHero ? 'justify-center' : ''}`}>
+          <footer className={`flex flex-wrap items-center gap-2 ${isHero ? 'justify-center mt-5' : 'mt-3'}`}>
             <MoodBadge mood={pet.mood} />
             {demo ? (
               <span className="text-xs text-pet-ink-soft/70 select-none">

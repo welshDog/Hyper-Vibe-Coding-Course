@@ -296,9 +296,9 @@ export default function Pets() {
                   the hero, opening a "dead zone" gap. Full-width now, and the
                   new PetStatusCard fills the sidebar out to closer to the
                   hero's height instead of leaving it short. */}
-              <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-stretch">
                 <div
-                  className="relative rounded-pet-chunky"
+                  className="relative h-full rounded-pet-chunky"
                   style={{
                     background: 'radial-gradient(circle at 50% 35%, rgba(255,255,255,0.9) 0%, rgba(191,232,255,0) 70%)',
                   }}

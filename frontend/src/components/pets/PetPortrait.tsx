@@ -30,7 +30,7 @@ const RARITY_RING: Record<Rarity, CSSProperties> = {
 
 const SIZE = {
   hero: {
-    box:     'h-56 w-56 sm:h-64 sm:w-64',
+    box:     'h-64 w-64 sm:h-72 sm:w-72',
     rounded: 'rounded-pet-chunky',
     badge:   'h-10 w-10 -bottom-3 -right-3',
   },
@@ -114,7 +114,7 @@ export function PetPortrait({
         src={imageUrl}
         alt={alt}
         loading={isHero ? 'eager' : 'lazy'}
-        {...(isHero ? { width: 256, height: 256 } : {})}
+        {...(isHero ? { width: 288, height: 288 } : {})}
         className={`relative h-full w-full ${s.rounded} motion-safe:animate-idle-breath ${
           bg ? 'object-contain p-1' : 'object-cover'
         }`}
