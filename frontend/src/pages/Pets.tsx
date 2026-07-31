@@ -25,6 +25,7 @@ import { XpFeed } from '../components/pets/XpFeed'
 import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { PetSquadRow } from '../components/pets/PetSquadRow'
 import { PetCosmeticsPanel } from '../components/pets/PetCosmeticsPanel'
+import { PetStatusCard } from '../components/pets/PetStatusCard'
 import { useMyPets } from '../hooks/useMyPets'
 import { useOwnedCosmetics, PET_SLOTS } from '../hooks/useOwnedCosmetics'
 import { supabase } from '../lib/supabase'
@@ -78,7 +79,7 @@ export default function Pets() {
   // highest-stage pet) — set explicitly when the user clicks the picker strip.
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null)
 
-  const { tokens, streak } = useHUD()
+  const { tokens, streak, xp } = useHUD()
 
   const { pets, loading: petsLoading, error: petsError, refetch } = useMyPets()
   const { bySlot, byId, refetch: refetchCosmetics } = useOwnedCosmetics()
@@ -287,10 +288,14 @@ export default function Pets() {
             </HVZCard>
           ) : (
             <div className="flex flex-col gap-4">
-              {/* Hero spotlight + sidebar (evolution path + cosmetics for the
-                  spotlighted pet). Which pet is spotlighted comes from
-                  `heroPet` above — manual pick, else fresh mint, else
-                  highest stage. */}
+              {/* Hero spotlight + sidebar (customise + status for the
+                  spotlighted pet), then evolution full-width below both. This
+                  used to have EvolutionTimeline squeezed into the narrow
+                  sidebar column (its 6-stage horizontal layout had no room to
+                  breathe there) with the sidebar trailing off shorter than
+                  the hero, opening a "dead zone" gap. Full-width now, and the
+                  new PetStatusCard fills the sidebar out to closer to the
+                  hero's height instead of leaving it short. */}
               <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-start">
                 <div
                   className="relative rounded-pet-chunky"
@@ -307,7 +312,6 @@ export default function Pets() {
                   />
                 </div>
                 <div className="flex flex-col gap-4">
-                  <EvolutionTimeline />
                   <PetCosmeticsPanel
                     pet={heroPet}
                     bySlot={bySlot}
@@ -315,8 +319,16 @@ export default function Pets() {
                     onEquip={handleEquip}
                     onUnequip={handleUnequip}
                   />
+                  <PetStatusCard
+                    petName={heroPet.pet_name}
+                    mood={heroPet.mood}
+                    xp={xp}
+                    equippedCount={Object.keys(resolveEquipped(heroPet)).length}
+                  />
                 </div>
               </div>
+
+              <EvolutionTimeline />
 
               {/* Collection picker strip — full collection stays reachable
                   (demoted from the old equal-sized grid, not deleted).
