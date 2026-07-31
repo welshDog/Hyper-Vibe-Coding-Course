@@ -290,7 +290,14 @@ test.describe('Pets relay mint smoke', () => {
     await page.goto('/pets')
 
     // Pick a species first (balance gate is revealed after species selection)
-    await expect(page.getByRole('heading', { name: /pick a species/i })).toBeVisible({ timeout: 20_000 })
+    // "Pick a species" is a sub-label (not a heading) inside the merged
+    // "Mint Another Pet" gacha panel since the mint-flow consolidation —
+    // getByText matches its text regardless of element type.
+    // Anchored to "(N available)" — the empty-collection state separately
+    // renders its own unrelated "Pick a species below..." copy, and a bare
+    // /pick a species/i match is ambiguous (strict-mode violation) once
+    // that's on screen too.
+    await expect(page.getByText(/pick a species \(\d+ available\)/i)).toBeVisible({ timeout: 20_000 })
 
     // Blizzard Lizard has no unlockXp — always available
     await page.getByRole('button', { name: /choose blizzard lizard/i }).click()
@@ -345,13 +352,22 @@ test.describe('Pets relay mint smoke', () => {
     await signIn(page)
     await page.goto('/pets')
 
-    await expect(page.getByRole('heading', { name: /pick a species/i })).toBeVisible({ timeout: 20_000 })
+    // "Pick a species" is a sub-label (not a heading) inside the merged
+    // "Mint Another Pet" gacha panel since the mint-flow consolidation —
+    // getByText matches its text regardless of element type.
+    // Anchored to "(N available)" — the empty-collection state separately
+    // renders its own unrelated "Pick a species below..." copy, and a bare
+    // /pick a species/i match is ambiguous (strict-mode violation) once
+    // that's on screen too.
+    await expect(page.getByText(/pick a species \(\d+ available\)/i)).toBeVisible({ timeout: 20_000 })
     await page.getByRole('button', { name: /choose blizzard lizard/i }).click()
 
     // With wallet (mocked) + sufficient tokens, mint button should exist but
     // be DISABLED while name is empty. If the wallet seeding didn't work, the
     // "Connect wallet" screen appears instead — either way the name gate holds.
-    await expect(page.getByText(/step 2.*name your/i)).toBeVisible({ timeout: 15_000 })
+    // Sub-step label is "2. Name your X" now (no "Step" prefix) since the
+    // mint-flow consolidation into one gacha panel.
+    await expect(page.getByText(/2\..*name your/i)).toBeVisible({ timeout: 15_000 })
     const nameInput = page.getByPlaceholder(/e\.g\./i)
     await expect(nameInput).toBeVisible()
     // Don't type a name yet — button should be disabled (regardless of wallet state)
@@ -415,9 +431,16 @@ test.describe('Pets relay mint smoke', () => {
     // ── A: UI gates ──
     // With 150 tokens, species selected, and name filled, only wallet connection
     // is missing — proving the relay path has no other blocker.
-    await expect(page.getByRole('heading', { name: /pick a species/i })).toBeVisible({ timeout: 20_000 })
+    // "Pick a species" is a sub-label (not a heading) inside the merged
+    // "Mint Another Pet" gacha panel since the mint-flow consolidation —
+    // getByText matches its text regardless of element type.
+    // Anchored to "(N available)" — the empty-collection state separately
+    // renders its own unrelated "Pick a species below..." copy, and a bare
+    // /pick a species/i match is ambiguous (strict-mode violation) once
+    // that's on screen too.
+    await expect(page.getByText(/pick a species \(\d+ available\)/i)).toBeVisible({ timeout: 20_000 })
     await page.getByRole('button', { name: /choose blizzard lizard/i }).click()
-    await expect(page.getByText(/step 2.*name your blizzard lizard/i)).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/2\..*name your blizzard lizard/i)).toBeVisible({ timeout: 15_000 })
     await page.getByPlaceholder(/e\.g\./i).fill('FrostbitePW')
     // Wallet not connected → step 3 shows "Connect wallet to mint" only (no balance/name blockers).
     await expect(page.getByRole('button', { name: /connect wallet to mint/i })).toBeVisible({ timeout: 15_000 })
@@ -522,11 +545,18 @@ test.describe('Pets relay mint smoke', () => {
     await page.goto('/pets')
 
     // ── Step 1: pick a species ──
-    await expect(page.getByRole('heading', { name: /pick a species/i })).toBeVisible({ timeout: 20_000 })
+    // "Pick a species" is a sub-label (not a heading) inside the merged
+    // "Mint Another Pet" gacha panel since the mint-flow consolidation —
+    // getByText matches its text regardless of element type.
+    // Anchored to "(N available)" — the empty-collection state separately
+    // renders its own unrelated "Pick a species below..." copy, and a bare
+    // /pick a species/i match is ambiguous (strict-mode violation) once
+    // that's on screen too.
+    await expect(page.getByText(/pick a species \(\d+ available\)/i)).toBeVisible({ timeout: 20_000 })
     await page.getByRole('button', { name: /choose blizzard lizard/i }).click()
 
     // ── Step 2: name it ──
-    await expect(page.getByText(/step 2.*name your blizzard lizard/i)).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/2\..*name your blizzard lizard/i)).toBeVisible({ timeout: 15_000 })
     await page.getByPlaceholder(/e\.g\./i).fill('FrostbitePW')
 
     // ── Step 3: mint ──

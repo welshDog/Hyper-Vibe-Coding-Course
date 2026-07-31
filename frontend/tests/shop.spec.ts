@@ -334,7 +334,7 @@ test.describe('BROski$ Shop', () => {
 
     // Cancel
     await page.getByRole('button', { name: /cancel/i }).click();
-    await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).not.toBeVisible({ timeout: 5_000 });
     expect(purchaseCalled).toBe(false);
   });
 
@@ -359,7 +359,11 @@ test.describe('BROski$ Shop', () => {
 
     await loginAndGoToShop(page);
     await page.getByLabel('Buy Gold Frame').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Named filter — the pet mentor bubble (mounted globally across the
+    // course chrome since commit eaa86e7) has its own "Chat with X" dialog
+    // that can coexist with this one, making a bare getByRole('dialog')
+    // ambiguous (strict-mode violation).
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).toBeVisible();
     await page.getByRole('button', { name: /spend 🪙 500/i }).click();
 
     // Success notification
@@ -386,7 +390,11 @@ test.describe('BROski$ Shop', () => {
 
     await loginAndGoToShop(page);
     await page.getByLabel('Buy Fire Aura').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Named filter — the pet mentor bubble (mounted globally across the
+    // course chrome since commit eaa86e7) has its own "Chat with X" dialog
+    // that can coexist with this one, making a bare getByRole('dialog')
+    // ambiguous (strict-mode violation).
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).toBeVisible();
     await page.getByRole('button', { name: /spend/i }).click();
 
     await expect(page.getByText(/Equip on your BROskiPet/i)).toBeVisible({ timeout: 10_000 });
@@ -411,7 +419,11 @@ test.describe('BROski$ Shop', () => {
 
     await loginAndGoToShop(page);
     await page.getByLabel('Buy Energy Snack').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Named filter — the pet mentor bubble (mounted globally across the
+    // course chrome since commit eaa86e7) has its own "Chat with X" dialog
+    // that can coexist with this one, making a bare getByRole('dialog')
+    // ambiguous (strict-mode violation).
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).toBeVisible();
     await page.getByRole('button', { name: /spend 🪙 50/i }).click();
 
     // Consumable: success notification
@@ -439,7 +451,11 @@ test.describe('BROski$ Shop', () => {
 
     await loginAndGoToShop(page);
     await page.getByLabel('Buy Gold Frame').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Named filter — the pet mentor bubble (mounted globally across the
+    // course chrome since commit eaa86e7) has its own "Chat with X" dialog
+    // that can coexist with this one, making a bare getByRole('dialog')
+    // ambiguous (strict-mode violation).
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).toBeVisible();
     await page.getByRole('button', { name: /spend 🪙 500/i }).click();
 
     await expect(page.getByTestId('shop-notification')).toContainText(/refunded/i, { timeout: 10_000 });
@@ -470,7 +486,11 @@ test.describe('BROski$ Shop', () => {
     await page.getByLabel('Buy Gold Frame').click();
 
     // Confirm modal shows discounted price
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Named filter — the pet mentor bubble (mounted globally across the
+    // course chrome since commit eaa86e7) has its own "Chat with X" dialog
+    // that can coexist with this one, making a bare getByRole('dialog')
+    // ambiguous (strict-mode violation).
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).toBeVisible();
     await expect(page.getByText(/gold tier −10%/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /spend 🪙 450/i })).toBeVisible();
 
@@ -504,7 +524,11 @@ test.describe('BROski$ Shop', () => {
 
     await loginAndGoToShop(page);
     await page.getByLabel('Buy Sandbox Access').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Named filter — the pet mentor bubble (mounted globally across the
+    // course chrome since commit eaa86e7) has its own "Chat with X" dialog
+    // that can coexist with this one, making a bare getByRole('dialog')
+    // ambiguous (strict-mode violation).
+    await expect(page.getByRole('dialog', { name: /^confirm purchase/i })).toBeVisible();
     // Modal shows £29.00 GBP price
     await expect(page.getByText(/£29\.00/)).toBeVisible();
     await page.getByRole('button', { name: /spend 🪙 300/i }).click();
