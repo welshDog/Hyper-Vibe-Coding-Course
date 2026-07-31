@@ -44,12 +44,12 @@ function LockedGlass({
   children: ReactNode
 }) {
   return (
-    <div className="relative w-full overflow-hidden rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/55 px-4 py-3">
-      <div className="absolute inset-0 bg-hfz-space-black/20 backdrop-blur-md" />
-      <div className="absolute -inset-16 rotate-12 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    <div className="relative w-full overflow-hidden rounded-pet-chunky border-4 border-pet-ink bg-pet-lilac/70 px-4 py-3">
+      <div className="absolute inset-0 bg-pet-cream/20 backdrop-blur-md" />
+      <div className="absolute -inset-16 rotate-12 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
       <span
         aria-label="Mint locked"
-        className="absolute right-3 top-3 rounded-hfz-full border border-hfz-border-violet bg-hfz-space-black/70 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-hfz-text-secondary"
+        className="absolute right-3 top-3 rounded-hfz-full border-2 border-pet-ink bg-pet-cream/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-pet-ink-soft"
       >
         🔒 Locked
       </span>
@@ -134,18 +134,19 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
   if (!hasSession) {
     return (
       <div className="flex flex-col items-center gap-3 w-full">
-        <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
-          <span className="text-hfz-text-secondary">Your BROski$</span>
-          <span className="font-mono font-bold text-hfz-text-secondary">
+        <div className="flex items-center justify-between rounded-pet-chunky border-4 border-pet-ink bg-pet-cream px-4 py-2.5 text-sm w-full">
+          <span className="text-pet-ink-soft">Your BROski$</span>
+          <span className="font-mono font-bold text-pet-ink-soft">
             Sign in
           </span>
         </div>
-        <p className="text-xs text-hfz-text-secondary text-center">
+        <p className="text-xs text-pet-ink-soft text-center">
           Sign in to check your BROski$ balance
         </p>
         <HVZButton
           variant="primary"
           size="lg"
+          chunky
           fullWidth
           onClick={() => navigate('/login')}
         >
@@ -169,9 +170,9 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
   if (!canAfford) {
     return (
       <div className="flex flex-col items-center gap-3 w-full">
-        <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
-          <span className="text-hfz-text-secondary">Your BROski$</span>
-          <span className="font-mono font-bold text-red-400">
+        <div className="flex items-center justify-between rounded-pet-chunky border-4 border-pet-ink bg-pet-cream px-4 py-2.5 text-sm w-full">
+          <span className="text-pet-ink-soft">Your BROski$</span>
+          <span className="font-mono font-bold text-red-700">
             {tokensLoading ? '...' : `${tokens} / ${MINT_COST} needed`}
           </span>
         </div>
@@ -193,9 +194,9 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center gap-3 w-full">
-        <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm w-full">
-          <span className="text-hfz-text-secondary">Your BROski$</span>
-          <span className="font-mono font-bold text-hfz-gold-light">
+        <div className="flex items-center justify-between rounded-pet-chunky border-4 border-pet-ink bg-pet-cream px-4 py-2.5 text-sm w-full">
+          <span className="text-pet-ink-soft">Your BROski$</span>
+          <span className="font-mono font-bold text-pet-gold-dark">
             {tokensLoading ? '...' : `${tokens} / ${MINT_COST} needed`}
           </span>
         </div>
@@ -204,6 +205,7 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
             <HVZButton
               variant="primary"
               size="lg"
+              chunky
               fullWidth
               onClick={openConnectModal}
               disabled={!mounted}
@@ -220,16 +222,16 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Balance bar */}
-      <div className="flex items-center justify-between rounded-hfz-md border border-hfz-border-violet bg-hfz-space-black/60 px-4 py-2.5 text-sm">
-        <span className="text-hfz-text-secondary">Your BROski$</span>
-        <span className="font-mono font-bold text-hfz-gold-light">
+      <div className="flex items-center justify-between rounded-pet-chunky border-4 border-pet-ink bg-pet-cream px-4 py-2.5 text-sm">
+        <span className="text-pet-ink-soft">Your BROski$</span>
+        <span className="font-mono font-bold text-pet-gold-dark">
           {tokensLoading ? '...' : `${tokens} / ${MINT_COST} needed`}
         </span>
       </div>
 
       {/* Placeholder CID warning */}
       {!cidIsReal && (
-        <div className="rounded-hfz-md border border-yellow-500/30 bg-yellow-500/10 px-4 py-2.5 text-sm text-yellow-300">
+        <div className="rounded-hfz-md border-2 border-yellow-600/40 bg-yellow-400/20 px-4 py-2.5 text-sm text-yellow-800">
           ⚠️ <strong>{species.displayName}</strong> metadata not pinned yet — run{' '}
           <code className="font-mono text-xs">pinata_upload_all.py</code> and swap the placeholder CID
           in <code className="font-mono text-xs">src/lib/species.ts</code> before live mints.
@@ -240,6 +242,7 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
       <HVZButton
         variant="primary"
         size="lg"
+        chunky
         fullWidth
         onClick={() => mintPet({
           petName:   petName.trim(),
@@ -269,7 +272,7 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
               (idx === 2 && (state === 'mining' || isDone)) ||
               (idx === 3 && isDone)
             return (
-              <li key={step.label} className={`flex flex-col items-center gap-1 ${reached ? 'text-hfz-violet-light' : 'text-hfz-text-secondary/40'}`}>
+              <li key={step.label} className={`flex flex-col items-center gap-1 ${reached ? 'text-pet-slime-dark' : 'text-pet-ink-soft/40'}`}>
                 <span className="text-base" aria-hidden>{step.emoji}</span>
                 <span className="font-semibold">{step.label}</span>
               </li>
@@ -280,8 +283,8 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
 
       {/* Success card */}
       {isDone && txHash && (
-        <div className="rounded-hfz-md border border-green-500/40 bg-green-500/10 px-4 py-3 text-center">
-          <p className="font-bold text-green-300">
+        <div className="rounded-pet-chunky border-4 border-pet-ink bg-pet-slime/20 px-4 py-3 text-center">
+          <p className="font-bold text-green-800">
             🎲 {petName} hatched as a{' '}
             <span className="uppercase">{mintedRarity ?? 'mystery'}</span>{' '}
             {species.displayName}! 🎉
@@ -290,7 +293,7 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
             href={`https://${ACTIVE_CHAIN.id === 8453 ? '' : 'sepolia.'}basescan.org/tx/${txHash}`}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-block text-xs text-green-400 underline hover:text-green-300"
+            className="mt-1 inline-block text-xs text-green-700 underline hover:text-green-800"
           >
             View on Basescan →
           </a>
@@ -299,11 +302,11 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
 
       {/* Error */}
       {state === 'error' && error && (
-        <div className="rounded-hfz-md border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm">
-          <p className="font-semibold text-red-300">{error.message}</p>
+        <div className="rounded-hfz-md border-2 border-red-500/50 bg-red-500/10 px-4 py-3 text-sm">
+          <p className="font-semibold text-red-700">{error.message}</p>
           <button
             onClick={reset}
-            className="mt-1 text-xs text-red-400 underline hover:text-red-300"
+            className="mt-1 text-xs text-red-700 underline hover:text-red-800"
           >
             Try again
           </button>
@@ -311,7 +314,7 @@ export function MintPetButton({ species, petName, onMinted }: Props) {
       )}
 
       {/* Wallet info — let the user disconnect / switch via RainbowKit modal */}
-      <div className="flex justify-center text-xs text-hfz-text-secondary">
+      <div className="flex justify-center text-xs text-pet-ink-soft">
         <ConnectButton accountStatus="address" chainStatus="icon" showBalance={false} />
       </div>
     </div>

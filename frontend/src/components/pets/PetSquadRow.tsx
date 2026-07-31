@@ -75,8 +75,8 @@ export function PetSquadRow() {
 
   if (error || topPets.length === 0) {
     return (
-      <HVZCard>
-        <p className="text-sm text-hfz-text-secondary">
+      <HVZCard variant="chunky">
+        <p className="text-sm text-pet-ink-soft">
           No squad yet — be the first to evolve. 🚀
         </p>
       </HVZCard>
@@ -101,7 +101,7 @@ export function PetSquadRow() {
             key={p.pet_id}
             className={`snap-start shrink-0 w-[260px] lg:w-auto ${isHero ? 'lg:col-span-2' : ''}`}
           >
-            <HVZCard padding={isHero ? 20 : 16} glow={isLegend ? 'gold' : isHero ? 'violet' : undefined}>
+            <HVZCard variant="chunky" padding={isHero ? 20 : 16} glow={isLegend ? 'gold' : undefined}>
               {isHero ? (
                 // Hero variant — bigger image, top-evolver tag, breathing room.
                 <div className="flex items-start gap-4">
@@ -111,31 +111,31 @@ export function PetSquadRow() {
                     size="lg"
                     rarity={p.rarity}
                     equipped={equipped}
-                    className="ring-2 ring-hfz-gold/40"
+                    className="ring-2 ring-pet-gold-dark/50"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-bold text-base text-hfz-text-primary truncate">
+                        <p className="font-bold text-base text-pet-ink truncate">
                           {p.pet_name}
                         </p>
-                        <p className="text-[11px] text-hfz-text-secondary truncate">
+                        <p className="text-[11px] text-pet-ink-soft truncate">
                           <span className="font-mono">{p.pet_id}</span>
                           <span className="opacity-60"> · </span>
                           {species.displayName}
                         </p>
                       </div>
-                      <HVZTag color="gold">🥇 Top evolver</HVZTag>
+                      <HVZTag variant="chunky" color="gold">🥇 Top evolver</HVZTag>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                      <HVZTag color={isLegend ? 'gold' : 'violet'}>
+                      <HVZTag variant="chunky" color={isLegend ? 'gold' : 'violet'}>
                         {stageInfo.emoji} {stageInfo.label}
                       </HVZTag>
-                      <HVZTag color={RARITY_COLOR[p.rarity]}>
+                      <HVZTag variant="chunky" color={RARITY_COLOR[p.rarity]}>
                         {RARITY_LABELS[p.rarity]}
                       </HVZTag>
                       {p.evolution_count > 0 && (
-                        <span className="text-[11px] text-hfz-gold-light font-mono font-bold">
+                        <span className="text-[11px] text-pet-gold-dark font-mono font-bold">
                           {p.evolution_count}× evolved
                         </span>
                       )}
@@ -154,10 +154,10 @@ export function PetSquadRow() {
                       equipped={equipped}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-hfz-text-primary truncate">
+                      <p className="font-bold text-pet-ink truncate">
                         {p.pet_name}
                       </p>
-                      <p className="text-[11px] text-hfz-text-secondary truncate">
+                      <p className="text-[11px] text-pet-ink-soft truncate">
                         <span className="font-mono">{p.pet_id}</span>
                         <span className="opacity-60"> · </span>
                         {species.displayName}
@@ -165,14 +165,14 @@ export function PetSquadRow() {
                     </div>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <HVZTag color={isLegend ? 'gold' : 'violet'}>
+                    <HVZTag variant="chunky" color={isLegend ? 'gold' : 'violet'}>
                       {stageInfo.emoji} {stageInfo.label}
                     </HVZTag>
-                    <HVZTag color={RARITY_COLOR[p.rarity]}>
+                    <HVZTag variant="chunky" color={RARITY_COLOR[p.rarity]}>
                       {RARITY_LABELS[p.rarity]}
                     </HVZTag>
                     {p.evolution_count > 0 && (
-                      <span className="text-[10px] text-hfz-text-secondary font-mono">
+                      <span className="text-[10px] text-pet-ink-soft font-mono">
                         {p.evolution_count}× evolved
                       </span>
                     )}

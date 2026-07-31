@@ -60,6 +60,27 @@ export default {
           },
         },
 
+        // ▼ Moy-style pastel reskin tokens — /pets page only, scoped via the
+        // `.pet-theme-scope` wrapper class in index.css. Parallel to `hfz`,
+        // never repaints it. Gold stays yellow-leaning and wood stays brown
+        // (not tan/orange) per the "no orange anywhere" sacred rule.
+        pet: {
+          sky:        '#BFE8FF',
+          'sky-soft': '#DFF4FF',
+          lavender:   '#C9BFFA',
+          lilac:      '#E4DBFF',
+          ink:        '#241C3D',
+          'ink-soft': '#5C5478',
+          slime:      '#7BE07C',
+          'slime-dark': '#4CAE4E',
+          gold:       '#F6C445',
+          'gold-dark': '#C9922A',
+          wood:       '#8B5E3C',
+          'wood-dark': '#5A3B22',
+          cream:      '#FFF8EC',
+          danger:     '#E0576B',
+        },
+
         // ▼ Semantic aliases — used by existing pages (bg-primary etc).
         // Re-pointed from the old light theme to HFZ dark tokens so legacy
         // markup auto-darkens.
@@ -122,6 +143,7 @@ export default {
         'hfz-lg':   '16px',
         'hfz-xl':   '24px',
         'hfz-full': '9999px',
+        'pet-chunky': '28px',
       },
 
       // ---------- LETTER SPACING ----------
@@ -140,6 +162,10 @@ export default {
         'hfz-glow-gold':    '0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2)',
         'hfz-glow-mint':    '0 0 20px rgba(16, 245, 160, 0.4), 0 0 40px rgba(16, 245, 160, 0.2)',
         'hfz-glow-pink':    '0 0 20px rgba(217, 70, 239, 0.4), 0 0 40px rgba(217, 70, 239, 0.2)',
+        // Moy-style chunky-card look: thick ink outline + hard offset "pop" shadow.
+        'pet-outline':   '0 0 0 4px #241C3D',
+        'pet-pop':       '4px 4px 0 #241C3D',
+        'pet-pop-sm':    '3px 3px 0 #241C3D',
       },
 
       // ---------- BACKGROUND IMAGES (gradient recipes) ----------
@@ -150,6 +176,9 @@ export default {
         'hfz-hero':         'radial-gradient(ellipse at 50% 0%, #1A0A2E 0%, #0A0E1A 70%)',
         'hfz-xp':           'linear-gradient(90deg, #7B2FBE, #00D4FF)',
         'hfz-bg':           'linear-gradient(180deg, #1A0A2E 0%, #0A0E1A 100%)',
+        // Moy-style pastel sky-blue diamond wallpaper (/pets background).
+        'pet-diamond':      'linear-gradient(180deg, #DFF4FF 0%, #BFE8FF 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 2px, transparent 2px 42px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0 2px, transparent 2px 42px)',
+        'pet-wood':         'linear-gradient(180deg, #8B5E3C 0%, #5A3B22 100%)',
       },
 
       // ---------- TRANSITION TIMING ----------

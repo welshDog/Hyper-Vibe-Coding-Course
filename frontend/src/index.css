@@ -150,6 +150,30 @@
     --z-overlay: 300;
   }
 
+  /* Moy-style pastel reskin — /pets page only. Redeclares the same custom-
+     property NAMES the shared ui/hvz/* primitives already read via
+     var(--color-...), so wrapping the Pets page root in this class cascades
+     the new palette into every HVZCard/HVZButton/HVZTag/HVZProgress it
+     renders with zero edits to those files' color logic. Additive only —
+     :root above is untouched, so every other page keeps the dark HFZ look.
+     Gold stays yellow-leaning and there is no orange anywhere here, per the
+     "no orange" sacred rule (see CLAUDE.md rule 4). */
+  .pet-theme-scope {
+    --color-midnight-blue: #C9BFFA;  /* HVZCard background -> lavender */
+    --color-deep-violet:   #241C3D;  /* HVZButton gold-variant text -> ink */
+    --color-hyper-violet:  #7BE07C;  /* primary gradient start / XP start -> slime */
+    --color-neon-cyan:     #59C9EF;  /* primary gradient end / XP end -> sky */
+    --color-violet-lt:     #4CAE4E;  /* ghost button + violet tag text -> slime-dark */
+    --color-broski-gold:   #F6C445;  /* gold gradient start -> pet gold */
+    --color-gold-light:    #FFE08A;  /* gold gradient end -> light gold */
+    --color-success-mint:  #7BE07C;  /* mint tag/gradient -> slime */
+    --color-reward-pink:   #E68FD1;  /* pink tag -> soft pastel pink */
+    --color-warning-amber: #E0A93E;  /* amber tag -> muted gold-amber */
+    --color-danger-red:    #E0576B;  /* danger button/tag -> pet danger */
+    --color-text-primary:  #241C3D;  /* -> ink */
+    --color-text-secondary: #5C5478; /* -> ink-soft */
+  }
+
   body {
     @apply bg-background text-text font-sans antialiased;
   }

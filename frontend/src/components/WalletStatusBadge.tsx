@@ -33,15 +33,19 @@ export function WalletStatusBadge() {
     tone = 'gray'
   }
 
+  // "gray" is the only tone that needs a pets-reskin override — it used
+  // light-on-dark tokens (near-white text/border) that vanish once /pets
+  // flips to a pastel background. green/amber/red already read fine on
+  // either background since they're solid status colors, not theme tokens.
   const TONE = {
     green: 'text-hfz-mint border-hfz-mint/40 bg-hfz-mint/10',
-    gray: 'text-hfz-text-secondary border-hfz-border-soft bg-white/5',
+    gray: 'text-pet-ink-soft border-pet-ink/20 bg-pet-ink/5',
     amber: 'text-hfz-amber border-hfz-amber/40 bg-hfz-amber/10',
     red: 'text-hfz-danger border-hfz-danger/40 bg-hfz-danger/10',
   } as const
   const DOT = {
     green: 'bg-hfz-mint',
-    gray: 'bg-hfz-text-secondary',
+    gray: 'bg-pet-ink-soft',
     amber: 'bg-hfz-amber',
     red: 'bg-hfz-danger',
   } as const

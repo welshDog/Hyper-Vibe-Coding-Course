@@ -47,12 +47,12 @@ function Thumb({
       title={cosmetic.name}
       aria-pressed={active}
       aria-label={`${active ? 'Equipped' : 'Equip'} ${cosmetic.name}`}
-      className={`relative h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden border transition-all duration-hfz-fast ease-hfz-smooth ${
+      className={`relative h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden border-2 transition-all duration-hfz-fast ease-hfz-smooth ${
         active
-          ? 'border-hfz-mint ring-2 ring-hfz-mint/50'
-          : 'border-hfz-border-violet hover:border-hfz-violet-light'
+          ? 'border-pet-slime-dark ring-2 ring-pet-slime-dark/50'
+          : 'border-pet-ink/30 hover:border-pet-slime-dark'
       } ${disabled ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-[1.05]'}`}
-      style={{ background: 'rgba(15,27,53,0.6)' }}
+      style={{ background: '#FFF8EC' }}
     >
       {cosmetic.image_url ? (
         <img
@@ -69,7 +69,7 @@ function Thumb({
       {active && (
         <span
           aria-hidden
-          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-hfz-mint text-[10px] font-bold text-hfz-space-black"
+          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-pet-slime text-[10px] font-bold text-pet-ink"
         >
           ✓
         </span>
@@ -80,96 +80,83 @@ function Thumb({
 
 export function PetCosmeticsPanel({ pet, bySlot, busySlot, onEquip, onUnequip }: Props) {
   const equipped = pet.cosmetics ?? {}
-  const ownsAny = PET_SLOTS.some((s) => bySlot[s].length > 0)
 
   return (
-    <HVZCard padding={20}>
+    <HVZCard variant="chunky" padding={20}>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
           🎨 Customise {pet.pet_name}
         </h3>
         <Link
           to="/shop"
-          className="text-[11px] font-semibold text-hfz-cyan hover:text-hfz-violet-light transition-colors"
+          className="text-[11px] font-semibold text-pet-slime-dark hover:text-pet-wood-dark transition-colors"
         >
           Get more in the shop →
         </Link>
       </div>
 
-      {!ownsAny ? (
-        <div className="flex items-center gap-4 rounded-hfz-sm border border-hfz-border-violet bg-hfz-space-black/40 px-4 py-3">
-          <span className="text-2xl shrink-0" aria-hidden>🛍️</span>
-          <p className="text-xs text-hfz-text-secondary leading-relaxed">
-            No cosmetics yet. Grab auras, frames, badges and backgrounds from the{' '}
-            <Link to="/shop" className="font-semibold text-hfz-cyan hover:underline">
-              BROski$ shop
-            </Link>{' '}
-            to deck out {pet.pet_name}.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-5">
-          {PET_SLOTS.map((slot) => {
-            const options = bySlot[slot]
-            const equippedId = equipped[slot]
-            const meta = SLOT_META[slot]
-            const rowBusy = busySlot === slot
+      {/* All 4 slots always render — an empty slot shows a dashed placeholder
+          tile (not just text) so the customise loop stays visible and
+          game-like even before a single shop purchase. */}
+      <div className="flex flex-col gap-5">
+        {PET_SLOTS.map((slot) => {
+          const options = bySlot[slot]
+          const equippedId = equipped[slot]
+          const meta = SLOT_META[slot]
+          const rowBusy = busySlot === slot
 
-            return (
-              <div key={slot} className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <HVZTag color="violet">
-                    {meta.emoji} {meta.label}
-                  </HVZTag>
-                  {options.length === 0 && (
-                    <span className="text-[11px] text-hfz-text-secondary">
-                      none owned —{' '}
-                      <Link to="/shop" className="text-hfz-cyan hover:underline">
-                        shop
-                      </Link>
-                    </span>
-                  )}
+          return (
+            <div key={slot} className="flex flex-col gap-2">
+              <HVZTag variant="chunky" color="violet">
+                {meta.emoji} {meta.label}
+              </HVZTag>
+
+              {options.length === 0 ? (
+                <Link
+                  to="/shop"
+                  className="flex h-14 w-fit min-w-[160px] items-center gap-2 rounded-hfz-sm border-2 border-dashed border-pet-ink/30 bg-pet-lilac/20 px-3 text-[11px] font-semibold text-pet-ink-soft hover:border-pet-slime-dark hover:text-pet-slime-dark transition-colors"
+                >
+                  <span className="text-lg opacity-50" aria-hidden>{meta.emoji}</span>
+                  Empty — get one in the shop →
+                </Link>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* None / unequip */}
+                  <button
+                    type="button"
+                    onClick={() => onUnequip(pet.id, slot)}
+                    disabled={rowBusy || !equippedId}
+                    aria-pressed={!equippedId}
+                    className={`h-14 w-14 shrink-0 rounded-hfz-sm border-2 text-[11px] font-semibold transition-all duration-hfz-fast ${
+                      !equippedId
+                        ? 'border-pet-slime-dark ring-2 ring-pet-slime-dark/50 text-pet-slime-dark'
+                        : 'border-pet-ink/30 text-pet-ink-soft hover:border-pet-slime-dark'
+                    } ${rowBusy ? 'opacity-50 cursor-wait' : !equippedId ? '' : 'cursor-pointer'}`}
+                    style={{ background: '#FFF8EC' }}
+                    title="No cosmetic in this slot"
+                  >
+                    None
+                  </button>
+
+                  {options.map((c) => (
+                    <Thumb
+                      key={c.id}
+                      cosmetic={c}
+                      active={equippedId === c.id}
+                      disabled={rowBusy}
+                      onClick={() =>
+                        equippedId === c.id
+                          ? onUnequip(pet.id, slot)
+                          : onEquip(pet.id, c.id)
+                      }
+                    />
+                  ))}
                 </div>
-
-                {options.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {/* None / unequip */}
-                    <button
-                      type="button"
-                      onClick={() => onUnequip(pet.id, slot)}
-                      disabled={rowBusy || !equippedId}
-                      aria-pressed={!equippedId}
-                      className={`h-14 w-14 shrink-0 rounded-hfz-sm border text-[11px] font-semibold transition-all duration-hfz-fast ${
-                        !equippedId
-                          ? 'border-hfz-mint ring-2 ring-hfz-mint/50 text-hfz-mint'
-                          : 'border-hfz-border-violet text-hfz-text-secondary hover:border-hfz-violet-light'
-                      } ${rowBusy ? 'opacity-50 cursor-wait' : !equippedId ? '' : 'cursor-pointer'}`}
-                      style={{ background: 'rgba(15,27,53,0.6)' }}
-                      title="No cosmetic in this slot"
-                    >
-                      None
-                    </button>
-
-                    {options.map((c) => (
-                      <Thumb
-                        key={c.id}
-                        cosmetic={c}
-                        active={equippedId === c.id}
-                        disabled={rowBusy}
-                        onClick={() =>
-                          equippedId === c.id
-                            ? onUnequip(pet.id, slot)
-                            : onEquip(pet.id, c.id)
-                        }
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )}
+            </div>
+          )
+        })}
+      </div>
     </HVZCard>
   )
 }

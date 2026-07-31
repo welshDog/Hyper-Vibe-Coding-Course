@@ -57,8 +57,11 @@ type Props = {
   pet:         Pet
   /** Override the XP value (otherwise read from useHUD). */
   xpOverride?: number
-  size?:       'full' | 'mini'
+  /** 'hero' = large spotlight card on /pets (Moy reskin), size="hero" portrait. */
+  size?:       'full' | 'mini' | 'hero'
   onClick?:    () => void
+  /** Mini picker strip: highlight this card as the currently-spotlighted pet. */
+  selected?:   boolean
   /** Pet was minted this session — play the gold shimmer sweep once. */
   freshMint?:  boolean
   /** Resolved cosmetic art for this pet's equipped slots. */
@@ -78,7 +81,7 @@ const RARITY_COLOR: Record<Rarity, TagColor> = {
   legendary: 'gold',
 }
 
-export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = false, equipped, onEvolved, demo = false }: Props) {
+export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = false, freshMint = false, equipped, onEvolved, demo = false }: Props) {
   // ⚠️  All hooks declared up top — Rules of Hooks. Even though `tilt` only
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
@@ -94,9 +97,11 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
   if (size === 'mini') {
     return (
       <HVZCard
+        variant="chunky"
+        selected={selected}
         onClick={onClick}
         padding={16}
-        style={{ minWidth: 220 }}
+        style={{ minWidth: 200 }}
       >
         <div className="flex items-center gap-3">
           <PetPortrait
@@ -107,10 +112,10 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
             equipped={equipped}
           />
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-hfz-text-primary truncate">{pet.pet_name}</p>
-            <p className="text-[11px] text-hfz-text-secondary truncate">{species.displayName}</p>
+            <p className="font-bold text-pet-ink truncate">{pet.pet_name}</p>
+            <p className="text-[11px] text-pet-ink-soft truncate">{species.displayName}</p>
             <div className="mt-1 flex items-center gap-1.5">
-              <HVZTag color={isLegend ? 'gold' : 'violet'}>
+              <HVZTag variant="chunky" color={isLegend ? 'gold' : 'violet'}>
                 {stageInfo.emoji} {stageInfo.label}
               </HVZTag>
             </div>
@@ -120,7 +125,11 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
     )
   }
 
-  // Full size — hero card on the Pets page.
+  // 'full' (collection grid, legacy) and 'hero' (spotlight, Moy reskin) share
+  // this render path — only the portrait size, heading scale, and layout
+  // direction (row vs centered stack) differ.
+  const isHero = size === 'hero'
+  const portraitSize = isHero ? 'hero' : 'lg'
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (reduceMotion) return
     const r = e.currentTarget.getBoundingClientRect()
@@ -148,11 +157,19 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
 
   return (
     <HVZCard
+      variant="chunky"
       onClick={onClick}
       glow={isLegend ? 'gold' : undefined}
+      padding={isHero ? 36 : undefined}
+      className={isHero ? 'h-full' : undefined}
+      style={
+        isHero
+          ? { boxShadow: '8px 8px 0 #241C3D', background: '#FFF8EC' }
+          : undefined
+      }
     >
       <div
-        className="relative flex flex-col sm:flex-row gap-4"
+        className={`relative flex gap-4 ${isHero ? 'h-full flex-col items-center justify-center text-center gap-6' : 'flex-col sm:flex-row'}`}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         style={tiltStyle}
@@ -161,7 +178,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
         {!reduceMotion && (
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-hfz-md mix-blend-overlay transition-opacity duration-300"
+            className="pointer-events-none absolute inset-0 rounded-pet-chunky mix-blend-overlay transition-opacity duration-300"
             style={{
               opacity: tilt.active ? 0.35 : 0,
               background: `radial-gradient(circle at ${tilt.mx}% ${tilt.my}%, rgba(255,255,255,0.6) 0%, rgba(168,85,247,0.15) 30%, transparent 60%)`,
@@ -172,16 +189,16 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
         {freshMint && (
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 overflow-hidden rounded-hfz-md"
+            className="pointer-events-none absolute inset-0 overflow-hidden rounded-pet-chunky"
           >
-            <div className="absolute inset-y-0 -left-1/3 w-1/3 motion-safe:animate-gold-sweep bg-gradient-to-r from-transparent via-hfz-gold/30 to-transparent" />
+            <div className="absolute inset-y-0 -left-1/3 w-1/3 motion-safe:animate-gold-sweep bg-gradient-to-r from-transparent via-pet-gold/40 to-transparent" />
           </div>
         )}
 
         <PetPortrait
           imageUrl={species.imageUrl}
           alt={species.displayName}
-          size="lg"
+          size={portraitSize}
           rarity={pet.rarity}
           equipped={equipped}
           className={isEvolving ? 'motion-safe:animate-border-pulse' : undefined}
@@ -198,21 +215,21 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
           }
         />
 
-        <div className="flex-1 min-w-0">
-          <header className="flex items-start justify-between gap-3">
+        <div className={`flex-1 min-w-0 ${isHero ? 'w-full' : ''}`}>
+          <header className={`flex items-start gap-3 ${isHero ? 'flex-col items-center' : 'justify-between'}`}>
             <div className="min-w-0">
-              <h3 className="text-lg font-bold tracking-tight text-hfz-text-primary truncate">{pet.pet_name}</h3>
-              <p className="text-xs text-hfz-text-secondary">
+              <h3 className={`font-bold tracking-tight text-pet-ink truncate ${isHero ? 'text-2xl' : 'text-lg'}`}>{pet.pet_name}</h3>
+              <p className="text-xs text-pet-ink-soft">
                 <span className="font-mono">{pet.pet_id}</span>
                 <span className="opacity-60"> · </span>
                 {species.displayName}
               </p>
             </div>
-            <HVZTag color={RARITY_COLOR[pet.rarity]}>{RARITY_LABELS[pet.rarity]}</HVZTag>
+            <HVZTag variant="chunky" color={RARITY_COLOR[pet.rarity]}>{RARITY_LABELS[pet.rarity]}</HVZTag>
           </header>
 
-          <div className="mt-3">
-            <p className="text-[11px] uppercase tracking-wider text-hfz-violet-light mb-1">
+          <div className={isHero ? 'max-w-sm mx-auto mt-5' : 'mt-3'}>
+            <p className={`uppercase tracking-wider text-pet-wood-dark ${isHero ? 'text-xs mb-1.5' : 'text-[11px] mb-1'}`}>
               Stage: {stageInfo.label} {stageInfo.emoji}
               {pet.evolution_count > 0 && (
                 <span className="ml-2 opacity-70">· {pet.evolution_count}× evolved</span>
@@ -221,10 +238,10 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
             <XPBar xp={xp} isEvolving={isEvolving} />
           </div>
 
-          <footer className="mt-3 flex flex-wrap items-center gap-2">
+          <footer className={`flex flex-wrap items-center gap-2 ${isHero ? 'justify-center mt-5' : 'mt-3'}`}>
             <MoodBadge mood={pet.mood} />
             {demo ? (
-              <span className="text-xs text-hfz-text-secondary/70 select-none">
+              <span className="text-xs text-pet-ink-soft/70 select-none">
                 ✨ Preview pet
               </span>
             ) : (
@@ -233,7 +250,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, freshMint = f
                 target="_blank"
                 rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="text-xs text-hfz-violet-light hover:underline"
+                className="text-xs text-pet-wood-dark hover:underline"
               >
                 ↗ BaseScan
               </a>

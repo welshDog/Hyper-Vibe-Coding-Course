@@ -65,18 +65,18 @@ function SpeciesCard({
           : `Choose ${species.displayName}`
       }
       className={`
-        group relative flex flex-col items-center gap-2 p-3 rounded-hfz-md
-        border motion-safe:transition-all motion-safe:duration-hfz-fast text-left
+        group relative flex flex-col items-center gap-2 p-3 rounded-pet-chunky
+        border-4 motion-safe:transition-all motion-safe:duration-hfz-fast text-left
         ${locked
-          ? 'border-hfz-border-violet bg-hfz-space-black/40 cursor-not-allowed'
+          ? 'border-pet-ink/30 bg-pet-lilac/30 cursor-not-allowed'
           : isSelected
-          ? 'border-hfz-violet-light bg-hfz-violet/15 ring-2 ring-hfz-violet-light shadow-[0_0_24px_rgba(167,139,250,0.4)]'
-          : 'border-hfz-border-violet bg-hfz-space-black/60 hover:border-hfz-violet-light hover:bg-hfz-violet/10'}
+          ? 'border-pet-ink bg-pet-slime/20 ring-2 ring-pet-slime-dark shadow-pet-pop-sm'
+          : 'border-pet-ink bg-pet-cream hover:bg-pet-lilac/40'}
         ${disabled && !locked ? 'opacity-50 cursor-not-allowed' : ''}
       `}
     >
       {/* Image / silhouette box */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-hfz-sm bg-hfz-space-black flex items-center justify-center">
+      <div className="relative aspect-square w-full overflow-hidden rounded-hfz-sm bg-pet-lilac/40 flex items-center justify-center">
         {imgFailed ? (
           <span
             className={`text-6xl ${locked ? 'opacity-20' : ''}`}
@@ -104,8 +104,8 @@ function SpeciesCard({
         {locked && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <span
-              className="text-3xl font-black text-hfz-violet-light"
-              style={{ filter: 'drop-shadow(0 0 8px rgba(168,85,247,0.9))' }}
+              className="text-3xl font-black text-pet-ink-soft"
+              style={{ filter: 'drop-shadow(0 0 8px rgba(36,28,61,0.6))' }}
               aria-hidden
             >
               ?
@@ -119,7 +119,7 @@ function SpeciesCard({
         <span aria-hidden className="text-base">{species.emoji}</span>
         <span
           className={`text-sm font-semibold truncate ${
-            locked ? 'text-hfz-text-secondary' : 'text-hfz-text-primary'
+            locked ? 'text-pet-ink-soft' : 'text-pet-ink'
           }`}
         >
           {species.displayName}
@@ -128,11 +128,11 @@ function SpeciesCard({
 
       {/* Unlock label / selected badge */}
       {locked ? (
-        <p className="w-full text-[10px] font-semibold text-hfz-violet-light">
+        <p className="w-full text-[10px] font-semibold text-pet-wood-dark">
           Unlocks at {species.unlockXp?.toLocaleString()} XP
         </p>
       ) : isSelected ? (
-        <span className="absolute top-2 right-2 rounded-hfz-full bg-hfz-violet-light px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-hfz-space-black">
+        <span className="absolute top-2 right-2 rounded-hfz-full border-2 border-pet-ink bg-pet-slime px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pet-ink">
           ✓ Picked
         </span>
       ) : null}

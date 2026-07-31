@@ -48,13 +48,14 @@ export function EvolveButton({ pet, onEvolved }: Props) {
   return (
     <div className="flex flex-col gap-1.5 mt-3">
       {error && (
-        <p role="status" className="text-[11px] text-red-400">
+        <p role="status" className="text-[11px] text-red-700">
           ⚠️ {error}
         </p>
       )}
       <HVZButton
         variant="primary"
         size="sm"
+        chunky
         disabled={busy}
         fullWidth
         onClick={handleEvolve}

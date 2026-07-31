@@ -66,17 +66,17 @@ function EventRow({ event, index }: { event: XpEvent; index: number }) {
     >
       <span className="text-lg leading-none shrink-0" aria-hidden>{emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-hfz-text-primary truncate">{label}</p>
-        <p className="text-[11px] text-hfz-text-secondary">{timeAgo(event.created_at)}</p>
+        <p className="text-sm font-semibold text-pet-ink truncate">{label}</p>
+        <p className="text-[11px] text-pet-ink-soft">{timeAgo(event.created_at)}</p>
       </div>
       {boosted && (
-        <HVZTag color="violet" style={{ fontSize: 10 }}>
+        <HVZTag variant="chunky" color="violet" style={{ fontSize: 10 }}>
           🌀 {event.rift_multiplier}×
         </HVZTag>
       )}
-      <span className="font-mono text-sm font-bold text-hfz-gold whitespace-nowrap shrink-0">
+      <span className="font-mono text-sm font-bold text-pet-gold-dark whitespace-nowrap shrink-0">
         +{event.amount.toLocaleString()}
-        <span className="text-[10px] font-semibold text-hfz-gold/70"> BROski$</span>
+        <span className="text-[10px] font-semibold text-pet-gold-dark/70"> BROski$</span>
       </span>
     </li>
   )
@@ -88,12 +88,12 @@ function SkeletonRow({ index }: { index: number }) {
       className="flex items-center gap-3 py-2 motion-safe:animate-fade-in-up"
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <span className="h-7 w-7 shrink-0 rounded-full bg-white/5" aria-hidden />
+      <span className="h-7 w-7 shrink-0 rounded-full bg-pet-ink/10" aria-hidden />
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-        <span className="h-3 w-1/3 rounded bg-white/5" aria-hidden />
-        <span className="h-2 w-16 rounded bg-white/5" aria-hidden />
+        <span className="h-3 w-1/3 rounded bg-pet-ink/10" aria-hidden />
+        <span className="h-2 w-16 rounded bg-pet-ink/10" aria-hidden />
       </div>
-      <span className="h-4 w-14 rounded bg-white/5" aria-hidden />
+      <span className="h-4 w-14 rounded bg-pet-ink/10" aria-hidden />
     </li>
   )
 }
@@ -102,11 +102,11 @@ export function XpFeed() {
   const { events, loading, error } = useXpEvents()
 
   return (
-    <HVZCard>
+    <HVZCard variant="chunky">
       {error ? (
-        <p className="text-sm text-red-300">Couldn't load recent activity: {error.message}</p>
+        <p className="text-sm text-red-700">Couldn't load recent activity: {error.message}</p>
       ) : loading && events.length === 0 ? (
-        <ul aria-label="Loading recent XP" className="divide-y divide-white/5">
+        <ul aria-label="Loading recent XP" className="divide-y divide-pet-ink/10">
           {Array.from({ length: 3 }).map((_, i) => (
             <SkeletonRow key={i} index={i} />
           ))}
@@ -115,17 +115,17 @@ export function XpFeed() {
         <div className="flex items-center gap-4 py-1">
           <span className="text-3xl shrink-0" aria-hidden>🔥</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-hfz-text-primary">
+            <p className="text-sm font-bold text-pet-ink">
               Your first XP lands here.
             </p>
-            <p className="text-xs text-hfz-text-secondary mt-1">
+            <p className="text-xs text-pet-ink-soft mt-1">
               Finish a quest or a course module and watch the BROski$ roll in — your pet
               eats every drop. Go build something! ⚡
             </p>
           </div>
         </div>
       ) : (
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-pet-ink/10">
           {events.map((event, i) => (
             <EventRow key={event.id} event={event} index={i} />
           ))}
