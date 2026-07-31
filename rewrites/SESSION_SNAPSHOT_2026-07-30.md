@@ -105,7 +105,19 @@
   10 slash commands synced, all 5 cogs loaded.
 - Found, not fixed: `signups` cog queries a `users.subscription_tier`
   column that doesn't exist — doesn't crash the bot, but the "Catch
-  Stragglers" notifier silently never fires.
+  Stragglers" notifier silently never fires. **Fixed 2026-07-31, see below.**
+
+**`cogs/signups.py` `subscription_tier` fix (2026-07-31)**
+- Root cause confirmed live via Supabase MCP: `users` never had that
+  column; tier is computed by the `user_loyalty_tier` view (same source
+  `course-profile` already reads correctly).
+- Added `db.get_new_signups()` — fetches users, then batch-looks-up tier
+  from the view — and switched `signups.py` to call it, matching the
+  `db.func()` convention every other cog follows.
+- Shipped via branch → PR #35 → merge (`db68131`). Railway auto-redeployed;
+  runtime logs confirm the new query hit Supabase and returned `200 OK`
+  (no new signups in that window, so the tier follow-up query correctly
+  didn't fire — expected, not a gap).
 
 ---
 
@@ -117,8 +129,6 @@
 
 ## 🟡 IN PROGRESS (not finished)
 
-- `cogs/signups.py`'s `subscription_tier` column error (found tonight,
-  not fixed) — the one loose end from the bot deployment.
 - Quiz `explanation` text still ships to the client unstripped (only
   `answer_index` is stripped) — unchecked whether any explanation phrases
   the correct answer clearly enough to read before attempting.
@@ -137,11 +147,10 @@
 
 ## 🎯 NEXT SESSION — START HERE
 
-**First task:** fix `cogs/signups.py`'s `subscription_tier` column error —
-the one loose end from tonight's bot deployment. Then pick from: quiz-
-explanation content review, a non-Playwright regression test for the
-`shop-purchase` CORS fix, or real Discord OAuth credentials for
-`discord-link`.
+**First task:** pick from: quiz-explanation content review, a non-Playwright
+regression test for the `shop-purchase` CORS fix, or real Discord OAuth
+credentials for `discord-link`. (`signups.py`'s `subscription_tier` bug is
+fixed and live-verified as of 2026-07-31.)
 
 *Session by welshDog 🐶♾️ + Claude | Llanelli, Wales*
 *"Stop apologising for your brain. Start building."*
