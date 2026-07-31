@@ -10,6 +10,8 @@ interface Props {
   style?: CSSProperties
   padding?: number | string
   className?: string
+  /** 'chunky' = Moy-style thick ink outline + hard offset shadow (pets reskin only). */
+  variant?: 'default' | 'chunky'
 }
 
 const GLOWS: Record<GlowColor, string> = {
@@ -20,6 +22,12 @@ const GLOWS: Record<GlowColor, string> = {
   pink: '0 0 20px rgba(217,70,239,0.4), 0 0 40px rgba(217,70,239,0.2)',
 }
 
+const CHUNKY_STYLE: CSSProperties = {
+  border: '4px solid #241C3D',
+  borderRadius: 28,
+  boxShadow: '6px 6px 0 #241C3D',
+}
+
 export function HVZCard({
   children,
   glow,
@@ -28,6 +36,7 @@ export function HVZCard({
   style,
   padding = 24,
   className,
+  variant = 'default',
 }: Props) {
   const [hover, setHover] = useState(false)
   const glowColor: GlowColor = typeof glow === 'string' ? glow : 'violet'
@@ -56,6 +65,7 @@ export function HVZCard({
         transform: hover && onClick ? 'translateY(-2px)' : 'none',
         transition: 'transform 250ms cubic-bezier(0.4,0,0.2,1), box-shadow 250ms cubic-bezier(0.4,0,0.2,1), border-color 250ms cubic-bezier(0.4,0,0.2,1)',
         cursor: onClick ? 'pointer' : 'default',
+        ...(variant === 'chunky' ? CHUNKY_STYLE : null),
         ...style,
       }}
     >

@@ -6,6 +6,8 @@ interface Props {
   children: ReactNode
   color?: TagColor
   style?: CSSProperties
+  /** 'chunky' = Moy-style solid-fill, thick-ink-outline pill (pets reskin only). */
+  variant?: 'default' | 'chunky'
 }
 
 const TONES: Record<TagColor, { bg: string; bd: string; tx: string }> = {
@@ -17,21 +19,22 @@ const TONES: Record<TagColor, { bg: string; bd: string; tx: string }> = {
   amber:  { bg: 'rgba(251,191,36,0.15)', bd: 'rgba(251,191,36,0.3)', tx: 'var(--color-warning-amber)' },
 }
 
-export function HVZTag({ children, color = 'violet', style }: Props) {
+export function HVZTag({ children, color = 'violet', style, variant = 'default' }: Props) {
   const t = TONES[color]
+  const chunky = variant === 'chunky'
   return (
     <span
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: 6,
-        padding: '4px 10px',
+        padding: chunky ? '5px 12px' : '4px 10px',
         borderRadius: 9999,
-        background: t.bg,
-        border: `1px solid ${t.bd}`,
+        background: chunky ? '#FFF8EC' : t.bg,
+        border: chunky ? '3px solid #241C3D' : `1px solid ${t.bd}`,
         color: t.tx,
         fontSize: 12,
-        fontWeight: 600,
+        fontWeight: chunky ? 700 : 600,
         letterSpacing: '0.04em',
         fontFamily: 'var(--font-body)',
         whiteSpace: 'nowrap',

@@ -9,6 +9,11 @@ interface Props {
   label?: string
   height?: number
   style?: CSSProperties
+  /** Extra style applied to the track div (behind the fill). Escape hatch —
+   *  the track has no other override path since it's fully hardcoded below. */
+  trackStyle?: CSSProperties
+  /** Extra style applied to the fill div (on top of the gradient). */
+  fillStyle?: CSSProperties
 }
 
 const GRADS: Record<Gradient, string> = {
@@ -17,7 +22,7 @@ const GRADS: Record<Gradient, string> = {
   mint: 'linear-gradient(90deg, var(--color-success-mint), var(--color-neon-cyan))',
 }
 
-export function HVZProgress({ value, max, gradient = 'xp', label, height = 8, style }: Props) {
+export function HVZProgress({ value, max, gradient = 'xp', label, height = 8, style, trackStyle, fillStyle }: Props) {
   const safeMax = max > 0 ? max : 1
   const pct = Math.max(0, Math.min((value / safeMax) * 100, 100))
   return (
@@ -51,6 +56,7 @@ export function HVZProgress({ value, max, gradient = 'xp', label, height = 8, st
           background: 'rgba(255,255,255,0.08)',
           borderRadius: 9999,
           overflow: 'hidden',
+          ...trackStyle,
         }}
       >
         <div
@@ -60,6 +66,7 @@ export function HVZProgress({ value, max, gradient = 'xp', label, height = 8, st
             background: GRADS[gradient],
             borderRadius: 9999,
             transition: 'width 1s cubic-bezier(0.34,1.56,0.64,1)',
+            ...fillStyle,
           }}
         />
       </div>

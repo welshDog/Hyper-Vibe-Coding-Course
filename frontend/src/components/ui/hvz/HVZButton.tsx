@@ -9,6 +9,8 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'style'> {
   children: ReactNode
   style?: CSSProperties
   fullWidth?: boolean
+  /** Moy-style thick ink outline + hard offset "pop" shadow (pets reskin only). */
+  chunky?: boolean
 }
 
 const SIZES: Record<Size, CSSProperties> = {
@@ -47,6 +49,12 @@ const HOVER_GLOWS: Record<Variant, string> = {
   danger: '0 0 20px rgba(239,68,68,0.4)',
 }
 
+const CHUNKY_STYLE: CSSProperties = {
+  border: '4px solid #241C3D',
+  borderRadius: 20,
+  boxShadow: '4px 4px 0 #241C3D',
+}
+
 export function HVZButton({
   variant = 'primary',
   size = 'md',
@@ -54,6 +62,7 @@ export function HVZButton({
   style,
   fullWidth,
   disabled,
+  chunky = false,
   ...rest
 }: Props) {
   const [hover, setHover] = useState(false)
@@ -87,6 +96,13 @@ export function HVZButton({
         transition: 'transform 250ms cubic-bezier(0.4,0,0.2,1), box-shadow 250ms cubic-bezier(0.4,0,0.2,1)',
         boxShadow: !disabled && hover ? HOVER_GLOWS[variant] : 'none',
         transform: disabled ? 'none' : pressed ? 'scale(0.98)' : hover ? 'translateY(-2px)' : 'none',
+        ...(chunky
+          ? {
+              ...CHUNKY_STYLE,
+              boxShadow: pressed ? 'none' : CHUNKY_STYLE.boxShadow,
+              transform: disabled ? 'none' : pressed ? 'translate(4px, 4px)' : hover ? 'translate(-2px, -2px)' : 'none',
+            }
+          : null),
         ...style,
       }}
     >

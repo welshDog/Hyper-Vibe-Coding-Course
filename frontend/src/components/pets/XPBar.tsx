@@ -41,13 +41,14 @@ export function XPBar({ xp, isEvolving = false }: Props) {
 
   return (
     <div
-      className={isEvolving ? 'rounded-full ring-2 ring-hfz-violet-light/60 shadow-hfz-glow-violet motion-safe:animate-border-pulse' : undefined}
+      className={isEvolving ? 'rounded-full ring-2 ring-pet-slime-dark/60 shadow-pet-outline motion-safe:animate-border-pulse' : undefined}
     >
       <HVZProgress
         value={atMax ? 100 : Math.round(renderedPct)}
         max={100}
         gradient={atMax ? 'gold' : 'xp'}
         label={atMax ? label : `${label} · ${current.toLocaleString()} / ${next.toLocaleString()} XP`}
+        trackStyle={{ border: '2px solid #241C3D', background: '#FFF8EC' }}
       />
     </div>
   )

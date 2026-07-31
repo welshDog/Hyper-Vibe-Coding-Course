@@ -12,7 +12,7 @@ type Props = { mood: PetMood }
 
 export function MoodBadge({ mood }: Props) {
   return (
-    <HVZTag color={MOOD_COLOR[mood]}>
+    <HVZTag variant="chunky" color={MOOD_COLOR[mood]}>
       <span aria-hidden>{MOOD_EMOJI[mood]}</span>
       <span>{MOOD_LABEL[mood]}</span>
     </HVZTag>

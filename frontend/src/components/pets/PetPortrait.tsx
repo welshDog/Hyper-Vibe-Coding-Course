@@ -29,6 +29,11 @@ const RARITY_RING: Record<Rarity, CSSProperties> = {
 }
 
 const SIZE = {
+  hero: {
+    box:     'h-56 w-56 sm:h-64 sm:w-64',
+    rounded: 'rounded-pet-chunky',
+    badge:   'h-10 w-10 -bottom-3 -right-3',
+  },
   lg: {
     box:     'h-20 w-20',
     rounded: 'rounded-hfz-md',
@@ -63,6 +68,7 @@ export function PetPortrait({
   className = '',
 }: Props) {
   const s = SIZE[size]
+  const isHero = size === 'hero'
   const bg    = equipped?.background?.image_url
   const aura  = equipped?.aura?.image_url
   const frame = equipped?.frame?.image_url
@@ -71,10 +77,19 @@ export function PetPortrait({
   const legendaryRingClass = rarity === 'legendary' ? 'motion-safe:animate-legendary-ring' : ''
 
   return (
-    <div
-      className={`relative shrink-0 ${s.box} ${s.rounded} ${legendaryRingClass} ${className}`}
-      style={ringStyle}
-    >
+    <div className={`relative shrink-0 ${isHero ? 'pb-4' : ''}`}>
+      {/* Wood-floor grounding — hero spotlight only, gives the pet somewhere
+          to "stand" per the Moy reference instead of floating on the card. */}
+      {isHero && (
+        <div
+          aria-hidden
+          className="absolute inset-x-2 bottom-0 h-6 rounded-[50%] bg-pet-wood opacity-70 blur-[2px]"
+        />
+      )}
+      <div
+        className={`relative shrink-0 ${s.box} ${s.rounded} ${legendaryRingClass} ${className}`}
+        style={ringStyle}
+      >
       {bg && (
         <img
           src={bg}
@@ -98,7 +113,8 @@ export function PetPortrait({
       <img
         src={imageUrl}
         alt={alt}
-        loading="lazy"
+        loading={isHero ? 'eager' : 'lazy'}
+        {...(isHero ? { width: 256, height: 256 } : {})}
         className={`relative h-full w-full ${s.rounded} motion-safe:animate-idle-breath ${
           bg ? 'object-contain p-1' : 'object-cover'
         }`}
@@ -107,7 +123,7 @@ export function PetPortrait({
       {rarity === 'legendary' && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-hfz-md bg-hfz-holographic motion-safe:animate-holographic opacity-[0.07] mix-blend-overlay"
+          className={`pointer-events-none absolute inset-0 ${s.rounded} bg-hfz-holographic motion-safe:animate-holographic opacity-[0.07] mix-blend-overlay`}
           style={{ backgroundSize: '200% 200%' }}
         />
       )}
@@ -133,6 +149,7 @@ export function PetPortrait({
       ) : (
         cornerFallback
       )}
+      </div>
     </div>
   )
 }

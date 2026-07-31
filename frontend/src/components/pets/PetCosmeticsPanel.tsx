@@ -47,12 +47,12 @@ function Thumb({
       title={cosmetic.name}
       aria-pressed={active}
       aria-label={`${active ? 'Equipped' : 'Equip'} ${cosmetic.name}`}
-      className={`relative h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden border transition-all duration-hfz-fast ease-hfz-smooth ${
+      className={`relative h-14 w-14 shrink-0 rounded-hfz-sm overflow-hidden border-2 transition-all duration-hfz-fast ease-hfz-smooth ${
         active
-          ? 'border-hfz-mint ring-2 ring-hfz-mint/50'
-          : 'border-hfz-border-violet hover:border-hfz-violet-light'
+          ? 'border-pet-slime-dark ring-2 ring-pet-slime-dark/50'
+          : 'border-pet-ink/30 hover:border-pet-slime-dark'
       } ${disabled ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-[1.05]'}`}
-      style={{ background: 'rgba(15,27,53,0.6)' }}
+      style={{ background: '#FFF8EC' }}
     >
       {cosmetic.image_url ? (
         <img
@@ -69,7 +69,7 @@ function Thumb({
       {active && (
         <span
           aria-hidden
-          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-hfz-mint text-[10px] font-bold text-hfz-space-black"
+          className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-pet-slime text-[10px] font-bold text-pet-ink"
         >
           ✓
         </span>
@@ -83,25 +83,25 @@ export function PetCosmeticsPanel({ pet, bySlot, busySlot, onEquip, onUnequip }:
   const ownsAny = PET_SLOTS.some((s) => bySlot[s].length > 0)
 
   return (
-    <HVZCard padding={20}>
+    <HVZCard variant="chunky" padding={20}>
       <div className="flex items-center justify-between gap-3 mb-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-hfz-violet-light">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
           🎨 Customise {pet.pet_name}
         </h3>
         <Link
           to="/shop"
-          className="text-[11px] font-semibold text-hfz-cyan hover:text-hfz-violet-light transition-colors"
+          className="text-[11px] font-semibold text-pet-slime-dark hover:text-pet-wood-dark transition-colors"
         >
           Get more in the shop →
         </Link>
       </div>
 
       {!ownsAny ? (
-        <div className="flex items-center gap-4 rounded-hfz-sm border border-hfz-border-violet bg-hfz-space-black/40 px-4 py-3">
+        <div className="flex items-center gap-4 rounded-hfz-sm border border-pet-ink/15 bg-pet-lilac/40 px-4 py-3">
           <span className="text-2xl shrink-0" aria-hidden>🛍️</span>
-          <p className="text-xs text-hfz-text-secondary leading-relaxed">
+          <p className="text-xs text-pet-ink-soft leading-relaxed">
             No cosmetics yet. Grab auras, frames, badges and backgrounds from the{' '}
-            <Link to="/shop" className="font-semibold text-hfz-cyan hover:underline">
+            <Link to="/shop" className="font-semibold text-pet-slime-dark hover:underline">
               BROski$ shop
             </Link>{' '}
             to deck out {pet.pet_name}.
@@ -118,13 +118,13 @@ export function PetCosmeticsPanel({ pet, bySlot, busySlot, onEquip, onUnequip }:
             return (
               <div key={slot} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <HVZTag color="violet">
+                  <HVZTag variant="chunky" color="violet">
                     {meta.emoji} {meta.label}
                   </HVZTag>
                   {options.length === 0 && (
-                    <span className="text-[11px] text-hfz-text-secondary">
+                    <span className="text-[11px] text-pet-ink-soft">
                       none owned —{' '}
-                      <Link to="/shop" className="text-hfz-cyan hover:underline">
+                      <Link to="/shop" className="text-pet-slime-dark hover:underline">
                         shop
                       </Link>
                     </span>
@@ -139,12 +139,12 @@ export function PetCosmeticsPanel({ pet, bySlot, busySlot, onEquip, onUnequip }:
                       onClick={() => onUnequip(pet.id, slot)}
                       disabled={rowBusy || !equippedId}
                       aria-pressed={!equippedId}
-                      className={`h-14 w-14 shrink-0 rounded-hfz-sm border text-[11px] font-semibold transition-all duration-hfz-fast ${
+                      className={`h-14 w-14 shrink-0 rounded-hfz-sm border-2 text-[11px] font-semibold transition-all duration-hfz-fast ${
                         !equippedId
-                          ? 'border-hfz-mint ring-2 ring-hfz-mint/50 text-hfz-mint'
-                          : 'border-hfz-border-violet text-hfz-text-secondary hover:border-hfz-violet-light'
+                          ? 'border-pet-slime-dark ring-2 ring-pet-slime-dark/50 text-pet-slime-dark'
+                          : 'border-pet-ink/30 text-pet-ink-soft hover:border-pet-slime-dark'
                       } ${rowBusy ? 'opacity-50 cursor-wait' : !equippedId ? '' : 'cursor-pointer'}`}
-                      style={{ background: 'rgba(15,27,53,0.6)' }}
+                      style={{ background: '#FFF8EC' }}
                       title="No cosmetic in this slot"
                     >
                       None
