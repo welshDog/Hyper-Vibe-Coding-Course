@@ -15,7 +15,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { HVZCard, HVZButton } from '../components/ui/hvz'
+import { HVZCard, HVZButton, HVZTag } from '../components/ui/hvz'
 import { SpeciesPicker } from '../components/pets/SpeciesPicker'
 import { MintPetButton } from '../components/pets/MintPetButton'
 import { WalletStatusBadge } from '../components/WalletStatusBadge'
@@ -32,10 +32,20 @@ import { useAuthStore } from '../context/auth'
 import { useHUD } from '../hooks/useHUD'
 import {
   SPECIES,
+  RARITY_LABELS,
   getSpecies,
   type SpeciesId,
 } from '../lib/species'
 import { EVOLUTION_STAGES } from '../lib/evolution'
+
+// Gacha-style rarity odds row for the mint flow (Step 2) — same color
+// language as the rarity tag everywhere else on the page (PetCard/PetSquadRow).
+const MINT_RARITY_ROW: { key: 'common' | 'uncommon' | 'rare' | 'legendary'; color: 'cyan' | 'mint' | 'violet' | 'gold' }[] = [
+  { key: 'common',    color: 'cyan' },
+  { key: 'uncommon',  color: 'mint' },
+  { key: 'rare',      color: 'violet' },
+  { key: 'legendary', color: 'gold' },
+]
 
 import { usePetNotifications } from '../hooks/usePetNotifications'
 
@@ -282,13 +292,20 @@ export default function Pets() {
                   `heroPet` above — manual pick, else fresh mint, else
                   highest stage. */}
               <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 items-start">
-                <PetCard
-                  pet={heroPet}
-                  size="hero"
-                  freshMint={heroPet.mint_tx_hash === justMintedTx}
-                  equipped={resolveEquipped(heroPet)}
-                  onEvolved={() => { void refetch() }}
-                />
+                <div
+                  className="relative rounded-pet-chunky"
+                  style={{
+                    background: 'radial-gradient(circle at 50% 35%, rgba(255,255,255,0.9) 0%, rgba(191,232,255,0) 70%)',
+                  }}
+                >
+                  <PetCard
+                    pet={heroPet}
+                    size="hero"
+                    freshMint={heroPet.mint_tx_hash === justMintedTx}
+                    equipped={resolveEquipped(heroPet)}
+                    onEvolved={() => { void refetch() }}
+                  />
+                </div>
                 <div className="flex flex-col gap-4">
                   <EvolutionTimeline />
                   <PetCosmeticsPanel
@@ -412,11 +429,19 @@ export default function Pets() {
                     />
                   </label>
 
-                  <div className="rounded-hfz-md border border-pet-ink/15 bg-pet-lilac/50 px-3 py-2.5">
-                    <p className="text-[11px] text-pet-ink-soft">
-                      🎲 <strong className="text-pet-ink">Rarity is rolled on mint</strong> — Common, Uncommon,
-                      Rare or Legendary. Luck of the draw, revealed when your pet hatches. Every mint costs the same
-                      (100 BROski$).
+                  <div className="rounded-pet-chunky border-2 border-pet-ink/20 bg-pet-lilac/40 px-3 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-pet-ink-soft mb-2">
+                      🎲 Rarity rolled on mint — luck of the draw
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {MINT_RARITY_ROW.map((r) => (
+                        <HVZTag key={r.key} variant="chunky" color={r.color}>
+                          {RARITY_LABELS[r.key]}
+                        </HVZTag>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-pet-ink-soft mt-2">
+                      Revealed when your pet hatches. Every mint costs the same (100 BROski$).
                     </p>
                   </div>
                 </div>
@@ -447,13 +472,17 @@ export default function Pets() {
         </>
       )}
 
-      {/* Section 4 — Evolution Path (always visible, educational) */}
-      <section aria-labelledby="evolution-path" className="flex flex-col gap-3">
-        <h2 id="evolution-path" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
-          Evolution path
-        </h2>
-        <EvolutionTimeline />
-      </section>
+      {/* Section 4 — Evolution Path, educational. Only shown here when there's
+          no hero spotlight above to already cover it (pets.length === 0) —
+          otherwise this duplicated the sidebar's EvolutionTimeline verbatim. */}
+      {pets.length === 0 && (
+        <section aria-labelledby="evolution-path" className="flex flex-col gap-3">
+          <h2 id="evolution-path" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
+            Evolution path
+          </h2>
+          <EvolutionTimeline />
+        </section>
+      )}
 
       {/* Section 5 — Top evolvers across the squad (public squad row) */}
       <section aria-labelledby="top-evolvers" className="flex flex-col gap-3">

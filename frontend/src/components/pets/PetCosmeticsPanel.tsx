@@ -80,7 +80,6 @@ function Thumb({
 
 export function PetCosmeticsPanel({ pet, bySlot, busySlot, onEquip, onUnequip }: Props) {
   const equipped = pet.cosmetics ?? {}
-  const ownsAny = PET_SLOTS.some((s) => bySlot[s].length > 0)
 
   return (
     <HVZCard variant="chunky" padding={20}>
@@ -96,80 +95,68 @@ export function PetCosmeticsPanel({ pet, bySlot, busySlot, onEquip, onUnequip }:
         </Link>
       </div>
 
-      {!ownsAny ? (
-        <div className="flex items-center gap-4 rounded-hfz-sm border border-pet-ink/15 bg-pet-lilac/40 px-4 py-3">
-          <span className="text-2xl shrink-0" aria-hidden>🛍️</span>
-          <p className="text-xs text-pet-ink-soft leading-relaxed">
-            No cosmetics yet. Grab auras, frames, badges and backgrounds from the{' '}
-            <Link to="/shop" className="font-semibold text-pet-slime-dark hover:underline">
-              BROski$ shop
-            </Link>{' '}
-            to deck out {pet.pet_name}.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-5">
-          {PET_SLOTS.map((slot) => {
-            const options = bySlot[slot]
-            const equippedId = equipped[slot]
-            const meta = SLOT_META[slot]
-            const rowBusy = busySlot === slot
+      {/* All 4 slots always render — an empty slot shows a dashed placeholder
+          tile (not just text) so the customise loop stays visible and
+          game-like even before a single shop purchase. */}
+      <div className="flex flex-col gap-5">
+        {PET_SLOTS.map((slot) => {
+          const options = bySlot[slot]
+          const equippedId = equipped[slot]
+          const meta = SLOT_META[slot]
+          const rowBusy = busySlot === slot
 
-            return (
-              <div key={slot} className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <HVZTag variant="chunky" color="violet">
-                    {meta.emoji} {meta.label}
-                  </HVZTag>
-                  {options.length === 0 && (
-                    <span className="text-[11px] text-pet-ink-soft">
-                      none owned —{' '}
-                      <Link to="/shop" className="text-pet-slime-dark hover:underline">
-                        shop
-                      </Link>
-                    </span>
-                  )}
+          return (
+            <div key={slot} className="flex flex-col gap-2">
+              <HVZTag variant="chunky" color="violet">
+                {meta.emoji} {meta.label}
+              </HVZTag>
+
+              {options.length === 0 ? (
+                <Link
+                  to="/shop"
+                  className="flex h-14 w-fit min-w-[160px] items-center gap-2 rounded-hfz-sm border-2 border-dashed border-pet-ink/30 bg-pet-lilac/20 px-3 text-[11px] font-semibold text-pet-ink-soft hover:border-pet-slime-dark hover:text-pet-slime-dark transition-colors"
+                >
+                  <span className="text-lg opacity-50" aria-hidden>{meta.emoji}</span>
+                  Empty — get one in the shop →
+                </Link>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* None / unequip */}
+                  <button
+                    type="button"
+                    onClick={() => onUnequip(pet.id, slot)}
+                    disabled={rowBusy || !equippedId}
+                    aria-pressed={!equippedId}
+                    className={`h-14 w-14 shrink-0 rounded-hfz-sm border-2 text-[11px] font-semibold transition-all duration-hfz-fast ${
+                      !equippedId
+                        ? 'border-pet-slime-dark ring-2 ring-pet-slime-dark/50 text-pet-slime-dark'
+                        : 'border-pet-ink/30 text-pet-ink-soft hover:border-pet-slime-dark'
+                    } ${rowBusy ? 'opacity-50 cursor-wait' : !equippedId ? '' : 'cursor-pointer'}`}
+                    style={{ background: '#FFF8EC' }}
+                    title="No cosmetic in this slot"
+                  >
+                    None
+                  </button>
+
+                  {options.map((c) => (
+                    <Thumb
+                      key={c.id}
+                      cosmetic={c}
+                      active={equippedId === c.id}
+                      disabled={rowBusy}
+                      onClick={() =>
+                        equippedId === c.id
+                          ? onUnequip(pet.id, slot)
+                          : onEquip(pet.id, c.id)
+                      }
+                    />
+                  ))}
                 </div>
-
-                {options.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    {/* None / unequip */}
-                    <button
-                      type="button"
-                      onClick={() => onUnequip(pet.id, slot)}
-                      disabled={rowBusy || !equippedId}
-                      aria-pressed={!equippedId}
-                      className={`h-14 w-14 shrink-0 rounded-hfz-sm border-2 text-[11px] font-semibold transition-all duration-hfz-fast ${
-                        !equippedId
-                          ? 'border-pet-slime-dark ring-2 ring-pet-slime-dark/50 text-pet-slime-dark'
-                          : 'border-pet-ink/30 text-pet-ink-soft hover:border-pet-slime-dark'
-                      } ${rowBusy ? 'opacity-50 cursor-wait' : !equippedId ? '' : 'cursor-pointer'}`}
-                      style={{ background: '#FFF8EC' }}
-                      title="No cosmetic in this slot"
-                    >
-                      None
-                    </button>
-
-                    {options.map((c) => (
-                      <Thumb
-                        key={c.id}
-                        cosmetic={c}
-                        active={equippedId === c.id}
-                        disabled={rowBusy}
-                        onClick={() =>
-                          equippedId === c.id
-                            ? onUnequip(pet.id, slot)
-                            : onEquip(pet.id, c.id)
-                        }
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )}
+            </div>
+          )
+        })}
+      </div>
     </HVZCard>
   )
 }

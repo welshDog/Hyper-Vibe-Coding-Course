@@ -160,6 +160,12 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
       variant="chunky"
       onClick={onClick}
       glow={isLegend ? 'gold' : undefined}
+      padding={isHero ? 28 : undefined}
+      style={
+        isHero
+          ? { boxShadow: '8px 8px 0 #241C3D', background: '#FFF8EC' }
+          : undefined
+      }
     >
       <div
         className={`relative flex gap-4 ${isHero ? 'flex-col items-center text-center' : 'flex-col sm:flex-row'}`}
