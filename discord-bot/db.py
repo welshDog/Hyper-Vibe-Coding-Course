@@ -1,3 +1,4 @@
+from datetime import datetime
 from supabase import create_client, Client
 from config import SUPABASE_URL, SUPABASE_ADMIN_KEY
 
@@ -111,3 +112,37 @@ def get_enrollments_count() -> int:
     """Total number of active enrollments — for quest announcements."""
     res = _client.table("enrollments").select("id", count="exact").execute()
     return res.count or 0
+
+
+def get_new_signups(since: datetime) -> list[dict]:
+    """Users created after `since`, enriched with their loyalty tier.
+
+    `users` has no `subscription_tier` column — tier is derived by the
+    `user_loyalty_tier` view (same source `course-profile` Edge Function
+    reads), so it needs its own query keyed by user id.
+
+    Returns list of { id, email, full_name, broski_tokens, created_at, tier }.
+    """
+    users_res = (
+        _client.table("users")
+        .select("id, email, full_name, broski_tokens, created_at")
+        .gt("created_at", since.isoformat())
+        .order("created_at")
+        .execute()
+    )
+    rows = users_res.data or []
+    if not rows:
+        return []
+
+    user_ids = [r["id"] for r in rows]
+    tier_res = (
+        _client.table("user_loyalty_tier")
+        .select("user_id, tier")
+        .in_("user_id", user_ids)
+        .execute()
+    )
+    tier_map = {t["user_id"]: t["tier"] for t in (tier_res.data or [])}
+
+    for r in rows:
+        r["tier"] = tier_map.get(r["id"], "bronze")
+    return rows

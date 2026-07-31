@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands, tasks
-from db import _client
+import db
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -27,23 +27,17 @@ class SignupNotifier(commands.Cog):
             log.warning(f"SignupNotifier: channel {NEW_SIGNUPS_CHANNEL_ID} not found")
             return
 
-        res = (
-            _client.table("users")
-            .select("email, full_name, subscription_tier, broski_tokens, created_at")
-            .gt("created_at", self.last_checked.isoformat())
-            .order("created_at")
-            .execute()
-        )
+        rows = db.get_new_signups(self.last_checked)
         self.last_checked = datetime.now(timezone.utc)
 
-        for user in (res.data or []):
+        for user in rows:
             embed = discord.Embed(
                 title="🎉 New Student Just Signed Up!",
                 color=0x9400D3,
             )
             embed.add_field(name="📧 Email",    value=user["email"],                               inline=True)
             embed.add_field(name="👤 Name",     value=user.get("full_name") or "Not set yet",    inline=True)
-            embed.add_field(name="💎 Tier",     value=user["subscription_tier"],                  inline=True)
+            embed.add_field(name="💎 Tier",     value=user["tier"].capitalize(),                  inline=True)
             embed.add_field(name="💰 BROski$",  value=str(user.get("broski_tokens") or 0),       inline=True)
             embed.set_footer(text="🕐 " + user["created_at"][:16].replace("T", " ") + " UTC")
             embed.set_thumbnail(url="https://hyper-vibe-coding-course.vercel.app/favicon.ico")
