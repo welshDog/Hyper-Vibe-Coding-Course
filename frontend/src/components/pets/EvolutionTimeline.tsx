@@ -14,7 +14,7 @@ import {
 } from '../../lib/evolution'
 
 type Props = {
-  /** Override the XP value (otherwise read from useHUD). */
+  /** Override the XP value (otherwise read from the pet's own xp). */
   xpOverride?: number
 }
 
