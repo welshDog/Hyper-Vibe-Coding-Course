@@ -18,7 +18,7 @@ type Props = {
 }
 
 export function XPBar({ xp, isEvolving = false }: Props) {
-  const { stage, current, next, percent } = progressInStage(xp)
+  const { stage, current, next } = progressInStage(xp)
   // Current stage name/emoji already appears in the "Stage: X" caption
   // PetCard renders right above this bar — the label here only names the
   // *next* stage, so the two lines don't repeat the same stage twice.
@@ -26,30 +26,31 @@ export function XPBar({ xp, isEvolving = false }: Props) {
   const nextStage = EVOLUTION_STAGES[stageIdx + 1]
   const atMax = next === 0
 
-  // Animate width from 0 → percent on first mount so the bar fills in.
-  // After the first render we let HVZProgress handle live updates.
-  const [renderedPct, setRenderedPct] = useState(0)
+  // Animate the fill from 0 → current on first mount so the bar reveals
+  // itself. HVZProgress renders its own "{value} / {max}" pair whenever a
+  // label is set — animate the real XP value (not a 0-100 percent) so that
+  // pair shows the actual current/next XP instead of a redundant percent
+  // sitting next to hand-written XP numbers in the label text.
+  const [renderedCurrent, setRenderedCurrent] = useState(0)
   const initialised = useRef(false)
   useEffect(() => {
     if (!initialised.current) {
-      const id = requestAnimationFrame(() => setRenderedPct(percent))
+      const id = requestAnimationFrame(() => setRenderedCurrent(current))
       initialised.current = true
       return () => cancelAnimationFrame(id)
     }
-    setRenderedPct(percent)
-  }, [percent])
+    setRenderedCurrent(current)
+  }, [current])
 
-  const label = atMax
-    ? '👑 Fully evolved'
-    : `Next: ${nextStage.label} ${nextStage.emoji} · ${current.toLocaleString()} / ${next.toLocaleString()} XP`
+  const label = atMax ? '👑 Fully evolved' : `Next: ${nextStage.label} ${nextStage.emoji}`
 
   return (
     <div
       className={isEvolving ? 'rounded-full ring-2 ring-pet-slime-dark/60 shadow-pet-outline motion-safe:animate-border-pulse' : undefined}
     >
       <HVZProgress
-        value={atMax ? 100 : Math.round(renderedPct)}
-        max={100}
+        value={atMax ? 100 : renderedCurrent}
+        max={atMax ? 100 : next}
         gradient={atMax ? 'gold' : 'xp'}
         label={label}
         trackStyle={{ border: '2px solid #241C3D', background: '#FFF8EC' }}

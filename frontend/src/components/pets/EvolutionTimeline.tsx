@@ -21,7 +21,7 @@ type Props = {
 export function EvolutionTimeline({ xpOverride }: Props) {
   const hud = useHUD()
   const xp = xpOverride ?? hud?.xp ?? 0
-  const { stage: currentKey, current, next, percent } = progressInStage(xp)
+  const { stage: currentKey, current, next } = progressInStage(xp)
   const currentIdx = EVOLUTION_STAGES.findIndex((s) => s.key === currentKey)
   const nextStage = EVOLUTION_STAGES[currentIdx + 1]
   const atMax = !nextStage
@@ -114,11 +114,15 @@ export function EvolutionTimeline({ xpOverride }: Props) {
         </div>
       ) : (
         <div className="mt-4">
+          {/* value/max are the real current/next XP (not a 0-100 percent) so
+              HVZProgress's own "{value} / {max}" pair shows actual XP numbers
+              instead of a redundant percent sitting next to hand-written
+              XP text in the label. */}
           <HVZProgress
-            value={Math.round(percent)}
-            max={100}
+            value={current}
+            max={next}
             gradient="xp"
-            label={`Next: ${nextStage.label} ${nextStage.emoji} · ${current.toLocaleString()} / ${next.toLocaleString()} XP`}
+            label={`Next: ${nextStage.label} ${nextStage.emoji}`}
             trackStyle={{ border: '2px solid #241C3D', background: '#FFF8EC' }}
           />
           <p className="text-[11px] text-pet-ink-soft mt-2">

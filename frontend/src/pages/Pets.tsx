@@ -474,62 +474,73 @@ export default function Pets() {
         </section>
       )}
 
-      {/* Section 5 — Top evolvers across the squad (public squad row).
-          Lighter heading treatment than the hero/mint sections above — this
-          is supporting content, not another thing competing for top billing. */}
-      <section aria-labelledby="top-evolvers" className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 id="top-evolvers" className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
+      {/* Section 5 — Top evolvers. Collapsed by default (native <details>,
+          no JS/framer-motion needed) so this supporting content doesn't
+          compete with the hero card + mint panel above for attention —
+          still one click away, and a nested <h2> keeps it in the heading
+          outline for screen-reader navigation even though <summary> is the
+          actual toggle. */}
+      <details className="group flex flex-col gap-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-pet-chunky border-2 border-pet-ink/15 bg-pet-lilac/20 px-3 py-2 [&::-webkit-details-marker]:hidden">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
             Top evolvers
           </h2>
+          <span className="text-pet-ink-soft transition-transform group-open:rotate-180" aria-hidden>▾</span>
+        </summary>
+        <div className="flex flex-col gap-2 pt-1">
           <p className="text-[11px] text-pet-ink-soft/70">
             Most-evolved BROskiPets across the squad
           </p>
+          <PetSquadRow />
         </div>
-        <PetSquadRow />
-      </section>
+      </details>
 
-      {/* Section 6 — How XP feeds your pet (3-column education). Same lighter
-          treatment — this is a once-read explainer, not a recurring focal point. */}
-      <section aria-labelledby="how-xp" className="flex flex-col gap-2">
-        <h2 id="how-xp" className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
-          How XP feeds your pet
-        </h2>
-        <HVZCard>
-          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <li className="flex flex-col gap-1.5">
-              <span className="text-2xl leading-none" aria-hidden>🎯</span>
-              <p className="text-sm font-bold text-pet-ink">
-                1. Earn XP
-              </p>
-              <p className="text-xs text-pet-ink-soft leading-relaxed">
-                Quests, course modules, and rift events drop XP into your HUD.
-                Daily logins keep your streak alive.
-              </p>
-            </li>
-            <li className="flex flex-col gap-1.5">
-              <span className="text-2xl leading-none" aria-hidden>📈</span>
-              <p className="text-sm font-bold text-pet-ink">
-                2. Pet evolves
-              </p>
-              <p className="text-xs text-pet-ink-soft leading-relaxed">
-                Hit a stage threshold and your pet automatically levels up:
-                Baby → Learner → Builder → Shipper → HyperFocus God → Legend.
-              </p>
-            </li>
-            <li className="flex flex-col gap-1.5">
-              <span className="text-2xl leading-none" aria-hidden>🏆</span>
-              <p className="text-sm font-bold text-pet-ink">
-                3. Bigger rewards
-              </p>
-              <p className="text-xs text-pet-ink-soft leading-relaxed">
-                Higher-stage pets unlock squad clout, future drops, and
-                multiplied BROski$ on quests. Legend = forever bragging rights.
-              </p>
-            </li>
-          </ol>
-        </HVZCard>
-      </section>
+      {/* Section 6 — How XP feeds your pet. Same collapsed-by-default
+          treatment — a once-read explainer, not a recurring focal point. */}
+      <details className="group flex flex-col gap-2">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-pet-chunky border-2 border-pet-ink/15 bg-pet-lilac/20 px-3 py-2 [&::-webkit-details-marker]:hidden">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-pet-ink-soft">
+            How XP feeds your pet
+          </h2>
+          <span className="text-pet-ink-soft transition-transform group-open:rotate-180" aria-hidden>▾</span>
+        </summary>
+        <div className="pt-1">
+          <HVZCard>
+            <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <li className="flex flex-col gap-1.5">
+                <span className="text-2xl leading-none" aria-hidden>🎯</span>
+                <p className="text-sm font-bold text-pet-ink">
+                  1. Earn XP
+                </p>
+                <p className="text-xs text-pet-ink-soft leading-relaxed">
+                  Quests, course modules, and rift events drop XP into your HUD.
+                  Daily logins keep your streak alive.
+                </p>
+              </li>
+              <li className="flex flex-col gap-1.5">
+                <span className="text-2xl leading-none" aria-hidden>📈</span>
+                <p className="text-sm font-bold text-pet-ink">
+                  2. Pet evolves
+                </p>
+                <p className="text-xs text-pet-ink-soft leading-relaxed">
+                  Hit a stage threshold and your pet automatically levels up:
+                  Baby → Learner → Builder → Shipper → HyperFocus God → Legend.
+                </p>
+              </li>
+              <li className="flex flex-col gap-1.5">
+                <span className="text-2xl leading-none" aria-hidden>🏆</span>
+                <p className="text-sm font-bold text-pet-ink">
+                  3. Bigger rewards
+                </p>
+                <p className="text-xs text-pet-ink-soft leading-relaxed">
+                  Higher-stage pets unlock squad clout, future drops, and
+                  multiplied BROski$ on quests. Legend = forever bragging rights.
+                </p>
+              </li>
+            </ol>
+          </HVZCard>
+        </div>
+      </details>
       </div>
     </div>
   )
