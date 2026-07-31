@@ -549,10 +549,10 @@ bot (discord.py's task-loop error handling catches and logs it), but the
 notifier silently never fires. Not fixed — flagged for next session per
 the user's explicit choice to bank tonight's win first.
 
-## First task next session
+## First task next session (superseded — see Session 6 below)
 
-1. Fix `cogs/signups.py`'s `subscription_tier` column error (see above) —
-   the one loose end from tonight's deploy.
+1. ~~Fix `cogs/signups.py`'s `subscription_tier` column error~~ — **done,
+   see Session 6.**
 2. Quiz-explanation content review (`CourseModule.tsx` payload).
 3. Decide on a non-Playwright regression test for the `shop-purchase` CORS
    fix, or accept the gap.
@@ -562,3 +562,75 @@ the user's explicit choice to bank tonight's win first.
 5. If ever revisiting the Discord bot roadmap: the one genuine feature gap
    found is real quest-completion tracking (`/quest_complete` + per-user
    state) — the `quests` table exists but nothing reads from it yet.
+
+---
+
+# Session 6 — `cogs/signups.py` `subscription_tier` fix, deployed and live-verified (2026-07-31)
+
+## Root cause confirmed live, not assumed
+
+Verified via Supabase MCP `execute_sql` against `tlavrxiaegbtyfmjfdcz` before
+touching code: `select subscription_tier from users limit 1` →
+`42703 column "subscription_tier" does not exist`. `public.users` has never
+had that column (`id, email, full_name, avatar_url, role, created_at,
+last_login, updated_at, broski_tokens`). The per-user tier concept
+(`bronze/silver/gold/hyper`) is computed by the `public.user_loyalty_tier`
+VIEW (`user_id, display_name, lifetime_earned, tier`), derived from
+`token_transactions` — the same source `supabase/functions/course-profile/index.ts`
+already reads correctly. `signups.py` was the only consumer still assuming a
+raw column that never existed.
+
+## Fix shipped
+
+- `discord-bot/db.py` — added `get_new_signups(since)`: queries `users` for
+  `id, email, full_name, broski_tokens, created_at` (no `subscription_tier`),
+  then batch-queries `user_loyalty_tier` for the matching `tier` values,
+  merging the two before returning. Every user always gets a tier back (the
+  view's `LEFT JOIN ... GROUP BY` defaults to `'bronze'`), so no missing-row
+  handling was needed beyond the `.get(..., "bronze")` fallback already in
+  the helper.
+- `discord-bot/cogs/signups.py` — swapped the direct `from db import
+  _client` query for `db.get_new_signups(...)`, matching the `db.func()`
+  convention every other cog (`xp.py`, `commands.py`, etc.) already follows
+  — `signups.py` was the one outlier touching `_client` directly. Embed now
+  reads `user["tier"]` instead of the nonexistent `user["subscription_tier"]`.
+- Shipped through the required branch-protection flow: branch
+  `fix/signups-subscription-tier` → PR #35 → `gh pr merge --merge
+  --delete-branch` → fast-forwarded onto `main` at `db68131`.
+
+## Verified live — not just "should work"
+
+- Before the fix: reproduced the exact `42703` via `execute_sql`.
+- Before shipping: ran both replacement queries against real rows
+  (`users` select without `subscription_tier`, `user_loyalty_tier` select
+  keyed by real user ids) — both returned clean data.
+- `python -m py_compile db.py cogs/signups.py` — clean.
+- Railway auto-redeployed `discord-bot` on the `main` merge (confirmed via
+  `list-deployments`: deployment `8e7af80a`, commit `db68131`, `SUCCESS` in
+  ~66s). Runtime logs confirm: all 5 cogs loaded (including `signups`), bot
+  logged in as `BROski Course Bot#7951`, and the *actual* live query the new
+  code issued: `GET .../rest/v1/users?select=id%2Cemail%2Cfull_name%2Cbroski_tokens%2Ccreated_at&created_at=gt....`
+  → `HTTP/2 200 OK`. Zero new signups existed in that poll window, so the
+  `user_loyalty_tier` follow-up query correctly never fired (the helper
+  short-circuits on an empty `users` result) — this is expected behavior,
+  not an unverified path.
+
+## Known open item
+
+No live signup has landed since the fix deployed, so the full
+`users` → `user_loyalty_tier` → Discord-embed path (including the `tier`
+field actually rendering) hasn't been observed end-to-end against a *real*
+new signup yet — only each piece independently (SQL query shapes pre-fix,
+live 200 OK post-fix). Next real signup will be the first true end-to-end
+proof; nothing to act on unless it errors.
+
+## First task next session
+
+1. Quiz-explanation content review (`CourseModule.tsx` payload) — still
+   open from Session 2.
+2. Decide on a non-Playwright regression test for the `shop-purchase` CORS
+   fix, or accept the gap — still open from Session 2.
+3. Real Discord OAuth credentials for `discord-link` (`DISCORD_CLIENT_ID`/
+   `DISCORD_CLIENT_SECRET`) — still open from Session 5.
+4. If ever revisiting the Discord bot roadmap: quest-completion tracking
+   (`/quest_complete` + per-user state) — still open from Session 5.

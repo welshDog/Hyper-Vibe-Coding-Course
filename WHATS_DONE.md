@@ -1,6 +1,28 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-07-30 by Claude (Cowork) ⚡
+> Last synced: 2026-07-31 by Claude (Cowork) ⚡
+
+## 2026-07-31 — `cogs/signups.py` `subscription_tier` bug fixed and live-verified
+
+The one open item from the 07-30 bot deployment (below): the "Catch
+Stragglers" notifier queried `users.subscription_tier`, a column that has
+never existed on `public.users` — confirmed live via Supabase MCP
+(`42703 column "subscription_tier" does not exist`). Tier is actually
+computed by the `public.user_loyalty_tier` view (same source
+`course-profile` Edge Function already reads correctly) — `signups.py` was
+the only consumer still assuming a raw column.
+
+- Added `db.get_new_signups(since)`: fetches new `users` rows, then
+  batch-queries `user_loyalty_tier` for each user's real `tier`, merging
+  before returning. `signups.py` now calls `db.get_new_signups(...)`
+  instead of querying `_client` directly — matching the `db.func()`
+  convention every other cog already follows.
+- Shipped via `fix/signups-subscription-tier` → PR #35 → merge (`db68131`),
+  the required branch-protected flow.
+- **Verified live**: Railway auto-redeployed on the `main` merge
+  (deployment `8e7af80a`, `SUCCESS` in ~66s); runtime logs show all 5 cogs
+  loaded and the new query hitting Supabase with the corrected column list,
+  returning `HTTP/2 200 OK`.
 
 ## 2026-07-30 — BROski Course Bot deployed live for the first time (Railway)
 
