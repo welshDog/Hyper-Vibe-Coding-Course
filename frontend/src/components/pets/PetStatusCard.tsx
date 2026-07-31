@@ -34,7 +34,7 @@ export function PetStatusCard({ petName, mood, xp, equippedCount }: Props) {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-pet-wood-dark">
             {petName}'s status
           </span>
-          <MoodBadge mood={mood} />
+          <MoodBadge mood={mood} variant="pets-reskin" />
         </div>
 
         <div className="flex flex-col gap-1.5 text-xs text-pet-ink-soft">

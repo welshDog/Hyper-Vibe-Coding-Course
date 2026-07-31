@@ -239,7 +239,7 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
           </div>
 
           <footer className={`flex flex-wrap items-center gap-2 ${isHero ? 'justify-center mt-5' : 'mt-3'}`}>
-            <MoodBadge mood={pet.mood} />
+            <MoodBadge mood={pet.mood} variant="pets-reskin" />
             {demo ? (
               <span className="text-xs text-pet-ink-soft/70 select-none">
                 ✨ Preview pet

@@ -100,6 +100,7 @@ export default function PetMentorBubble({
 
   const greetedRef = useRef(false)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
 
   // Resolve a slot's cosmetic art (image) from the equipped id.
   const art = useCallback(
@@ -154,6 +155,27 @@ export default function PetMentorBubble({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages, thinking, open])
+
+  // ── Auto-close on page scroll while open (bug fix — found via Playwright:
+  //    the auto-greet panel has no dismissal besides its own close button, so
+  //    it can sit over in-page controls like a lesson's "Next"/"Mark complete"
+  //    buttons indefinitely and physically block real clicks on them —
+  //    reproduced across all 3 browsers in frontend/tests/learning.spec.ts).
+  //    `window` + capture catches scroll on any nested overflow-auto container
+  //    (e.g. LessonPlayer's main-content pane), not just window scroll.
+  //    Scrolling *inside the panel itself* (the message log) must NOT close
+  //    it — that's normal chat scrolling, not the user navigating away.
+  useEffect(() => {
+    if (!open) return
+    const handleScroll = (e: Event) => {
+      if (panelRef.current && e.target instanceof Node && panelRef.current.contains(e.target)) {
+        return
+      }
+      setOpen(false)
+    }
+    window.addEventListener('scroll', handleScroll, { capture: true, passive: true })
+    return () => window.removeEventListener('scroll', handleScroll, { capture: true })
+  }, [open])
 
   // ── Send a message to the LLM mentor. ───────────────────────────────────────
   const sendMessage = useCallback(
@@ -225,6 +247,7 @@ export default function PetMentorBubble({
       {/* ── Chat panel ─────────────────────────────────────────────────── */}
       {open && (
         <div
+          ref={panelRef}
           role="dialog"
           aria-label={`Chat with ${personality.displayName}`}
           className="pointer-events-auto relative flex w-[min(360px,calc(100vw-3rem))] flex-col overflow-hidden rounded-hfz-lg border border-hfz-border-violet bg-hfz-midnight shadow-hfz-card motion-safe:animate-fade-in-up"
