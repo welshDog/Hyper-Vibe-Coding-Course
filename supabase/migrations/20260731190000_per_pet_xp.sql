@@ -110,5 +110,9 @@ GRANT  EXECUTE ON FUNCTION evolve_pet(uuid) TO authenticated;
 
 -- ── Restrict fan_out_pet_xp to trigger-only execution ──────────────────────
 -- This function is a trigger and should never be called directly by users.
+-- All three REVOKEs are needed — Supabase grants EXECUTE to `anon` and
+-- `authenticated` independently of PUBLIC on function creation, so revoking
+-- from PUBLIC alone leaves both roles still able to call it directly.
 REVOKE EXECUTE ON FUNCTION fan_out_pet_xp() FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION fan_out_pet_xp() FROM anon;
+REVOKE EXECUTE ON FUNCTION fan_out_pet_xp() FROM authenticated;
