@@ -126,6 +126,7 @@ DECLARE
   v_current      integer;
   v_new_value    integer;
   v_duo_awarded  boolean := false;
+  v_rows         integer;
 BEGIN
   IF v_caller IS NULL THEN
     RETURN jsonb_build_object('ok', false, 'error', 'not_authenticated');
@@ -168,9 +169,21 @@ BEGIN
   END IF;
   v_new_value := LEAST(100, v_current + v_effect_value);
 
+  -- Atomic guard against the check-then-act race on used_at: two
+  -- near-simultaneous calls could both pass the already_used SELECT check
+  -- above before either commits. Making the UPDATE itself the guard (WHERE
+  -- ... AND used_at IS NULL) and checking ROW_COUNT means the loser of the
+  -- race gets 0 rows updated here and bails out with already_used instead
+  -- of proceeding to award XP / apply the stat effect a second time
+  -- (live-verified during Task 1 apply via a concurrent-calls regression
+  -- check in scripts/Test-CareAction.ps1).
   UPDATE shop_purchases
     SET used_at = now(), used_on_pet_id = p_pet_id
-    WHERE id = p_purchase_id;
+    WHERE id = p_purchase_id AND used_at IS NULL;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows = 0 THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'already_used');
+  END IF;
 
   IF v_target_stat = 'hunger' THEN
     UPDATE pets SET

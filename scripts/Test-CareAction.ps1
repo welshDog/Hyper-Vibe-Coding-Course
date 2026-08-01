@@ -67,6 +67,7 @@ function Invoke-Json {
 $ItemApiApple     = '33330001-0000-0000-0000-000000000001'  # food, feed/hunger/+8, 20 tokens
 $ItemHyperDonut   = '33330001-0000-0000-0000-000000000004'  # food, feed/hunger/+8, 20 tokens
 $ItemCacheShampoo = '33330002-0000-0000-0000-000000000001'  # hygiene, care/cleanliness/+8, 22 tokens
+$ItemMarkdownMuffin = '33330001-0000-0000-0000-000000000005'  # food, feed/hunger/+8, 18 tokens (used only for the concurrency check)
 
 # -- 1. Create temp test user ------------------------------------------------
 $TestEmail = "care-test-$(Get-Random -Minimum 100000 -Maximum 999999)@hyper-vibe-test.dev"
@@ -182,6 +183,50 @@ try {
     if ($petFinal[0].xp -ne 9) { throw "DB final xp mismatch: expected 9 (2+2+5), got $($petFinal[0].xp)" }
     if (-not $petFinal[0].last_duo_bonus_date) { throw "last_duo_bonus_date not stamped" }
     Ok "Final DB state confirmed: hunger=58, cleanliness=58, xp=9"
+
+    # -- 9. Concurrency guard: two simultaneous calls against the same purchase --
+    # Regression check for the check-then-act race on shop_purchases.used_at:
+    # fire two RPC calls at the same purchase_id at (as near as PowerShell can
+    # manage) the same instant via ForEach-Object -Parallel (real OS threads,
+    # not sequential), and assert exactly one succeeds and the pet's xp only
+    # moves once (a double-spend would show +4 instead of +2).
+    Step "Concurrency: two simultaneous use_care_item calls against the same purchase"
+    $purchaseRace = Invoke-Json -Method POST -Url "$SupabaseUrl/rest/v1/shop_purchases" -Headers $purchaseHeaders `
+        -Body @{ user_id = $UserId; item_id = $ItemMarkdownMuffin; spent_tokens = 18 }
+    $PurchaseRace = $purchaseRace[0].id
+
+    $xpBeforeRace = (Invoke-Json -Method GET -Url "$SupabaseUrl/rest/v1/pets?id=eq.$PetId&select=xp" -Headers $adminHeaders)[0].xp
+
+    $raceResults = 1..2 | ForEach-Object -Parallel {
+        $u             = $using:SupabaseUrl
+        $h             = $using:userHeaders
+        $purchaseIdVar = $using:PurchaseRace
+        $petIdVar      = $using:PetId
+        $bodyJson = (@{ p_purchase_id = $purchaseIdVar; p_pet_id = $petIdVar; p_action = 'feed' } | ConvertTo-Json -Compress)
+        try {
+            Invoke-RestMethod -Method POST -Uri "$u/rest/v1/rpc/use_care_item" -Headers $h `
+                -ContentType 'application/json' -UserAgent 'Test-CareAction-Script/1.0' -Body $bodyJson
+        } catch {
+            [PSCustomObject]@{ ok = $false; error = 'http_error'; detail = $_.Exception.Message }
+        }
+    } -ThrottleLimit 2
+
+    $okCount          = ($raceResults | Where-Object { $_.ok -eq $true }).Count
+    $alreadyUsedCount = ($raceResults | Where-Object { $_.ok -eq $false -and $_.error -eq 'already_used' }).Count
+    if ($okCount -ne 1) {
+        throw "Expected exactly 1 successful concurrent call, got $okCount (results: $($raceResults | ConvertTo-Json -Compress -Depth 5))"
+    }
+    if ($alreadyUsedCount -ne 1) {
+        throw "Expected exactly 1 already_used rejection, got $alreadyUsedCount (results: $($raceResults | ConvertTo-Json -Compress -Depth 5))"
+    }
+    Ok "Concurrency guard held: 1 succeeded, 1 already_used"
+
+    $xpAfterRace = (Invoke-Json -Method GET -Url "$SupabaseUrl/rest/v1/pets?id=eq.$PetId&select=xp" -Headers $adminHeaders)[0].xp
+    $xpDelta = $xpAfterRace - $xpBeforeRace
+    if ($xpDelta -ne 2) {
+        throw "Expected exactly +2 xp from the race (a double-spend would give +4), got +$xpDelta"
+    }
+    Ok "XP awarded exactly once despite concurrent calls: +$xpDelta (no double-spend)"
 
     Write-Host ""
     Write-Host "ALL CHECKS PASSED" -ForegroundColor Green
