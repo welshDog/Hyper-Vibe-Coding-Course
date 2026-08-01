@@ -7,6 +7,9 @@ interface Props {
   max: number
   gradient?: Gradient
   label?: string
+  /** Accessible name for the progressbar when no visible label text is
+   *  wanted (e.g. a sibling element already shows the label visually). */
+  ariaLabel?: string
   height?: number
   style?: CSSProperties
   /** Extra style applied to the track div (behind the fill). Escape hatch —
@@ -22,7 +25,7 @@ const GRADS: Record<Gradient, string> = {
   mint: 'linear-gradient(90deg, var(--color-success-mint), var(--color-neon-cyan))',
 }
 
-export function HVZProgress({ value, max, gradient = 'xp', label, height = 8, style, trackStyle, fillStyle }: Props) {
+export function HVZProgress({ value, max, gradient = 'xp', label, ariaLabel, height = 8, style, trackStyle, fillStyle }: Props) {
   const safeMax = max > 0 ? max : 1
   const pct = Math.max(0, Math.min((value / safeMax) * 100, 100))
   return (
@@ -50,7 +53,7 @@ export function HVZProgress({ value, max, gradient = 'xp', label, height = 8, st
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={max}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         style={{
           height,
           background: 'rgba(255,255,255,0.08)',

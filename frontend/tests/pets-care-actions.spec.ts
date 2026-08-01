@@ -76,6 +76,12 @@ const FEED_PURCHASE = {
     metadata: { effect_type: 'feed', target_stat: 'hunger', effect_value: 8 } },
 }
 
+const CLEAN_PURCHASE = {
+  id: 'purchase-clean-2', item_id: 'item-soap', used_at: null, used_on_pet_id: null,
+  shop_items: { id: 'item-soap', name: 'Cookie Scrub', image_url: null,
+    metadata: { effect_type: 'care', target_stat: 'cleanliness', effect_value: 8 } },
+}
+
 // `purchases` is the fixture returned for GET /rest/v1/shop_purchases.
 // `rpcResult` is what POST /rest/v1/rpc/use_care_item returns.
 function setupRestMock(page: Page, purchases: unknown[], rpcResult: unknown) {
@@ -129,6 +135,26 @@ test.describe('Pet Care actions on /pets', () => {
 
     await expect(page.getByText(/loved that snack/i)).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText(/\+8 hunger/i)).toBeVisible()
+    await expect(page.getByText(/\+2 xp/i)).toBeVisible()
+  })
+
+  test('successful Clean updates the cleanliness bar and shows XP toast', async ({ page }) => {
+    await setupAuthMock(page)
+    await setupRestMock(page, [CLEAN_PURCHASE], {
+      ok: true, target_stat: 'cleanliness', new_value: 58, xp_awarded: 2, duo_bonus: false,
+    })
+
+    await signIn(page)
+    await page.goto('/pets')
+
+    await expect(page.getByRole('heading', { name: /pet care/i })).toBeVisible({ timeout: 30_000 })
+
+    await page.getByRole('button', { name: /^clean$/i }).click()
+    await expect(page.getByText('Cookie Scrub')).toBeVisible()
+    await page.getByText('Cookie Scrub').click()
+
+    await expect(page.getByText(/loved that clean-up/i)).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText(/\+8 cleanliness/i)).toBeVisible()
     await expect(page.getByText(/\+2 xp/i)).toBeVisible()
   })
 
