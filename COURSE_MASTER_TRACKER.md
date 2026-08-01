@@ -161,3 +161,29 @@
 ---
 
 # 🐶♾️ BROski Legend Status Loading... LET'S BUILD THIS!
+
+
+---
+## 🧠 BUILDER OS — POST-GRADUATION EXPANSION (M13–M20)
+
+> Core path (M0–M12) remains the graduation track. M13–M20 are optional Builder OS modules for continuing students. See `rewrites/BUILDER_OS_M13_M20_PLAN.md` for full sequencing and rollout phases.
+
+| Module | Title | Status | Phase |
+|--------|-------|--------|-------|
+| M13 | Micro Wins Dev Flow | 📝 Docs drafted | Phase 4 |
+| M14 | HyperSplit Agent | 📝 Docs drafted | Phase 3 |
+| M15 | Session Snapshot | 📝 Docs drafted | Phase 3 |
+| M16 | Energy-Aware Build Mode | 📝 Docs drafted | Phase 4 |
+| M17 | Focus Panic Mode | 📝 Docs drafted | Phase 4 |
+| M18 | Personal Dev Dashboard | 📝 Docs drafted | Phase 3 |
+| M19 | The Vibe Loop | 📝 Docs drafted | Phase 5 |
+| M20 | Context Is Currency | 📝 Docs drafted | Phase 5 |
+
+**Rollout phases:**
+- Phase 1: Curriculum locked (this docs PR)
+- Phase 2: Course shell — collapsed Builder OS section added to `/courses` after M12
+- Phase 3: Real features shipped for M14, M15, M18
+- Phase 4: Add M13, M16, M17
+- Phase 5: Add M19, M20 (Vibe Coding Craft capstone track)
+
+No UI or Supabase migrations are included in this update — docs only.
