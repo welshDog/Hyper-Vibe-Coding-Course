@@ -123,7 +123,7 @@ function setupRestMock(page: import('@playwright/test').Page, tokens: number) {
         const pet = {
           id: 'pet-uuid-1', pet_id: 'broski_42', species_id: 'blizzard_lizard',
           pet_name: 'FrostbitePW', rarity: 'uncommon', stage: 'baby', mood: 'idle',
-          evolution_count: 0, last_evolved_at: null,
+          evolution_count: 0, xp: 0, last_evolved_at: null,
           mint_tx_hash: FAKE_TX, ipfs_cid: 'bafkreib4...testcid',
           chain_id: CHAIN_ID, created_at: new Date().toISOString(),
           user_id: FAKE_USER_ID, wallet_address: FAKE_WALLET, cosmetics: {},
@@ -592,6 +592,14 @@ test.describe('Pets relay mint smoke', () => {
       'href',
       `https://sepolia.basescan.org/tx/${FAKE_TX}`,
     )
+
+    // Regression: account total_xp (800) must NOT leak into this pet's own
+    // evolve-eligibility. The pet's own xp is 0 (fresh mint) — well under
+    // baby's evolve threshold — so no Evolve button should render even
+    // though the account's total_xp (800) is high enough to unlock later
+    // stages. This is the exact bug class the per-pet-XP migration fixed
+    // in EvolveButton.tsx: it must read pet.xp, not the account total.
+    await expect(collection.getByRole('button', { name: /evolve to/i })).toHaveCount(0)
 
     // The mint genuinely went through the relay endpoint rather than a wallet signature.
     expect(mintCalled, 'mint-pet-auth was never called').toBe(true)

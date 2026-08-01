@@ -156,13 +156,17 @@ $$;
 helpers, grants, and the forward-only guarantee are unchanged from the
 original `20260616000037` migration.)
 
-**RLS — confirmed clean, no new policy needed.** `pets` has RLS enabled
-with only a `SELECT` policy for owners; there is no `authenticated`
-`INSERT`/`UPDATE` policy at all (existing comment: "service_role bypasses
-RLS for INSERT/UPDATE"). The new `xp` column inherits this lockdown for
-free — no client can write it directly, only the trigger (which runs with
-the function owner's privileges regardless of RLS) and `evolve_pet`'s own
-internal logic (which never writes `xp`, only reads it) touch it.
+**RLS — confirmed clean, no new policy needed on `pets` itself.** `pets`
+has RLS enabled with only a `SELECT` policy for owners; there is no
+`authenticated` `INSERT`/`UPDATE` policy at all (existing comment:
+"service_role bypasses RLS for INSERT/UPDATE"). The new `xp` column
+inherits this lockdown for direct writes — no client can `UPDATE pets`
+itself. Note this does not fully isolate `pets.xp` from client influence:
+`user_xp` carries its own pre-existing `authenticated` UPDATE policy
+(`auth.uid() = user_id`), and this branch's trigger fans any client-driven
+`user_xp.total_xp` write straight into every owned pet's `xp`. That
+policy predates this branch and isn't something this migration should
+change unilaterally — flagged here as a follow-up, not fixed in this PR.
 
 ## Frontend changes
 

@@ -1,4 +1,4 @@
-// EvolveButton — rendered inside PetCard when the user's XP has unlocked
+// EvolveButton — rendered inside PetCard when the pet's XP has unlocked
 // a stage the pet hasn't reached yet. Returns null when the pet is current.
 //
 // Calls the evolve_pet RPC (SECURITY DEFINER, authenticated-only).
@@ -8,7 +8,6 @@ import { useState } from 'react'
 import { HVZButton } from '../ui/hvz'
 import { supabase } from '../../lib/supabase'
 import { EVOLUTION_STAGES, STAGE_BY_KEY, stageForXp } from '../../lib/evolution'
-import { useHUD } from '../../hooks/useHUD'
 import type { Pet } from './PetCard'
 
 type Props = {
@@ -17,13 +16,10 @@ type Props = {
 }
 
 export function EvolveButton({ pet, onEvolved }: Props) {
-  const hud = useHUD()
-  const userXp = hud?.xp ?? 0
-
   const [busy,  setBusy]  = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const earnedStage = stageForXp(userXp)
+  const earnedStage = stageForXp(pet.xp ?? 0)
   const earnedIdx   = EVOLUTION_STAGES.findIndex((s) => s.key === earnedStage)
   const currentIdx  = EVOLUTION_STAGES.findIndex((s) => s.key === pet.stage)
 

@@ -4,13 +4,11 @@
 //   - 'full' (default): hero card on the Pets page
 //   - 'mini': horizontal-scroll squad row (Phase 2C)
 //
-// XP source is overridable. Default behaviour mirrors the user's total_xp
-// from the HUD — see Phase 2A spec, "Option A". Per-pet XP becomes possible
-// when the pets table grows an `xp` column in a future migration.
+// XP source is overridable via `xpOverride`. Default behaviour reads the
+// pet's own `xp` column (per-pet XP — see the 2026-07-31 per-pet-xp spec).
 
 import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { HVZCard, HVZTag, type TagColor } from '../ui/hvz'
-import { useHUD } from '../../hooks/useHUD'
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion'
 import { getSpecies, RARITY_LABELS, type Rarity, type SpeciesId } from '../../lib/species'
 import {
@@ -44,6 +42,7 @@ export type Pet = {
   stage:           PetStage
   mood:            PetMood
   evolution_count: number
+  xp:              number
   last_evolved_at: string | null
   mint_tx_hash:    `0x${string}`
   ipfs_cid:        string
@@ -55,7 +54,7 @@ export type Pet = {
 
 type Props = {
   pet:         Pet
-  /** Override the XP value (otherwise read from useHUD). */
+  /** Override the XP value (otherwise read from the pet's own xp). */
   xpOverride?: number
   /** 'hero' = large spotlight card on /pets (Moy reskin), size="hero" portrait. */
   size?:       'full' | 'mini' | 'hero'
@@ -86,10 +85,9 @@ export function PetCard({ pet, xpOverride, size = 'full', onClick, selected = fa
   // matters for the full variant, useState/usePrefersReducedMotion must be
   // called on every render regardless of `size`.
   const species = getSpecies(pet.species_id)
-  const hud = useHUD()
   const reduceMotion = usePrefersReducedMotion()
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50, active: false })
-  const xp = xpOverride ?? hud?.xp ?? 0
+  const xp = xpOverride ?? pet.xp ?? 0
   const stageInfo = STAGE_BY_KEY[pet.stage]
   const isLegend = pet.stage === 'legend'
   const isEvolving = pet.mood === 'evolving'

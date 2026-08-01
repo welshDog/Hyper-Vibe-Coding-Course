@@ -63,6 +63,7 @@ const DEMO_PET: Pet = {
   stage:           'learner',
   mood:            'hyperfocus',
   evolution_count: 1,
+  xp:              0,
   last_evolved_at: null,
   mint_tx_hash:    '0x0000000000000000000000000000000000000000000000000000000000000000',
   ipfs_cid:        '',
@@ -79,7 +80,7 @@ export default function Pets() {
   // highest-stage pet) — set explicitly when the user clicks the picker strip.
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null)
 
-  const { tokens, streak, xp } = useHUD()
+  const { tokens, streak } = useHUD()
 
   const { pets, loading: petsLoading, error: petsError, refetch } = useMyPets()
   const { bySlot, byId, refetch: refetchCosmetics } = useOwnedCosmetics()
@@ -322,13 +323,13 @@ export default function Pets() {
                   <PetStatusCard
                     petName={heroPet.pet_name}
                     mood={heroPet.mood}
-                    xp={xp}
+                    xp={heroPet.xp}
                     equippedCount={Object.keys(resolveEquipped(heroPet)).length}
                   />
                 </div>
               </div>
 
-              <EvolutionTimeline />
+              <EvolutionTimeline xpOverride={heroPet.xp} />
 
               {/* Collection picker strip — full collection stays reachable
                   (demoted from the old equal-sized grid, not deleted).
@@ -482,7 +483,7 @@ export default function Pets() {
           <h2 id="evolution-path" className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
             Evolution path
           </h2>
-          <EvolutionTimeline />
+          <EvolutionTimeline xpOverride={0} />
         </section>
       )}
 

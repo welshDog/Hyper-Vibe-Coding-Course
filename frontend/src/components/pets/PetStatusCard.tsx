@@ -16,7 +16,7 @@ import { PET_SLOTS } from '../../hooks/useOwnedCosmetics'
 type Props = {
   petName:        string
   mood:           PetMood
-  /** Total XP — same source PetCard/XPBar use (useHUD, account-wide today). */
+  /** Total XP — same source PetCard/XPBar use (the pet's own xp column). */
   xp:             number
   /** How many of the 4 cosmetic slots currently have something equipped. */
   equippedCount:  number
