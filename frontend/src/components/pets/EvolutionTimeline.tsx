@@ -6,7 +6,7 @@
 // bar underneath shows XP toward the next stage (or a "fully evolved"
 // callout once at Legend).
 
-import { HVZCard, HVZProgress, HVZTag } from '../ui/hvz'
+import { HVZCard, HVZTag } from '../ui/hvz'
 import { useHUD } from '../../hooks/useHUD'
 import {
   EVOLUTION_STAGES,
@@ -16,9 +16,12 @@ import {
 type Props = {
   /** Override the XP value (otherwise read from the pet's own xp). */
   xpOverride?: number
+  /** Pet's display name, used in the "{petName} XP" header. Omit for the
+      generic educational preview (no specific pet spotlighted yet). */
+  petName?: string
 }
 
-export function EvolutionTimeline({ xpOverride }: Props) {
+export function EvolutionTimeline({ xpOverride, petName }: Props) {
   const hud = useHUD()
   const xp = xpOverride ?? hud?.xp ?? 0
   const { stage: currentKey, current, next } = progressInStage(xp)
@@ -33,7 +36,7 @@ export function EvolutionTimeline({ xpOverride }: Props) {
           Evolution path
         </h3>
         <p className="text-[11px] text-pet-ink-soft">
-          Total XP:{' '}
+          {petName ? `${petName} XP` : 'Pet XP'}:{' '}
           <span className="font-mono text-pet-ink">
             {xp.toLocaleString()}
           </span>
@@ -124,23 +127,14 @@ export function EvolutionTimeline({ xpOverride }: Props) {
           </p>
         </div>
       ) : (
-        <div className="mt-4">
-          {/* value/max are the real current/next XP (not a 0-100 percent) so
-              HVZProgress's own "{value} / {max}" pair shows actual XP numbers
-              instead of a redundant percent sitting next to hand-written
-              XP text in the label. */}
-          <HVZProgress
-            value={current}
-            max={next}
-            gradient="xp"
-            label={`Next: ${nextStage.label} ${nextStage.emoji}`}
-            trackStyle={{ border: '2px solid #241C3D', background: '#FFF8EC' }}
-          />
-          <p className="text-[11px] text-pet-ink-soft mt-2">
-            Earn XP from quests, course progress, and rift events. Your pet
-            evolves automatically.
-          </p>
-        </div>
+        // The numeric "Next: X / Y" progress bar used to live here, but it
+        // repeated the hero card's XPBar verbatim right above this section —
+        // the tile grid's "You are here" marker + lit connector line already
+        // carry that progress visually within this component.
+        <p className="text-[11px] text-pet-ink-soft mt-4">
+          Earn XP from quests, course progress, and rift events. Your pet
+          evolves automatically.
+        </p>
       )}
     </HVZCard>
   )

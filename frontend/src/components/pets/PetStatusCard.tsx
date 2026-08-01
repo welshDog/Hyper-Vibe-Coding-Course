@@ -9,20 +9,21 @@
 
 import { Link } from 'react-router-dom'
 import { HVZCard } from '../ui/hvz'
-import { MoodBadge } from './MoodBadge'
-import { EVOLUTION_STAGES, progressInStage, type PetMood } from '../../lib/evolution'
+import { EVOLUTION_STAGES, progressInStage } from '../../lib/evolution'
 import { PET_SLOTS } from '../../hooks/useOwnedCosmetics'
 
 type Props = {
   petName:        string
-  mood:           PetMood
   /** Total XP — same source PetCard/XPBar use (the pet's own xp column). */
   xp:             number
   /** How many of the 4 cosmetic slots currently have something equipped. */
   equippedCount:  number
 }
 
-export function PetStatusCard({ petName, mood, xp, equippedCount }: Props) {
+// Mood ("Ready to train" etc.) intentionally lives only on the hero PetCard
+// now — it was repeated here right next to it, and the hero card is the
+// higher-visibility spot.
+export function PetStatusCard({ petName, xp, equippedCount }: Props) {
   const { stage } = progressInStage(xp)
   const stageIdx = EVOLUTION_STAGES.findIndex((s) => s.key === stage)
   const nextStage = EVOLUTION_STAGES[stageIdx + 1]
@@ -30,12 +31,9 @@ export function PetStatusCard({ petName, mood, xp, equippedCount }: Props) {
   return (
     <HVZCard variant="chunky" padding={16}>
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-pet-wood-dark">
-            {petName}'s status
-          </span>
-          <MoodBadge mood={mood} variant="pets-reskin" />
-        </div>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-pet-wood-dark">
+          {petName}'s status
+        </span>
 
         <div className="flex flex-col gap-1.5 text-xs text-pet-ink-soft">
           <p>

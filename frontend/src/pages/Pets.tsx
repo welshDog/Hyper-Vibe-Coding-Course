@@ -322,14 +322,13 @@ export default function Pets() {
                   />
                   <PetStatusCard
                     petName={heroPet.pet_name}
-                    mood={heroPet.mood}
                     xp={heroPet.xp}
                     equippedCount={Object.keys(resolveEquipped(heroPet)).length}
                   />
                 </div>
               </div>
 
-              <EvolutionTimeline xpOverride={heroPet.xp} />
+              <EvolutionTimeline xpOverride={heroPet.xp} petName={heroPet.pet_name} />
 
               {/* Collection picker strip — full collection stays reachable
                   (demoted from the old equal-sized grid, not deleted).
