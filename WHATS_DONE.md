@@ -1,6 +1,55 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-07-31 by Claude (Cowork) ⚡
+> Last synced: 2026-08-01 by Claude (Cowork) ⚡
+
+## 2026-07-31 → 2026-08-01 — `/pets` Moy-style reskin + per-pet XP
+
+Two linked pieces of work on the BROski Pets page, run back to back.
+
+**Full visual reskin of `/pets` toward a pastel/chunky pet-sim look**
+(PR #37, #40) — new `pet-*` Tailwind token namespace + a scoped
+`.pet-theme-scope` CSS-var override block that cascades into the shared
+`HVZCard`/`HVZButton`/`HVZTag`/`HVZProgress` primitives with zero edits to
+their internals (so Shop/Tokens/Profile/Landing render identically).
+Layout changed from "grid of equal pet cards" to a single hero-pet
+spotlight + a demoted horizontally-scrollable mini-card picker strip.
+Shipped in rounds against live user QA feedback (duplicate sections, an
+XP-number duplication bug, layout rebalancing, hero-card sizing, an
+Evolution Path "Baby row" fix) — PR #40 closed those out plus a
+pre-existing `PetMentorBubble` collision bug (the auto-opened chat panel
+could block a lesson page's "Next" button).
+
+**Per-pet XP** (spec: PR #39, plan: PR #41, implementation: PR #42) — every
+BROskiPet now earns its own XP instead of all of a user's pets sharing one
+account-wide bar. A Postgres trigger (`trg_fan_out_pet_xp` on `user_xp`)
+fans every `total_xp` increase out to all of that user's `pets.xp` rows;
+`evolve_pet()` now gates on the pet's own `xp`, not the account total. No
+backfill — existing pets start at `xp = 0` and earn forward from here
+(deliberate design choice, documented in the spec).
+
+Built via full spec → plan → `subagent-driven-development`: 4 tasks, each
+implemented and reviewed independently, then a mandatory final
+whole-branch review (dispatched on the most capable model) caught a real
+**Critical** bug none of the per-task reviews could see because it spanned
+a file no task touched — `EvolveButton.tsx` was still gating on the old
+account-wide XP, so it would show an "Evolve" button the server then
+rejected. Fixed, regression-tested (the fix was mutation-verified by the
+re-reviewer — reverted it and confirmed the new test goes red), and
+independently re-reviewed clean before merge.
+
+- Also fixed along the way (PR #38, ahead of the full per-pet-XP work):
+  `evolve_pet` was reading the wrong XP pool entirely — a same-day hotfix
+  that the later per-pet-XP migration then built on top of correctly.
+- **Known open item**: the plan's manual authenticated-UI check (log in as
+  a real user who owns a pet, confirm the hero card/evolution path reflect
+  that pet's own XP) was never completed — no real login credentials
+  available in the agent environment. Flagged in PR #42's description;
+  worth doing on the next real session, live on `hypervibe.online`.
+- A stray uncommitted local edit to `PetCard.tsx` (same content that PR
+  #42 already shipped) got committed directly to local `main` outside the
+  PR flow and correctly rejected by GitHub's branch protection on push;
+  local `main` was reset to `origin/main` to clear it — no functional
+  change lost, since the content was already identical.
 
 ## 2026-07-31 — `cogs/signups.py` `subscription_tier` bug fixed and live-verified
 
