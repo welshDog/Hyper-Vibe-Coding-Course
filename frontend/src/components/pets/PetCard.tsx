@@ -43,6 +43,10 @@ export type Pet = {
   mood:            PetMood
   evolution_count: number
   xp:              number
+  hunger:                 number
+  hunger_updated_at:      string
+  cleanliness:            number
+  cleanliness_updated_at: string
   last_evolved_at: string | null
   mint_tx_hash:    `0x${string}`
   ipfs_cid:        string

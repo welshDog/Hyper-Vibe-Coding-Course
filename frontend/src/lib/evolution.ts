@@ -92,3 +92,17 @@ export const MOOD_EMOJI: Record<PetMood, string> = {
   hyperfocus: '⚡',
   evolving:   '✨',
 }
+
+/**
+ * TS mirror of the SQL `drifted_stat()` function — for live display of
+ * Hunger/Cleanliness between actions ONLY. The database is the source of
+ * truth; `use_care_item()` computes this same formula server-side before
+ * applying an action's boost, so this never needs to be a write source.
+ */
+export function driftedStat(raw: number, updatedAt: string, now: Date = new Date()): number {
+  const updated = new Date(updatedAt)
+  const daysSince = (now.getTime() - updated.getTime()) / (1000 * 60 * 60 * 24)
+  const fraction = Math.min(1, Math.max(0, daysSince / 5))
+  const effective = raw + (50 - raw) * fraction
+  return Math.min(100, Math.max(0, Math.round(effective)))
+}

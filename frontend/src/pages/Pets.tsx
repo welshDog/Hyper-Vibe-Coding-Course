@@ -26,6 +26,7 @@ import { EvolutionTimeline } from '../components/pets/EvolutionTimeline'
 import { PetSquadRow } from '../components/pets/PetSquadRow'
 import { PetCosmeticsPanel } from '../components/pets/PetCosmeticsPanel'
 import { PetStatusCard } from '../components/pets/PetStatusCard'
+import { PetCareSection } from '../components/pets/PetCareSection'
 import { useMyPets } from '../hooks/useMyPets'
 import { useOwnedCosmetics, PET_SLOTS } from '../hooks/useOwnedCosmetics'
 import { supabase } from '../lib/supabase'
@@ -328,6 +329,8 @@ export default function Pets() {
                 </div>
               </div>
 
+              <PetCareSection pet={heroPet} onActionComplete={() => { void refetch() }} />
+
               <EvolutionTimeline xpOverride={heroPet.xp} petName={heroPet.pet_name} />
 
               {/* Collection picker strip — full collection stays reachable
@@ -518,7 +521,7 @@ export default function Pets() {
         </summary>
         <div className="pt-1">
           <HVZCard>
-            <ol className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <li className="flex flex-col gap-1.5">
                 <span className="text-2xl leading-none" aria-hidden>🎯</span>
                 <p className="text-sm font-bold text-pet-ink">
@@ -547,6 +550,16 @@ export default function Pets() {
                 <p className="text-xs text-pet-ink-soft leading-relaxed">
                   Higher-stage pets unlock squad clout, future drops, and
                   multiplied BROski$ on quests. Legend = forever bragging rights.
+                </p>
+              </li>
+              <li className="flex flex-col gap-1.5">
+                <span className="text-2xl leading-none" aria-hidden>🍔</span>
+                <p className="text-sm font-bold text-pet-ink">
+                  4. Care keeps it going
+                </p>
+                <p className="text-xs text-pet-ink-soft leading-relaxed">
+                  Feed and Clean give small XP nudges too — a bonus for
+                  showing up daily, on top of course progress.
                 </p>
               </li>
             </ol>
