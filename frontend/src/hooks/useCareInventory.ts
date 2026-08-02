@@ -1,10 +1,10 @@
-// useCareInventory — the signed-in user's owned, unused Feed/Clean items.
+// useCareInventory — the signed-in user's owned, unused Feed/Clean/Play items.
 //
 // Pulls shop_purchases (RLS: owner-read) with the joined shop_items row,
 // filtered to used_at IS NULL (still-available inventory) and grouped by
-// the item's metadata.effect_type ('feed' | 'care' — set by migration
-// 20260801120000). Items whose effect_type is something else (play, boost)
-// are Wave-2+ and intentionally excluded here.
+// the item's metadata.effect_type ('feed' | 'care' | 'play' — set by
+// migration 20260801120000). Items whose effect_type is something else
+// (boost) are future-wave and intentionally excluded here.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -33,6 +33,7 @@ type PurchaseRow = {
 type UseCareInventoryResult = {
   feedItems: CareItem[]
   careItems: CareItem[]
+  playItems: CareItem[]
   loading:   boolean
   error:     Error | null
   refetch:   () => Promise<void>
@@ -90,6 +91,10 @@ export function useCareInventory(): UseCareInventoryResult {
     () => rows.filter((r) => r.shop_items?.metadata?.effect_type === 'care').map(toCareItem).filter((i): i is CareItem => i !== null),
     [rows],
   )
+  const playItems = useMemo(
+    () => rows.filter((r) => r.shop_items?.metadata?.effect_type === 'play').map(toCareItem).filter((i): i is CareItem => i !== null),
+    [rows],
+  )
 
-  return { feedItems, careItems, loading, error, refetch: fetchInventory }
+  return { feedItems, careItems, playItems, loading, error, refetch: fetchInventory }
 }

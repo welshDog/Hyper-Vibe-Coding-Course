@@ -5,15 +5,17 @@
 #   1. Creates a temp test user via Auth admin API (email_confirm: true)
 #   2. Creates a test pet directly via service_role REST (bypasses the
 #      real on-chain mint flow - not needed to test care actions)
-#   3. Creates 3 shop_purchases fixture rows via service_role REST:
+#   3. Creates 4 shop_purchases fixture rows via service_role REST:
 #      2 feed-effect items (API Apple x2) + 1 care-effect item (Cache Shampoo)
+#      + 1 play-effect item (Debug Duck)
 #   4. Signs in as the test user -> real access_token (JWT)
 #   5. Exercises use_care_item via /rest/v1/rpc/use_care_item with the JWT:
 #      - successful feed
 #      - reuse of the same purchase -> already_used
 #      - wrong action against a feed item -> wrong_effect_type
-#      - successful clean -> daily duo bonus fires
-#   6. Verifies pets.hunger/cleanliness/xp state via service_role after each
+#      - successful clean -> no bonus yet (Play still missing)
+#      - successful play -> daily trio bonus fires (Feed+Clean+Play)
+#   6. Verifies pets.hunger/cleanliness/happiness/xp state via service_role after each
 #   7. Cleans up (pet row, purchase rows, temp user)
 #
 # Usage:
@@ -68,6 +70,7 @@ $ItemApiApple     = '33330001-0000-0000-0000-000000000001'  # food, feed/hunger/
 $ItemHyperDonut   = '33330001-0000-0000-0000-000000000004'  # food, feed/hunger/+8, 20 tokens
 $ItemCacheShampoo = '33330002-0000-0000-0000-000000000001'  # hygiene, care/cleanliness/+8, 22 tokens
 $ItemMarkdownMuffin = '33330001-0000-0000-0000-000000000005'  # food, feed/hunger/+8, 18 tokens (used only for the concurrency check)
+$ItemDebugDuck = '33330007-0000-0000-0000-000000000006'  # pet_care, play/happiness, +14 (after this migration), 30 tokens
 
 # -- 1. Create temp test user ------------------------------------------------
 $TestEmail = "care-test-$(Get-Random -Minimum 100000 -Maximum 999999)@hyper-vibe-test.dev"
@@ -123,7 +126,11 @@ try {
         -Body @{ user_id = $UserId; item_id = $ItemCacheShampoo; spent_tokens = 22 }
     $PurchaseClean1 = $purchaseClean1[0].id
 
-    Ok "3 purchases seeded: feed1=$PurchaseFeed1 feed2=$PurchaseFeed2 clean1=$PurchaseClean1"
+    $purchasePlay1 = Invoke-Json -Method POST -Url "$SupabaseUrl/rest/v1/shop_purchases" -Headers $purchaseHeaders `
+        -Body @{ user_id = $UserId; item_id = $ItemDebugDuck; spent_tokens = 30 }
+    $PurchasePlay1 = $purchasePlay1[0].id
+
+    Ok "4 purchases seeded: feed1=$PurchaseFeed1 feed2=$PurchaseFeed2 clean1=$PurchaseClean1 play1=$PurchasePlay1"
 
     # -- 4. Sign in for a real JWT ----------------------------------------------
     Step "Signing in as test user"
@@ -142,7 +149,7 @@ try {
     if ($r1.target_stat -ne 'hunger') { throw "Expected target_stat=hunger, got $($r1.target_stat)" }
     if ($r1.new_value -ne 58) { throw "Expected new_value=58 (50+8), got $($r1.new_value)" }
     if ($r1.xp_awarded -ne 2) { throw "Expected xp_awarded=2, got $($r1.xp_awarded)" }
-    if ($r1.duo_bonus) { throw "duo_bonus should be false on first action" }
+    if ($r1.care_bonus) { throw "care_bonus should be false on first action" }
     Ok "Feed succeeded: hunger=$($r1.new_value) xp_awarded=$($r1.xp_awarded)"
 
     $petAfterFeed = Invoke-Json -Method GET -Url "$SupabaseUrl/rest/v1/pets?id=eq.$PetId&select=hunger,xp,last_feed_at,last_clean_at" -Headers $adminHeaders
@@ -167,22 +174,34 @@ try {
     if ($r3.error -ne 'wrong_effect_type') { throw "Expected wrong_effect_type, got $($r3.error)" }
     Ok "Mismatch correctly rejected: $($r3.error)"
 
-    # -- 8. Successful Clean -> daily duo bonus -----------------------------------
-    Step "use_care_item: Clean with Cache Shampoo (expect duo bonus)"
+    # -- 8. Successful Clean -> no bonus yet (Play still missing) ------------------
+    Step "use_care_item: Clean with Cache Shampoo (expect NO bonus yet - Play still missing)"
     $r4 = Invoke-Json -Method POST -Url "$SupabaseUrl/rest/v1/rpc/use_care_item" -Headers $userHeaders `
         -Body @{ p_purchase_id = $PurchaseClean1; p_pet_id = $PetId; p_action = 'care' }
     if (-not $r4.ok) { throw "Clean failed: $($r4.error)" }
     if ($r4.target_stat -ne 'cleanliness') { throw "Expected target_stat=cleanliness, got $($r4.target_stat)" }
     if ($r4.new_value -ne 58) { throw "Expected new_value=58 (50+8), got $($r4.new_value)" }
-    if (-not $r4.duo_bonus) { throw "duo_bonus should be TRUE (both feed and clean happened today)" }
-    if ($r4.xp_awarded -ne 7) { throw "Expected xp_awarded=7 (2 base + 5 duo bonus), got $($r4.xp_awarded)" }
-    Ok "Clean succeeded with duo bonus: cleanliness=$($r4.new_value) xp_awarded=$($r4.xp_awarded)"
+    if ($r4.care_bonus) { throw "care_bonus should be FALSE - Play hasn't happened yet this run" }
+    if ($r4.xp_awarded -ne 2) { throw "Expected xp_awarded=2 (base only, no bonus), got $($r4.xp_awarded)" }
+    Ok "Clean succeeded, correctly NO bonus yet: cleanliness=$($r4.new_value) xp_awarded=$($r4.xp_awarded)"
 
-    $petFinal = Invoke-Json -Method GET -Url "$SupabaseUrl/rest/v1/pets?id=eq.$PetId&select=hunger,cleanliness,xp,last_duo_bonus_date" -Headers $adminHeaders
+    # -- 8b. Successful Play -> trio bonus (Feed+Clean+Play all done today) --------
+    Step "use_care_item: Play with Debug Duck (expect trio bonus now)"
+    $r5 = Invoke-Json -Method POST -Url "$SupabaseUrl/rest/v1/rpc/use_care_item" -Headers $userHeaders `
+        -Body @{ p_purchase_id = $PurchasePlay1; p_pet_id = $PetId; p_action = 'play' }
+    if (-not $r5.ok) { throw "Play failed: $($r5.error)" }
+    if ($r5.target_stat -ne 'happiness') { throw "Expected target_stat=happiness, got $($r5.target_stat)" }
+    if ($r5.new_value -ne 64) { throw "Expected new_value=64 (50+14), got $($r5.new_value)" }
+    if (-not $r5.care_bonus) { throw "care_bonus should be TRUE - Feed+Clean+Play all done today" }
+    if ($r5.xp_awarded -ne 13) { throw "Expected xp_awarded=13 (3 base + 10 trio bonus), got $($r5.xp_awarded)" }
+    Ok "Play succeeded with trio bonus: happiness=$($r5.new_value) xp_awarded=$($r5.xp_awarded)"
+
+    $petFinal = Invoke-Json -Method GET -Url "$SupabaseUrl/rest/v1/pets?id=eq.$PetId&select=hunger,cleanliness,happiness,xp,last_care_bonus_date" -Headers $adminHeaders
     if ($petFinal[0].cleanliness -ne 58) { throw "DB cleanliness mismatch: $($petFinal[0].cleanliness)" }
-    if ($petFinal[0].xp -ne 9) { throw "DB final xp mismatch: expected 9 (2+2+5), got $($petFinal[0].xp)" }
-    if (-not $petFinal[0].last_duo_bonus_date) { throw "last_duo_bonus_date not stamped" }
-    Ok "Final DB state confirmed: hunger=58, cleanliness=58, xp=9"
+    if ($petFinal[0].happiness -ne 64) { throw "DB happiness mismatch: $($petFinal[0].happiness)" }
+    if ($petFinal[0].xp -ne 17) { throw "DB final xp mismatch: expected 17 (2 feed + 2 clean + 3 play + 10 bonus), got $($petFinal[0].xp)" }
+    if (-not $petFinal[0].last_care_bonus_date) { throw "last_care_bonus_date not stamped" }
+    Ok "Final DB state confirmed: hunger=58, cleanliness=58, happiness=64, xp=17"
 
     # -- 9. Concurrency guard: two simultaneous calls against the same purchase --
     # Regression check for the check-then-act race on shop_purchases.used_at:
