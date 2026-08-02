@@ -231,7 +231,7 @@ test.describe('Pet Care actions on /pets', () => {
   })
 
   test('mood badge reflects Grubby when cleanliness is low', async ({ page }) => {
-    const grubbyPet = { ...PET, cleanliness: 20 }
+    const grubbyPet = { ...PET, cleanliness: 20, cleanliness_updated_at: new Date().toISOString() }
     await setupAuthMock(page)
     await setupRestMock(page, [], null)
     await page.route('**/rest/v1/pets**', async (route) => { await fulfillJson(route, [grubbyPet]) })
@@ -244,7 +244,12 @@ test.describe('Pet Care actions on /pets', () => {
   })
 
   test('mood badge reflects Zen when all stats are high', async ({ page }) => {
-    const zenPet = { ...PET, hunger: 80, cleanliness: 80, happiness: 80 }
+    const zenPet = {
+      ...PET,
+      hunger: 80, hunger_updated_at: new Date().toISOString(),
+      cleanliness: 80, cleanliness_updated_at: new Date().toISOString(),
+      happiness: 80, happiness_updated_at: new Date().toISOString(),
+    }
     await setupAuthMock(page)
     await setupRestMock(page, [], null)
     await page.route('**/rest/v1/pets**', async (route) => { await fulfillJson(route, [zenPet]) })
