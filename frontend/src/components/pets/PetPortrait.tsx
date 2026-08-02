@@ -134,7 +134,7 @@ export function PetPortrait({
           alt=""
           aria-hidden
           loading="lazy"
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.12]"
+          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.12] mix-blend-screen"
         />
       )}
 
