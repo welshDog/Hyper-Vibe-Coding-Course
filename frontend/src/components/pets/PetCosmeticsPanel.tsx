@@ -39,6 +39,7 @@ function Thumb({
   disabled: boolean
   onClick:  () => void
 }) {
+  const thumbSrc = cosmetic.preview_image_url ?? cosmetic.image_url
   return (
     <button
       type="button"
@@ -54,9 +55,9 @@ function Thumb({
       } ${disabled ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:scale-[1.05]'}`}
       style={{ background: '#FFF8EC' }}
     >
-      {cosmetic.image_url ? (
+      {thumbSrc ? (
         <img
-          src={cosmetic.image_url}
+          src={thumbSrc}
           alt=""
           loading="lazy"
           className="h-full w-full object-contain p-1"

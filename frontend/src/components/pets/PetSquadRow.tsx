@@ -46,7 +46,13 @@ export function PetSquadRow() {
     for (const slot of PET_SLOTS) {
       const id = c[slot]
       const art = id ? artById[id] : undefined
-      if (art) out[slot] = { image_url: art.image_url, name: art.name }
+      if (art) {
+        out[slot] = {
+          image_url:         art.image_url,
+          overlay_image_url: art.overlay_image_url,
+          name:              art.name,
+        }
+      }
     }
     return out
   }

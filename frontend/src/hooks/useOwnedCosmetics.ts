@@ -17,19 +17,25 @@ export const PET_SLOTS = ['aura', 'frame', 'badge', 'background'] as const
 export type PetSlot = (typeof PET_SLOTS)[number]
 
 export type OwnedCosmetic = {
-  id:        string
-  name:      string
-  image_url: string | null
-  slot:      PetSlot
+  id:                string
+  name:              string
+  image_url:         string | null
+  /** Opaque shop-card art for the picker/catalogue. Mirrors image_url today. */
+  preview_image_url: string | null
+  /** Transparent compositable art for PetPortrait; null until an item has one. */
+  overlay_image_url: string | null
+  slot:              PetSlot
 }
 
 type PurchaseRow = {
   item_id: string
   shop_items: {
-    id:        string
-    name:      string
-    image_url: string | null
-    metadata:  { pet_slot?: string } | null
+    id:                string
+    name:              string
+    image_url:         string | null
+    preview_image_url: string | null
+    overlay_image_url: string | null
+    metadata:          { pet_slot?: string } | null
   } | null
 }
 
@@ -64,7 +70,7 @@ export function useOwnedCosmetics(): UseOwnedCosmeticsResult {
     try {
       const { data, error: queryErr } = await supabase
         .from('shop_purchases')
-        .select('item_id, shop_items(id, name, image_url, metadata)')
+        .select('item_id, shop_items(id, name, image_url, preview_image_url, overlay_image_url, metadata)')
         .eq('user_id', userId)
 
       if (queryErr) throw queryErr
@@ -75,10 +81,12 @@ export function useOwnedCosmetics(): UseOwnedCosmeticsResult {
           const slot = it?.metadata?.pet_slot
           if (!it || !slot || !PET_SLOTS.includes(slot as PetSlot)) return null
           return {
-            id:        it.id,
-            name:      it.name,
-            image_url: it.image_url,
-            slot:      slot as PetSlot,
+            id:                it.id,
+            name:              it.name,
+            image_url:         it.image_url,
+            preview_image_url: it.preview_image_url,
+            overlay_image_url: it.overlay_image_url,
+            slot:              slot as PetSlot,
           }
         })
         .filter((c): c is OwnedCosmetic => c !== null)

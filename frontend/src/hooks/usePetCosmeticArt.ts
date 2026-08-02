@@ -14,20 +14,23 @@ import { supabase } from '../lib/supabase'
 import type { PetSlot } from './useOwnedCosmetics'
 
 export type CosmeticArt = {
-  id:        string
-  name:      string
-  image_url: string | null
-  slot:      PetSlot
+  id:                string
+  name:              string
+  image_url:         string | null
+  /** Transparent compositable art for PetPortrait; null until an item has one. */
+  overlay_image_url: string | null
+  slot:              PetSlot
 }
 
 const PET_SLOTS_SET = new Set<PetSlot>(['aura', 'frame', 'badge', 'background'])
 const EMPTY: Record<string, CosmeticArt> = {}
 
 type ItemRow = {
-  id:        string
-  name:      string
-  image_url: string | null
-  metadata:  { pet_slot?: string } | null
+  id:                string
+  name:              string
+  image_url:         string | null
+  overlay_image_url: string | null
+  metadata:          { pet_slot?: string } | null
 }
 
 export function usePetCosmeticArt(ids: string[]): Record<string, CosmeticArt> {
@@ -46,7 +49,7 @@ export function usePetCosmeticArt(ids: string[]): Record<string, CosmeticArt> {
     const run = async () => {
       const { data, error } = await supabase
         .from('shop_items')
-        .select('id, name, image_url, metadata')
+        .select('id, name, image_url, overlay_image_url, metadata')
         .in('id', wanted)
 
       if (cancelled || error || !data) return
@@ -56,10 +59,11 @@ export function usePetCosmeticArt(ids: string[]): Record<string, CosmeticArt> {
         const slot = it.metadata?.pet_slot
         if (slot && PET_SLOTS_SET.has(slot as PetSlot)) {
           next[it.id] = {
-            id:        it.id,
-            name:      it.name,
-            image_url: it.image_url,
-            slot:      slot as PetSlot,
+            id:                it.id,
+            name:              it.name,
+            image_url:         it.image_url,
+            overlay_image_url: it.overlay_image_url,
+            slot:              slot as PetSlot,
           }
         }
       }

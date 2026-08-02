@@ -6,7 +6,10 @@
 //   background  fills the box behind the pet
 //   aura        soft glow ring just behind the pet (scaled past the box)
 //   species     the pet itself (object-contain when a background shows)
-//   frame       decorative border on top (never intercepts clicks)
+//   frame       decorative border on top (never intercepts clicks) — only
+//               overlay_image_url (transparent art) is safe to composite
+//               here; catalogue image_url is opaque shop-preview art and
+//               is a same-known-bug fallback until an item gets one
 //   badge       corner chip — falls back to `cornerFallback` (e.g. legend ✨)
 //
 // Cosmetic layers are size-agnostic via `scale-*` (no per-size calc math).
@@ -18,7 +21,15 @@ export type PetCosmeticSlot = 'aura' | 'frame' | 'badge' | 'background'
 
 /** A resolved cosmetic per slot (its art), supplied by the page/row. */
 export type EquippedCosmetics = Partial<
-  Record<PetCosmeticSlot, { image_url: string | null; name: string }>
+  Record<
+    PetCosmeticSlot,
+    {
+      image_url: string | null
+      /** Transparent compositable art; when present, used instead of image_url here. */
+      overlay_image_url?: string | null
+      name: string
+    }
+  >
 >
 
 const RARITY_RING: Record<Rarity, CSSProperties> = {
@@ -71,7 +82,14 @@ export function PetPortrait({
   const isHero = size === 'hero'
   const bg    = equipped?.background?.image_url
   const aura  = equipped?.aura?.image_url
-  const frame = equipped?.frame?.image_url
+  // Frame catalogue art is an opaque shop-preview card, not compositable —
+  // only overlay_image_url (transparent border/glow art) is safe to lay
+  // directly over the pet. Falls back to the old opaque art (same
+  // known "covers the pet" look) for frames that don't have one yet.
+  // Blank/whitespace-only values count as absent, same as null.
+  const rawFrameOverlay = equipped?.frame?.overlay_image_url?.trim()
+  const frameOverlay = rawFrameOverlay ? rawFrameOverlay : undefined
+  const frame = frameOverlay ?? equipped?.frame?.image_url
   const badge = equipped?.badge
   const ringStyle   = rarity ? RARITY_RING[rarity] : {}
   const legendaryRingClass = rarity === 'legendary' ? 'motion-safe:animate-legendary-ring' : ''
@@ -134,7 +152,9 @@ export function PetPortrait({
           alt=""
           aria-hidden
           loading="lazy"
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.12]"
+          className={`pointer-events-none absolute inset-0 h-full w-full object-contain ${
+            frameOverlay ? 'scale-[1.4]' : 'scale-[1.12]'
+          }`}
         />
       )}
 
