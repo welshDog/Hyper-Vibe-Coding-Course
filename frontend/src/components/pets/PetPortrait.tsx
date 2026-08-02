@@ -86,7 +86,9 @@ export function PetPortrait({
   // only overlay_image_url (transparent border/glow art) is safe to lay
   // directly over the pet. Falls back to the old opaque art (same
   // known "covers the pet" look) for frames that don't have one yet.
-  const frameOverlay = equipped?.frame?.overlay_image_url
+  // Blank/whitespace-only values count as absent, same as null.
+  const rawFrameOverlay = equipped?.frame?.overlay_image_url?.trim()
+  const frameOverlay = rawFrameOverlay ? rawFrameOverlay : undefined
   const frame = frameOverlay ?? equipped?.frame?.image_url
   const badge = equipped?.badge
   const ringStyle   = rarity ? RARITY_RING[rarity] : {}

@@ -20,6 +20,8 @@ export type OwnedCosmetic = {
   id:                string
   name:              string
   image_url:         string | null
+  /** Opaque shop-card art for the picker/catalogue. Mirrors image_url today. */
+  preview_image_url: string | null
   /** Transparent compositable art for PetPortrait; null until an item has one. */
   overlay_image_url: string | null
   slot:              PetSlot
@@ -31,6 +33,7 @@ type PurchaseRow = {
     id:                string
     name:              string
     image_url:         string | null
+    preview_image_url: string | null
     overlay_image_url: string | null
     metadata:          { pet_slot?: string } | null
   } | null
@@ -67,7 +70,7 @@ export function useOwnedCosmetics(): UseOwnedCosmeticsResult {
     try {
       const { data, error: queryErr } = await supabase
         .from('shop_purchases')
-        .select('item_id, shop_items(id, name, image_url, overlay_image_url, metadata)')
+        .select('item_id, shop_items(id, name, image_url, preview_image_url, overlay_image_url, metadata)')
         .eq('user_id', userId)
 
       if (queryErr) throw queryErr
@@ -81,6 +84,7 @@ export function useOwnedCosmetics(): UseOwnedCosmeticsResult {
             id:                it.id,
             name:              it.name,
             image_url:         it.image_url,
+            preview_image_url: it.preview_image_url,
             overlay_image_url: it.overlay_image_url,
             slot:              slot as PetSlot,
           }

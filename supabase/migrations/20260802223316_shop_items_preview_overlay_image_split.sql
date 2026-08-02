@@ -13,8 +13,20 @@ UPDATE public.shop_items
 SET preview_image_url = image_url
 WHERE preview_image_url IS NULL;
 
-UPDATE public.shop_items
-SET overlay_image_url = '/images/shop/pet-frame/shop_frame_basic_neon_overlay.png'
-WHERE id = '33330008-0000-0000-0000-000000000001';
+-- Fail loudly rather than silently leaving overlay_image_url unset if the
+-- Basic Neon Frame row is ever missing (e.g. re-seeded catalogue, wrong env).
+DO $$
+DECLARE
+  affected int;
+BEGIN
+  UPDATE public.shop_items
+  SET overlay_image_url = '/images/shop/pet-frame/shop_frame_basic_neon_overlay.png'
+  WHERE id = '33330008-0000-0000-0000-000000000001';
+
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected = 0 THEN
+    RAISE EXCEPTION 'shop_items row for Basic Neon Frame (33330008-0000-0000-0000-000000000001) not found — overlay_image_url not wired';
+  END IF;
+END $$;
 
 COMMIT;
