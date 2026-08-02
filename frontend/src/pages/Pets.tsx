@@ -113,7 +113,13 @@ export default function Pets() {
     for (const slot of PET_SLOTS) {
       const id = c[slot]
       const owned = id ? byId[id] : undefined
-      if (owned) out[slot] = { image_url: owned.image_url, name: owned.name }
+      if (owned) {
+        out[slot] = {
+          image_url:         owned.image_url,
+          overlay_image_url: owned.overlay_image_url,
+          name:              owned.name,
+        }
+      }
     }
     return out
   }
