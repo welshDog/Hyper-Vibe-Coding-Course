@@ -565,7 +565,7 @@ export default function Pets() {
                   4. Care keeps it going
                 </p>
                 <p className="text-xs text-pet-ink-soft leading-relaxed">
-                  Feed and Clean give small XP nudges too — a bonus for
+                  Feed, Clean, and Play give small XP nudges too — a bonus for
                   showing up daily, on top of course progress.
                 </p>
               </li>
