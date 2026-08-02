@@ -4,7 +4,9 @@
 //   1. successful Feed — owned item consumed, hunger bar updates, XP toast
 //   2. successful Clean — same, cleanliness bar
 //   3. empty inventory state — no owned feed items, picker shows shop link
-//   4. daily duo bonus toast appears once both actions complete same day
+//   4. successful Play — owned item consumed, happiness bar updates, XP toast
+//   5. daily care bonus toast appears once the RPC reports care_bonus: true
+//   6. mood badge reflects Grubby (needs-based override) and Zen (thriving)
 //
 // Auth + REST are mocked the same way as pets-mentor-bubble.spec.ts.
 
@@ -68,6 +70,8 @@ const PET = {
   cosmetics: {}, xp: 0,
   hunger: 50, hunger_updated_at: '2026-08-01T00:00:00.000Z',
   cleanliness: 50, cleanliness_updated_at: '2026-08-01T00:00:00.000Z',
+  happiness: 50, happiness_updated_at: '2026-08-01T00:00:00.000Z',
+  last_play_at: null,
 }
 
 const FEED_PURCHASE = {
@@ -80,6 +84,12 @@ const CLEAN_PURCHASE = {
   id: 'purchase-clean-2', item_id: 'item-soap', used_at: null, used_on_pet_id: null,
   shop_items: { id: 'item-soap', name: 'Cookie Scrub', image_url: null,
     metadata: { effect_type: 'care', target_stat: 'cleanliness', effect_value: 8 } },
+}
+
+const PLAY_PURCHASE = {
+  id: 'purchase-play-1', item_id: 'item-duck', used_at: null, used_on_pet_id: null,
+  shop_items: { id: 'item-duck', name: 'Debug Duck', image_url: null,
+    metadata: { effect_type: 'play', target_stat: 'happiness', effect_value: 14 } },
 }
 
 // `purchases` is the fixture returned for GET /rest/v1/shop_purchases.
@@ -121,7 +131,7 @@ test.describe('Pet Care actions on /pets', () => {
   test('successful Feed updates the hunger bar and shows XP toast', async ({ page }) => {
     await setupAuthMock(page)
     await setupRestMock(page, [FEED_PURCHASE], {
-      ok: true, target_stat: 'hunger', new_value: 58, xp_awarded: 2, duo_bonus: false,
+      ok: true, target_stat: 'hunger', new_value: 58, xp_awarded: 2, care_bonus: false,
     })
 
     await signIn(page)
@@ -141,7 +151,7 @@ test.describe('Pet Care actions on /pets', () => {
   test('successful Clean updates the cleanliness bar and shows XP toast', async ({ page }) => {
     await setupAuthMock(page)
     await setupRestMock(page, [CLEAN_PURCHASE], {
-      ok: true, target_stat: 'cleanliness', new_value: 58, xp_awarded: 2, duo_bonus: false,
+      ok: true, target_stat: 'cleanliness', new_value: 58, xp_awarded: 2, care_bonus: false,
     })
 
     await signIn(page)
@@ -178,25 +188,71 @@ test.describe('Pet Care actions on /pets', () => {
     await expect(careSection.getByRole('link', { name: /shop/i })).toHaveAttribute('href', '/shop')
   })
 
-  test('daily duo bonus toast appears when the RPC reports duo_bonus: true', async ({ page }) => {
-    const cleanPurchase = {
-      id: 'purchase-clean-1', item_id: 'item-shampoo', used_at: null, used_on_pet_id: null,
-      shop_items: { id: 'item-shampoo', name: 'Cache Shampoo', image_url: null,
-        metadata: { effect_type: 'care', target_stat: 'cleanliness', effect_value: 8 } },
-    }
+  test('successful Play updates the happiness bar and shows XP toast', async ({ page }) => {
     await setupAuthMock(page)
-    await setupRestMock(page, [cleanPurchase], {
-      ok: true, target_stat: 'cleanliness', new_value: 58, xp_awarded: 7, duo_bonus: true,
+    await setupRestMock(page, [PLAY_PURCHASE], {
+      ok: true, target_stat: 'happiness', new_value: 64, xp_awarded: 3, care_bonus: false,
     })
 
     await signIn(page)
     await page.goto('/pets')
 
     await expect(page.getByRole('heading', { name: /pet care/i })).toBeVisible({ timeout: 30_000 })
-    await page.getByRole('button', { name: /^clean$/i }).click()
-    await page.getByText('Cache Shampoo').click()
+
+    await page.getByRole('button', { name: /^play$/i }).click()
+    await expect(page.getByText('Debug Duck')).toBeVisible()
+    await page.getByText('Debug Duck').click()
+
+    await expect(page.getByText(/loved that toy/i)).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText(/\+14 happiness/i)).toBeVisible()
+    await expect(page.getByText(/\+3 xp/i)).toBeVisible()
+  })
+
+  test('daily care bonus toast appears when the RPC reports care_bonus: true', async ({ page }) => {
+    const playPurchase = {
+      id: 'purchase-play-2', item_id: 'item-duck-2', used_at: null, used_on_pet_id: null,
+      shop_items: { id: 'item-duck-2', name: 'Quantum Toy', image_url: null,
+        metadata: { effect_type: 'play', target_stat: 'happiness', effect_value: 22 } },
+    }
+    await setupAuthMock(page)
+    await setupRestMock(page, [playPurchase], {
+      ok: true, target_stat: 'happiness', new_value: 72, xp_awarded: 13, care_bonus: true,
+    })
+
+    await signIn(page)
+    await page.goto('/pets')
+
+    await expect(page.getByRole('heading', { name: /pet care/i })).toBeVisible({ timeout: 30_000 })
+    await page.getByRole('button', { name: /^play$/i }).click()
+    await page.getByText('Quantum Toy').click()
 
     await expect(page.getByText(/daily care complete/i)).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(/\+5 bonus xp/i)).toBeVisible()
+    await expect(page.getByText(/\+10 bonus xp/i)).toBeVisible()
+  })
+
+  test('mood badge reflects Grubby when cleanliness is low', async ({ page }) => {
+    const grubbyPet = { ...PET, cleanliness: 20 }
+    await setupAuthMock(page)
+    await setupRestMock(page, [], null)
+    await page.route('**/rest/v1/pets**', async (route) => { await fulfillJson(route, [grubbyPet]) })
+
+    await signIn(page)
+    await page.goto('/pets')
+
+    await expect(page.getByRole('heading', { name: /pet care/i })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByText(/grubby/i)).toBeVisible()
+  })
+
+  test('mood badge reflects Zen when all stats are high', async ({ page }) => {
+    const zenPet = { ...PET, hunger: 80, cleanliness: 80, happiness: 80 }
+    await setupAuthMock(page)
+    await setupRestMock(page, [], null)
+    await page.route('**/rest/v1/pets**', async (route) => { await fulfillJson(route, [zenPet]) })
+
+    await signIn(page)
+    await page.goto('/pets')
+
+    await expect(page.getByRole('heading', { name: /pet care/i })).toBeVisible({ timeout: 30_000 })
+    await expect(page.getByText(/zen/i)).toBeVisible()
   })
 })

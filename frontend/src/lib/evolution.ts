@@ -106,3 +106,26 @@ export function driftedStat(raw: number, updatedAt: string, now: Date = new Date
   const effective = raw + (50 - raw) * fraction
   return Math.min(100, Math.max(0, Math.round(effective)))
 }
+
+export type CareMood = 'sleepy' | 'grubby' | 'zen' | 'hype' | 'playful' | 'content'
+
+/**
+ * Purely derived from the three drifted care stats + recent Play activity
+ * — no DB storage, no write path, never touches use_care_item. Deliberately
+ * distinct from `PetMood` above (idle/learning/hyperfocus/evolving), which
+ * is a real DB column driven by evolve_pet() and PetMentorBubble chat.
+ * Priority order: needs-based moods (Sleepy/Grubby) override positive ones.
+ */
+export function deriveCareMood(
+  hunger: number, cleanliness: number, happiness: number,
+  lastPlayAt: string | null, now: Date = new Date()
+): CareMood {
+  if (hunger < 35) return 'sleepy'
+  if (cleanliness < 35) return 'grubby'
+  if (hunger >= 65 && cleanliness >= 65 && happiness >= 65) return 'zen'
+  const playedRecently = lastPlayAt !== null &&
+    (now.getTime() - new Date(lastPlayAt).getTime()) < 24 * 60 * 60 * 1000
+  if (happiness >= 80 && playedRecently) return 'hype'
+  if (happiness >= 65) return 'playful'
+  return 'content'
+}

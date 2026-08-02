@@ -1,23 +1,32 @@
 // PetCareSection — Section between the hero row and EvolutionTimeline.
 //
-// Two buttons (Feed, Clean) each show a live drifted Hunger/Cleanliness
-// bar and, on click, expand a grid of owned unused compatible items
-// (useCareInventory). Selecting one calls use_care_item(), then refetches
-// both the pet and the inventory. No optimistic UI — same await-then-
-// refetch convention as Pets.tsx's handleEquip/handleUnequip.
+// Three buttons (Feed, Clean, Play) each show a live drifted Hunger/
+// Cleanliness/Happiness bar and, on click, expand a grid of owned unused
+// compatible items (useCareInventory). Selecting one calls use_care_item(),
+// then refetches both the pet and the inventory. No optimistic UI — same
+// await-then-refetch convention as Pets.tsx's handleEquip/handleUnequip.
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HVZCard, HVZButton, HVZProgress } from '../ui/hvz'
 import { supabase } from '../../lib/supabase'
-import { driftedStat } from '../../lib/evolution'
+import { driftedStat, deriveCareMood, type CareMood } from '../../lib/evolution'
 import { useCareInventory, type CareItem } from '../../hooks/useCareInventory'
 import type { Pet } from './PetCard'
 
-type Action = 'feed' | 'care'
+type Action = 'feed' | 'care' | 'play'
 
-const ACTION_LABEL: Record<Action, string> = { feed: 'Feed', care: 'Clean' }
-const ACTION_EMOJI: Record<Action, string> = { feed: '🍔', care: '🧼' }
+const ACTION_LABEL: Record<Action, string> = { feed: 'Feed', care: 'Clean', play: 'Play' }
+const ACTION_EMOJI: Record<Action, string> = { feed: '🍔', care: '🧼', play: '🎮' }
+const ACTION_NOUN: Record<Action, string> = { feed: 'snack', care: 'clean-up', play: 'toy' }
+const EMPTY_NOUN: Record<Action, string> = { feed: 'snacks', care: 'cleaning supplies', play: 'toys' }
+
+const MOOD_EMOJI: Record<CareMood, string> = {
+  sleepy: '😴', grubby: '🧼', zen: '😌', hype: '🎉', playful: '🙂', content: '😐',
+}
+const MOOD_LABEL: Record<CareMood, string> = {
+  sleepy: 'Sleepy', grubby: 'Grubby', zen: 'Zen', hype: 'Hype', playful: 'Playful', content: 'Content',
+}
 
 type Toast = { text: string; bonus?: string }
 
@@ -26,11 +35,11 @@ type CareRpcResult = {
   target_stat?: string
   new_value?:   number
   xp_awarded?:  number
-  duo_bonus?:   boolean
+  care_bonus?:  boolean
   error?:       string
 }
 
-const DUO_BONUS_XP = 5
+const CARE_BONUS_XP = 10
 
 function prettyCareError(raw: string | undefined): string {
   switch (raw) {
@@ -51,18 +60,20 @@ type Props = {
 }
 
 export function PetCareSection({ pet, onActionComplete }: Props) {
-  const { feedItems, careItems, loading, refetch } = useCareInventory()
+  const { feedItems, careItems, playItems, loading, refetch } = useCareInventory()
   const [openAction, setOpenAction] = useState<Action | null>(null)
   const [busy,        setBusy]      = useState(false)
   const [errorMsg,    setErrorMsg]  = useState<string | null>(null)
   const [toast,       setToast]     = useState<Toast | null>(null)
 
-  const items: Record<Action, CareItem[]> = { feed: feedItems, care: careItems }
+  const items: Record<Action, CareItem[]> = { feed: feedItems, care: careItems, play: playItems }
   const statValue: Record<Action, number> = {
     feed: driftedStat(pet.hunger, pet.hunger_updated_at),
     care: driftedStat(pet.cleanliness, pet.cleanliness_updated_at),
+    play: driftedStat(pet.happiness, pet.happiness_updated_at),
   }
-  const statLabel: Record<Action, string> = { feed: 'Hunger', care: 'Cleanliness' }
+  const statLabel: Record<Action, string> = { feed: 'Hunger', care: 'Cleanliness', play: 'Happiness' }
+  const mood = deriveCareMood(statValue.feed, statValue.care, statValue.play, pet.last_play_at)
 
   const handleUse = async (action: Action, item: CareItem) => {
     setBusy(true)
@@ -82,10 +93,10 @@ export function PetCareSection({ pet, onActionComplete }: Props) {
       // delta below the item's nominal effectValue.
       const delta = typeof result.new_value === 'number' ? result.new_value - beforeValue : item.effectValue
       const totalXp = result.xp_awarded ?? 0
-      const baseXp = result.duo_bonus ? totalXp - DUO_BONUS_XP : totalXp
+      const baseXp = result.care_bonus ? totalXp - CARE_BONUS_XP : totalXp
       setToast({
-        text: `${pet.pet_name} loved that ${action === 'feed' ? 'snack' : 'clean-up'}! +${delta} ${statLabel[action]} · +${baseXp} XP`,
-        bonus: result.duo_bonus ? `Daily care complete! +${DUO_BONUS_XP} bonus XP 🎉` : undefined,
+        text: `${pet.pet_name} loved that ${ACTION_NOUN[action]}! +${delta} ${statLabel[action]} · +${baseXp} XP`,
+        bonus: result.care_bonus ? `Daily care complete! +${CARE_BONUS_XP} bonus XP 🎉` : undefined,
       })
       await refetch()
       onActionComplete()
@@ -97,10 +108,13 @@ export function PetCareSection({ pet, onActionComplete }: Props) {
   return (
     <div data-testid="pet-care-section">
       <HVZCard variant="chunky">
-        <header className="mb-4">
+        <header className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-pet-wood-dark">
             Pet Care
           </h2>
+          <span className="inline-flex items-center gap-1 rounded-hfz-sm border-2 border-pet-ink/15 bg-pet-lilac/20 px-2 py-1 text-xs font-semibold text-pet-ink">
+            <span aria-hidden>{MOOD_EMOJI[mood]}</span> {MOOD_LABEL[mood]}
+          </span>
         </header>
 
         {errorMsg && (
@@ -115,8 +129,8 @@ export function PetCareSection({ pet, onActionComplete }: Props) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(['feed', 'care'] as const).map((action) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(['feed', 'care', 'play'] as const).map((action) => (
             <div key={action} className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <HVZButton
@@ -144,7 +158,7 @@ export function PetCareSection({ pet, onActionComplete }: Props) {
                   ) : items[action].length === 0 ? (
                     <div className="flex flex-col gap-2">
                       <p className="text-xs text-pet-ink-soft">
-                        You don't have any {action === 'feed' ? 'snacks' : 'cleaning supplies'} yet — grab some in the shop 🛍️
+                        You don't have any {EMPTY_NOUN[action]} yet — grab some in the shop 🛍️
                       </p>
                       <Link to="/shop" className="text-xs font-semibold text-pet-slime-dark hover:text-pet-wood-dark">
                         Go to shop →
