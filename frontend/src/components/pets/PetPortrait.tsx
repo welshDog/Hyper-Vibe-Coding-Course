@@ -89,7 +89,13 @@ export function PetPortrait({
   const rawBgOverlay = equipped?.background?.overlay_image_url?.trim()
   const bgOverlay = rawBgOverlay ? rawBgOverlay : undefined
   const bg = bgOverlay ?? equipped?.background?.image_url
-  const aura  = equipped?.aura?.image_url
+  // Aura catalogue art may have a lot of dead starfield margin around the
+  // actual ring — only overlay_image_url (tightly cropped) is meant to be
+  // rendered at the larger portrait scale. Blank/whitespace-only values
+  // count as absent, same as null.
+  const rawAuraOverlay = equipped?.aura?.overlay_image_url?.trim()
+  const auraOverlay = rawAuraOverlay ? rawAuraOverlay : undefined
+  const aura = auraOverlay ?? equipped?.aura?.image_url
   // Frame catalogue art is an opaque shop-preview card, not compositable —
   // only overlay_image_url (transparent border/glow art) is safe to lay
   // directly over the pet. Falls back to the old opaque art (same
@@ -99,6 +105,13 @@ export function PetPortrait({
   const frameOverlay = rawFrameOverlay ? rawFrameOverlay : undefined
   const frame = frameOverlay ?? equipped?.frame?.image_url
   const badge = equipped?.badge
+  // Badge catalogue art may have dead starfield margin like aura — only
+  // overlay_image_url (tightly cropped to the medallion) is meant to be
+  // rendered at the larger badge size. Blank/whitespace-only values count
+  // as absent, same as null.
+  const rawBadgeOverlay = badge?.overlay_image_url?.trim()
+  const badgeOverlay = rawBadgeOverlay ? rawBadgeOverlay : undefined
+  const badgeSrc = badgeOverlay ?? badge?.image_url
   const ringStyle   = rarity ? RARITY_RING[rarity] : {}
   const legendaryRingClass = rarity === 'legendary' ? 'motion-safe:animate-legendary-ring' : ''
 
@@ -169,9 +182,9 @@ export function PetPortrait({
         />
       )}
 
-      {badge?.image_url ? (
+      {badge && badgeSrc ? (
         <img
-          src={badge.image_url}
+          src={badgeSrc}
           alt={badge.name}
           title={badge.name}
           loading="lazy"

@@ -8,6 +8,7 @@
 // Auth + REST mocked the same way as pets-care-actions.spec.ts.
 
 import { test, expect, type Page, type Route } from '@playwright/test'
+import type { PetCosmeticSlot } from '../src/components/pets/PetPortrait'
 
 const FAKE_USER_ID = 'portrait-user-id'
 const FAKE_JWT = 'portrait-jwt'
@@ -60,7 +61,7 @@ function setupAuthMock(page: Page) {
   })
 }
 
-function petWithCosmetic(slot: 'background' | 'frame', itemId: string) {
+function petWithCosmetic(slot: PetCosmeticSlot, itemId: string) {
   return {
     id: 'pet-uuid-1', pet_id: 'broski_1', species_id: 'sonic_spider', pet_name: 'Web Slinger',
     rarity: 'common', stage: 'baby', mood: 'idle', evolution_count: 0, last_evolved_at: null,
@@ -74,7 +75,7 @@ function petWithCosmetic(slot: 'background' | 'frame', itemId: string) {
 }
 
 function purchaseFor(
-  slot: 'background' | 'frame',
+  slot: PetCosmeticSlot,
   itemId: string,
   imageUrl: string,
   overlayImageUrl: string | null,
@@ -182,5 +183,65 @@ test.describe('PetPortrait cosmetic overlay resolution', () => {
 
     const img = page.getByTestId('pet-portrait-frame')
     await expect(img).toHaveAttribute('src', '/images/shop/pet-frame/shop_frame_basic_neon_overlay.png')
+  })
+
+  test('aura with only image_url renders the fallback art', async ({ page }) => {
+    await setupAuthMock(page)
+    const pet = petWithCosmetic('aura', 'item-aura-1')
+    await setupRestMock(page, pet, [
+      purchaseFor('aura', 'item-aura-1', '/images/shop/pet-aura/shop_aura_flame.png', null),
+    ])
+    await signIn(page)
+    await page.goto('/pets')
+
+    const img = page.getByTestId('pet-portrait-aura')
+    await expect(img).toHaveAttribute('src', '/images/shop/pet-aura/shop_aura_flame.png')
+  })
+
+  test('aura with overlay_image_url set prefers the overlay art', async ({ page }) => {
+    await setupAuthMock(page)
+    const pet = petWithCosmetic('aura', 'item-aura-2')
+    await setupRestMock(page, pet, [
+      purchaseFor(
+        'aura', 'item-aura-2',
+        '/images/shop/pet-aura/shop_aura_flame.png',
+        '/images/shop/pet-aura/shop_aura_flame_overlay.png',
+      ),
+    ])
+    await signIn(page)
+    await page.goto('/pets')
+
+    const img = page.getByTestId('pet-portrait-aura')
+    await expect(img).toHaveAttribute('src', '/images/shop/pet-aura/shop_aura_flame_overlay.png')
+  })
+
+  test('badge with only image_url renders the fallback art', async ({ page }) => {
+    await setupAuthMock(page)
+    const pet = petWithCosmetic('badge', 'item-badge-1')
+    await setupRestMock(page, pet, [
+      purchaseFor('badge', 'item-badge-1', '/images/shop/pet-badge/shop_badge_broski_holo.png', null),
+    ])
+    await signIn(page)
+    await page.goto('/pets')
+
+    const img = page.getByTestId('pet-portrait-badge')
+    await expect(img).toHaveAttribute('src', '/images/shop/pet-badge/shop_badge_broski_holo.png')
+  })
+
+  test('badge with overlay_image_url set prefers the overlay art', async ({ page }) => {
+    await setupAuthMock(page)
+    const pet = petWithCosmetic('badge', 'item-badge-2')
+    await setupRestMock(page, pet, [
+      purchaseFor(
+        'badge', 'item-badge-2',
+        '/images/shop/pet-badge/shop_badge_broski_holo.png',
+        '/images/shop/pet-badge/shop_badge_broski_holo_overlay.png',
+      ),
+    ])
+    await signIn(page)
+    await page.goto('/pets')
+
+    const img = page.getByTestId('pet-portrait-badge')
+    await expect(img).toHaveAttribute('src', '/images/shop/pet-badge/shop_badge_broski_holo_overlay.png')
   })
 })
