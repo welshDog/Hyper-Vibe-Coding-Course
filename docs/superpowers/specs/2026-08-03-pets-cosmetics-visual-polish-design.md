@@ -52,9 +52,9 @@ One proof-case item per slot, same low-risk pattern as the Frame fix:
 
 | Slot | Item | Source operation | Render change in `PetPortrait.tsx` |
 |---|---|---|---|
-| Background | Dark Lab | Crop past the baked vignette into the real lab-scene content, re-export at 1024×1024 | None — `absolute inset-0 object-cover` is already correct |
+| Background | Dark Lab | Crop past the baked vignette into the real lab-scene content, re-export at 1024×1024 | `PetPortrait` prefers `background.overlay_image_url`, falls back to `background.image_url` — same resolution pattern Frame already has |
 | Aura | Flame Aura | Tight crop to the flame ring, trimming dead starfield margin | Scale `1.25` → `1.5` |
-| Badge | BROski Holo Badge | Tight crop to the medallion, trimming dead starfield margin | Size `h-10 w-10` (hero) → `h-16 w-16`, proportional bump on `lg`/`sm` tiers; position unchanged (bottom-right corner chip) |
+| Badge | BROski Holo Badge | Tight crop to the medallion, trimming dead starfield margin | Fixed sizes: hero `h-10 w-10`→`h-16 w-16`, lg `h-7 w-7`→`h-10 w-10`, sm `h-5 w-5`→`h-7 w-7`; position unchanged (bottom-right corner chip) |
 | Frame | Basic Neon Frame | None | None — regression check only |
 
 Every other item in each slot stays on the existing opaque-fallback path
@@ -74,6 +74,15 @@ files in `frontend/public/images/shop/pet-*/`, not generated from scratch:
   `shop_aura_flame_overlay.png`, `shop_badge_broski_holo_overlay.png`) —
   the original opaque file stays untouched as `image_url`/
   `preview_image_url` for the shop and picker.
+- Publish each cropped file to the same public asset path convention as
+  the existing catalogue art (`frontend/public/images/shop/pet-*/`), then
+  set that item's `shop_items.overlay_image_url` to the new path via
+  migration — same shape as the Basic Neon Frame migration in #52.
+  `image_url` and `preview_image_url` are not touched by this migration.
+- Verify each new `overlay_image_url` actually resolves (loads a real
+  image, not a 404) before the live visual check — a broken URL would
+  otherwise silently fall back to the opaque `image_url` and the visual
+  check could pass for the wrong reason.
 - Background's crop only needs to remove the border vignette — the
   in-scene content is already meant to fill frame, no transparency
   required (it's a full painted scene, not an overlay).
@@ -87,25 +96,60 @@ Layering order is unchanged (`background → pet → aura → frame(legendary
 ring) → frame → badge`, matching the existing DOM order — no `z-index`
 needed, stacking already follows document order):
 
-- **Background**: no code change.
+- **Background**: currently `const bg = equipped?.background?.image_url`
+  with no overlay resolution at all. Change to prefer
+  `equipped.background.overlay_image_url`, falling back to
+  `equipped.background.image_url` — the exact same two-line resolution
+  pattern `frame`/`frameOverlay` already uses in `PetPortrait.tsx`
+  (including the blank/whitespace-as-absent `.trim()` guard from #52).
+  The render JSX itself (`absolute inset-0 object-cover`) is unchanged —
+  only which URL feeds that `<img>` changes.
 - **Aura**: `scale-[1.25]` → `scale-[1.5]` on the aura `<img>`.
 - **Frame**: no code change (already ships the overlay-vs-fallback split
   from #52).
-- **Badge**: `SIZE.hero.badge` grows from `h-10 w-10` to `h-16 w-16`
-  (position offsets `-bottom-3 -right-3` stay as-is); `lg`/`sm` tiers get
-  a proportional bump from their current `h-7 w-7` / `h-5 w-5`.
+- **Badge**: exact fixed classes per tier, not a proportional formula:
+  - `hero`: `h-10 w-10` → `h-16 w-16`
+  - `lg`: `h-7 w-7` → `h-10 w-10`
+  - `sm`: `h-5 w-5` → `h-7 w-7`
+  Position offsets (`-bottom-3 -right-3` hero, `-bottom-2 -right-2` lg,
+  `-bottom-1.5 -right-1.5` sm) stay as-is unless the live check shows
+  clipping against the card edge, in which case adjust the offset, not
+  the size.
 
-All three items resolve their overlay art the same way Frame already
-does: prefer `overlay_image_url`, fall back to `image_url` unchanged for
-every other item in that slot.
+All four slots resolve their overlay art the same way: prefer
+`overlay_image_url` (trimmed, blank-as-absent), fall back to `image_url`
+unchanged for every other item in that slot that doesn't have overlay art
+yet.
 
 ## Testing
 
 Existing Playwright specs (`pets-care-actions.spec.ts`, `pets-xpfeed.spec.ts`)
 use mocked routes and don't render real cosmetic art, so they're a
-regression check only — not new coverage for this pass. The real
-acceptance gate is a live authenticated visual check, same pattern as the
-Frame fix:
+regression check only — not new coverage for this pass.
+
+**New automated coverage (required, not just the live check):** a focused
+Playwright spec asserting `PetPortrait`'s overlay-resolution logic
+directly — the same fallback behavior now applies to all four slots, not
+just Frame, so it's worth locking down with a real test rather than only
+eyeballing it live:
+
+1. A cosmetic equipped with only `image_url` set (no `overlay_image_url`)
+   renders using `image_url` — the fallback path.
+2. A cosmetic equipped with both `image_url` and `overlay_image_url` set
+   renders using `overlay_image_url` — the preferred path.
+
+Cover this for at least the background slot (the one gaining overlay
+resolution for the first time in this pass) and ideally re-confirm frame
+still passes the same two cases, guarding against regression on #52's
+logic while this pass touches the same resolution pattern.
+
+Also run the repo's prescribed auth/accessibility Playwright specs per
+`CLAUDE.md` — `tests/vibe-labs-anon-flow.spec.ts` (signed-out flow
+unaffected by this pass) and `tests/vibe-labs-a11y.spec.ts` — alongside
+the `/pets`-specific specs above.
+
+The real acceptance gate beyond automated coverage is a live authenticated
+visual check, same pattern as the Frame fix:
 
 **Required before merge — equip all four proof-case items on Luna (or the
 live account's real pet) simultaneously and confirm, live:**
