@@ -27,10 +27,6 @@ interface HvQuizQuestion {
   type: QuizQuestionType;
   prompt: string;
   choices?: string[];
-  // answer_index is intentionally never sent to the client — grading happens
-  // server-side in complete_module() so the correct answer can't be read out
-  // of the network response before the quiz is attempted.
-  explanation?: string | null;
 }
 
 interface HvQuizPayload {
@@ -46,6 +42,20 @@ function isQuizPayload(value: unknown): value is HvQuizPayload {
   const asRecord = value as Record<string, unknown>;
   if (!Array.isArray(asRecord.questions)) return false;
   return true;
+}
+
+function sanitizeQuizPayload(value: HvQuizPayload): HvQuizPayload {
+  return {
+    module_code: value.module_code,
+    title: value.title,
+    // Keep only the fields the client genuinely needs to render the quiz.
+    questions: value.questions.map((question) => ({
+      id: question.id,
+      type: question.type,
+      prompt: question.prompt,
+      choices: question.choices,
+    })),
+  };
 }
 
 // ── Markdown rendering ──────────────────────────────────────────
@@ -199,7 +209,7 @@ export default function CourseModule() {
           return;
         }
 
-        setQuiz(data);
+        setQuiz(sanitizeQuizPayload(data));
       } finally {
         if (!cancelled) {
           setQuizLoading(false);
@@ -320,7 +330,7 @@ export default function CourseModule() {
         ) : null}
         {quizFailBanner ? (
           <div className="mt-6 rounded-xl bg-amber-500/10 border border-amber-500/30 px-5 py-4 text-amber-200 font-semibold">
-            Scored {quizFailBanner.score}% — need 70% to pass. Review the explanations below and try again.
+            Scored {quizFailBanner.score}% — need 70% to pass. Review the lesson and try again.
           </div>
         ) : null}
       </div>
@@ -474,12 +484,6 @@ export default function CourseModule() {
                         ))}
                       </div>
                     )}
-
-                    {submitted && q.explanation ? (
-                      <div className="mt-4 text-sm text-purple-200">
-                        {q.explanation}
-                      </div>
-                    ) : null}
                   </div>
                 );
               })}

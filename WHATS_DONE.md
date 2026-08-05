@@ -1,6 +1,73 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-08-01 by Claude (Cowork) ⚡
+> Last synced: 2026-08-05 by Claude (Cowork) ⚡
+
+## 2026-08-05 — Active quiz containment + `/pets` live proof + frontend QA docs
+
+This session closed the one meaningful production-verification loose end from
+the 2026-08-01 handover, then fixed two small but real frontend UX issues on
+top of that. Important split: some work was **verified live in production**,
+while some was **fixed and verified locally only** and is not deployed yet.
+
+**Per-pet-XP production proof — completed live**
+- The outstanding manual authenticated `/pets` check from the 2026-08-01
+  handover is now done on `https://hypervibe.online`.
+- Verified on a real signed-in pet-owning account that the hero/evolution UI
+  reflects the selected pet's own XP, not just the account total
+  (`Luna XP : 414`, Stage Baby, Next target Learner).
+- A later live pass on the same real account (after it had 2 pets and more
+  shop purchases) also confirmed multi-pet switching works and a real Feed
+  action updated Bolt's XP from `0` to `2`.
+
+**Active course-module quiz explanation containment — fixed locally**
+- The active `/courses/:slug` flow still accepted and rendered `explanation`
+  text from `get_quiz_for_module()` if the backend RPC sent it. The active
+  module page now sanitises the payload before storing it and no longer
+  renders explanation text in the client UI.
+- Failed-quiz copy was tightened so it tells the learner to review the lesson,
+  not "review the explanations below".
+- Regression added first in `frontend/tests/course-module.spec.ts`, then the
+  fix was made in `frontend/src/pages/CourseModule.tsx`.
+- Verified locally: full `course-module` Playwright spec green across
+  Chromium/Firefox/WebKit + `npm run build` green.
+- **Still open separately:** the legacy `/learn/:courseId` lesson-player quiz
+  flow was deliberately left untouched on this pass.
+
+**`/pets` UI polish — fixed locally**
+- Live QA found a misleading Play empty-state message: `/pets` could say
+  "You don't have any toys yet" while `/shop` showed owned generic toys like
+  Laser Pointer / Code Ball / The Deploy Button.
+- Important nuance: this was fixed as a **copy/expectation** issue, not by
+  pretending generic shop toys are automatically pet-care-compatible. The
+  empty-state now says `play items`, which matches the actual frontend rule.
+- The mini pet-picker cards also had weak/inconsistent browser semantics when
+  selected. `HVZCard` now exposes `aria-pressed` for clickable selected cards,
+  so the chosen pet is no longer just visually highlighted.
+- Regressions added first:
+  - `frontend/tests/pets-care-actions.spec.ts`
+  - `frontend/tests/pets-selection.spec.ts`
+- Fixes landed in:
+  - `frontend/src/components/pets/PetCareSection.tsx`
+  - `frontend/src/components/ui/hvz/HVZCard.tsx`
+- Verified locally: affected pets suite green across Chromium/Firefox/WebKit
+  (`27` tests) + `npm run build` green.
+
+**Session docs brought back into sync**
+- Added fresh operational truth docs for this session:
+  - `rewrites/SESSION_SNAPSHOT_2026-08-05.md`
+  - `rewrites/NEXT_SESSION_HANDOVER_2026-08-05.md`
+- Those docs explicitly separate:
+  - what was verified live in production
+  - what was fixed and verified locally only
+  - what still remains open next session
+
+**Quick local browser smoke — green**
+- Ran a lightweight local browser smoke against the patched frontend on
+  `http://localhost:4173`.
+- Confirmed `/`, `/pets`, and `/courses` render without a blank screen or
+  fatal runtime crash.
+- One non-fatal wallet/provider-related console abort was observed on
+  `/pets`; it did not block rendering.
 
 ## 2026-07-31 → 2026-08-01 — `/pets` Moy-style reskin + per-pet XP
 
