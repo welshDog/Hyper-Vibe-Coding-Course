@@ -192,8 +192,15 @@ security" or "check Vercel" from entering the board.
 4. **P0 — Audit Edge Function auth checks**
    - Why it matters: this repo already has real examples of function callers
      being under-verified or implicitly trusted.
-   - Done means: every public or browser-reachable function is classified by
-     intended caller and has explicit auth verification that matches that
+   - Done means: the exact current function groups are classified and checked
+     against their intended caller model:
+     - browser/session-bound: `shop-purchase`, `discord-link`,
+       `get-pet-balance`, `mint-pet-auth`, `mint-pet-confirm`,
+       `pet-mentor-chat`
+     - service-to-service / webhook / backend integration:
+       `course-profile`, `generate-v2-config`, `stripe-webhook`,
+       `sync-tokens-to-v24`
+     and every function has explicit auth verification that matches that
      caller model.
    - Evidence: function inventory, code references, live verification where
      possible.
@@ -201,31 +208,41 @@ security" or "check Vercel" from entering the board.
 5. **P0 — Audit Edge Function secret scope and key usage**
    - Why it matters: scoped server secrets are one of the strongest current
      security controls in this stack.
-   - Done means: every function secret is inventoried, legacy key usage is
-     flagged, and scope is documented or tightened.
+   - Done means: the same exact function groups above have their secret and key
+     usage inventoried, with browser/session-bound functions checked for
+     accidental server-key trust and service/webhook functions checked for
+     scoped server-secret use, legacy key usage flagged, and scope documented
+     or tightened.
    - Evidence: env inventory, key-usage map, code diffs if changes are needed.
 
 6. **P0 — Audit CORS and request validation for browser-called functions**
    - Why it matters: the repo has already seen a real production break here
      (`shop-purchase`).
-   - Done means: each browser-invoked function has correct preflight headers,
-     method handling, and request validation.
+   - Done means: each browser-invoked function
+     (`shop-purchase`, `discord-link`, `get-pet-balance`, `mint-pet-auth`,
+     `mint-pet-confirm`, `pet-mentor-chat`) has correct preflight headers,
+     method handling, and request validation, with the exact header contract
+     recorded for future regressions.
    - Evidence: function checklist, test calls, live/browser verification.
 
 #### Release discipline
 
 7. **P1 — Create a release-truth checklist for risky changes**
    - Why it matters: builds passing is not enough if runtime truth is unknown.
-   - Done means: one checked-in checklist exists for auth, payments, profile,
-     shop, pets, and other risky paths covering local build, deploy status,
-     runtime logs, and live-path verification.
+   - Done means: one checked-in release gate exists stating that no change
+     touching auth, profile, referrals, tokens, pets, shop, payments, Discord
+     linking, or Edge Function caller contracts is "done" until local build,
+     deploy status, build logs, runtime logs, and at least one live-path check
+     are recorded.
    - Evidence: checked-in doc referenced in PR and handover workflow.
 
 8. **P1 — Define build-log and runtime-log review as part of done**
    - Why it matters: Vercel logs need to be operational truth, not post-failure
      archaeology.
-   - Done means: PR and handover conventions explicitly require log review for
-     affected routes/functions before work is called done.
+   - Done means: PR and handover conventions explicitly say which release gates
+     are mandatory for risky changes: affected deploy/build logs, affected
+     runtime logs, and one named live verification path tied to the changed
+     route or function group.
    - Evidence: doc updates, checklist updates, at least one adopted example.
 
 ### Lane 2 — Hardening next
@@ -345,7 +362,8 @@ Completion should usually include:
 - successful local build for touched frontend paths
 - deploy/build-log review
 - runtime-log review for affected routes/functions
-- at least one live-path verification for risky changes
+- at least one named live-path verification for risky changes, tied to the
+  changed route or function group
 
 ## Out of scope
 
