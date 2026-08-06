@@ -3,7 +3,9 @@
 // so equip styling stays identical everywhere.
 //
 // Stack, back → front:
-//   background  fills the box behind the pet
+//   background  fills the box behind the pet — prefers overlay_image_url
+//               (full-bleed scene art), falls back to the catalogue
+//               image_url (may have a baked vignette) for items without one
 //   aura        soft glow ring just behind the pet (scaled past the box)
 //   species     the pet itself (object-contain when a background shows)
 //   frame       decorative border on top (never intercepts clicks) — only
@@ -43,17 +45,17 @@ const SIZE = {
   hero: {
     box:     'h-64 w-64 sm:h-72 sm:w-72',
     rounded: 'rounded-pet-chunky',
-    badge:   'h-10 w-10 -bottom-3 -right-3',
+    badge:   'h-16 w-16 -bottom-3 -right-3',
   },
   lg: {
     box:     'h-20 w-20',
     rounded: 'rounded-hfz-md',
-    badge:   'h-7 w-7 -bottom-2 -right-2',
+    badge:   'h-10 w-10 -bottom-2 -right-2',
   },
   sm: {
     box:     'h-12 w-12',
     rounded: 'rounded-hfz-sm',
-    badge:   'h-5 w-5 -bottom-1.5 -right-1.5',
+    badge:   'h-7 w-7 -bottom-1.5 -right-1.5',
   },
 } as const
 
@@ -80,8 +82,20 @@ export function PetPortrait({
 }: Props) {
   const s = SIZE[size]
   const isHero = size === 'hero'
-  const bg    = equipped?.background?.image_url
-  const aura  = equipped?.aura?.image_url
+  // Background catalogue art may have a baked vignette border (a "scene
+  // inside a card"), same class of problem frame's promo-card art had —
+  // only overlay_image_url (full-bleed scene art) is safe to render
+  // edge-to-edge here. Blank/whitespace-only values count as absent.
+  const rawBgOverlay = equipped?.background?.overlay_image_url?.trim()
+  const bgOverlay = rawBgOverlay ? rawBgOverlay : undefined
+  const bg = bgOverlay ?? equipped?.background?.image_url
+  // Aura catalogue art may have a lot of dead starfield margin around the
+  // actual ring — only overlay_image_url (tightly cropped) is meant to be
+  // rendered at the larger portrait scale. Blank/whitespace-only values
+  // count as absent, same as null.
+  const rawAuraOverlay = equipped?.aura?.overlay_image_url?.trim()
+  const auraOverlay = rawAuraOverlay ? rawAuraOverlay : undefined
+  const aura = auraOverlay ?? equipped?.aura?.image_url
   // Frame catalogue art is an opaque shop-preview card, not compositable —
   // only overlay_image_url (transparent border/glow art) is safe to lay
   // directly over the pet. Falls back to the old opaque art (same
@@ -91,6 +105,13 @@ export function PetPortrait({
   const frameOverlay = rawFrameOverlay ? rawFrameOverlay : undefined
   const frame = frameOverlay ?? equipped?.frame?.image_url
   const badge = equipped?.badge
+  // Badge catalogue art may have dead starfield margin like aura — only
+  // overlay_image_url (tightly cropped to the medallion) is meant to be
+  // rendered at the larger badge size. Blank/whitespace-only values count
+  // as absent, same as null.
+  const rawBadgeOverlay = badge?.overlay_image_url?.trim()
+  const badgeOverlay = rawBadgeOverlay ? rawBadgeOverlay : undefined
+  const badgeSrc = badgeOverlay ?? badge?.image_url
   const ringStyle   = rarity ? RARITY_RING[rarity] : {}
   const legendaryRingClass = rarity === 'legendary' ? 'motion-safe:animate-legendary-ring' : ''
 
@@ -114,6 +135,7 @@ export function PetPortrait({
           alt=""
           aria-hidden
           loading="lazy"
+          data-testid={isHero ? 'pet-portrait-background' : undefined}
           className={`absolute inset-0 h-full w-full object-cover ${s.rounded}`}
         />
       )}
@@ -124,7 +146,8 @@ export function PetPortrait({
           alt=""
           aria-hidden
           loading="lazy"
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.25] blur-[1px] opacity-80 mix-blend-screen"
+          data-testid={isHero ? 'pet-portrait-aura' : undefined}
+          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.5] blur-[1px] opacity-80 mix-blend-screen"
         />
       )}
 
@@ -152,18 +175,20 @@ export function PetPortrait({
           alt=""
           aria-hidden
           loading="lazy"
+          data-testid={isHero ? 'pet-portrait-frame' : undefined}
           className={`pointer-events-none absolute inset-0 h-full w-full object-contain ${
             frameOverlay ? 'scale-[1.4]' : 'scale-[1.12]'
           }`}
         />
       )}
 
-      {badge?.image_url ? (
+      {badge && badgeSrc ? (
         <img
-          src={badge.image_url}
+          src={badgeSrc}
           alt={badge.name}
           title={badge.name}
           loading="lazy"
+          data-testid={isHero ? 'pet-portrait-badge' : undefined}
           className={`absolute ${s.badge} object-contain drop-shadow`}
         />
       ) : (

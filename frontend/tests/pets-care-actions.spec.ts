@@ -188,6 +188,20 @@ test.describe('Pet Care actions on /pets', () => {
     await expect(careSection.getByRole('link', { name: /shop/i })).toHaveAttribute('href', '/shop')
   })
 
+  test('empty play inventory uses play-item wording instead of generic toys wording', async ({ page }) => {
+    await setupAuthMock(page)
+    await setupRestMock(page, [], null)
+
+    await signIn(page)
+    await page.goto('/pets')
+
+    await expect(page.getByRole('heading', { name: /pet care/i })).toBeVisible({ timeout: 30_000 })
+    await page.getByRole('button', { name: /^play$/i }).click()
+
+    await expect(page.getByText(/don't have any play items yet/i)).toBeVisible()
+    await expect(page.getByText(/don't have any toys yet/i)).toHaveCount(0)
+  })
+
   test('successful Play updates the happiness bar and shows XP toast', async ({ page }) => {
     await setupAuthMock(page)
     await setupRestMock(page, [PLAY_PURCHASE], {

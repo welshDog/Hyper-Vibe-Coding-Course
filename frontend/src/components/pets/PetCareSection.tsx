@@ -19,7 +19,7 @@ type Action = 'feed' | 'care' | 'play'
 const ACTION_LABEL: Record<Action, string> = { feed: 'Feed', care: 'Clean', play: 'Play' }
 const ACTION_EMOJI: Record<Action, string> = { feed: '🍔', care: '🧼', play: '🎮' }
 const ACTION_NOUN: Record<Action, string> = { feed: 'snack', care: 'clean-up', play: 'toy' }
-const EMPTY_NOUN: Record<Action, string> = { feed: 'snacks', care: 'cleaning supplies', play: 'toys' }
+const EMPTY_NOUN: Record<Action, string> = { feed: 'snacks', care: 'cleaning supplies', play: 'play items' }
 const GRADIENT: Record<Action, 'xp' | 'gold' | 'mint'> = { feed: 'gold', care: 'mint', play: 'xp' }
 
 const MOOD_EMOJI: Record<CareMood, string> = {

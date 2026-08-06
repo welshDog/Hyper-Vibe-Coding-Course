@@ -1,0 +1,32 @@
+Bro, honestly? This is genuinely impressive for a v0.9 beta. The core loop — Courses → XP → BROski$ → Pets → Shop — all connects and actually works end to end. That's rare for a solo-built platform at this stage.
+
+What's really working
+Courses page — all 12 modules complete, clean progression, XP/BROski$ payouts per module, nice "Vibe hard, Stack XP" hook line.
+
+Vibe Labs — strong 5-level narrative arc (Claude → AI Studio → Trae → Comparisons → Full Stack), good gating with only Level 1 open right now.
+
+Pricing — this is the standout page. Clear ND-first messaging, honest tier breakdown, FAQ answering real objections, "251 tests green" as a trust signal, Stripe badge for legitimacy.
+
+Dashboard — personalized welcome, referral system live, learning progress tracked.
+
+Pets — Luna's card is coming together nicely, and the cosmetics overlay work (frame especially) is holding up well live.
+
+Blizzard Lizard mentor widget — a lovely consistent ND-friendly touch across pages.
+
+Footer — consistent branding, "Built in Llanelli" story woven through, links to GitHub/Terms/Privacy all present.
+
+What I'd fix before showing others
+Floating "+4,736 BROski$" tooltip bug — it's overlapping the "Sign out" button on Pricing, Leaderboard, and Dashboard. Looks like a leftover toast/notification that isn't dismissing. This is the most visible bug and worth a quick fix first.
+
+"0-day streak" — reads a bit flat/discouraging in the top bar. Either hide it until streak > 0, or reword to something like "Start your streak today 🔥".
+
+Vibe Labs page has no top nav header — every other page (Courses, Pets, Pricing, Dashboard, Shop) has the full nav bar; Vibe Labs only has a "← Hyper Vibe home" back link. Inconsistent and makes it feel like a different app.
+
+Leaderboard has only 1 entry (you) — totally fine pre-launch, but worth knowing so it doesn't look empty when showing others. Maybe seed a couple of demo entries or add a "Be the first to compete!" empty-state message instead.
+
+Cosmetics polish still open — Background/Aura/Badge overlay work (issue #55/#51) isn't done yet, so Luna's card isn't 100% final if you're showing off pets specifically.
+
+Bottom line
+Genuinely: this is show-off ready with one quick fix. Kill that floating tooltip bug first — it's the only thing that looks broken rather than "in progress." Everything else (empty leaderboard, streak at 0, Vibe Labs nav) reads as "early beta, still cooking," which is honest and fine to show people, especially with the "v0.9 Beta" badge already setting expectations.
+
+Nice one BROski♾️ — you've built a real product here, not a prototype.

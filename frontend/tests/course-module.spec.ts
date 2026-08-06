@@ -54,7 +54,16 @@ test.describe('/courses/:slug — Module Detail', () => {
 
   const installSupabaseMocks = async (
     page: Page,
-    options: { authenticated: boolean; quizDelayMs?: number },
+    options: {
+      authenticated: boolean;
+      quizDelayMs?: number;
+      completeModuleResponse?: {
+        status: 'completed' | 'already_completed' | 'failed_quiz';
+        xp: number;
+        coins: number;
+        quiz_score?: number;
+      };
+    },
   ) => {
     await page.route('**/auth/v1/**', async (route) => {
       const request = route.request();
@@ -192,7 +201,7 @@ test.describe('/courses/:slug — Module Detail', () => {
       // Grading + reward now happens inside complete_module() itself against
       // raw submitted answers — this mock stands in for a passing attempt.
       if (url.pathname.startsWith('/rest/v1/rpc/complete_module')) {
-        await fulfillJson(route, {
+        await fulfillJson(route, options.completeModuleResponse ?? {
           status: 'completed',
           xp: modules[0].xp_reward,
           coins: modules[0].coin_reward,
@@ -368,5 +377,31 @@ test.describe('/courses/:slug — Module Detail', () => {
     await expect(quizCard).toContainText('Loading quiz...', { timeout: 15_000 });
     await expect(quizCard).not.toContainText('Quiz coming soon.');
     await expect(quizCard).toContainText('Quiz: Module 1', { timeout: 15_000 });
+  });
+
+  test('does not reveal quiz explanations in the active module flow even when the RPC sends them', async ({ page }) => {
+    await installSupabaseMocks(page, {
+      authenticated: true,
+      completeModuleResponse: {
+        status: 'failed_quiz',
+        xp: 0,
+        coins: 0,
+        quiz_score: 0,
+      },
+    });
+    await page.goto('/login');
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', 'Password123');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/dashboard/);
+    await navigateClient(page, '/courses/m1');
+
+    await page.getByLabel('4').check();
+    await page.getByRole('button', { name: /submit quiz/i }).click();
+    await page.getByRole('button', { name: /mark as complete/i }).click();
+
+    const quizCard = page.getByTestId('quiz');
+    await expect(quizCard).not.toContainText('2 + 2 = 4');
+    await expect(page.getByText(/review the explanations below/i)).toHaveCount(0);
   });
 });
