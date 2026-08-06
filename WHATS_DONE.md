@@ -1,6 +1,72 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-08-05 by Claude (Cowork) ⚡
+> Last synced: 2026-08-06 by Claude (Cowork) ⚡
+
+## 2026-08-06 — `generate-v2-config` service-auth hardening + honest P0 blocker
+
+Continuation of the 2026-08-06 Wave 1 truth-audit fix pack. The original
+auth-lockdown work (browser CORS removed, bearer-JWT path removed,
+`X-Sync-Secret` required) was already deployed as version 19 with a clean
+`401` negative-path proof. This session added defense-in-depth hardening on
+top of that, then hit a genuine external blocker while trying to complete
+the live positive-path proof — documented honestly rather than faked.
+
+**Hardening shipped — `supabase/functions/generate-v2-config/`**
+- `handler.ts`, `handler_test.ts`, `index.ts`
+- Fail-closed config checks extended to `SHOP_SYNC_SECRET`, `V24_API_URL`,
+  and admin-key resolution (`resolveAdminKey`, now actually wired to
+  `resolveSupabaseAdminKey` in `index.ts` instead of a dummy string).
+  Previously only `V24_SYNC_SECRET` was checked before continuing.
+- Inbound `X-Sync-Secret` comparison replaced with a SHA-256-digest
+  constant-time compare instead of a direct `!==`.
+- Discord-link lookup, purchase lookup, downstream provisioning fetch, and
+  downstream response parse are now wrapped in try/catch, returning a
+  controlled `502` instead of letting a DB/network exception become an
+  uncontrolled function failure.
+- `deno test` grew from 8 to **17 tests, all green** (9 new: 3 fail-closed
+  config variants, 1 equal-length wrong-secret rejection, 4 exception-safety
+  cases for the DB/network wrapping, plus admin-key edge cases).
+- Deployed live: `generate-v2-config` is now **version 20**, `verify_jwt: false`.
+- Committed as `ef62307` and pushed to `feat/pets-cosmetics-visual-polish`.
+
+**P0 blocker found and logged — not faked**
+- Running the negative-path check post-deploy returned `503 Service
+  misconfigured` instead of the expected `401`, because the new fail-closed
+  check correctly caught that `V24_API_URL` has **never been deployed** as a
+  live Supabase secret for `tlavrxiaegbtyfmjfdcz` (confirmed via
+  `supabase secrets list`: `SHOP_SYNC_SECRET` and `V24_SYNC_SECRET` are both
+  live, `V24_API_URL` isn't there).
+- Read-only investigation before touching anything:
+  - No `V24_API_URL`/host reference anywhere in the `HyperCode-V2.4` repo.
+  - The one candidate value (`.env`'s `VITE_HYPERCODE_API_URL
+    =https://hypercode-v24-production.up.railway.app`) is confirmed dead —
+    Railway returns its own `404 Application not found` for that host.
+  - `HyperCode-V2.4/RAILWAY_VARS.md` references a real Railway project
+    (`3d66bd92-cac3-4fde-ae9a-07f269b58791`) with documented pause/resume
+    commands, implying a real deployment exists — but this session's Railway
+    MCP access returned `"you don't have the required role (viewer)"` on
+    that project. It exists; it's just inaccessible from this workspace.
+  - No matching project on the accessible Vercel team (`BROskis`, 8 projects
+    checked) either.
+- **Did not** guess a host, set a placeholder, or otherwise fake the proof.
+  Logged as a P0 external-dependency blocker in both Wave 1 truth-pack docs
+  with the exact safe handoff: whoever holds the Railway access needs to
+  open that project, confirm workspace/permissions, resume it if scaled to
+  0, verify `/api/v1/access/provision` responds, and hand back only the
+  base HTTPS URL (no secrets) so `V24_API_URL` can be set and the proof
+  re-run.
+- `V24_SYNC_SECRET` itself was never pasted into chat, logged, or exposed —
+  handled correctly as a secret-holder-only value throughout.
+
+**Docs updated**
+- `docs/TRUTH_PACK/2026-08-06_wave1_db_edge_truth_audit.md` — summary counts,
+  new P0 entry with full investigation trail, fix-slice list updated.
+- `docs/TRUTH_PACK/2026-08-06_wave1_edge_function_matrix.md` — `generate-v2-config`
+  row updated with the hardening detail and the operational `503` caveat.
+
+**Fix pack status: not closed.** Code side is done and live. Waiting on
+Railway access to a confirmed V2.4 base URL before the positive production
+proof can honestly run.
 
 ## 2026-08-05 — Active quiz containment + `/pets` live proof + frontend QA docs
 
