@@ -68,6 +68,109 @@ the live positive-path proof — documented honestly rather than faked.
 Railway access to a confirmed V2.4 base URL before the positive production
 proof can honestly run.
 
+## 2026-08-06 (continued) — PR #57 merged, post-merge audit, 4 real bugs found + fixed
+
+Rest of the same day, after PR #57 (pets cosmetics + Wave 1 audit +
+`generate-v2-config` hardening above) merged to `main`. All changes below
+went branch → PR → CI → merge → branch deleted (`main` is protected —
+direct pushes are rejected).
+
+**PR #57 merged** (`70f75b8`) — pets cosmetics visual polish, frontend QA
+fixes, the Wave 1 DB/Edge security audit, and the `generate-v2-config`
+hardening, all bundled into one branch. Confirmed live on Vercel
+(`hypervibe.online`) immediately after.
+
+**PR #58 — post-merge test report** (`24b03ce`)
+Full verification pass: Playwright 264/264 across all 3 browsers (4 initial
+failures confirmed flaky on retry, not regressions), `deno test` 17/17,
+build/typecheck clean, Supabase security + performance advisors reviewed
+(nothing new — all pre-existing/already tracked). Live QA across 8 pages
+on `hypervibe.online` with a real signed-in account. Found and documented
+(not yet fixed at that point): 4 pre-existing `set-state-in-effect` lint
+violations, and a floating "+BROski$" toast overlapping the Sign Out
+button. Full report: `docs/POST_MERGE_TEST_REPORT_2026-08-06.md`.
+
+**PR #59 — fixed the 4 `set-state-in-effect` violations** (`ddaf8c5`)
+- `usePetMoodSync.ts` (3x — quiz-fail/module-complete/broken-code mood
+  triggers) and `useReferralLink.ts` (1x — logout state reset) converted
+  from setState-in-effect to React's official "adjust state during render"
+  pattern.
+- **Gotcha #1**: this repo's `react-hooks/refs` lint rule disallows reading
+  `ref.current` during render outside a narrow null-check pattern — had to
+  track previous values with `useState`, not `useRef`.
+- **Gotcha #2**: an early version deferred `useReferralLink`'s entire fetch
+  kickoff (`queueMicrotask`/`setTimeout`, matching the existing
+  `useXpEvents.ts` pattern elsewhere in this repo) to satisfy the lint rule
+  — this silently broke `referral-rpc.spec.ts`'s network-call-count
+  assertion, reproducibly on WebKit only (3/3 fails), because React
+  StrictMode's dev-mode double-invoke cancels a deferred kickoff before it
+  ever fires on the first pass, roughly halving real network calls vs. the
+  original synchronous-and-uncancellable dispatch. Fixed by firing the
+  fetch immediately/un-deferred and only deferring the `setLoading`/
+  `setError` calls. Verified: 17/17 relevant tests across all 3 browsers
+  (including the WebKit case retried 3x clean). Both gotchas saved to
+  memory (`hv-course-react-hooks-lint-gotchas`).
+
+**PR #60 — fixed the TokenBurst/Sign-Out toast overlap** (`4e1ee0d`)
+`TokenBurst.tsx`'s "+N BROski$" celebration toast was `fixed top-12`,
+spilling past HUD's own bar into the Navbar row directly underneath —
+visually covering Sign Out for the ~2s it animates. Flagged in an earlier
+live review, reconfirmed live on `/pricing` and `/dashboard`. Moved to
+`top-3`. Verified with real DOM measurement (a probe element +
+`getBoundingClientRect()` against the actual Sign Out button) on the live
+site both before and after the fix — not just Tailwind class arithmetic.
+
+**PR #61 — fixed real `/pets` horizontal overflow** (`481ce19`)
+Found while auditing a live-reported `/pets` layout complaint.
+`Pets.tsx`'s root div used the standard Tailwind full-bleed idiom
+(`-mx-4 sm:-mx-6 lg:-mx-8` cancelling a padded ancestor), but walking the
+live DOM ancestor chain found **zero padding anywhere** to cancel against
+(`Layout.tsx`'s `<main className="flex-grow">` and everything above it are
+unpadded) — so the negative margins just inflated the div past the
+viewport on the right, causing a real horizontal scrollbar on every page
+load. Removed the negative margins entirely (the unpadded `<main>` already
+spans full width on its own, so they were never needed). Confirmed via
+live `document.documentElement.scrollWidth` vs `window.innerWidth`,
+pre-fix and post-fix, in both production and local dev.
+
+**PR #62 — capped `PetMentorBubble`'s panel height** (`c21ce10`)
+Same `/pets` audit found the auto-open mentor chat panel geometrically
+overlapping the customise panel's "Get more in the shop" link and an
+"Equip Hyperfocus Pulse Aura" button — and since the panel is
+`pointer-events-auto` (a real interactive chat), those controls were
+genuinely unclickable underneath it, not just visually covered. The panel
+was bottom-anchored with only its inner message log height-capped
+(`max-h-[44vh]`), so it could grow past its bottom-right footprint with
+enough message history. Capped the whole panel at
+`max-h-[calc(100dvh-7rem)]`. Extended
+`frontend/tests/pets-mentor-bubble.spec.ts` with a regression test
+(max-height assertion, trial-clicks on the previously-blocked controls,
+keyboard-accessibility checks) — 9/9 across all 3 browsers. Re-ran
+`learning.spec.ts` as a regression check since this exact component
+previously caused a real "Next" button collision on lesson pages (fixed
+then by an existing, untouched auto-close-on-scroll safeguard) — 3
+Firefox timeouts, retried 6/6 clean, confirmed pre-existing flake.
+**Final resolution**: the live regression check could still reproduce
+overlap, but only at this session's own broken ~495px-tall browser-tool
+test viewport (`resize_window` doesn't actually work in this environment —
+see memory `claude-in-chrome-resize-window-broken`); math predicted no
+overlap above ~753px real viewport height, and Lyndz confirmed on his
+actual screen: no overlap at normal window size. Fix is sufficient as
+shipped.
+
+**PR #63 — handover doc brought up to end-of-day state** (`12e553c`)
+`rewrites/NEXT_SESSION_HANDOVER_2026-08-06.md` rewritten to cover all of
+the above (it previously only reflected the mid-session
+`generate-v2-config` state, before PRs #58–#62 existed).
+
+**Net result: 3 real, live-verified frontend bugs found and fixed in one
+session, all via live DOM measurement rather than guessed CSS tweaks**
+(TokenBurst overlap, `/pets` overflow, PetMentorBubble collision), plus
+one pre-existing lint-debt cleanup (4 `set-state-in-effect` violations)
+with two non-obvious gotchas now documented in memory for next time.
+`generate-v2-config`'s `V24_API_URL` P0 blocker is still open — see the
+2026-08-06 handover for the exact unblock steps.
+
 ## 2026-08-05 — Active quiz containment + `/pets` live proof + frontend QA docs
 
 This session closed the one meaningful production-verification loose end from
