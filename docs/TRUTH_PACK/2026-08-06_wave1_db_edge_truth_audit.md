@@ -132,7 +132,6 @@ No P2 findings have been recorded at scaffold time.
 - `waitlist` is a current frontend `.from(...)` relation on `LandingPage.tsx`, but live RLS explicitly denies inserts with `deny_all_waitlist_public_insert`. That is not an exposure problem; it is a live contract mismatch between the public landing-page path and the database policy posture.
 - `user_loyalty_tier` needs explicit review. It is a `security_invoker=true` view, so the RLS bypass concern is reduced, but it is still broadly selectable by both `anon` and `authenticated` in live grants while the current frontend uses it only in signed-in profile/shop/navbar paths. That looks unreviewed rather than clearly intentional-public.
 - `playtest_responses` is not broadly exposed, but its live contract is narrower than a generic public form: admins can read, authenticated users can insert, and a separate `deny_all_playtest_responses_public_insert` policy blocks public insert. Keep it documented as authenticated-only submission flow.
-- The current frontend `.from(...)` surface is broader than the Wave 1 matrix. `certificates`, `quiz_attempts`, `quiz_questions`, and `user_level_progress` are live learner-facing relations that were confirmed separately but are not included in `scripts/audits/2026-08-06_wave1_rls_matrix.sql`; any later audit that claims full frontend coverage should either add them to the matrix or state the exclusion explicitly.
 
 ## Edge Function audit
 
