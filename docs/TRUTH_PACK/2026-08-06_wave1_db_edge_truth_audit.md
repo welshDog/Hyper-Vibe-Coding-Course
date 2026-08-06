@@ -112,7 +112,7 @@ No P2 findings have been recorded at scaffold time.
   `token_transactions`, `top_pets`, `user_level_progress`, `user_loyalty_tier`,
   `user_quests`, `user_xp`, `users`, `waitlist`, and `xp_events`.
 - Ran `scripts/audits/2026-08-06_wave1_rls_matrix.sql` against `tlavrxiaegbtyfmjfdcz` via `supabase db query --linked -f ...` using the temporary repo-root `.env` rename workaround in the same shell command; the restored `.env` SHA-256 matched the pre-run hash.
-- The checked-in matrix file needed a local compatibility fix to run on the current catalog surface: `pg_policies.policyname` / `pg_policies.cmd` instead of `polname` / `polcmd`. That script edit was not staged as part of this task.
+- The checked-in matrix file now reflects the live catalog surface: it uses `pg_policies.policyname` / `pg_policies.cmd` and includes the additional frontend-facing relations `certificates`, `quiz_attempts`, `quiz_questions`, and `user_level_progress`.
 
 ### Safe / expected
 

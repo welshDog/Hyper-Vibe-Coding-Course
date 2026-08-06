@@ -27,6 +27,10 @@ with target_relations as (
       ('public', 'progress'),
       ('public', 'payments'),
       ('public', 'playtest_responses'),
+      ('public', 'certificates'),
+      ('public', 'quiz_attempts'),
+      ('public', 'quiz_questions'),
+      ('public', 'user_level_progress'),
       ('public', 'waitlist'),
       ('public', 'early_access_signups'),
       ('public', 'rifts'),
@@ -49,7 +53,7 @@ from target_relations t
 left join pg_class c
   on c.oid = to_regclass(format('%I.%I', t.schema_name, t.relation_name))
 left join (
-  select schemaname, tablename, polname, polcmd as cmd
+  select schemaname, tablename, policyname as polname, cmd
   from pg_policies
 ) p
   on p.schemaname = t.schema_name
