@@ -31,6 +31,80 @@ Deno.test("generate-v2-config rejects non-POST requests", async () => {
   assertEquals(response.status, 405);
 });
 
+Deno.test("generate-v2-config fails closed when SHOP_SYNC_SECRET is missing", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    env: { ...makeDeps().env, shopSyncSecret: "" },
+  });
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+  assertEquals(response.status, 503);
+});
+
+Deno.test("generate-v2-config fails closed when V24_API_URL is missing", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    env: { ...makeDeps().env, v24ApiUrl: "" },
+  });
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+  assertEquals(response.status, 503);
+});
+
+Deno.test("generate-v2-config fails closed when admin key resolution throws", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    resolveAdminKey: () => {
+      throw new Error("Missing Supabase admin key configuration");
+    },
+  });
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+  assertEquals(response.status, 503);
+});
+
+Deno.test("generate-v2-config fails closed when admin key resolves empty", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    resolveAdminKey: () => "   ",
+  });
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+  assertEquals(response.status, 503);
+});
+
+Deno.test("generate-v2-config rejects an equal-length wrong secret", async () => {
+  const handler = createGenerateV2ConfigHandler(makeDeps());
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secreX" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+  assertEquals(response.status, 401);
+});
+
 Deno.test("generate-v2-config rejects missing X-Sync-Secret", async () => {
   const handler = createGenerateV2ConfigHandler(makeDeps());
   const response = await handler(
@@ -143,6 +217,95 @@ Deno.test("generate-v2-config skips failed agent_access rows and selects the new
 
   assertEquals(response.status, 200);
   assertEquals((capturedPayload as { purchase_id: string }).purchase_id, "purchase-good");
+});
+
+Deno.test("generate-v2-config returns 502 when the discord link lookup throws", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    resolveDiscordLink: async () => {
+      throw new Error("network error");
+    },
+  });
+
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+
+  assertEquals(response.status, 502);
+});
+
+Deno.test("generate-v2-config returns 502 when the purchase lookup throws", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    resolveDiscordLink: async () => "db-discord-123",
+    listPurchases: async () => {
+      throw new Error("db error");
+    },
+  });
+
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+
+  assertEquals(response.status, 502);
+});
+
+Deno.test("generate-v2-config returns 502 when the downstream provisioning fetch throws", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    resolveDiscordLink: async () => "db-discord-123",
+    listPurchases: async () => [
+      {
+        id: "purchase-good",
+        shop_items: { metadata: { type: "agent_access", v24_tier: "sandbox" } },
+      },
+    ],
+    provisionAccess: async () => {
+      throw new Error("fetch failed");
+    },
+  });
+
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+
+  assertEquals(response.status, 502);
+});
+
+Deno.test("generate-v2-config returns 502 when the downstream response body is malformed JSON", async () => {
+  const handler = createGenerateV2ConfigHandler({
+    ...makeDeps(),
+    resolveDiscordLink: async () => "db-discord-123",
+    listPurchases: async () => [
+      {
+        id: "purchase-good",
+        shop_items: { metadata: { type: "agent_access", v24_tier: "sandbox" } },
+      },
+    ],
+    provisionAccess: async () => new Response("not json", { status: 200 }),
+  });
+
+  const response = await handler(
+    new Request("http://local.test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": "sync-secret" },
+      body: JSON.stringify({ user_id: "11111111-1111-4111-8111-111111111111" }),
+    }),
+  );
+
+  assertEquals(response.status, 502);
 });
 
 Deno.test("generate-v2-config calls downstream with SHOP_SYNC_SECRET and service-claimed user_id", async () => {

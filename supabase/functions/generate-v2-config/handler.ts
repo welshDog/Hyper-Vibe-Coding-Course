@@ -149,7 +149,19 @@ async function resolveEffectiveDiscordId(
   userId: string,
   providedDiscordId?: string,
 ): Promise<{ ok: true; discordId: string | null } | { ok: false; response: Response }> {
-  const linkedDiscordId = await deps.resolveDiscordLink(userId);
+  let linkedDiscordId: string | null;
+  try {
+    linkedDiscordId = await deps.resolveDiscordLink(userId);
+  } catch (error) {
+    console.error(
+      "generate-v2-config: discord link lookup failed:",
+      error instanceof Error ? error.message : error,
+    );
+    return {
+      ok: false,
+      response: json(502, { success: false, error: "Discord link lookup failed" }),
+    };
+  }
 
   if (providedDiscordId && linkedDiscordId && providedDiscordId !== linkedDiscordId) {
     return {
@@ -161,18 +173,54 @@ async function resolveEffectiveDiscordId(
   return { ok: true, discordId: providedDiscordId ?? linkedDiscordId ?? null };
 }
 
+function isServiceMisconfigured(deps: GenerateV2ConfigDeps): boolean {
+  if (!deps.env.v24SyncSecret || !deps.env.shopSyncSecret || !deps.env.v24ApiUrl) {
+    return true;
+  }
+  try {
+    const adminKey = deps.resolveAdminKey();
+    if (!adminKey || !adminKey.trim()) {
+      return true;
+    }
+  } catch (error) {
+    console.error(
+      "generate-v2-config: admin key configuration check failed:",
+      error instanceof Error ? error.message : error,
+    );
+    return true;
+  }
+  return false;
+}
+
+// Compares secrets via fixed-size digests + an accumulator so neither the
+// length nor position of a mismatch is observable from response timing.
+async function timingSafeSecretsMatch(provided: string, expected: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const [providedDigest, expectedDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(provided)),
+    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+  ]);
+  const providedBytes = new Uint8Array(providedDigest);
+  const expectedBytes = new Uint8Array(expectedDigest);
+  let diff = 0;
+  for (let i = 0; i < providedBytes.length; i++) {
+    diff |= providedBytes[i] ^ expectedBytes[i];
+  }
+  return diff === 0;
+}
+
 export function createGenerateV2ConfigHandler(deps: GenerateV2ConfigDeps) {
   return async function handleGenerateV2Config(req: Request): Promise<Response> {
     if (req.method !== "POST") {
       return json(405, { success: false, error: "Method not allowed" });
     }
 
-    if (!deps.env.v24SyncSecret) {
+    if (isServiceMisconfigured(deps)) {
       return json(503, { success: false, error: "Service misconfigured" });
     }
 
     const providedSecret = req.headers.get("X-Sync-Secret");
-    if (!providedSecret || providedSecret !== deps.env.v24SyncSecret) {
+    if (!providedSecret || !(await timingSafeSecretsMatch(providedSecret, deps.env.v24SyncSecret))) {
       return json(401, { success: false, error: "Unauthorized" });
     }
 
@@ -200,7 +248,18 @@ export function createGenerateV2ConfigHandler(deps: GenerateV2ConfigDeps) {
       });
     }
 
-    const purchase = selectQualifyingPurchase(await deps.listPurchases(body.user_id));
+    let purchaseRows: PurchaseRow[];
+    try {
+      purchaseRows = await deps.listPurchases(body.user_id);
+    } catch (error) {
+      console.error(
+        "generate-v2-config: purchase lookup failed:",
+        error instanceof Error ? error.message : error,
+      );
+      return json(502, { success: false, error: "Purchase lookup failed" });
+    }
+
+    const purchase = selectQualifyingPurchase(purchaseRows);
     if (!purchase) {
       return json(200, {
         success: false,
@@ -217,7 +276,16 @@ export function createGenerateV2ConfigHandler(deps: GenerateV2ConfigDeps) {
       idempotency_key: `shop_purchase:${purchase.purchaseId}`,
     };
 
-    const provisionRes = await deps.provisionAccess(provisionPayload, deps.env.shopSyncSecret);
+    let provisionRes: Response;
+    try {
+      provisionRes = await deps.provisionAccess(provisionPayload, deps.env.shopSyncSecret);
+    } catch (error) {
+      console.error(
+        "generate-v2-config: downstream provisioning request failed:",
+        error instanceof Error ? error.message : error,
+      );
+      return json(502, { success: false, error: "V2.4 provisioning request failed" });
+    }
 
     if (provisionRes.status === 409) {
       return json(200, {
@@ -243,7 +311,17 @@ export function createGenerateV2ConfigHandler(deps: GenerateV2ConfigDeps) {
       });
     }
 
-    const provisionBody = await provisionRes.json() as Record<string, unknown>;
+    let provisionBody: Record<string, unknown>;
+    try {
+      provisionBody = await provisionRes.json() as Record<string, unknown>;
+    } catch (error) {
+      console.error(
+        "generate-v2-config: downstream response parse failed:",
+        error instanceof Error ? error.message : error,
+      );
+      return json(502, { success: false, error: "V2.4 provisioning response was invalid" });
+    }
+
     const missionControlUrl =
       typeof provisionBody.mission_control_url === "string"
         ? provisionBody.mission_control_url

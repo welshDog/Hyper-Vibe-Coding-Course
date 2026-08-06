@@ -24,16 +24,23 @@
 
 ## Summary
 
-- Total active P0 findings: 0
+- Total active P0 findings: 1
 - Total active P1 findings: 3
 - Total active P2 findings: 3
 - Highest-risk active mismatch: browser-called RPC grant drift remains unresolved for `claim_level_reward(p_level)` and `complete_quest(p_quest_id)`.
+- Highest-priority active blocker: `generate-v2-config`'s live positive-path proof is blocked on an inaccessible/unconfirmed V2.4 API host. This is an external-dependency gap, not a code defect — see P0.
 
 ## Findings
 
 ### P0
 
-- No active P0 findings remain after the `generate-v2-config` service-auth lockdown was deployed and verified against the live edge endpoint.
+- `generate-v2-config` service-auth hardening is implemented, unit-tested (17/17 `deno test` passing, up from the original 8), and deployed live as version 20 with `verify_jwt` off: fail-closed checks now cover `V24_SYNC_SECRET`, `SHOP_SYNC_SECRET`, `V24_API_URL`, and admin-key configuration (previously only `V24_SYNC_SECRET` was checked); the inbound secret comparison is now a SHA-256-digest constant-time comparison instead of `!==`; the Discord-link lookup, purchase lookup, downstream provisioning fetch, and downstream response parsing are wrapped in try/catch so a DB or network exception returns a controlled `502` instead of an uncontrolled failure. The auth-lockdown behavior from the original fix pack (no browser CORS, no bearer-JWT path, `X-Sync-Secret` required) is unchanged and fails closed at least as hard as before.
+- **External dependency blocker (unresolved):** the live function currently returns `503 Service misconfigured` for every request — including the browser-bearer negative-path check, which previously returned a clean `401` — because `V24_API_URL` has never been deployed as a Supabase secret for `tlavrxiaegbtyfmjfdcz`. This is safe (the request is rejected before any auth or business logic runs; no exposure), but it means the original fix pack's live positive-path proof cannot be honestly completed until it's resolved. Investigation (read-only):
+  - No `V24_API_URL` or host reference exists anywhere in the `HyperCode-V2.4` repo itself (`rg` across the full repo, excluding `node_modules`/`.git`/`venv`).
+  - The one candidate value present in the Course repo's `.env` (`VITE_HYPERCODE_API_URL=https://hypercode-v24-production.up.railway.app`) is confirmed dead — Railway returns its own `404 Application not found` for that host.
+  - `HyperCode-V2.4/RAILWAY_VARS.md` references a specific Railway project (`3d66bd92-cac3-4fde-ae9a-07f269b58791`) with real service/environment IDs and documented pause/resume-at-zero commands, implying a real deployment exists — but the Railway MCP session used for this audit returned `"you don't have the required role (viewer)"` on that project. It exists; it just isn't accessible from this workspace/account, and per its own doc it may currently be scaled to 0.
+  - No V2.4 backend project exists on the accessible Vercel team (`BROskis`, 8 projects checked, none match).
+  - **Resolution requires the Railway account holder** to open that project directly, confirm workspace/permissions, resume the service if scaled to 0, verify `/api/v1/access/provision` responds from the confirmed host, and hand back only the base HTTPS URL (no secrets) so `V24_API_URL` can be set and the proof re-run.
 
 ### P1
 
@@ -155,6 +162,7 @@
 - `shop-purchase`, `mint-pet-auth`, `mint-pet-confirm`, and `pet-mentor-chat` match the signed-in browser contract in the reviewed code: each handles browser preflight, rejects missing/malformed bearer auth, and binds any privileged DB work to the verified caller.
 - `discord-link` only partially matches the browser callback contract. The browser page enforces OAuth `state`, but the function itself only validates bearer auth plus `code` and `redirect_uri`, so the full callback trust boundary is not enforced server-side.
 - `generate-v2-config` has now been locked to the intended service-only trust model: no browser CORS, no bearer-JWT path, explicit `X-Sync-Secret` auth, `409` on Discord-link conflicts, and qualifying `agent_access` purchase selection before outbound provisioning.
+- 2026-08-06 hardening follow-up (version 20, live): fail-closed config checks extended to `SHOP_SYNC_SECRET`, `V24_API_URL`, and admin-key resolution; constant-time (SHA-256 digest) secret comparison replaces `!==`; DB lookups and the downstream provisioning fetch/response-parse are exception-safe (`502` on failure instead of an uncontrolled error). See P0 findings for the current external `V24_API_URL` blocker this surfaced.
 - `course-profile` now uses shared-secret auth (`X-Sync-Secret`) and no browser CORS, which closes the older signed-in-user exposure, but the intended GET-only service contract is still implicit because the code does not reject other HTTP verbs.
 - `sync-tokens-to-v24` is correctly designed for a no-JWT webhook path: it is POST-only and requires `X-Webhook-Secret` before trusting a DB webhook payload. `stripe-webhook` similarly relies on Stripe signature verification rather than browser/session auth.
 
@@ -174,6 +182,7 @@
 
 ## Next fix slices
 
-1. `edge-generate-v2-config-auth-lockdown` — Subsystem: `supabase/functions/generate-v2-config`; remove browser CORS and require explicit service authentication only. Proof target: a browser-style signed-in request fails while a service-auth request succeeds.
-2. `db-browser-rpc-grant-alignment` — Subsystem: live DB grants for `claim_level_reward` and `complete_quest`; align `authenticated` EXECUTE with the current frontend contract or explicitly retire those callers. Proof target: both live authenticated RPC calls either succeed end-to-end or are removed from the shipped frontend surface.
-3. `edge-discord-link-callback-hardening` — Subsystem: `supabase/functions/discord-link`; enforce the callback trust boundary server-side and update the production origin allowlist to match the live frontend. Proof target: `https://hypervibe.online` callback flow passes, and invalid callback state/origin requests are rejected by the function.
+1. ~~`edge-generate-v2-config-auth-lockdown`~~ — **Code complete, deployed live (version 20).** Browser CORS removed, bearer-JWT path removed, `X-Sync-Secret` required, fail-closed config checks, constant-time secret comparison, and exception-safe DB/network handling all shipped and unit-tested (17/17). Blocked only on the external `V24_API_URL` dependency below for the final live positive-path proof — not a code task.
+2. `external-v24-api-url-provisioning` (P0) — Subsystem: Railway project `3d66bd92-cac3-4fde-ae9a-07f269b58791` (name/workspace unconfirmed from this session). Owner action: open the project under the correct Railway account, confirm/restore viewer+ access, resume the service if scaled to 0, verify `/api/v1/access/provision` responds on the confirmed public HTTPS host, then hand back only the base URL (no trailing slash, no secrets). Proof target: `supabase secrets set V24_API_URL=<confirmed-host> --project-ref tlavrxiaegbtyfmjfdcz`, then the browser-bearer negative test returns `401` again (not `503`), and a service-auth request with the real `V24_SYNC_SECRET` returns `200` with `success: true` or `provision_status: "already_provisioned"`.
+3. `db-browser-rpc-grant-alignment` — Subsystem: live DB grants for `claim_level_reward` and `complete_quest`; align `authenticated` EXECUTE with the current frontend contract or explicitly retire those callers. Proof target: both live authenticated RPC calls either succeed end-to-end or are removed from the shipped frontend surface.
+4. `edge-discord-link-callback-hardening` — Subsystem: `supabase/functions/discord-link`; enforce the callback trust boundary server-side and update the production origin allowlist to match the live frontend. Proof target: `https://hypervibe.online` callback flow passes, and invalid callback state/origin requests are rejected by the function.

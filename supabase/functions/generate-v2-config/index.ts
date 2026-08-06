@@ -7,15 +7,18 @@ const V24_API_URL = (globalThis as any).Deno?.env?.get("V24_API_URL") ?? "";
 const SHOP_SYNC_SECRET = (globalThis as any).Deno?.env?.get("SHOP_SYNC_SECRET") ?? "";
 const V24_SYNC_SECRET = (globalThis as any).Deno?.env?.get("V24_SYNC_SECRET") ?? "";
 
-function createSupabaseAdmin() {
-  const supabaseAdminKey = resolveSupabaseAdminKey(
+function resolveAdminKey(): string {
+  return resolveSupabaseAdminKey(
     {
       SUPABASE_SECRET_KEYS: (globalThis as any).Deno?.env?.get("SUPABASE_SECRET_KEYS") ?? "",
       SUPABASE_SECRET_KEY: (globalThis as any).Deno?.env?.get("SUPABASE_SECRET_KEY") ?? "",
     },
     "generate_v2_config",
   );
-  return createClient(SUPABASE_URL, supabaseAdminKey);
+}
+
+function createSupabaseAdmin() {
+  return createClient(SUPABASE_URL, resolveAdminKey());
 }
 
 const handler = createGenerateV2ConfigHandler({
@@ -27,7 +30,7 @@ const handler = createGenerateV2ConfigHandler({
     coreUrl: "http://localhost:8000",
     missionControlFallbackUrl: "http://localhost:8088",
   },
-  resolveAdminKey: () => "wired-via-resolveSupabaseAdminKey",
+  resolveAdminKey,
   resolveDiscordLink: async (userId) => {
     const supabaseAdmin = createSupabaseAdmin();
     const { data } = await supabaseAdmin
