@@ -250,7 +250,15 @@ export default function PetMentorBubble({
           ref={panelRef}
           role="dialog"
           aria-label={`Chat with ${personality.displayName}`}
-          className="pointer-events-auto relative flex w-[min(360px,calc(100vw-3rem))] flex-col overflow-hidden rounded-hfz-lg border border-hfz-border-violet bg-hfz-midnight shadow-hfz-card motion-safe:animate-fade-in-up"
+          // Bottom-anchored + grows upward with content, so on a short enough
+          // viewport it could otherwise reach up into unrelated page controls
+          // (e.g. the /pets customise panel's equip buttons). Cap the whole
+          // panel's height relative to the viewport (100dvh handles mobile
+          // browser chrome better than 100vh) so it can never escape a safe
+          // zone below the fixed HUD + sticky nav, regardless of window
+          // height or message count. The message log's own max-h-[44vh] stays
+          // as the independently-scrollable inner region.
+          className="pointer-events-auto relative flex max-h-[calc(100dvh-7rem)] w-[min(360px,calc(100vw-3rem))] flex-col overflow-hidden rounded-hfz-lg border border-hfz-border-violet bg-hfz-midnight shadow-hfz-card motion-safe:animate-fade-in-up"
         >
           {/* Equipped background cosmetic — faint wash behind the chat */}
           {bgArt?.image_url && (
