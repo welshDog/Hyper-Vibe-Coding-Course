@@ -24,16 +24,16 @@
 
 ## Summary
 
-- Total P0 findings: 1
-- Total P1 findings: 3
-- Total P2 findings: 3
-- Highest-risk mismatch: `generate-v2-config` is still reachable as a browser-CORS, signed-in-user function instead of an explicit service-only integration endpoint.
+- Total active P0 findings: 0
+- Total active P1 findings: 3
+- Total active P2 findings: 3
+- Highest-risk active mismatch: browser-called RPC grant drift remains unresolved for `claim_level_reward(p_level)` and `complete_quest(p_quest_id)`.
 
 ## Findings
 
 ### P0
 
-- `generate-v2-config` breaks the intended trust boundary: the live function enables browser CORS and accepts any signed-in user JWT even though this surface is supposed to be service/integration-only.
+- No active P0 findings remain after the `generate-v2-config` service-auth lockdown was deployed and verified against the live edge endpoint.
 
 ### P1
 
