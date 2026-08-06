@@ -104,7 +104,35 @@ No P2 findings have been recorded at scaffold time.
 
 ## RLS audit
 
-_Paste the learner-flow table matrix and gaps here._
+- Reconfirmed the current frontend `.from(...)` surface from `frontend/src` as:
+  `achievements`, `certificates`, `courses`, `discord_links`, `early_access_signups`,
+  `enrollments`, `hv_modules`, `leaderboard`, `lessons`, `module_completions`,
+  `payments`, `pets`, `playtest_responses`, `progress`, `quests`, `quiz_attempts`,
+  `quiz_questions`, `referrals`, `rifts`, `shop_items`, `shop_purchases`,
+  `token_transactions`, `top_pets`, `user_level_progress`, `user_loyalty_tier`,
+  `user_quests`, `user_xp`, `users`, `waitlist`, and `xp_events`.
+- Ran `scripts/audits/2026-08-06_wave1_rls_matrix.sql` against `tlavrxiaegbtyfmjfdcz` via `supabase db query --linked -f ...` using the temporary repo-root `.env` rename workaround in the same shell command; the restored `.env` SHA-256 matched the pre-run hash.
+- The checked-in matrix file needed a local compatibility fix to run on the current catalog surface: `pg_policies.policyname` / `pg_policies.cmd` instead of `polname` / `polcmd`. That script edit was not staged as part of this task.
+
+### Safe / expected
+
+- User-owned learner data is under active RLS with ownership/admin predicates rather than open-row access:
+  `users`, `user_xp`, `xp_events`, `module_completions`, `pets`, `shop_purchases`,
+  `token_transactions`, `referrals`, `discord_links`, `user_quests`, `achievements`,
+  `enrollments`, `progress`, and `payments`.
+- `hv_quizzes` is not on the current frontend `.from(...)` surface, has RLS enabled, and currently has no live policies. That matches the current RPC-based quiz access path through `get_quiz_for_module(...)` instead of direct table reads.
+- Intentional public or semi-public content/catalog surfaces are explicitly documented in live policy predicates:
+  `courses` (`SELECT true` / `is_published = true`), `lessons` (`anon` free-lesson read plus enrolled-user read), `quests` (`is_active = true`), `rifts` (`SELECT true`), and `shop_items` (`is_available = true`).
+- `early_access_signups` is intentionally public-write with validation at the policy layer (`anon insert early_access` checks non-empty `name` plus bounded email length/shape).
+- The view-backed discovery surfaces `leaderboard` and `top_pets` have RLS off because they are views, but live `reloptions` shows `security_invoker=true` on both. Combined with public-facing projections (`display_name`/XP rank for `leaderboard`, pet summary fields for `top_pets`), these read as intentional public surfaces rather than accidental bypasses.
+- `hv_modules` currently has a permissive read policy (`hv_modules_read`) but only `authenticated` retains direct `SELECT` privilege in live grants. In practice this keeps module metadata auth-gated from the Data API even though the policy body itself is public.
+
+### Mismatches / follow-up
+
+- `waitlist` is a current frontend `.from(...)` relation on `LandingPage.tsx`, but live RLS explicitly denies inserts with `deny_all_waitlist_public_insert`. That is not an exposure problem; it is a live contract mismatch between the public landing-page path and the database policy posture.
+- `user_loyalty_tier` needs explicit review. It is a `security_invoker=true` view, so the RLS bypass concern is reduced, but it is still broadly selectable by both `anon` and `authenticated` in live grants while the current frontend uses it only in signed-in profile/shop/navbar paths. That looks unreviewed rather than clearly intentional-public.
+- `playtest_responses` is not broadly exposed, but its live contract is narrower than a generic public form: admins can read, authenticated users can insert, and a separate `deny_all_playtest_responses_public_insert` policy blocks public insert. Keep it documented as authenticated-only submission flow.
+- The current frontend `.from(...)` surface is broader than the Wave 1 matrix. `certificates`, `quiz_attempts`, `quiz_questions`, and `user_level_progress` are live learner-facing relations that were confirmed separately but are not included in `scripts/audits/2026-08-06_wave1_rls_matrix.sql`; any later audit that claims full frontend coverage should either add them to the matrix or state the exclusion explicitly.
 
 ## Edge Function audit
 
