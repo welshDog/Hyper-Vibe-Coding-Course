@@ -215,7 +215,7 @@ export default function Pets() {
   }, [awaitingSync, refetch])
 
   return (
-    <div className="pet-theme-scope bg-pet-diamond -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8">
+    <div className="pet-theme-scope bg-pet-diamond px-4 sm:px-6 lg:px-8 py-8">
       <div className="mx-auto max-w-hfz-page flex flex-col gap-8">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
