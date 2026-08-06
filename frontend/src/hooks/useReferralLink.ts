@@ -18,6 +18,10 @@ export function useReferralLink() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks the previous logged-in state as real state (not a ref) so it can
+  // be read during render — refs are only safe to read in effects/handlers.
+  const [wasLoggedIn, setWasLoggedIn] = useState<boolean | undefined>(undefined);
+  const isLoggedIn = Boolean(user);
 
   useEffect(() => {
     return () => {
@@ -27,23 +31,42 @@ export function useReferralLink() {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    if (!user) {
+  // Resetting local state back to defaults when the user logs out is a pure
+  // derivation from the `user` prop, not a side effect — adjusted during
+  // render instead of a setState-only effect. See
+  // https://react.dev/learn/you-might-not-need-an-effect
+  if (wasLoggedIn !== isLoggedIn) {
+    setWasLoggedIn(isLoggedIn);
+    if (!isLoggedIn) {
       setReferralCode(null);
       setLoading(false);
       setError(null);
       setCopied(false);
+    }
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    if (!user) {
       return () => {
         active = false;
       };
     }
 
-    setLoading(true);
-    setError(null);
+    // Start the fetch immediately and un-deferred — a React StrictMode
+    // dev-mode double-invoke would otherwise cancel a deferred kickoff
+    // before it ever fires. Only the initial setState calls are deferred a
+    // tick (queueMicrotask) so they aren't synchronous within the effect body.
+    const fetchPromise = fetchReferralCode(supabase);
 
-    void fetchReferralCode(supabase)
+    queueMicrotask(() => {
+      if (!active) return;
+      setLoading(true);
+      setError(null);
+    });
+
+    void fetchPromise
       .then((code) => {
         if (!active) return;
         setReferralCode(code);

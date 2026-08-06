@@ -61,6 +61,11 @@ export function usePetMoodSync({
   const lastXpRef = useRef<number>(xp)
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const firedFirstLoginRef = useRef(false)
+  // Previous-value trackers use state, not refs — refs can't be read during
+  // render under this project's lint rules, only in effects/handlers.
+  const [prevQuizFailed, setPrevQuizFailed] = useState<boolean | undefined>(undefined)
+  const [prevModuleComplete, setPrevModuleComplete] = useState<boolean | undefined>(undefined)
+  const [prevCodeBroken, setPrevCodeBroken] = useState<boolean | undefined>(undefined)
 
   // ---- Helper: fire a mood (won't override a higher priority active mood)
   const fireMood = useCallback((mood: MoodTrigger) => {
@@ -79,20 +84,24 @@ export function usePetMoodSync({
     }
   }, [isFirstLogin, fireMood])
 
-  // ---- Quiz fail trigger
-  useEffect(() => {
+  // ---- Quiz fail / module complete / broken code triggers
+  // These just mirror a prop flip into a mood — no async work, no DOM/browser
+  // API involved — so per https://react.dev/learn/you-might-not-need-an-effect
+  // they're adjusted during render instead of in an effect.
+  if (prevQuizFailed !== quizFailed) {
+    setPrevQuizFailed(quizFailed)
     if (quizFailed) fireMood('stuck_on_quiz')
-  }, [quizFailed, fireMood])
+  }
 
-  // ---- Module complete trigger
-  useEffect(() => {
+  if (prevModuleComplete !== moduleComplete) {
+    setPrevModuleComplete(moduleComplete)
     if (moduleComplete) fireMood('module_complete')
-  }, [moduleComplete, fireMood])
+  }
 
-  // ---- Broken code trigger
-  useEffect(() => {
+  if (prevCodeBroken !== codeBroken) {
+    setPrevCodeBroken(codeBroken)
     if (codeBroken) fireMood('broken_code')
-  }, [codeBroken, fireMood])
+  }
 
   // ---- XP milestone trigger
   useEffect(() => {
