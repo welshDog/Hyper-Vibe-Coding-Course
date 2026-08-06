@@ -65,7 +65,7 @@ export function TokenBurst() {
   return (
     <div
       aria-live="polite"
-      className="fixed top-12 right-6 z-[60] pointer-events-none select-none"
+      className="fixed top-3 right-6 z-[60] pointer-events-none select-none"
       key={seed} // restart animations on each new burst
     >
       {/* Callout chip */}
