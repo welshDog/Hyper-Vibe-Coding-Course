@@ -136,7 +136,35 @@ No P2 findings have been recorded at scaffold time.
 
 ## Edge Function audit
 
-_Summarise auth, secret, and CORS findings here._
+- Completed the per-function matrix in `docs/TRUTH_PACK/2026-08-06_wave1_edge_function_matrix.md`.
+- Mapped active browser/session callers from `frontend/src` + `api`:
+  - `frontend/src/pages/ShopPage.tsx` -> `shop-purchase`
+  - `frontend/src/pages/DiscordCallback.tsx` -> `discord-link`
+  - `frontend/src/hooks/useMintPet.ts` -> `mint-pet-auth`, `mint-pet-confirm`
+  - `frontend/src/components/pets/PetMentorBubble.tsx` -> `pet-mentor-chat`
+  - no active `frontend/src` / `api` browser caller found for `get-pet-balance`, `course-profile`, `generate-v2-config`, `stripe-webhook`, or `sync-tokens-to-v24`
+
+### Auth findings
+
+- `shop-purchase`, `mint-pet-auth`, `mint-pet-confirm`, and `pet-mentor-chat` match the signed-in browser contract in the reviewed code: each handles browser preflight, rejects missing/malformed bearer auth, and binds any privileged DB work to the verified caller.
+- `discord-link` only partially matches the browser callback contract. The browser page enforces OAuth `state`, but the function itself only validates bearer auth plus `code` and `redirect_uri`, so the full callback trust boundary is not enforced server-side.
+- `generate-v2-config` does not match the planned service/integration auth model. Current code enables browser CORS and accepts any signed-in user JWT instead of an explicit service secret or backend-only caller.
+- `course-profile` now uses shared-secret auth (`X-Sync-Secret`) and no browser CORS, which closes the older signed-in-user exposure, but the intended GET-only service contract is still implicit because the code does not reject other HTTP verbs.
+- `sync-tokens-to-v24` is correctly designed for a no-JWT webhook path: it is POST-only and requires `X-Webhook-Secret` before trusting a DB webhook payload. `stripe-webhook` similarly relies on Stripe signature verification rather than browser/session auth.
+
+### Secret / key findings
+
+- `shop-purchase`, `discord-link`, `mint-pet-auth`, `mint-pet-confirm`, `course-profile`, `generate-v2-config`, `stripe-webhook`, and `sync-tokens-to-v24` all resolve named scoped admin keys through `supabase/functions/_shared/supabaseAdminKey.mjs`; none of the reviewed files reach for `SUPABASE_SERVICE_ROLE_KEY`.
+- `get-pet-balance` and `pet-mentor-chat` do not use an admin key. Both stay on `SUPABASE_ANON_KEY` plus the caller JWT/RLS, which matches their current read-only, caller-scoped data access.
+- `mint-pet-auth` and `mint-pet-confirm` also depend on minting secrets (`BACKEND_SIGNER_PRIVATE_KEY`, optional `RELAYER_PRIVATE_KEY`, `BROSKIPET_CONTRACT_ADDRESS`, RPC URL inputs) and fail closed with `503` when those secrets are missing or malformed.
+- `stripe-webhook` and `sync-tokens-to-v24` keep their non-browser trust anchors server-side (`STRIPE_WEBHOOK_SECRET`, `WEBHOOK_SECRET`, `COURSE_SYNC_SECRET`, V2.4 sync secrets), which matches the webhook/integration model.
+
+### CORS / request-validation findings
+
+- `shop-purchase`, `mint-pet-auth`, `mint-pet-confirm`, and `pet-mentor-chat` all implement explicit `OPTIONS` handling for browser callers and validate the core request fields their live callers send. `shop-purchase` and `pet-mentor-chat` include the full Supabase browser header allowlist; the mint flows allow the same browser headers during preflight.
+- `discord-link` handles browser preflight and validates `code` plus `redirect_uri`, but its allowlist is stale. The function only allows localhost and `https://hyper-vibe-coding-course.vercel.app`, while current repo handover/docs say the live frontend runs on `https://hypervibe.online`.
+- `get-pet-balance` has no active browser caller in `frontend/src` or `api`, but if it is re-exposed it currently accepts authenticated requests without an explicit method gate beyond the `OPTIONS` branch. That is more permissive than the documented browser contract and should be documented or narrowed before reuse.
+- `course-profile`, `stripe-webhook`, and `sync-tokens-to-v24` do not expose a browser CORS contract today, which matches their service/webhook role. `generate-v2-config` is the outlier: it enables browser CORS even though the matrix expectation is backend/ops-only service access.
 
 ## Next fix slices
 
