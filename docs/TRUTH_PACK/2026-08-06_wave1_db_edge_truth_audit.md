@@ -48,19 +48,28 @@ No P2 findings have been recorded at scaffold time.
   - `supabase/.temp/linked-project.json`
   - `.env.local`
   - `frontend/.env.local`
-- Session-level `mcp_supabase` did not match the repo target: `get_project_url` returned `https://yhtmuibgdnxhbgboajhc.supabase.co`.
-- Attempted to run `scripts/audits/2026-08-06_wave1_function_grants.sql` against the explicit `tlavrxiaegbtyfmjfdcz` target via:
-  - `supabase db query --linked`, which failed before execution because the repo root `.env` contains nonstandard keys the CLI could not parse.
-  - direct `tlavrxiaegbtyfmjfdcz` database connections using the linked pooler host and direct DB host, both of which rejected the repo-local `SUPABASE_DATABASE_PASSWORD` with password authentication failures.
+- Ran `scripts/audits/2026-08-06_wave1_function_grants.sql` successfully against live `tlavrxiaegbtyfmjfdcz` via `supabase db query --linked -f ...` using a temporary repo-root `.env` rename in the same shell command, then restored `.env` immediately and verified the restored file hash matched the original.
 
 ### Findings
 
-- No live function-grant rowset was captured in this Task 2 run, so the grant posture for public `SECURITY DEFINER` functions is still unverified against the actual `tlavrxiaegbtyfmjfdcz` database.
-- The immediate audit blocker is environment drift, not uncertainty about the intended target:
-  - repo-linked live target = `tlavrxiaegbtyfmjfdcz`
-  - session MCP target = `yhtmuibgdnxhbgboajhc`
-  - repo-local DB password material does not authenticate to the live `tlav` database
-- Until the MCP target or live DB credentials are corrected, any function-grant result produced from this session would be untrustworthy.
+- Live rowset captured for all `public` functions. On this database snapshot, no `SECURITY DEFINER` function is executable by `anon`.
+- The `public` `SECURITY DEFINER` functions currently executable by `authenticated` are:
+  - `complete_module(p_module_id uuid, p_answers jsonb)`
+  - `equip_pet_cosmetic(p_pet_id uuid, p_item_id uuid)`
+  - `evolve_pet(p_pet_id uuid)`
+  - `get_or_create_referral_code()`
+  - `get_quiz_for_module(p_module_id uuid)`
+  - `is_admin()`
+  - `unequip_pet_cosmetic(p_pet_id uuid, p_slot text)`
+  - `use_care_item(p_purchase_id uuid, p_pet_id uuid, p_action text)`
+- The `public` `SECURITY DEFINER` functions currently not executable by `authenticated` include:
+  - learner/admin/internal RPCs: `claim_level_reward(p_level integer)`, `complete_quest(p_quest_id uuid)`, `purchase_shop_item(p_item_id uuid)`
+  - Edge/admin helpers: `apply_pending_enrollments(...)`, `award_tokens(...)`, `cleanup_expired_mint_nonces()`, `next_pet_id()`, `pets_by_discord(...)`, `prune_expired_nonces()`, `spend_tokens(...)`
+  - trigger/event helpers: `fan_out_pet_xp()`, `handle_new_user()`, `on_course_completed()`, `on_lesson_completed()`, `rls_auto_enable()`
+- Browser-called RPC grant posture now splits into two groups:
+  - callable by `authenticated`: `complete_module`, `get_quiz_for_module`, `get_or_create_referral_code`, `equip_pet_cosmetic`, `evolve_pet`, `unequip_pet_cosmetic`, `use_care_item`
+  - not currently callable by `authenticated`: `claim_level_reward`, `complete_quest`
+- Several non-`SECURITY DEFINER` helper functions remain executable by both `anon` and `authenticated` (`drifted_stat`, `hv_set_updated_at`, `mc_events_block_mutations`, `stage_rank`, `touch_mc_missions_updated_at`, `xp_to_stage`), but these are not the public-definer grant risk called out by this audit slice.
 
 ## RPC shape audit
 
