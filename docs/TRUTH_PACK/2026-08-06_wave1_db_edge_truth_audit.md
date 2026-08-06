@@ -154,7 +154,7 @@
 
 - `shop-purchase`, `mint-pet-auth`, `mint-pet-confirm`, and `pet-mentor-chat` match the signed-in browser contract in the reviewed code: each handles browser preflight, rejects missing/malformed bearer auth, and binds any privileged DB work to the verified caller.
 - `discord-link` only partially matches the browser callback contract. The browser page enforces OAuth `state`, but the function itself only validates bearer auth plus `code` and `redirect_uri`, so the full callback trust boundary is not enforced server-side.
-- `generate-v2-config` does not match the planned service/integration auth model. Current code enables browser CORS and accepts any signed-in user JWT instead of an explicit service secret or backend-only caller.
+- `generate-v2-config` has now been locked to the intended service-only trust model: no browser CORS, no bearer-JWT path, explicit `X-Sync-Secret` auth, `409` on Discord-link conflicts, and qualifying `agent_access` purchase selection before outbound provisioning.
 - `course-profile` now uses shared-secret auth (`X-Sync-Secret`) and no browser CORS, which closes the older signed-in-user exposure, but the intended GET-only service contract is still implicit because the code does not reject other HTTP verbs.
 - `sync-tokens-to-v24` is correctly designed for a no-JWT webhook path: it is POST-only and requires `X-Webhook-Secret` before trusting a DB webhook payload. `stripe-webhook` similarly relies on Stripe signature verification rather than browser/session auth.
 
