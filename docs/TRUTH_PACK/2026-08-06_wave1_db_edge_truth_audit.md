@@ -24,21 +24,28 @@
 
 ## Summary
 
-This section is completed in Task 5 after all audit sections below are filled.
+- Total P0 findings: 1
+- Total P1 findings: 3
+- Total P2 findings: 3
+- Highest-risk mismatch: `generate-v2-config` is still reachable as a browser-CORS, signed-in-user function instead of an explicit service-only integration endpoint.
 
 ## Findings
 
 ### P0
 
-No P0 findings have been recorded at scaffold time.
+- `generate-v2-config` breaks the intended trust boundary: the live function enables browser CORS and accepts any signed-in user JWT even though this surface is supposed to be service/integration-only.
 
 ### P1
 
-No P1 findings have been recorded at scaffold time.
+- Browser-called RPC grant drift remains in the live DB: `claim_level_reward(p_level)` and `complete_quest(p_quest_id)` still have active frontend callers but are not currently executable by `authenticated`.
+- `discord-link` only partially enforces the OAuth callback contract server-side and its allowed-origin list is stale for the documented production frontend domain `https://hypervibe.online`.
+- `waitlist` is still a live landing-page `.from(...)` path in the frontend, but the database policy posture blocks public inserts, so the shipped app contract and live RLS contract disagree.
 
 ### P2
 
-No P2 findings have been recorded at scaffold time.
+- `user_loyalty_tier` is broadly selectable by `anon` and `authenticated` through a `security_invoker` view without a checked-in rationale that it is intentionally public.
+- `course-profile` now uses shared-secret auth, but the intended service-only GET contract is still implicit because the function does not reject non-GET verbs.
+- `get-pet-balance` has no current browser caller, but if it is re-exposed its handler is still more permissive on method gating than the documented browser contract.
 
 ## Function grant audit
 
@@ -167,4 +174,6 @@ No P2 findings have been recorded at scaffold time.
 
 ## Next fix slices
 
-1. This list is completed in Task 5 from the audited findings below.
+1. `edge-generate-v2-config-auth-lockdown` — Subsystem: `supabase/functions/generate-v2-config`; remove browser CORS and require explicit service authentication only. Proof target: a browser-style signed-in request fails while a service-auth request succeeds.
+2. `db-browser-rpc-grant-alignment` — Subsystem: live DB grants for `claim_level_reward` and `complete_quest`; align `authenticated` EXECUTE with the current frontend contract or explicitly retire those callers. Proof target: both live authenticated RPC calls either succeed end-to-end or are removed from the shipped frontend surface.
+3. `edge-discord-link-callback-hardening` — Subsystem: `supabase/functions/discord-link`; enforce the callback trust boundary server-side and update the production origin allowlist to match the live frontend. Proof target: `https://hypervibe.online` callback flow passes, and invalid callback state/origin requests are rejected by the function.
