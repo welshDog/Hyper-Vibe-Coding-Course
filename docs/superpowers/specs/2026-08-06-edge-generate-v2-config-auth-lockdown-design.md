@@ -152,12 +152,38 @@ This is acceptable here because:
 - the function is no longer end-user reachable
 - this is a service-to-service contract, not a delegated user session
 
+More precisely:
+
+- `user_id` is a service-claimed identity supplied by a trusted backend caller
+- the function must never treat it as self-proved user identity
+- all meaningful authority still comes from server-side checks tied to that
+  `user_id`
+- the function must validate entitlement and account linkage from live DB state
+  before provisioning
+
 ### Discord resolution
 
 The function should preserve the current server-authoritative lookup:
 
 - use `discord_id` from the body if a valid non-empty value is provided
 - otherwise resolve it from `discord_links` for the given `user_id`
+
+Conflict rule:
+
+- if the caller supplies `discord_id` and a linked `discord_links.discord_id`
+  exists for the same `user_id`
+- and the two values do not match after trimming
+- the function must hard reject the request
+
+Reason:
+
+- the DB link is the authoritative account-link record
+- a mismatched caller-supplied Discord ID should not overwrite or bypass that
+  link
+
+Conflict response:
+
+- `409 Discord ID conflict with linked account`
 
 If no Discord link exists after resolution, return the existing app-level error:
 
@@ -168,10 +194,30 @@ If no Discord link exists after resolution, return the existing app-level error:
 
 Entitlement must remain server-authoritative:
 
-- find the latest `agent_access` purchase for the supplied `user_id`
+- find the latest qualifying `agent_access` purchase for the supplied `user_id`
 - reject provisioning when no qualifying purchase exists
 
 No entitlement signal from the caller body should be trusted.
+
+For this fix pack, a qualifying purchase means:
+
+- a `shop_purchases` row for the supplied `user_id`
+- whose joined `shop_items.metadata.type = 'agent_access'`
+- ordered by newest purchase first
+- excluding rows already marked as failed provisioning in
+  `fulfillment_metadata.provision_status = 'failed'`
+
+If explicit refund, revoke, or expiry signals exist in live purchase metadata or
+future schema fields, those rows must also be excluded from the qualifying set.
+
+Why this wording:
+
+- the repo currently stores agent-access fulfillment state in
+  `shop_purchases.fulfillment_metadata`
+- but does not expose a single canonical refund/revoke column on
+  `shop_purchases`
+- so this fix pack should harden the current query shape without inventing a
+  wider purchase-lifecycle model
 
 ## Downstream provisioning
 
@@ -230,10 +276,23 @@ Expected response mapping:
 - `405` wrong method
 - `400` invalid JSON
 - `400` invalid request schema
+- `409` supplied `discord_id` conflicts with linked Course account
 - `503` missing required env/config
 - `200` app-level failure when identity/link/purchase prerequisites are not met
 - `404` when downstream reports missing linked V2.4 account
 - `200` success when downstream returns `409 already provisioned`
+
+HTTP misuse vs business-state rule:
+
+- use `4xx/5xx` for transport/auth/schema/config mistakes
+- keep `200` with `success: false` for current business-state failures such as:
+  - no linked Discord account
+  - no qualifying `agent_access` purchase
+  - downstream business failure text that the current caller path already
+    expects as an app-level response
+
+This preserves the existing caller contract for prerequisite failures while
+still making actual service misuse explicit at the HTTP layer.
 
 ## Code changes
 
@@ -248,11 +307,14 @@ Expected response mapping:
 3. Add inbound service-secret auth using `X-Sync-Secret`
 4. Remove bearer token parsing and `auth.getUser(token)` logic
 5. Add explicit request schema validation for the service payload
-6. Use `body.user_id` as the authoritative identity for internal lookups
-7. Preserve:
+6. Use `body.user_id` as a service-claimed identity for internal lookups
+7. Add Discord ID conflict rejection against the authoritative `discord_links`
+   row when both values are present
+8. Exclude failed agent-access purchase rows from the qualifying purchase lookup
+9. Preserve:
    - scoped admin key resolution
    - Discord lookup fallback
-   - latest `agent_access` purchase lookup
+   - latest qualifying `agent_access` purchase lookup
    - downstream V2.4 provisioning call
    - idempotency handling
 
@@ -280,8 +342,11 @@ Add function-level tests that prove:
 3. wrong method returns `405`
 4. invalid JSON returns `400`
 5. invalid `user_id` returns `400`
-6. valid service-auth request reaches the provisioning path
-7. downstream `409` still returns success with `already_provisioned`
+6. supplied `discord_id` that conflicts with the linked DB value returns `409`
+7. latest failed `agent_access` purchase is skipped in favor of the latest
+   qualifying purchase
+8. valid service-auth request reaches the provisioning path
+9. downstream `409` still returns success with `already_provisioned`
 
 ### Test style
 
@@ -299,8 +364,9 @@ Implementation is only done when all of these are true:
 2. browser-style request without `X-Sync-Secret` fails
 3. service-auth request with valid `X-Sync-Secret` succeeds
 4. no browser CORS headers remain in the response
-5. outbound provisioning still uses `SHOP_SYNC_SECRET`
-6. idempotent `409 already provisioned` behavior still works
+5. conflicting caller-supplied `discord_id` is rejected with `409`
+6. outbound provisioning still uses `SHOP_SYNC_SECRET`
+7. idempotent `409 already provisioned` behavior still works
 
 ## Risks and mitigations
 
