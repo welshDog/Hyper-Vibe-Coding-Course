@@ -244,4 +244,70 @@ test.describe('PetPortrait cosmetic overlay resolution', () => {
     const img = page.getByTestId('pet-portrait-badge')
     await expect(img).toHaveAttribute('src', '/images/shop/pet-badge/shop_badge_broski_holo_overlay.png')
   })
+
+  // Regression for the "stacked images, not one card" composition bug
+  // (2026-08-06): resolution (which src is picked) was already correct —
+  // this covers containment, which wasn't tested at all before. An
+  // unclipped, oversized frame (any frame still on the opaque fallback —
+  // see #51) rendered as a square floating past the card's rounded edge
+  // instead of a border that belongs to it.
+  //
+  // getBoundingClientRect() reports layout geometry regardless of an
+  // ancestor's overflow:hidden, so it can't detect visual clipping —
+  // asserting the clip mechanism (computed overflow) plus DOM structure
+  // (which layers are inside vs. outside the clipped box) is the reliable
+  // way to test this.
+  test('frame/background are clipped to the card box; aura/badge deliberately are not', async ({ page }) => {
+    await setupAuthMock(page)
+    const pet = {
+      id: 'pet-uuid-1', pet_id: 'broski_1', species_id: 'sonic_spider', pet_name: 'Web Slinger',
+      rarity: 'common', stage: 'baby', mood: 'idle', evolution_count: 0, last_evolved_at: null,
+      mint_tx_hash: '0xabc', ipfs_cid: 'cid', chain_id: 84532, created_at: '2026-01-01T00:00:00.000Z',
+      cosmetics: { frame: 'item-frame-3', aura: 'item-aura-3', badge: 'item-badge-3' }, xp: 0,
+      hunger: 50, hunger_updated_at: '2026-08-01T00:00:00.000Z',
+      cleanliness: 50, cleanliness_updated_at: '2026-08-01T00:00:00.000Z',
+      happiness: 50, happiness_updated_at: '2026-08-01T00:00:00.000Z',
+      last_play_at: null,
+    }
+    await setupRestMock(page, pet, [
+      // Frame on the opaque fallback path (no overlay_image_url yet) — the
+      // exact shape that caused the live bug this regresses against.
+      purchaseFor('frame', 'item-frame-3', '/images/shop/pet-frame/shop_frame_welsh_celtic.png', null),
+      purchaseFor(
+        'aura', 'item-aura-3',
+        '/images/shop/pet-aura/shop_aura_flame.png',
+        '/images/shop/pet-aura/shop_aura_flame_overlay.png',
+      ),
+      purchaseFor(
+        'badge', 'item-badge-3',
+        '/images/shop/pet-badge/shop_badge_broski_holo.png',
+        '/images/shop/pet-badge/shop_badge_broski_holo_overlay.png',
+      ),
+    ])
+    await signIn(page)
+    await page.goto('/pets')
+
+    const frame = page.getByTestId('pet-portrait-frame')
+    const bg = page.getByTestId('pet-portrait-background')
+    await expect(frame).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('pet-portrait-aura')).toBeVisible()
+    await expect(page.getByTestId('pet-portrait-badge')).toBeVisible()
+
+    // Frame's direct parent is the card-content box — it must actually
+    // clip (this is the fix mechanism itself, not an incidental style).
+    const cardBox = frame.locator('..')
+    await expect(cardBox).toHaveCSS('overflow', 'hidden')
+
+    // Frame and background belong to the clipped card box...
+    await expect(cardBox.locator('[data-testid="pet-portrait-frame"]')).toHaveCount(1)
+    if (await bg.count() > 0) {
+      await expect(cardBox.locator('[data-testid="pet-portrait-background"]')).toHaveCount(1)
+    }
+
+    // ...but aura (ambient glow, meant to surround the pet past the card
+    // edge) and badge (corner pin, meant to overhang the corner) must NOT
+    // be inside it — clipping either would be a real regression, not a fix.
+    await expect(cardBox.locator('[data-testid="pet-portrait-aura"]')).toHaveCount(0)
+    await expect(cardBox.locator('[data-testid="pet-portrait-badge"]')).toHaveCount(0)
+  })
 })
