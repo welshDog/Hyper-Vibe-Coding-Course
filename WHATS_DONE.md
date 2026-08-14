@@ -2,7 +2,7 @@
 
 > Last synced: 2026-08-15 by Claude (Cowork) ⚡
 
-## 2026-08-15 — Wave 1 P1/P2 cleanup: RPC grants, discord-link hardening, waitlist RLS, user_loyalty_tier grants
+## 2026-08-15 — Wave 1 P1/P2 cleanup + shop→pets freshness bug fixed
 
 Closed out every remaining Wave 1 truth-audit finding that didn't depend on
 external (Railway) access. Full detail in
@@ -38,6 +38,16 @@ external (Railway) access. Full detail in
   and are unaffected). Verified with `has_table_privilege`.
 - **`playtest_responses` reviewed, no action needed** — same policy family
   as `waitlist`, but already correctly scoped (audit's own verdict).
+- **`/shop` → `/pets` same-session freshness bug fixed (PR #73)** — not a
+  Wave 1 item, an older carryover bug-hunt candidate. `useOwnedCosmetics`
+  fetched once on mount only; a purchase completed in a *different* tab
+  left an already-open `/pets` tab stale with nothing to signal a refetch.
+  The intended fix was already half-written (`refetchCosmetics`
+  destructured, comment describing the exact fix) but the actual line was
+  `void refetchCosmetics` — a dead reference, not a call. Wired a real
+  `visibilitychange` listener. New regression test proves both directions
+  (fails on the old code, passes on the fix); full pets suite (23 tests)
+  green.
 
 **Found but not fixed:** any anon `SELECT` on `waitlist` or
 `user_loyalty_tier` now throws a raw `42501` instead of an empty result,
