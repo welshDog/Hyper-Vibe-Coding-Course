@@ -1,6 +1,52 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-08-06 by Claude (Cowork) ⚡
+> Last synced: 2026-08-15 by Claude (Cowork) ⚡
+
+## 2026-08-15 — Wave 1 P1/P2 cleanup: RPC grants, discord-link hardening, waitlist RLS, user_loyalty_tier grants
+
+Closed out every remaining Wave 1 truth-audit finding that didn't depend on
+external (Railway) access. Full detail in
+`rewrites/NEXT_SESSION_HANDOVER_2026-08-15.md`; summary here.
+
+- **RPC grant drift fixed (PR #68)** — `claim_level_reward`/`complete_quest`
+  were called live but not executable by `authenticated` (confirmed via
+  `has_function_privilege`); every level-reward claim and quest completion
+  was silently failing. Same class as the `is_admin()` incident. Fixed via
+  `supabase/migrations/20260814210000_grant_claim_level_reward_complete_quest_execute.sql`,
+  applied live and re-verified.
+- **`discord-link` OAuth callback hardened (PR #69)** — origin allowlist was
+  missing `https://hypervibe.online` (Discord linking was actually broken in
+  prod, not just under-hardened), and `state` was only checked client-side.
+  New `discord_oauth_states` table backs a real mint-then-consume
+  server-side check (`GET` mints, `POST` consumes) — forged/replayed/
+  cross-user states now rejected server-side. Split into `handler.ts` (DI,
+  14 `deno test` cases) + `index.ts`. Deployed live (v19), smoke-tested.
+- **`waitlist` RLS mismatch fixed (PR #70)** — the landing-page waitlist form
+  was silently broken (`deny_all_waitlist_public_insert`, live but never in
+  any migration — a deliberate later lockdown, not accidental drift; zero
+  rows ever inserted). Put the direction to Lyndz (reopen/retire/merge);
+  chose reopen with real validation, matching the pattern this project
+  already uses correctly on `early_access_signups`. Smoke-tested live via
+  the public anon key.
+- **`user_loyalty_tier` grants reviewed and trimmed (PR #71)** — live grants
+  were the full Postgres default set (`SELECT/INSERT/UPDATE/DELETE/
+  TRUNCATE/TRIGGER/REFERENCES` to both `anon` and `authenticated`), never
+  reviewed. `security_invoker = true` (shipped 04-11) already made
+  `authenticated` SELECT safe; trimmed to exactly that — `anon` loses
+  everything (zero legitimate use, confirmed against every caller including
+  the discord bot and two edge functions, all of which use the admin key
+  and are unaffected). Verified with `has_table_privilege`.
+- **`playtest_responses` reviewed, no action needed** — same policy family
+  as `waitlist`, but already correctly scoped (audit's own verdict).
+
+**Found but not fixed:** any anon `SELECT` on `waitlist` or
+`user_loyalty_tier` now throws a raw `42501` instead of an empty result,
+because `anon` has no `SELECT` grant on `public.users` (needed to evaluate
+an existing admin-check policy). Fails closed, doesn't affect any live path
+today. Worth a real fix later, not started.
+
+**P0 unchanged:** `V24_API_URL`/Railway access is still blocked — reconfirmed
+this session, nothing has changed since 08-06.
 
 ## 2026-08-06 — `generate-v2-config` service-auth hardening + honest P0 blocker
 
