@@ -1,12 +1,15 @@
 # Next Session Handover — 2026-08-15
 
-# Session 10 — Wave 1 P1/P2 cleanup: RPC grant drift, discord-link hardening, waitlist RLS, user_loyalty_tier grants
+# Session 10 — Wave 1 P1/P2 cleanup + shop→pets freshness bug fixed
+
+> Supersedes the earlier same-day version of this file (written after PR
+> #71, before PR #73). This is the accurate end-of-day state.
 
 ## Live state
 
 - Course frontend live site: `https://hypervibe.online/`
 - Active Supabase project: `tlavrxiaegbtyfmjfdcz`
-- `main` is at commit `2771ea8` (PR #71 merge). Nothing local/uncommitted —
+- `main` is at commit `5c291d0` (PR #73 merge). Nothing local/uncommitted —
   everything below is committed, pushed, merged, and live-verified.
 - `main` is a **protected branch** — every change this session went
   branch → PR → CI checks → merge → delete branch, same as always.
@@ -77,6 +80,23 @@ verdict on this one was already correct: admins read, authenticated users
 insert, public insert is correctly blocked. Confirmed via the family-check
 during the waitlist investigation; not touched, doesn't need to be.
 
+**6. PR #73 — `/shop` → `/pets` same-session freshness bug fixed.** Not a
+Wave 1 audit item — the older, vaguer "still open" carryover item, hunted
+down from scratch this session. Root cause: `useOwnedCosmetics` fetches
+once on mount only; same-tab nav to `/shop` and back already remounts
+`Pets.tsx` (fresh fetch), but a purchase completed in a *different* tab
+left an already-open `/pets` tab stale with nothing to signal a refetch.
+The intended fix was already half-written — `refetchCosmetics` destructured
+from the hook with a comment reading "Keep the owned-cosmetics list fresh
+when a shop purchase happens elsewhere" — but the actual line was
+`void refetchCosmetics`, a bare reference that calls nothing. Wired a real
+`visibilitychange` listener that calls `refetchCosmetics()` on tab focus
+regain. New regression test (`pets-cosmetics-freshness.spec.ts`) proves
+both directions — fails against the old dead-reference code (verified
+locally before restoring the fix), passes against this change — with no
+navigation involved, just a simulated tab-return signal. Full pets suite
+(23 tests) green.
+
 ## Discovered but NOT fixed this session
 
 1. **Any anon `SELECT` on `waitlist` (and likely `user_loyalty_tier`, now
@@ -100,12 +120,14 @@ during the waitlist investigation; not touched, doesn't need to be.
    required role" on project `3d66bd92-cac3-4fde-ae9a-07f269b58791`. Same
    owner action as before — see the 08-06 handover for the full sequence,
    nothing about it has changed.
-2. `/shop` → `/pets` same-session freshness after a purchase — still an
-   open bug-hunt candidate, untouched this session.
-3. `course-profile` doesn't reject non-GET verbs (P2, cosmetic —
+2. `course-profile` doesn't reject non-GET verbs (P2, cosmetic —
    shared-secret auth already closes the real exposure).
-4. `get-pet-balance` has no current browser caller; method gating is more
+3. `get-pet-balance` has no current browser caller; method gating is more
    permissive than the documented contract if it's ever re-exposed.
+4. `anon` has no `SELECT` grant on `public.users` — any anon `SELECT` on
+   `waitlist` or `user_loyalty_tier` now throws a raw `42501` instead of
+   an empty result (see "Discovered but NOT fixed" above). Fails closed,
+   no live path hits it today.
 5. Legacy `/learn/:courseId` quiz flow client-side leak; real Discord
    OAuth creds for `discord-link` still missing (the callback hardening
    this session doesn't need real creds to be correct, just to be
@@ -114,8 +136,9 @@ during the waitlist investigation; not touched, doesn't need to be.
 
 ## First task next session
 
-**All four Wave 1 P1/P2 findings that were actually fixable without
-external access are now closed.** The only remaining Wave 1 item is the
-P0, which is still blocked on Railway access — check that first, same as
-last time. If it's still blocked, there's no queued frontend/DB work from
-this audit; pick from "Still open" above or ask Lyndz what's next.
+**Every fixable-without-external-access item from Wave 1 P1/P2, plus the
+older "/shop → /pets freshness" carryover bug, is now closed.** The only
+remaining blocker of any kind is the P0 — check whether Railway access has
+been sorted first, same as every session since 08-06. If it's still
+blocked, there's no queued frontend/DB work; pick from "Still open" above
+(all low-priority/cosmetic) or ask Lyndz what's next.
