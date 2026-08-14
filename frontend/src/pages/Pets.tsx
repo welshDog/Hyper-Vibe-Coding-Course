@@ -156,8 +156,21 @@ export default function Pets() {
     setBusy(null)
   }
 
-  // Keep the owned-cosmetics list fresh when a shop purchase happens elsewhere.
-  void refetchCosmetics
+  // Keep the owned-cosmetics list fresh when a shop purchase happens
+  // elsewhere: same-tab nav to /shop and back already remounts this page
+  // (fresh fetch), but a purchase made in a different tab leaves an
+  // already-open /pets tab stale with no signal to refetch. Re-check on
+  // visibility regain (covers switching back from another tab, or from
+  // another app/window).
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        void refetchCosmetics()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [refetchCosmetics])
   const species = speciesId ? getSpecies(speciesId) : null
   const showEmptyState = !!userId && !petsLoading && !petsError && pets.length === 0
   const { notifyLevelUp } = usePetNotifications()
