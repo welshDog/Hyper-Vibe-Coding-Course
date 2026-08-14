@@ -42,7 +42,7 @@ export default function DiscordCallback() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${session.access_token}`,
                 },
-                body: JSON.stringify({ code, redirect_uri: redirectUri }),
+                body: JSON.stringify({ code, redirect_uri: redirectUri, state }),
             });
 
             if (resp.ok) {
