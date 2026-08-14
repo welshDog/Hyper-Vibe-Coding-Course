@@ -1,0 +1,29 @@
+-- Fix: level-reward claims and quest completions silently fail for every
+-- signed-in learner.
+--
+-- Both public.claim_level_reward(p_level int) and public.complete_quest(p_quest_id uuid)
+-- are called directly from the frontend (useProgress.ts, QuestPage.tsx,
+-- useAutoQuestTriggers.ts) via supabase.rpc(...), but live grant checks
+-- (has_function_privilege) confirmed neither `authenticated` nor `anon` can
+-- execute either function on tlavrxiaegbtyfmjfdcz -- every call 42501s
+-- before the function body ever runs.
+--
+-- claim_level_reward's own migration (20260518000035) already grants EXECUTE
+-- to authenticated, but that grant never took effect on the live tlav
+-- project (created 2026-07-18, after this migration was written -- the
+-- yhtmui->tlav rebuild replayed schema but this grant didn't stick).
+-- complete_quest (20260426180000) never had an explicit grant at all and
+-- relied on default privileges that this project doesn't extend to new
+-- functions. Same root-cause class as the is_admin() incident fixed in
+-- 20260724182817_grant_is_admin_execute.sql.
+--
+-- Both functions are safe to grant: SECURITY DEFINER, act only on
+-- auth.uid() (never a caller-supplied user id), and take only a
+-- resource-scoped argument (p_level / p_quest_id). No cross-user access is
+-- possible through either call -- unlike get_or_create_referral_code, which
+-- was deliberately NOT fixed this way (see WHATS_DONE.md 2026-07-24).
+--
+-- Verified live 2026-08-14, tlavrxiaegbtyfmjfdcz: both grants were absent
+-- before this migration.
+GRANT EXECUTE ON FUNCTION public.claim_level_reward(int) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.complete_quest(uuid) TO authenticated;
