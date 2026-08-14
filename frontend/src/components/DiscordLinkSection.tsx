@@ -4,6 +4,7 @@ import { useAuthStore } from '../context/auth';
 import { HVZButton, HVZCard } from './ui/hvz';
 
 const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID as string | undefined;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 type DiscordLink = {
     discord_id: string;
@@ -31,13 +32,31 @@ export default function DiscordLinkSection() {
         void fetchLink();
     }, [user]);
 
-    function handleConnect() {
+    async function handleConnect() {
         if (!DISCORD_CLIENT_ID) {
             setMsg({ ok: false, text: 'Discord integration not configured yet — contact support.' });
             return;
         }
-        const state = crypto.randomUUID();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            setMsg({ ok: false, text: 'You must be logged in to link Discord.' });
+            return;
+        }
+
+        // State is minted server-side (not generated here) so the callback
+        // can verify it belongs to this user, not just that the browser
+        // remembers it — see supabase/functions/discord-link.
+        const startResp = await fetch(`${SUPABASE_URL}/functions/v1/discord-link`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!startResp.ok) {
+            setMsg({ ok: false, text: 'Could not start Discord link — try again.' });
+            return;
+        }
+        const { state } = await startResp.json() as { state: string };
         sessionStorage.setItem('discord_oauth_state', state);
+
         const redirectUri = `${window.location.origin}/auth/discord/callback`;
         const url = new URL('https://discord.com/oauth2/authorize');
         url.searchParams.set('client_id', DISCORD_CLIENT_ID);

@@ -1,139 +1,129 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { resolveSupabaseAdminKey } from '../_shared/supabaseAdminKey.mjs';
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { resolveSupabaseAdminKey } from "../_shared/supabaseAdminKey.mjs";
+import { createDiscordLinkHandler } from "./handler.ts";
 
-const CORS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+const SUPABASE_URL = (globalThis as any).Deno?.env?.get("SUPABASE_URL") ?? "";
+const DISCORD_CLIENT_ID = (globalThis as any).Deno?.env?.get("DISCORD_CLIENT_ID") ?? "";
+const DISCORD_CLIENT_SECRET = (globalThis as any).Deno?.env?.get("DISCORD_CLIENT_SECRET") ?? "";
 
-// Validate redirect_uri to prevent misuse of the Discord code exchange
+// State freshness window for the mint-then-consume OAuth state check.
+const STATE_FRESHNESS_MINUTES = 10;
+
+// Validate redirect_uri to prevent misuse of the Discord code exchange.
 const ALLOWED_ORIGINS = new Set([
-    'http://localhost:5173',
-    'http://localhost:4173',
-    'https://hyper-vibe-coding-course.vercel.app',
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "https://hyper-vibe-coding-course.vercel.app",
+  "https://hypervibe.online",
 ]);
 
-function json(body: unknown, status = 200) {
-    return new Response(JSON.stringify(body), {
-        status,
-        headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+function resolveAdminKey(): string {
+  return resolveSupabaseAdminKey(
+    {
+      SUPABASE_SECRET_KEYS: (globalThis as any).Deno?.env?.get("SUPABASE_SECRET_KEYS") ?? "",
+      SUPABASE_SECRET_KEY: (globalThis as any).Deno?.env?.get("SUPABASE_SECRET_KEY") ?? "",
+    },
+    "discord_link",
+  );
 }
 
-Deno.serve(async (req) => {
-    if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
-    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+function createSupabaseAdmin() {
+  return createClient(SUPABASE_URL, resolveAdminKey());
+}
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return json({ error: 'Unauthorized' }, 401);
+const handler = createDiscordLinkHandler({
+  env: {
+    discordClientId: DISCORD_CLIENT_ID,
+    discordClientSecret: DISCORD_CLIENT_SECRET,
+  },
+  allowedOrigins: ALLOWED_ORIGINS,
 
+  getAuthenticatedUser: async (authHeader) => {
     const userClient = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_ANON_KEY')!,
-        { global: { headers: { Authorization: authHeader } } },
+      SUPABASE_URL,
+      (globalThis as any).Deno?.env?.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) return json({ error: 'Unauthorized' }, 401);
+    const { data: { user }, error } = await userClient.auth.getUser();
+    if (error || !user) return null;
+    return { id: user.id };
+  },
 
-    // Resolved before the Discord round-trip below so a misconfigured key
-    // fails fast instead of burning a one-time-use Discord auth code.
-    let supabaseAdminKey: string;
-    try {
-        supabaseAdminKey = resolveSupabaseAdminKey(
-            {
-                SUPABASE_SECRET_KEYS: Deno.env.get('SUPABASE_SECRET_KEYS') ?? '',
-                SUPABASE_SECRET_KEY: Deno.env.get('SUPABASE_SECRET_KEY') ?? '',
-            },
-            'discord_link',
-        );
-    } catch (err) {
-        console.error('Admin key resolution failed:', err instanceof Error ? err.message : err);
-        return json({ error: 'Server misconfigured — contact support' }, 500);
+  mintState: async (userId) => {
+    const admin = createSupabaseAdmin();
+    const { data, error } = await admin
+      .from("discord_oauth_states")
+      .insert({ user_id: userId })
+      .select("state")
+      .single();
+    if (error || !data) {
+      throw new Error(error?.message ?? "state insert returned no row");
     }
+    return (data as { state: string }).state;
+  },
 
-    let body: { code: string; redirect_uri: string };
-    try {
-        body = await req.json();
-    } catch {
-        return json({ error: 'Invalid request body' }, 400);
+  consumeState: async (state, userId) => {
+    const admin = createSupabaseAdmin();
+    const cutoff = new Date(Date.now() - STATE_FRESHNESS_MINUTES * 60_000).toISOString();
+    const { data, error } = await admin
+      .from("discord_oauth_states")
+      .delete()
+      .eq("state", state)
+      .eq("user_id", userId)
+      .gt("created_at", cutoff)
+      .select("state");
+    if (error) {
+      throw new Error(error.message);
     }
+    return Array.isArray(data) && data.length === 1;
+  },
 
-    const { code, redirect_uri } = body;
-    if (!code || !redirect_uri) return json({ error: 'Missing code or redirect_uri' }, 400);
-
-    let parsedOrigin: string;
-    try {
-        parsedOrigin = new URL(redirect_uri).origin;
-    } catch {
-        return json({ error: 'Invalid redirect_uri' }, 400);
-    }
-    if (!ALLOWED_ORIGINS.has(parsedOrigin)) {
-        return json({ error: 'Redirect URI not allowed' }, 400);
-    }
-
-    const clientId = Deno.env.get('DISCORD_CLIENT_ID');
-    const clientSecret = Deno.env.get('DISCORD_CLIENT_SECRET');
-    if (!clientId || !clientSecret) {
-        return json({ error: 'Discord not configured — contact support' }, 503);
-    }
-
-    // Exchange Discord authorisation code for an access token
-    const tokenResp = await fetch('https://discord.com/api/oauth2/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret,
-            grant_type: 'authorization_code',
-            code,
-            redirect_uri,
-        }),
+  exchangeCode: async (code, redirectUri) => {
+    const tokenResp = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: DISCORD_CLIENT_ID,
+        client_secret: DISCORD_CLIENT_SECRET,
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri,
+      }),
     });
-
     if (!tokenResp.ok) {
-        const err = await tokenResp.text();
-        console.error('Discord token exchange failed:', tokenResp.status, err);
-        return json({ error: 'Discord auth failed — the link may have expired, please try again' }, 400);
+      const errText = await tokenResp.text();
+      return { error: `${tokenResp.status} ${errText}` };
     }
-
     const { access_token } = await tokenResp.json() as { access_token: string };
+    return { accessToken: access_token };
+  },
 
-    const discordResp = await fetch('https://discord.com/api/users/@me', {
-        headers: { Authorization: `Bearer ${access_token}` },
+  fetchDiscordProfile: async (accessToken) => {
+    const resp = await fetch("https://discord.com/api/users/@me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!discordResp.ok) return json({ error: 'Failed to fetch Discord profile' }, 502);
+    if (!resp.ok) return null;
+    const user = await resp.json() as { id: string; username: string; global_name?: string | null };
+    return { id: user.id, username: user.username, globalName: user.global_name ?? null };
+  },
 
-    const discordUser = await discordResp.json() as {
-        id: string;
-        username: string;
-        global_name?: string | null;
-    };
-
-    const displayName = discordUser.global_name ?? discordUser.username;
-
-    const admin = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        supabaseAdminKey,
+  upsertLink: async (userId, discordId, displayName) => {
+    const admin = createSupabaseAdmin();
+    const { error } = await admin.from("discord_links").upsert(
+      {
+        user_id: userId,
+        discord_id: discordId,
+        discord_username: displayName,
+        linked_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
     );
-
-    const { error: upsertError } = await admin.from('discord_links').upsert(
-        {
-            user_id: user.id,
-            discord_id: discordUser.id,
-            discord_username: displayName,
-            linked_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' },
-    );
-
-    if (upsertError) {
-        if (upsertError.code === '23505') {
-            return json({ error: 'That Discord account is already linked to another user' }, 409);
-        }
-        console.error('DB upsert error:', upsertError);
-        return json({ error: 'Failed to save Discord link' }, 500);
+    if (error) {
+      if (error.code === "23505") return { conflict: true };
+      return { error: error.message };
     }
-
-    return json({ discord_id: discordUser.id, discord_username: displayName });
+    return { ok: true };
+  },
 });
+
+(globalThis as any).Deno?.serve(handler);
