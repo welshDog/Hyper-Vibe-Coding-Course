@@ -3,6 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -14,6 +15,7 @@ services:
     build:
       context: ./apps/api
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - '4000:4000'
     environment:
@@ -29,6 +31,7 @@ services:
 
   prisma-studio:
     image: node:18
+    restart: unless-stopped
     working_dir: /app
     command: npx prisma studio --port 5555 --browser none
     ports:
