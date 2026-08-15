@@ -114,12 +114,21 @@ navigation involved, just a simulated tab-return signal. Full pets suite
 
 ## Still open
 
-1. **P0 — unchanged, still blocked.** `generate-v2-config` needs a
-   confirmed V2.4 base URL. Confirmed again this session: `V24_API_URL` is
-   still absent from live secrets, and Railway still returns "not the
-   required role" on project `3d66bd92-cac3-4fde-ae9a-07f269b58791`. Same
-   owner action as before — see the 08-06 handover for the full sequence,
-   nothing about it has changed.
+1. **P0 — in progress, not resolved.** The original documented Railway
+   project (`3d66bd92-cac3-4fde-ae9a-07f269b58791`) is still unreachable
+   (access issue, unchanged). Lyndz brought in a separate collaborator to
+   stand up a **fresh** Railway deployment instead
+   (`HyperCode-V2.4/NEXT_SESSION_HANDOVER_2026-08-15.md` has the full
+   story). Progress: found and fixed a real Alembic duplicate-revision bug
+   in `HyperCode-V2.4` that was silently blocking every fresh deploy
+   (`HyperCode-V2.4` PR #425, merged, confirmed working live). Currently
+   blocked on a Redis connectivity timeout in that new deployment (not yet
+   diagnosed) plus still-missing `SHOP_SYNC_SECRET`/`COURSE_SYNC_SECRET`/
+   Stripe secrets (agreed safe-handoff: those go directly into Railway's
+   dashboard, never through chat). `V24_API_URL` still isn't set here —
+   nothing live to point it at yet. First task next session: check
+   `HyperCode-V2.4/NEXT_SESSION_HANDOVER_2026-08-15.md` for the latest
+   Railway status before doing anything else on this.
 2. `course-profile` doesn't reject non-GET verbs (P2, cosmetic —
    shared-secret auth already closes the real exposure).
 3. `get-pet-balance` has no current browser caller; method gating is more
