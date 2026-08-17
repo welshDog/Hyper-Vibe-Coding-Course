@@ -16,17 +16,19 @@ const PRICE_TO_TIER: Record<string, { tier: string; tokens: number; modules: num
   'price_1TbUjT2LoEeIEPVECfWtHePf': { tier: 'builder',      tokens: 800,  modules: [1,2,3,4,5,6,7,8,9] },
   'price_1TbUjf2LoEeIEPVEyHtcTurh': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
   'price_1TbUjl2LoEeIEPVEKKa17fza': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
-  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
-  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
+  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12] },
 };
 
 serve(async (req: Request) => {
-  const stripeSecret = (Deno.env.get('STRIPE_SECRET_KEY') ?? '').trim()
-  const webhookSecret = (Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '').trim()
-  const stripe = new Stripe(stripeSecret, {
-    apiVersion: '2024-04-10',
-    httpClient: Stripe.createFetchHttpClient(),
-  });
+  // TEST/LIVE dual-mode: each `_TEST` var falls back to the original
+  // unsuffixed env var name so this deploys without breaking the
+  // currently-working TEST webhook before the new LIVE secrets exist.
+  const stripeSecretTest = (Deno.env.get('STRIPE_SECRET_KEY_TEST') ?? Deno.env.get('STRIPE_SECRET_KEY') ?? '').trim()
+  const stripeSecretLive = (Deno.env.get('STRIPE_SECRET_KEY_LIVE') ?? '').trim()
+  const webhookSecretTest = (Deno.env.get('STRIPE_WEBHOOK_SECRET_TEST') ?? Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '').trim()
+  const webhookSecretLive = (Deno.env.get('STRIPE_WEBHOOK_SECRET_LIVE') ?? '').trim()
+
   const cryptoProvider = Stripe.createSubtleCryptoProvider()
   const supabaseAdminKey = resolveSupabaseAdminKey(
     {
@@ -44,22 +46,52 @@ serve(async (req: Request) => {
   const signature = req.headers.get('stripe-signature') ?? req.headers.get('Stripe-Signature');
   const body = await req.text();
 
-  // ✓ Verify the webhook signature — rejects anything not from Stripe
-  let event: Stripe.Event;
+  // Signature verification doesn't use the API key, so any non-empty key
+  // instantiates the client — the real mode-specific key is picked below,
+  // after we know which secret actually verified the signature.
+  const verifierClient = new Stripe(stripeSecretTest || stripeSecretLive || 'sk_missing', {
+    apiVersion: '2024-04-10',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+
+  // ✓ Verify the webhook signature — rejects anything not from Stripe.
+  // Try TEST then LIVE; whichever one verifies determines the event's mode.
+  let event: Stripe.Event | undefined;
+  let mode: 'test' | 'live' | null = null;
   try {
     if (!signature) {
       throw new Error('missing_stripe_signature_header')
     }
-    if (!webhookSecret) {
+    if (!webhookSecretTest && !webhookSecretLive) {
       throw new Error('missing_stripe_webhook_secret')
     }
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret,
-      undefined,
-      cryptoProvider,
-    )
+
+    for (const [candidateMode, secret] of [['test', webhookSecretTest], ['live', webhookSecretLive]] as const) {
+      if (!secret) continue
+      try {
+        event = await verifierClient.webhooks.constructEventAsync(
+          body,
+          signature,
+          secret,
+          undefined,
+          cryptoProvider,
+        )
+        mode = candidateMode
+        break
+      } catch (_err) {
+        // try the next candidate secret
+      }
+    }
+
+    if (!event || !mode) {
+      throw new Error('signature_verification_failed')
+    }
+    // Defense-in-depth: the secret that verified must agree with Stripe's
+    // own livemode flag on the event, catching a misconfigured secret
+    // pointed at the wrong mode's endpoint.
+    if (event.livemode !== (mode === 'live')) {
+      throw new Error('signature_verification_failed')
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown_error'
     const error =
@@ -71,12 +103,21 @@ serve(async (req: Request) => {
       JSON.stringify({
         error,
         has_signature: Boolean(signature),
-        has_webhook_secret: Boolean(webhookSecret),
-        has_stripe_secret_key: Boolean(stripeSecret),
+        has_webhook_secret_test: Boolean(webhookSecretTest),
+        has_webhook_secret_live: Boolean(webhookSecretLive),
+        has_stripe_secret_key_test: Boolean(stripeSecretTest),
+        has_stripe_secret_key_live: Boolean(stripeSecretLive),
       }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
     )
   }
+
+  // Real API calls (e.g. listLineItems below) need a key matching the
+  // resolved mode — a TEST key against a LIVE session (or vice versa) 404s.
+  const stripe = new Stripe(mode === 'live' ? stripeSecretLive : stripeSecretTest, {
+    apiVersion: '2024-04-10',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
 
   const handledTypes = new Set([
     'checkout.session.completed',
@@ -374,9 +415,9 @@ async function logUnmatchedPayment(
   const { error } = await supabase.from('payments').insert({
     user_id: null,
     user_email: input.userEmail,
-    amount_pence: input.amountPence,
+    amount: input.amountPence,
     currency: input.currency,
-    stripe_session_id: input.stripeSessionId,
+    stripe_payment_intent_id: input.stripeSessionId,
     status: input.status,
     created_at: new Date().toISOString(),
   })

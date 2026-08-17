@@ -138,7 +138,10 @@ WelshDog **Mission Control** (course-ops dashboard) owns **no database of its ow
 - 🔴 **Course dev = `npm run dev:frontend`**, NOT `npm run dev`.
 - 🔴 **`wagmi`/`rainbowkit` only inside `/pets`** — never global.
 - 🔴 **No orange** anywhere in UI (HFZ brand rule). **No `framer-motion`** (not installed — CSS motion only).
-- 🔴 **Stripe stays TEST** until Companies House registration clears.
+- 🔴 **Stripe stays TEST** until Lyndz completes Stripe's sole-trader identity
+  verification (NI number + personal bank account + ID) — no Ltd/Companies
+  House registration needed; that earlier belief was wrong (confirmed clear
+  2026-06-14). See the go-live plan for the LIVE-mode cutover sequence.
 - ⚠️ **Shop discount source of truth = server** (`shop-purchase` edge fn), never the client. `TIER_DISCOUNT_PCT` is duplicated in UI + server — keep in sync.
 - ⚠️ **`award_tokens()` needs a stable `p_source_id`** for ledger dedup.
 - ⚠️ `setState` in `useEffect` = ESLint error. Never `--no-verify`.
