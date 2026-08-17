@@ -556,7 +556,7 @@ function CoursePreview() {
           }}
         >
           <div style={{ maxWidth: '65ch' }}>
-            <HVZTag color="cyan">🎓 Quests · 20 modules</HVZTag>
+            <HVZTag color="cyan">🎓 Quests · 30 modules</HVZTag>
             <h2
               style={{
                 fontFamily: 'var(--font-display)',
