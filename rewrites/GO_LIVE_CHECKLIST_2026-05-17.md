@@ -2,6 +2,11 @@
 > Drafted May 17, 2026 · Source: VERCEL_PREVIEW_REVIEW_2026-05-17.md item #10
 > **Rule: do not promote preview → production until every 🔴 below is ticked.**
 
+> ⚠️ **STALE as of 2026-08-17** — production has been live since well
+> before this checklist could be re-verified against it. Read
+> `rewrites/NEXT_SESSION_HANDOVER_2026-08-17.md` for the current real
+> go-live state (Stripe LIVE-mode setup is the only genuinely open item).
+
 Owner tags: **[LYNDZ]** = dashboard/manual (Claude can't) · **[CLAUDE]** = I can implement on request · **[VERIFY]** = exists, just confirm live
 
 ---

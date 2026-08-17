@@ -2,6 +2,13 @@
 **Created:** May 17, 2026 · **Owner:** @welshDog
 **Purpose:** Validate #1 payment gate + #2 content unlock + webhook→enrollments path in one real run.
 
+> ⚠️ **STALE — read `rewrites/NEXT_SESSION_HANDOVER_2026-08-17.md` first.**
+> Path A below references a retired `/catalog` course flow
+> (`retire_demo_lms.sql`, 2026-07-23) and the old `lyndzwills@gmail.com`
+> account. The current real login on the rebuilt `tlavrxiaegbtyfmjfdcz`
+> project is `lyndzwills00001@hotmail.co.uk`. Use `/pricing` (Path B) with
+> that email instead — verified working 2026-08-17.
+
 > Run this BEFORE promoting to production. Path A first — it’s the cleanest test.
 
 ## ✅ New: £1 Smoke Proof (TEST → LIVE)

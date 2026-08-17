@@ -2,6 +2,13 @@
 **Created:** May 17, 2026 · **Owner:** @welshDog
 **Status:** 🟡 In Progress — preview fixed, awaiting owner actions before promote
 
+> ⚠️ **STALE — no longer the single source of truth.** Read
+> `rewrites/NEXT_SESSION_HANDOVER_2026-08-17.md` for the current real
+> state (Stripe LIVE-mode checklist, what's actually shipped). This doc
+> predates the 2026-08-17 webhook fix and the site is already live for
+> real TEST-mode purchases — most of what follows is either done or
+> superseded.
+
 > This is the single source of truth. Tick each item. Run smoke test. Promote.
 
 ---
