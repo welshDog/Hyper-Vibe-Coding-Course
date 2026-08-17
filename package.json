@@ -16,6 +16,7 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:api": "npm --prefix apps/api run dev",
     "build": "npm --prefix frontend run build",
+    "check:pricing-drift": "node scripts/check-pricing-drift.mjs",
     "ai-gateway:pull-env": "vercel env pull .env.local",
     "ai-gateway:smoke": "node --env-file=.env.local index.mjs",
     "ai-gateway:summarize": "node --env-file=.env.local tools/ai/summarize.mjs",

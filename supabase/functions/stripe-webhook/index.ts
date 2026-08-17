@@ -415,7 +415,10 @@ async function logUnmatchedPayment(
   const { error } = await supabase.from('payments').insert({
     user_id: null,
     user_email: input.userEmail,
-    amount: input.amountPence,
+    // payments.amount is pound-denominated (see Admin.tsx's £-formatted
+    // display and totalRevenue sum) — Stripe's amounts are pence, so this
+    // must convert, not pass the pence value straight through.
+    amount: input.amountPence / 100,
     currency: input.currency,
     stripe_payment_intent_id: input.stripeSessionId,
     status: input.status,
