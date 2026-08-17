@@ -185,7 +185,16 @@ export function PetPortrait({
             // lg/sm the box is already tiny (48-80px); an inset there
             // reads as a mushy floating square instead of a card, so
             // those keep the full-bleed, full-opacity fill.
-            isHero ? 'inset-[8%] opacity-90' : 'inset-0 h-full w-full'
+            //
+            // 3%, not 8% (the original guess) — this has to be reconciled
+            // against frame art's own fixed ring geometry (10%-19% of its
+            // canvas, from gen_frame_overlays_batch4.py), not picked in
+            // isolation. At 8% the background was only actually visible
+            // in the ~2% sliver before the frame's ring took over, which
+            // read as an uneven scrap regardless of the source art. 3%
+            // gives it a real ~7% band to read as a scene plate before
+            // the ring starts.
+            isHero ? 'inset-[3%] opacity-90' : 'inset-0 h-full w-full'
           }`}
         />
       )}
@@ -222,11 +231,15 @@ export function PetPortrait({
         className={`relative h-full w-full ${s.rounded} motion-safe:animate-idle-breath ${
           (bg || frame)
             // Hero only: real inward padding so a behind-pet frame's ring
-            // (and an inset background) actually show in the gap. At
-            // lg/sm (48-80px icons) that padding would shrink the pet to
-            // an ~32px core — not worth it where this layering nuance
+            // (and an inset background) actually show in the gap. 20%,
+            // not 16% -- frame's ring runs to 19% of its own canvas, and
+            // at 16% the pet's opaque photo was silently covering the
+            // ring's own inner 3%, cropping it shorter than its art was
+            // drawn. 20% clears it with a hair to spare. At lg/sm
+            // (48-80px icons) that padding would shrink the pet to an
+            // ~32px core -- not worth it where this layering nuance
             // barely reads; keep the old razor-thin margin there instead.
-            ? (isHero ? 'object-contain p-[16%]' : 'object-contain p-1')
+            ? (isHero ? 'object-contain p-[20%]' : 'object-contain p-1')
             : 'object-cover'
         }`}
       />
