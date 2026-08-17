@@ -7,7 +7,11 @@
 //               behind the frame instead of filling the box edge-to-edge
 //               like a poster. Prefers overlay_image_url (full-bleed scene
 //               art), falls back to the catalogue image_url (may have a
-//               baked vignette) for items without one.
+//               baked vignette) for items without one. The card box itself
+//               is painted `bg-pet-ink` underneath everything — without it,
+//               the margin the inset creates (plus frame art's own ~10%
+//               transparent outer band) exposed raw unpainted card, which
+//               read as a gray hole instead of a card mat.
 //   frame       the collectible boundary, sitting behind the pet's own
 //               square so the pet reads as the hero framed inside it,
 //               not something laid on top of the pet. Only
@@ -165,7 +169,7 @@ export function PetPortrait({
           read as a halo bleeding across the page instead of energy on
           the card. */}
       <div
-        className={`relative shrink-0 overflow-hidden ${s.box} ${s.rounded} ${legendaryRingClass} ${className}`}
+        className={`relative shrink-0 overflow-hidden bg-pet-ink ${s.box} ${s.rounded} ${legendaryRingClass} ${className}`}
         style={ringStyle}
       >
       {bg && (
