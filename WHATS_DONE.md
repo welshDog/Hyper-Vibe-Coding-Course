@@ -2,6 +2,50 @@
 
 > Last synced: 2026-08-17 by Claude (Cowork) ⚡
 
+## 2026-08-17 — Course expanded M1-M12 → M1-M20 (Builder OS + Vibe Coding Craft modules)
+
+Added 8 new live course modules (M13-M20), shipped in 3 reviewable
+batches (PRs #79, #80, #81) following the exact pattern the real M1-M12
+modules already use — no new infra, no frontend code changes beyond two
+cosmetic "12 modules" → "20 modules" string updates (`LandingPage.tsx`,
+`Welcome.tsx`), held until the final batch so the site never claimed a
+module count that didn't exist yet.
+
+- **Source material**: PR #46 (`docs/builder-os-m13-m20`, opened by a
+  separate assistant session 2026-08-01) contained 8 detailed but
+  unadapted specs. Verified real via `gh pr view` before trusting it.
+  Content was adapted into the course's actual live template (confirmed
+  from the real M1-M12 seed migrations first) rather than merging the
+  raw specs — PR #46 closed as superseded once all 8 modules shipped,
+  not merged, to avoid a second stale-docs copy sitting in `rewrites/`.
+- **One real content bug caught before seeding**: M13's spec header said
+  "+100 XP / +50 BROski$" but its own SQL example schema defaulted
+  `xp_earned`/`broski_earned` to 10/5 — resolved in favor of the header
+  (the schema default described the feature being taught, not the
+  module's own reward); checked all 7 other specs for the same class of
+  conflict, found none.
+- **A real naming collision flagged, not touched**: `scripts/M13-ai-agents-2-0-...md`
+  already existed under the same M13 code from an older, unrelated
+  numbering track. `script_path` on the new rows points at the real PR
+  #46 source file instead, since the live pipeline never reads
+  `script_path` at runtime anyway (content lives in `hv_modules.content`,
+  not on disk).
+- **Zero backend code changes needed** — `get_quiz_for_module()` and
+  `complete_module()` were already fully `module_id`-driven with no
+  module-count assumption anywhere, confirmed before writing a line of
+  content.
+- **Verified live, not just deployed**: every one of the 20 modules was
+  actually completed for real on the live signed-in account — content
+  rendered correctly, all 8 new quizzes scored 100% server-side
+  (`answer_index` never leaked to the client), and every `xp_reward`/
+  `coin_reward` landed exactly right in `module_completions`/`user_xp`/
+  `users.broski_tokens`. `/courses` shows 20/20 complete, M1 through M20
+  in correct numeric catalog order.
+
+Migration pattern per batch (module rows → content → quizzes, strict
+order, each layer's `WHERE`/`SELECT` keyed off `code`): see
+`supabase/migrations/20260817120000_seed_hv_modules_m13_m15.sql` onward.
+
 ## 2026-08-17 — Stripe payment path was never real; fixed, proven live with a real transaction
 
 Full detail in `rewrites/NEXT_SESSION_HANDOVER_2026-08-17.md`. Summary:
