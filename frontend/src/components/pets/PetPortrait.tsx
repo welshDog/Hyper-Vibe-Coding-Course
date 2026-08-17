@@ -148,7 +148,21 @@ export function PetPortrait({
           aria-hidden
           loading="lazy"
           data-testid={isHero ? 'pet-portrait-aura' : undefined}
-          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.5] blur-[1px] opacity-80 mix-blend-screen"
+          className={`pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.5] blur-[1px] ${
+            auraOverlay
+              // Overlay path (real transparent art) — already alpha-clean,
+              // so it doesn't need the screen-blend transparency trick.
+              // Applying it anyway washes out the glow, the same problem
+              // documented on the frame layer below. Lower opacity keeps
+              // it reading as a soft ambient glow rather than a fog.
+              ? 'opacity-30'
+              // Fallback path only (#51 items not yet cropped to
+              // transparent overlay art) — catalogue-card aura art has a
+              // dark/near-black background; mix-blend-screen makes those
+              // near-black pixels transparent, same trick the frame
+              // layer's fallback path uses.
+              : 'opacity-80 mix-blend-screen'
+          }`}
         />
       )}
 
