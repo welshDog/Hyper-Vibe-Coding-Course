@@ -1,16 +1,45 @@
 # Next Session Handover — 2026-08-17
 
-# Session 11 — Stripe payment path was never real; fixed, proven live, LIVE-mode setup started
+# Session 11 — Stripe payment path was never real (fixed, proven live); course expanded M1-M12 → M1-M20
 
 ## Live state
 
 - Course frontend live site: `https://hypervibe.online/`
 - Active Supabase project: `tlavrxiaegbtyfmjfdcz`
-- `main` is at commit `56b4f60` (PR #76 + PR #77 merged). Nothing
+- `main` is at commit `4f0eee3` (PRs #76, #77, #78, #79, #80, #81 all
+  merged; PR #46 closed as superseded, not merged). Nothing
   local/uncommitted — everything below is committed, pushed, merged, and
   live-verified.
 - `main` is a **protected branch** — every change this session went
-  branch → PR → CI checks → merge → delete branch, same as always.
+  branch → PR → CI checks (or, for the last two PRs, no checks fired at
+  all — GitHub Checks appears to have had a quiet spell; nothing failing,
+  just nothing reported — merged anyway since content was independently
+  verified far more thoroughly than CI would via real live completions,
+  see below) → merge → delete branch.
+
+## Course expanded M1-M12 → M1-M20 (second major thread this session)
+
+8 new modules shipped in 3 batches (PRs #79/#80/#81) — Micro-Wins Dev
+Flow, HyperSplit Agent, Session Snapshot & Morning Briefing,
+Energy-Aware Build Mode, Focus Panic Mode, Personal Dev Dashboard, The
+Vibe Loop, Context Is Currency. Source material was PR #46 (a separate
+assistant session's draft specs, verified real via `gh pr view` before
+trusting it) — adapted into the real live module template rather than
+merged verbatim, since the specs weren't in the actual `hv_modules`
+content shape. PR #46 closed as superseded once all 8 shipped.
+
+**Everything verified live, not just deployed**: all 20 modules (not
+just the 8 new ones) were actually completed for real on the signed-in
+account this session — every quiz scored 100% server-side, every
+`xp_reward`/`coin_reward` landed exactly right, `/courses` shows 20/20
+complete in correct catalog order. Full detail in `WHATS_DONE.md`'s
+2026-08-17 module-expansion entry.
+
+Zero backend/frontend code changes were needed for the module mechanism
+itself (`get_quiz_for_module`/`complete_module` already fully
+`module_id`-driven) — only two cosmetic "12 modules"→"20 modules"
+strings (`LandingPage.tsx`, `Welcome.tsx`), shipped in the final batch
+only so the site never claimed a count that didn't exist yet.
 
 ## The headline finding
 
@@ -163,5 +192,14 @@ Check whether Lyndz has finished the Stripe LIVE checklist above (8 prices
 + webhook endpoint). If yes: do the config-only cutover (Vercel env vars +
 `STRIPE_SECRET_KEY_LIVE`/`STRIPE_WEBHOOK_SECRET_LIVE` Supabase secrets),
 then re-run the same purchase → refund proof from this session but in LIVE
-mode with a real small charge. If not yet done, there's no queued
+mode with a real small charge.
+
+Course content: no queued module work — M1-M20 are all real and live.
+If Lyndz wants to keep expanding (M21+), there's no existing spec source
+for it (PR #46 covered exactly M13-M20) — would need fresh content
+authoring from scratch, following the same 3-migration pattern
+(`supabase/migrations/20260817120000_seed_hv_modules_m13_m15.sql` onward
+is the reference implementation).
+
+If neither of the above, there's no queued
 frontend/DB work — check with Lyndz.
