@@ -47,7 +47,6 @@ export function Footer() {
               Built in Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁿 by @welshDog. For brains that build differently.
             </p>
             <div className="mt-5 flex gap-2 flex-wrap">
-              <HVZTag color="cyan">v0.9 · Beta</HVZTag>
               <HVZTag color="mint">● All systems green</HVZTag>
             </div>
           </div>
