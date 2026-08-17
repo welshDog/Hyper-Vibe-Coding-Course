@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useAuthStore } from '../context/auth'
 import { createCheckoutSession } from '../lib/payments'
-import { STRIPE_PRICE_IDS } from '../lib/stripe-price-ids'
+import { STRIPE_PRICE_IDS, type TierId } from '../lib/stripe-price-ids'
+
+/** Shorthand so each tier's price fields read from the single source of
+ *  truth in stripe-price-ids.ts instead of a second hardcoded copy. */
+const priceOf = (id: TierId) => STRIPE_PRICE_IDS[id]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe Payment Link URLs — set in Vercel env vars per environment (R2 in
@@ -59,7 +63,7 @@ const TIERS: Tier[] = [
     emoji: '🌱',
     name: 'Starter',
     tagline: 'Through the door. Zero risk.',
-    priceOnce: 29,
+    priceOnce: priceOf('starter').amountOnce,
     priceMonthly: null,
     yearlySaving: null,
     broskiTokens: 100,
@@ -77,9 +81,7 @@ const TIERS: Tier[] = [
       'Completion badge',
     ],
     notIncluded: [
-      'Full-stack modules',
       'BROskiPets & AI memory',
-      'Quantum module',
     ],
     oneTimeKey: 'starter',
     monthlyKey: null,
@@ -89,7 +91,7 @@ const TIERS: Tier[] = [
     emoji: '⚡',
     name: 'Pro',
     tagline: 'Getting serious. Still safe.',
-    priceOnce: 49,
+    priceOnce: priceOf('pro').amountOnce,
     priceMonthly: null,
     yearlySaving: null,
     broskiTokens: 300,
@@ -111,7 +113,6 @@ const TIERS: Tier[] = [
     ],
     notIncluded: [
       'BROskiPets',
-      'Agent architecture',
     ],
     oneTimeKey: 'pro',
     monthlyKey: null,
@@ -121,9 +122,9 @@ const TIERS: Tier[] = [
     emoji: '🔥',
     name: 'Builder',
     tagline: 'The full Vibe Coding journey.',
-    priceOnce: 97,
-    priceMonthly: 12,
-    yearlySaving: 47,
+    priceOnce: priceOf('builder').amountOnce,
+    priceMonthly: priceOf('builder').amountMonthly!,
+    yearlySaving: priceOf('builder').amountMonthly! * 12 - priceOf('builder').amountOnce,
     broskiTokens: 800,
     modules: 'M1 – M9',
     hero: true,
@@ -146,7 +147,6 @@ const TIERS: Tier[] = [
     ],
     notIncluded: [
       'Architect lab + Script Generator',
-      'Quantum module',
     ],
     oneTimeKey: 'builder',
     monthlyKey: 'builderMonthly',
@@ -156,9 +156,9 @@ const TIERS: Tier[] = [
     emoji: '🏛️',
     name: 'Architect',
     tagline: 'Builders who ship at scale.',
-    priceOnce: 167,
-    priceMonthly: 18,
-    yearlySaving: 49,
+    priceOnce: priceOf('architect').amountOnce,
+    priceMonthly: priceOf('architect').amountMonthly!,
+    yearlySaving: priceOf('architect').amountMonthly! * 12 - priceOf('architect').amountOnce,
     broskiTokens: 1500,
     modules: 'M1 – M11',
     hero: false,
@@ -177,25 +177,23 @@ const TIERS: Tier[] = [
       'Script Generator (Hyper Studio)',
       'VIP Discord channel',
     ],
-    notIncluded: [
-      'Quantum module',
-    ],
+    notIncluded: [],
     oneTimeKey: 'architect',
     monthlyKey: 'architectMonthly',
   },
   {
     id: 'hyper-legend',
-    emoji: '⚛️',
+    emoji: '🐶',
     name: 'Hyper Legend',
-    tagline: 'The full empire — including Quantum.',
-    priceOnce: 247,
-    priceMonthly: 25,
-    yearlySaving: 53,
+    tagline: 'The full empire. Top of the ladder.',
+    priceOnce: priceOf('hyper-legend').amountOnce,
+    priceMonthly: priceOf('hyper-legend').amountMonthly!,
+    yearlySaving: priceOf('hyper-legend').amountMonthly! * 12 - priceOf('hyper-legend').amountOnce,
     broskiTokens: 2500,
-    modules: 'M1 – M13 + Quantum',
+    modules: 'M1 – M12',
     hero: false,
     // brand-guard: yellow→orange is the documented Legend exception.
-    badge: '⚛️ Quantum Included',
+    badge: '♾️ Legend Status',
     gradient: 'from-yellow-400 to-orange-500',
     ring: 'ring-yellow-400/50',
     glow: '',
@@ -204,9 +202,6 @@ const TIERS: Tier[] = [
     features: [
       'Everything in Architect',
       'M12: The Ride or Die Contribution',
-      'BONUS M13: Quantum Vibe IDE',
-      'IBM Quantum cloud QPU access',
-      'Drag-and-drop quantum circuits',
       '2,500 BROski$ on signup',
       'Hall of Legends on GitHub',
       'Direct welshDog Q&A',
@@ -300,8 +295,13 @@ export default function Pricing() {
           No gatekeeping. No syntax walls. Just you, AI, and an empire you built.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 bg-emerald-900/30 border border-emerald-500/40 rounded-full px-4 py-2 text-sm text-emerald-300">
-          ✅ Platform LIVE · BROski$ economy active · 251 tests green (May 2026)
+          ✅ Platform LIVE · BROski$ economy active
         </div>
+        <p className="mt-4 text-gray-500 text-sm max-w-xl mx-auto">
+          Every module is free to read the moment you make an account — these
+          tiers are about BROski$ tokens, Discord support, certificates and
+          status, not paywalled content.
+        </p>
       </header>
 
       {/* Billing toggle */}
@@ -387,7 +387,7 @@ export default function Pricing() {
                   <div className="text-4xl mb-2" aria-hidden="true">{tier.emoji}</div>
                   <h2 className="text-2xl font-black">{tier.name}</h2>
                   <p className="text-gray-400 text-sm mt-1">{tier.tagline}</p>
-                  <div className="text-xs text-gray-500 mt-1">Modules: {tier.modules}</div>
+                  <div className="text-xs text-gray-500 mt-1">Suggested path: {tier.modules}</div>
                 </div>
 
                 {/* Price */}

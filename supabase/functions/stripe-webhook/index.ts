@@ -16,17 +16,19 @@ const PRICE_TO_TIER: Record<string, { tier: string; tokens: number; modules: num
   'price_1TbUjT2LoEeIEPVECfWtHePf': { tier: 'builder',      tokens: 800,  modules: [1,2,3,4,5,6,7,8,9] },
   'price_1TbUjf2LoEeIEPVEyHtcTurh': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
   'price_1TbUjl2LoEeIEPVEKKa17fza': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
-  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
-  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
+  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12] },
 };
 
 serve(async (req: Request) => {
-  const stripeSecret = (Deno.env.get('STRIPE_SECRET_KEY') ?? '').trim()
-  const webhookSecret = (Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '').trim()
-  const stripe = new Stripe(stripeSecret, {
-    apiVersion: '2024-04-10',
-    httpClient: Stripe.createFetchHttpClient(),
-  });
+  // TEST/LIVE dual-mode: each `_TEST` var falls back to the original
+  // unsuffixed env var name so this deploys without breaking the
+  // currently-working TEST webhook before the new LIVE secrets exist.
+  const stripeSecretTest = (Deno.env.get('STRIPE_SECRET_KEY_TEST') ?? Deno.env.get('STRIPE_SECRET_KEY') ?? '').trim()
+  const stripeSecretLive = (Deno.env.get('STRIPE_SECRET_KEY_LIVE') ?? '').trim()
+  const webhookSecretTest = (Deno.env.get('STRIPE_WEBHOOK_SECRET_TEST') ?? Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? '').trim()
+  const webhookSecretLive = (Deno.env.get('STRIPE_WEBHOOK_SECRET_LIVE') ?? '').trim()
+
   const cryptoProvider = Stripe.createSubtleCryptoProvider()
   const supabaseAdminKey = resolveSupabaseAdminKey(
     {
@@ -44,22 +46,52 @@ serve(async (req: Request) => {
   const signature = req.headers.get('stripe-signature') ?? req.headers.get('Stripe-Signature');
   const body = await req.text();
 
-  // ✓ Verify the webhook signature — rejects anything not from Stripe
-  let event: Stripe.Event;
+  // Signature verification doesn't use the API key, so any non-empty key
+  // instantiates the client — the real mode-specific key is picked below,
+  // after we know which secret actually verified the signature.
+  const verifierClient = new Stripe(stripeSecretTest || stripeSecretLive || 'sk_missing', {
+    apiVersion: '2024-04-10',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+
+  // ✓ Verify the webhook signature — rejects anything not from Stripe.
+  // Try TEST then LIVE; whichever one verifies determines the event's mode.
+  let event: Stripe.Event | undefined;
+  let mode: 'test' | 'live' | null = null;
   try {
     if (!signature) {
       throw new Error('missing_stripe_signature_header')
     }
-    if (!webhookSecret) {
+    if (!webhookSecretTest && !webhookSecretLive) {
       throw new Error('missing_stripe_webhook_secret')
     }
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature,
-      webhookSecret,
-      undefined,
-      cryptoProvider,
-    )
+
+    for (const [candidateMode, secret] of [['test', webhookSecretTest], ['live', webhookSecretLive]] as const) {
+      if (!secret) continue
+      try {
+        event = await verifierClient.webhooks.constructEventAsync(
+          body,
+          signature,
+          secret,
+          undefined,
+          cryptoProvider,
+        )
+        mode = candidateMode
+        break
+      } catch (_err) {
+        // try the next candidate secret
+      }
+    }
+
+    if (!event || !mode) {
+      throw new Error('signature_verification_failed')
+    }
+    // Defense-in-depth: the secret that verified must agree with Stripe's
+    // own livemode flag on the event, catching a misconfigured secret
+    // pointed at the wrong mode's endpoint.
+    if (event.livemode !== (mode === 'live')) {
+      throw new Error('signature_verification_failed')
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown_error'
     const error =
@@ -71,12 +103,37 @@ serve(async (req: Request) => {
       JSON.stringify({
         error,
         has_signature: Boolean(signature),
-        has_webhook_secret: Boolean(webhookSecret),
-        has_stripe_secret_key: Boolean(stripeSecret),
+        has_webhook_secret_test: Boolean(webhookSecretTest),
+        has_webhook_secret_live: Boolean(webhookSecretLive),
+        has_stripe_secret_key_test: Boolean(stripeSecretTest),
+        has_stripe_secret_key_live: Boolean(stripeSecretLive),
       }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
     )
   }
+
+  // Real API calls (e.g. listLineItems below) need a key matching the
+  // resolved mode — a TEST key against a LIVE session (or vice versa) 404s.
+  const resolvedSecretKey = mode === 'live' ? stripeSecretLive : stripeSecretTest
+  if (!resolvedSecretKey) {
+    // The signing secret for this mode is configured (that's how we got
+    // here) but its matching API key isn't — e.g. STRIPE_WEBHOOK_SECRET_LIVE
+    // set without STRIPE_SECRET_KEY_LIVE. Failing open here would silently
+    // no-op every real purchase: the client would be created with an empty
+    // key, every Stripe API call would fail, no tier/tokens/enrollment would
+    // be granted, and the function would still return 200 so Stripe never
+    // retries. Return a 5xx instead so Stripe's automatic retry has a chance
+    // once the operator finishes configuring the missing key.
+    console.error(`❌ Webhook verified a ${mode} event but STRIPE_SECRET_KEY_${mode.toUpperCase()} is not set`);
+    return new Response(
+      JSON.stringify({ error: `missing_stripe_secret_key_for_${mode}_mode` }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+  const stripe = new Stripe(resolvedSecretKey, {
+    apiVersion: '2024-04-10',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
 
   const handledTypes = new Set([
     'checkout.session.completed',
@@ -121,12 +178,17 @@ serve(async (req: Request) => {
       }
     }
 
+    const sessionPaymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id ?? session.id
+
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id, sessionPaymentIntentId);
     } else {
       await logUnmatchedPayment(supabase, {
         userEmail: customerEmail ?? null,
-        stripeSessionId: event.id,
+        stripePaymentIntentId: sessionPaymentIntentId,
         amountPence: session.amount_total ?? 0,
         currency: (session.currency ?? 'gbp').toLowerCase(),
         status: 'unmatched',
@@ -147,11 +209,11 @@ serve(async (req: Request) => {
     const courseId = (intent as any).metadata?.course_id ?? null;
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id, intent.id);
     } else {
       await logUnmatchedPayment(supabase, {
         userEmail: customerEmail ?? null,
-        stripeSessionId: event.id,
+        stripePaymentIntentId: intent.id,
         amountPence: (intent as any).amount_received ?? intent.amount ?? 0,
         currency: ((intent as any).currency ?? 'gbp').toLowerCase(),
         status: 'unmatched',
@@ -164,9 +226,16 @@ serve(async (req: Request) => {
     const invoice = event.data.object as Stripe.Invoice;
     const customerEmail = invoice.customer_email;
     const priceId = invoice.lines?.data?.[0]?.price?.id;
+    // customer.subscription.created's object is actually a Subscription, not
+    // an Invoice, so payment_intent won't resolve there — falls back to the
+    // event id, which is only used if the user-lookup fallback path fires.
+    const invoicePaymentIntentId =
+      typeof (invoice as any).payment_intent === 'string'
+        ? (invoice as any).payment_intent
+        : (invoice as any).payment_intent?.id ?? event.id
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, null, event.id);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, null, event.id, invoicePaymentIntentId);
     }
   }
 
@@ -195,7 +264,8 @@ async function awardTokensAndUnlock(
   email: string,
   priceId: string,
   courseId: string | null,
-  eventId: string
+  eventId: string,
+  stripePaymentIntentId: string
 ) {
   const config = PRICE_TO_TIER[priceId];
   if (!config) return;
@@ -210,7 +280,7 @@ async function awardTokensAndUnlock(
     console.error('❌ User not found for email:', email, '| event:', eventId);
     await logUnmatchedPayment(supabase, {
       userEmail: email,
-      stripeSessionId: eventId,
+      stripePaymentIntentId,
       amountPence: 0,
       currency: 'gbp',
       status: 'unmatched',
@@ -365,7 +435,12 @@ async function logUnmatchedPayment(
   supabase: ReturnType<typeof createClient>,
   input: {
     userEmail: string | null
-    stripeSessionId: string
+    /** A real Stripe PaymentIntent (or Checkout Session as a fallback) ID —
+     *  not an event ID. payments.stripe_payment_intent_id is UNIQUE and
+     *  named for what it holds; callers must pass the real identifier, not
+     *  event.id, or dedup + any future cross-reference against Stripe's own
+     *  PaymentIntent list silently breaks. */
+    stripePaymentIntentId: string
     amountPence: number
     currency: string
     status: string
@@ -374,9 +449,12 @@ async function logUnmatchedPayment(
   const { error } = await supabase.from('payments').insert({
     user_id: null,
     user_email: input.userEmail,
-    amount_pence: input.amountPence,
+    // payments.amount is pound-denominated (see Admin.tsx's £-formatted
+    // display and totalRevenue sum) — Stripe's amounts are pence, so this
+    // must convert, not pass the pence value straight through.
+    amount: input.amountPence / 100,
     currency: input.currency,
-    stripe_session_id: input.stripeSessionId,
+    stripe_payment_intent_id: input.stripePaymentIntentId,
     status: input.status,
     created_at: new Date().toISOString(),
   })

@@ -90,8 +90,8 @@ export const STRIPE_PRODUCTS = {
 
   hyperLegend: {
     productId: 'prod_Uag64hL17kjDwY',
-    name: '⚛️ Hyper Legend — Hyper Vibe Coding Course',
-    description: 'Modules 1–13 + Quantum. 2500 BROski$ on signup. IBM Quantum access. Hall of Legends. Legend status for life.',
+    name: '🐶 Hyper Legend — Hyper Vibe Coding Course',
+    description: 'Modules 1–12. 2500 BROski$ on signup. Hall of Legends. Direct welshDog Q&A. Legend status for life.',
     prices: {
       oneTime: {
         priceId: 'price_1TbUjw2LoEeIEPVEIU4LKdZp',
@@ -108,7 +108,7 @@ export const STRIPE_PRODUCTS = {
       },
     },
     broskiTokensAwarded: 2500,
-    modulesUnlocked: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    modulesUnlocked: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     tier: 'hyper_legend',
   },
 } as const;
@@ -125,7 +125,7 @@ export const PRICE_TO_TIER: Record<string, { tier: string; tokens: number; modul
   // 🏛️ Architect
   'price_1TbUjf2LoEeIEPVEyHtcTurh': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
   'price_1TbUjl2LoEeIEPVEKKa17fza': { tier: 'architect',    tokens: 1500, modules: [1,2,3,4,5,6,7,8,9,10,11] },
-  // ⚛️ Hyper Legend
-  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
-  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12,13] },
+  // 🐶 Hyper Legend
+  'price_1TbUjw2LoEeIEPVEIU4LKdZp': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  'price_1TbUk22LoEeIEPVEB6hpSFZt': { tier: 'hyper_legend', tokens: 2500, modules: [1,2,3,4,5,6,7,8,9,10,11,12] },
 };

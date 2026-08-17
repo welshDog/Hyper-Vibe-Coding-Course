@@ -195,7 +195,7 @@ function WaitlistForm({
                 : 'var(--color-danger-red)',
           }}
         >
-          {status === 'success' && "🎉 You're on the list — we'll shout when doors open."}
+          {status === 'success' && "🎉 You're on the list — we'll email you when there's news."}
           {status === 'duplicate' && "👀 You're already on the list — nice one BROski♾️."}
           {status === 'error' && "Hmm, let's try that again 🔄"}
         </p>
@@ -229,7 +229,7 @@ function Hero() {
         className="hero-grid"
       >
         <div style={{ maxWidth: '65ch' }}>
-          <HVZTag color="cyan">⚡ Vibe Coding · Beta · Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁿</HVZTag>
+          <HVZTag color="cyan">⚡ Vibe Coding · Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁿</HVZTag>
           <h1
             style={{
               fontFamily: 'var(--font-display)',
@@ -269,7 +269,11 @@ function Hero() {
           >
             A gamified coding course made for ADHD, dyslexic, and autistic minds. Short lessons. Real ships. Real XP. Real BROski$. No shame, no walls of text — just momentum.
           </p>
-          <WaitlistForm source="hero" ctaIdle="Let's GO" />
+          <Link to="/pricing" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            <HVZButton variant="primary" size="lg">
+              Get Vibe Coding <ArrowRight size={16} />
+            </HVZButton>
+          </Link>
           <div style={{ marginTop: 14 }}>
             <Link
               to="/vibe-labs"
@@ -638,136 +642,6 @@ function CoursePreview() {
   )
 }
 
-// ─── Testimonials ─────────────────────────────────────────────────────────────
-type Tier = 'silver' | 'gold' | 'hyper'
-const QUOTES: { name: string; role: string; quote: string; tier: Tier }[] = [
-  {
-    name: 'Marcus T.',
-    role: 'Former retail manager → junior dev',
-    quote:
-      "I tried 3 bootcamps and quit all of them. Two weeks into Hyper Vibe and I've got a deployed app with my name on it. This is genuinely different.",
-    tier: 'gold',
-  },
-  {
-    name: 'Priya S.',
-    role: 'ADHD · designer levelling up',
-    quote:
-      'My ADHD brain cannot do 40-hour YouTube tutorials. These sessions are short, punchy, and I actually finish them. The badge system keeps me coming back.',
-    tier: 'silver',
-  },
-  {
-    name: 'Jake R.',
-    role: 'PM who now ships code',
-    quote:
-      "I've been coding for years but wasted so much time on boilerplate. The vibe coding approach cut my build time in half. Wish I'd found this sooner.",
-    tier: 'hyper',
-  },
-]
-
-function TierChip({ t }: { t: Tier }) {
-  const styles: Record<Tier, { bg: string; col: string; label: string }> = {
-    silver: { bg: 'linear-gradient(135deg,#2A3548,#455269)', col: '#DCE5F2', label: 'Silver' },
-    gold: { bg: 'linear-gradient(135deg, var(--color-broski-gold), var(--color-gold-light))', col: 'var(--color-deep-violet)', label: 'Gold' },
-    hyper: { bg: 'linear-gradient(135deg, var(--color-hyper-violet), var(--color-violet-lt), var(--color-neon-cyan))', col: '#fff', label: 'Hyper ♾️' },
-  }
-  const s = styles[t]
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        padding: '4px 10px',
-        borderRadius: 9999,
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
-        background: s.bg,
-        color: s.col,
-      }}
-    >
-      {s.label}
-    </span>
-  )
-}
-
-function Testimonials() {
-  return (
-    <section style={{ padding: SECTION_PAD, background: 'var(--color-space-black)' }}>
-      <div style={CONTAINER}>
-        <div style={{ marginBottom: 48, maxWidth: '65ch' }}>
-          <HVZTag color="pink">💬 BROski♾️ in the wild</HVZTag>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: 'clamp(32px, 4vw, 48px)',
-              lineHeight: 1.1,
-              color: 'var(--color-text-primary)',
-              margin: '16px 0 0',
-              textWrap: 'balance' as CSSProperties['textWrap'],
-            }}
-          >
-            Real ND minds, real first ships.
-          </h2>
-        </div>
-        <div className="grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-          {QUOTES.map((q) => (
-            <HVZCard key={q.name} padding={28}>
-              <div
-                aria-hidden
-                style={{
-                  fontSize: 32,
-                  lineHeight: 1,
-                  color: 'var(--color-violet-lt)',
-                  marginBottom: 8,
-                  fontFamily: 'var(--font-display)',
-                }}
-              >
-                "
-              </div>
-              <p
-                style={{
-                  fontSize: 16,
-                  lineHeight: 1.8,
-                  color: 'var(--color-text-primary)',
-                  margin: '0 0 24px',
-                  maxWidth: '40ch',
-                }}
-              >
-                {q.quote}
-              </p>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  paddingTop: 18,
-                  borderTop: '1px solid rgba(168,85,247,0.15)',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 14,
-                      color: 'var(--color-text-primary)',
-                    }}
-                  >
-                    {q.name}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{q.role}</div>
-                </div>
-                <TierChip t={q.tier} />
-              </div>
-            </HVZCard>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
 // ─── Final CTA ────────────────────────────────────────────────────────────────
 function FinalCTA() {
   return (
@@ -815,15 +689,31 @@ function FinalCTA() {
             margin: '0 auto 32px',
           }}
         >
-          Join the waitlist and be first in when we open the doors. No spam — just a shout when you can start.
+          Pick a tier, get instant access, and start shipping today.
         </p>
-        <WaitlistForm source="footer" ctaIdle="Let's GO" ctaIcon="rocket" align="center" />
+        <Link to="/pricing" style={{ textDecoration: 'none' }}>
+          <HVZButton variant="primary" size="lg">
+            See pricing <Rocket size={16} />
+          </HVZButton>
+        </Link>
         <p style={{ marginTop: 24, fontSize: 13, color: 'var(--color-text-secondary)' }}>
           Already got an account?{' '}
           <Link to="/login" style={{ color: 'var(--color-neon-cyan)' }}>
             Sign in →
           </Link>
         </p>
+        <div
+          style={{
+            marginTop: 40,
+            paddingTop: 24,
+            borderTop: '1px solid rgba(168,85,247,0.15)',
+          }}
+        >
+          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+            Not ready to buy? Get an email when we ship something new.
+          </p>
+          <WaitlistForm source="final-cta" ctaIdle="Notify me" align="center" />
+        </div>
       </div>
     </section>
   )
@@ -843,7 +733,7 @@ function SiteFooter() {
         <div className="footer-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.4fr 1fr 1fr 1fr',
+            gridTemplateColumns: '1.4fr 1fr 1fr',
             gap: 48,
             marginBottom: 48,
           }}
@@ -861,15 +751,13 @@ function SiteFooter() {
               Built in Llanelli 🏴󠁧󠁢󠁷󠁬󠁳󠁿 by @welshDog. For brains that build differently.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <HVZTag color="cyan">v0.9 · Beta</HVZTag>
               <HVZTag color="mint">● All systems green</HVZTag>
             </div>
           </div>
           {(
             [
               { h: 'Product', links: [['Courses', '/courses'], ['BROski$Pets', '/pets'], ['Pricing', '/pricing']] }, // Quests hidden until populated (2026-06-19)
-              { h: 'Community', links: [['Leaderboard', '/leaderboard'], ['Discord', '#'], ['GitHub', 'https://github.com/welshDog/Hyper-Vibe-Coding-Course'], ['Tokens', '/tokens']] },
-              { h: 'Brand', links: [['Manifesto', '#'], ['Press kit', '#'], ['Contact', '#'], ['Made in Wales', '#']] },
+              { h: 'Community', links: [['Leaderboard', '/leaderboard'], ['Discord', 'https://discord.gg/PSBHyvx86T'], ['GitHub', 'https://github.com/welshDog/Hyper-Vibe-Coding-Course'], ['Tokens', '/tokens']] },
             ] as { h: string; links: [string, string][] }[]
           ).map((col) => (
             <div key={col.h}>
@@ -1249,7 +1137,6 @@ export default function LandingPage() {
       <VibeLabsBand />
       <Features />
       <CoursePreview />
-      <Testimonials />
       <FinalCTA />
       <SiteFooter />
     </div>
