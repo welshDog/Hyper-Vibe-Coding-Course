@@ -712,7 +712,7 @@ function FinalCTA() {
           <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
             Not ready to buy? Get an email when we ship something new.
           </p>
-          <WaitlistForm source="footer" ctaIdle="Notify me" align="center" />
+          <WaitlistForm source="final-cta" ctaIdle="Notify me" align="center" />
         </div>
       </div>
     </section>

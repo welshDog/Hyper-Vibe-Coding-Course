@@ -141,7 +141,8 @@ WelshDog **Mission Control** (course-ops dashboard) owns **no database of its ow
 - 🔴 **Stripe stays TEST** until Lyndz completes Stripe's sole-trader identity
   verification (NI number + personal bank account + ID) — no Ltd/Companies
   House registration needed; that earlier belief was wrong (confirmed clear
-  2026-06-14). See the go-live plan for the LIVE-mode cutover sequence.
+  2026-06-14). See `supabase/functions/stripe-webhook/README.md` for the
+  TEST/LIVE dual-mode secret setup needed for the cutover.
 - ⚠️ **Shop discount source of truth = server** (`shop-purchase` edge fn), never the client. `TIER_DISCOUNT_PCT` is duplicated in UI + server — keep in sync.
 - ⚠️ **`award_tokens()` needs a stable `p_source_id`** for ledger dedup.
 - ⚠️ `setState` in `useEffect` = ESLint error. Never `--no-verify`.

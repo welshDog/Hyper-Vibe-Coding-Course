@@ -9,7 +9,7 @@ export type PriceIdByBilling = {
  *  amountOnce/amountMonthly from here instead of hardcoding a second copy.
  *  Must stay in sync with the webhook's PRICE_TO_TIER
  *  (supabase/functions/stripe-webhook/index.ts) and stripe/products.config.ts
- *  — see scripts/check-pricing-drift.ts. */
+ *  — see scripts/check-pricing-drift.mjs. */
 export type TierPricing = PriceIdByBilling & {
   /** £, whole pounds, one-time price. */
   amountOnce: number

@@ -114,7 +114,23 @@ serve(async (req: Request) => {
 
   // Real API calls (e.g. listLineItems below) need a key matching the
   // resolved mode — a TEST key against a LIVE session (or vice versa) 404s.
-  const stripe = new Stripe(mode === 'live' ? stripeSecretLive : stripeSecretTest, {
+  const resolvedSecretKey = mode === 'live' ? stripeSecretLive : stripeSecretTest
+  if (!resolvedSecretKey) {
+    // The signing secret for this mode is configured (that's how we got
+    // here) but its matching API key isn't — e.g. STRIPE_WEBHOOK_SECRET_LIVE
+    // set without STRIPE_SECRET_KEY_LIVE. Failing open here would silently
+    // no-op every real purchase: the client would be created with an empty
+    // key, every Stripe API call would fail, no tier/tokens/enrollment would
+    // be granted, and the function would still return 200 so Stripe never
+    // retries. Return a 5xx instead so Stripe's automatic retry has a chance
+    // once the operator finishes configuring the missing key.
+    console.error(`❌ Webhook verified a ${mode} event but STRIPE_SECRET_KEY_${mode.toUpperCase()} is not set`);
+    return new Response(
+      JSON.stringify({ error: `missing_stripe_secret_key_for_${mode}_mode` }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+  const stripe = new Stripe(resolvedSecretKey, {
     apiVersion: '2024-04-10',
     httpClient: Stripe.createFetchHttpClient(),
   });
@@ -162,12 +178,17 @@ serve(async (req: Request) => {
       }
     }
 
+    const sessionPaymentIntentId =
+      typeof session.payment_intent === 'string'
+        ? session.payment_intent
+        : session.payment_intent?.id ?? session.id
+
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id, sessionPaymentIntentId);
     } else {
       await logUnmatchedPayment(supabase, {
         userEmail: customerEmail ?? null,
-        stripeSessionId: event.id,
+        stripePaymentIntentId: sessionPaymentIntentId,
         amountPence: session.amount_total ?? 0,
         currency: (session.currency ?? 'gbp').toLowerCase(),
         status: 'unmatched',
@@ -188,11 +209,11 @@ serve(async (req: Request) => {
     const courseId = (intent as any).metadata?.course_id ?? null;
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, courseId, event.id, intent.id);
     } else {
       await logUnmatchedPayment(supabase, {
         userEmail: customerEmail ?? null,
-        stripeSessionId: event.id,
+        stripePaymentIntentId: intent.id,
         amountPence: (intent as any).amount_received ?? intent.amount ?? 0,
         currency: ((intent as any).currency ?? 'gbp').toLowerCase(),
         status: 'unmatched',
@@ -205,9 +226,16 @@ serve(async (req: Request) => {
     const invoice = event.data.object as Stripe.Invoice;
     const customerEmail = invoice.customer_email;
     const priceId = invoice.lines?.data?.[0]?.price?.id;
+    // customer.subscription.created's object is actually a Subscription, not
+    // an Invoice, so payment_intent won't resolve there — falls back to the
+    // event id, which is only used if the user-lookup fallback path fires.
+    const invoicePaymentIntentId =
+      typeof (invoice as any).payment_intent === 'string'
+        ? (invoice as any).payment_intent
+        : (invoice as any).payment_intent?.id ?? event.id
 
     if (customerEmail && priceId && PRICE_TO_TIER[priceId]) {
-      await awardTokensAndUnlock(supabase, customerEmail, priceId, null, event.id);
+      await awardTokensAndUnlock(supabase, customerEmail, priceId, null, event.id, invoicePaymentIntentId);
     }
   }
 
@@ -236,7 +264,8 @@ async function awardTokensAndUnlock(
   email: string,
   priceId: string,
   courseId: string | null,
-  eventId: string
+  eventId: string,
+  stripePaymentIntentId: string
 ) {
   const config = PRICE_TO_TIER[priceId];
   if (!config) return;
@@ -251,7 +280,7 @@ async function awardTokensAndUnlock(
     console.error('❌ User not found for email:', email, '| event:', eventId);
     await logUnmatchedPayment(supabase, {
       userEmail: email,
-      stripeSessionId: eventId,
+      stripePaymentIntentId,
       amountPence: 0,
       currency: 'gbp',
       status: 'unmatched',
@@ -406,7 +435,12 @@ async function logUnmatchedPayment(
   supabase: ReturnType<typeof createClient>,
   input: {
     userEmail: string | null
-    stripeSessionId: string
+    /** A real Stripe PaymentIntent (or Checkout Session as a fallback) ID —
+     *  not an event ID. payments.stripe_payment_intent_id is UNIQUE and
+     *  named for what it holds; callers must pass the real identifier, not
+     *  event.id, or dedup + any future cross-reference against Stripe's own
+     *  PaymentIntent list silently breaks. */
+    stripePaymentIntentId: string
     amountPence: number
     currency: string
     status: string
@@ -420,7 +454,7 @@ async function logUnmatchedPayment(
     // must convert, not pass the pence value straight through.
     amount: input.amountPence / 100,
     currency: input.currency,
-    stripe_payment_intent_id: input.stripeSessionId,
+    stripe_payment_intent_id: input.stripePaymentIntentId,
     status: input.status,
     created_at: new Date().toISOString(),
   })
