@@ -252,12 +252,19 @@ test.describe('PetPortrait cosmetic overlay resolution', () => {
   // see #51) rendered as a square floating past the card's rounded edge
   // instead of a border that belongs to it.
   //
+  // Aura moved inside the clipped box in the 2026-08-17 layer reorder —
+  // it used to deliberately escape the clip (scaled 1.5x past the card)
+  // to read as a halo, but that read as visual chaos bleeding across the
+  // page instead of energy on the pet. Badge is now the only layer left
+  // outside the clip, since a corner pin is meant to overhang the card's
+  // corner.
+  //
   // getBoundingClientRect() reports layout geometry regardless of an
   // ancestor's overflow:hidden, so it can't detect visual clipping —
   // asserting the clip mechanism (computed overflow) plus DOM structure
   // (which layers are inside vs. outside the clipped box) is the reliable
   // way to test this.
-  test('frame/background are clipped to the card box; aura/badge deliberately are not', async ({ page }) => {
+  test('frame/background/aura are clipped to the card box; badge deliberately is not', async ({ page }) => {
     await setupAuthMock(page)
     const pet = {
       id: 'pet-uuid-1', pet_id: 'broski_1', species_id: 'sonic_spider', pet_name: 'Web Slinger',
@@ -298,16 +305,15 @@ test.describe('PetPortrait cosmetic overlay resolution', () => {
     const cardBox = frame.locator('..')
     await expect(cardBox).toHaveCSS('overflow', 'hidden')
 
-    // Frame and background belong to the clipped card box...
+    // Frame, background, and aura all belong to the clipped card box...
     await expect(cardBox.locator('[data-testid="pet-portrait-frame"]')).toHaveCount(1)
     if (await bg.count() > 0) {
       await expect(cardBox.locator('[data-testid="pet-portrait-background"]')).toHaveCount(1)
     }
+    await expect(cardBox.locator('[data-testid="pet-portrait-aura"]')).toHaveCount(1)
 
-    // ...but aura (ambient glow, meant to surround the pet past the card
-    // edge) and badge (corner pin, meant to overhang the corner) must NOT
-    // be inside it — clipping either would be a real regression, not a fix.
-    await expect(cardBox.locator('[data-testid="pet-portrait-aura"]')).toHaveCount(0)
+    // ...but badge (corner pin, meant to overhang the corner) must NOT be
+    // inside it — clipping it would be a real regression, not a fix.
     await expect(cardBox.locator('[data-testid="pet-portrait-badge"]')).toHaveCount(0)
   })
 })
