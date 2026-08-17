@@ -1,21 +1,70 @@
 # Next Session Handover — 2026-08-17
 
-# Session 11 — Stripe payment path was never real (fixed, proven live); course expanded M1-M12 → M1-M20
+# Session 11 — Stripe payment path was never real (fixed, proven live); course expanded M1-M12 → M1-M20 → M1-M30 (full course now live)
 
 ## Live state
 
 - Course frontend live site: `https://hypervibe.online/`
 - Active Supabase project: `tlavrxiaegbtyfmjfdcz`
-- `main` is at commit `4f0eee3` (PRs #76, #77, #78, #79, #80, #81 all
-  merged; PR #46 closed as superseded, not merged). Nothing
-  local/uncommitted — everything below is committed, pushed, merged, and
-  live-verified.
+- `main` is at commit `18f073c` (PRs #76, #77, #78, #79, #80, #81, #83,
+  #84, #85, #86, #87 all merged; PR #46 closed as superseded, not
+  merged). Nothing local/uncommitted — everything below is committed,
+  pushed, merged, and live-verified.
 - `main` is a **protected branch** — every change this session went
-  branch → PR → CI checks (or, for the last two PRs, no checks fired at
-  all — GitHub Checks appears to have had a quiet spell; nothing failing,
-  just nothing reported — merged anyway since content was independently
-  verified far more thoroughly than CI would via real live completions,
-  see below) → merge → delete branch.
+  branch → PR → CI checks (GitHub API had a sustained streak of
+  intermittent 503s on `gh pr create`/`gh pr checks`/`gh pr merge` for
+  the M21-M30 batches — handled via retries, nothing was ever merged
+  without checks actually passing, just sometimes took a few attempts to
+  confirm) → merge → delete branch.
+
+## Course expanded again: M1-M20 → M1-M30 (Agent Ops & Guardrails + Token Economies & On-Chain Craft) — the full 30-module course is now live
+
+10 more modules shipped in 3 batches (PRs #85/#86/#87), closing out the
+arc: **Track A "Agent Ops & Guardrails"** — M21 Multi-Agent Crews, M22
+Approval Gates & Guardrails, M23 Watching Your Agents: Action Logs, M24
+Prometheus + Grafana for Vibe Coders, M25 Incident Response ND Style —
+and **Track B "Token Economies & On-Chain Craft"** — M26 Designing a
+Reward Economy, M27 Building a Living Dashboard, M28 On-Chain Basics for
+Builders, M29 Safe Web3 Integration Patterns, M30 Launch Day: Ship Your
+Empire (the capstone, mirroring M11/M12's role for the original 12).
+
+Unlike M13-M20, there was **no source document** for these — confirmed
+via a dedicated repo-wide search before authoring. Content was
+originated fresh, grounded in real systems this ecosystem actually runs
+(multi-agent handoff patterns, Prometheus/Grafana, this repo's own
+`award_tokens()` dedup rule, BROskiPets' real on-chain/off-chain split,
+the real wagmi/rainbowkit `/pets`-only lazy-load rule) rather than
+generic filler.
+
+**Two prerequisite fixes shipped first, both confirmed with Lyndz**:
+1. `Pricing.tsx`'s Hyper Legend tier copy fix (PR #83, small standalone
+   PR) — was stale at M1-M12 even after the M13-M20 batch shipped.
+   Updated again in the final M27-M30 batch to `M1-M30`.
+2. **XP level hard ceiling** (PR #84) — `complete_module()`'s SQL `case`
+   block and `Dashboard.tsx`'s `levelThresholds` both capped at Level 6 /
+   2,000 XP; finishing all 20 modules already put a learner at
+   1,925/2,000. A **third** instance of the same bug was found live in
+   `HUDContext.tsx` (`maxXP` was a static `1000`, never tied to leveling
+   — visibly broken as "1,925 / 1,000" in this session's own testing).
+   All three fixed together, extending the ceiling to Level 8 / 4,000 XP.
+
+**Everything verified live, same standard as M13-M20**: at least one
+real module completion per batch (M21/M22/M23 in Batch 1, M24 in Batch
+2, M30 in Batch 3), real quiz answers, real "Mark as Complete" clicks.
+The M30 completion also proved the level-ceiling fix end-to-end under
+real gameplay: completing it pushed `total_xp` from 2,625 to 2,905,
+which correctly computed `level = 7` (crossing the new 2,750 threshold)
+— not the old hard cap of 6. `content_hash = md5(content)` and quiz
+question counts verified via SQL for all 10 new modules before each
+batch's merge.
+
+Bumped "20 modules" → "30 modules" copy in `LandingPage.tsx`/
+`Welcome.tsx`, held until the final batch (PR #87) so the site never
+claimed a module count that didn't exist yet — same discipline as the
+M13-M20 batch. Full detail in `WHATS_DONE.md`'s 2026-08-17 M21-M30 entry.
+
+Migration pattern (unchanged from M13-M20): `supabase/migrations/20260817160000_seed_hv_modules_m21_m23.sql`
+onward is the reference implementation for the M21-M30 batches.
 
 ## Course expanded M1-M12 → M1-M20 (second major thread this session)
 
@@ -194,11 +243,12 @@ Check whether Lyndz has finished the Stripe LIVE checklist above (8 prices
 then re-run the same purchase → refund proof from this session but in LIVE
 mode with a real small charge.
 
-Course content: no queued module work — M1-M20 are all real and live.
-If Lyndz wants to keep expanding (M21+), there's no existing spec source
-for it (PR #46 covered exactly M13-M20) — would need fresh content
-authoring from scratch, following the same 3-migration pattern
-(`supabase/migrations/20260817120000_seed_hv_modules_m13_m15.sql` onward
+Course content: no queued module work — M1-M30 are all real, live, and
+verified. This is the full planned curriculum; if Lyndz wants to keep
+expanding past M30, there's no existing spec source for it (M21-M30 was
+already authored from scratch, no PR to draw from) — would need fresh
+content authoring following the same 3-migration pattern
+(`supabase/migrations/20260817160000_seed_hv_modules_m21_m23.sql` onward
 is the reference implementation).
 
 If neither of the above, there's no queued

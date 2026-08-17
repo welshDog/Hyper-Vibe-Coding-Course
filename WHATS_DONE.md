@@ -2,6 +2,65 @@
 
 > Last synced: 2026-08-17 by Claude (Cowork) ⚡
 
+## 2026-08-17 — Course expanded M1-M20 → M1-M30 (Agent Ops & Guardrails + Token Economies & On-Chain Craft tracks) — full 30-module course now live
+
+Added the final 10 course modules (M21-M30), closing out the arc started
+by the M13-M20 batch earlier the same day. Shipped in 3 reviewable
+batches (PRs #85, #86, #87), same exact migration pattern as every prior
+batch — no new infra, no backend logic changes beyond the two
+prerequisite fixes below.
+
+- **Two prerequisite bugs fixed before content shipped, both confirmed
+  with Bro first**:
+  1. `Pricing.tsx`'s Hyper Legend tier copy was stale at "M1-M12"/"M13-M20
+     Bonus" even after the M13-M20 batch shipped — fixed as its own PR
+     (`fix/pricing-hyper-legend-module-count`, PR #83), then updated again
+     in the final M27-M30 batch to `M1-M30` now the whole course is live.
+  2. **A real hard ceiling in the XP leveling system, found by a Plan
+     agent during research**: `complete_module()`'s SQL `case` block and
+     `Dashboard.tsx`'s `levelThresholds` both capped out at Level 6 /
+     2,000 XP — finishing all 20 modules that existed that morning
+     already put a learner at 1,925/2,000, so any M21+ reward would hit
+     "max level" 8-9 modules before the course actually ended. A
+     **third**, previously-unknown instance of the same bug was found
+     live in `HUDContext.tsx`'s top-nav XP bar (`maxXP` was a static
+     `1000`, never tied to leveling at all — already visibly broken as
+     "1,925 / 1,000" during this session). All three fixed together
+     (PR #84), extending the ceiling to Level 8 / 4,000 XP — sized so
+     hitting true max XP lines up with finishing the M30 capstone
+     (confirmed live: `total_xp=2905` correctly computed `level=7` on
+     the real signed-in account after completing M30).
+- **No source document for M21-M30, unlike M13-M20** (which adapted
+  PR #46's specs) — confirmed via a dedicated repo-wide search before
+  authoring that nothing commits to these topics anywhere. Content was
+  originated fresh, grounded in real systems this ecosystem already runs:
+  multi-agent handoff patterns, Prometheus/Grafana (the same stack this
+  ecosystem's own services use), this repo's real `award_tokens()` dedup
+  rule, BROskiPets' real on-chain/off-chain split, and the real
+  wagmi/rainbowkit `/pets`-only lazy-load isolation rule.
+- **Two five-module tracks**: Track A "Agent Ops & Guardrails" (M21
+  Multi-Agent Crews, M22 Approval Gates & Guardrails, M23 Watching Your
+  Agents: Action Logs, M24 Prometheus + Grafana for Vibe Coders, M25
+  Incident Response ND Style) and Track B "Token Economies & On-Chain
+  Craft" (M26 Designing a Reward Economy, M27 Building a Living
+  Dashboard, M28 On-Chain Basics for Builders, M29 Safe Web3 Integration
+  Patterns, M30 Launch Day: Ship Your Empire — the capstone, mirroring
+  M11/M12's role for the original 12 modules).
+- **Verified live, not just deployed** — same standard as every prior
+  batch: at least one real module completion per batch (M21, M22, M23 in
+  Batch 1; M24 in Batch 2; M30 in Batch 3), real quiz answers, real
+  "Mark as Complete" clicks, DB-verified `content_hash = md5(content)`
+  and correct `xp_awarded`/`coins_awarded`/`quiz_score` for every module
+  in all three batches before merge.
+- Bumped "20 modules" → "30 modules" copy in `LandingPage.tsx`/
+  `Welcome.tsx`, held until the final batch (PR #87) so the site never
+  claimed a module count that didn't exist yet — same discipline as the
+  M13-M20 batch.
+
+Migration pattern per batch (module rows → content → quizzes, strict
+order, each layer's `WHERE`/`SELECT` keyed off `code`): see
+`supabase/migrations/20260817160000_seed_hv_modules_m21_m23.sql` onward.
+
 ## 2026-08-17 — Course expanded M1-M12 → M1-M20 (Builder OS + Vibe Coding Craft modules)
 
 Added 8 new live course modules (M13-M20), shipped in 3 reviewable
