@@ -2,27 +2,39 @@
 // are layered. Used by PetCard (full + mini) and PetSquadRow (hero + mini),
 // so equip styling stays identical everywhere.
 //
-// Two groups, not one flat stack — this is what keeps it reading as one
-// card instead of stacked images:
-//   - Card content (clipped to the card's own bounds + rounded corners via
-//     overflow-hidden): background, species, legendary shimmer, frame.
-//     A frame is a border — it must belong to the card, not float past it.
-//   - Ambient overlays (deliberately unclipped, positioned against the
-//     outer wrapper): aura (a glow meant to surround the pet past the card
-//     edge) and badge (a corner pin meant to overhang the corner).
+// Reads as a collectible card stack, back to front:
+//   background  the scene plate — inset on the hero size so it tucks
+//               behind the frame instead of filling the box edge-to-edge
+//               like a poster. Prefers overlay_image_url (full-bleed scene
+//               art), falls back to the catalogue image_url (may have a
+//               baked vignette) for items without one.
+//   frame       the collectible boundary, sitting behind the pet's own
+//               square so the pet reads as the hero framed inside it,
+//               not something laid on top of the pet. Only
+//               overlay_image_url (transparent border art) is safe here;
+//               catalogue image_url is opaque shop-preview art and is a
+//               same-known-bug fallback until an item gets one. Species
+//               art is itself an opaque square (no alpha) — the pet gets
+//               extra inward padding whenever a frame is equipped so its
+//               square doesn't fully cover the frame's ring.
+//   species     the pet itself, always the dominant element.
+//   aura        energy around/over the pet, not muddying the backdrop —
+//               deliberately unclipped and painted *after* the card so it
+//               reads as a glow in front of the pet's edge, not a smear
+//               hidden under the opaque background/species layers below
+//               it. Source art (both overlay and fallback) is opaque with
+//               a near-black backing, not real alpha, so it always needs
+//               mix-blend-screen regardless of path.
+//   badge       a corner pin, always topmost so it reads clean — falls
+//               back to `cornerFallback` (e.g. legend ✨) when unequipped.
 //
-// Stack, back → front, within the clipped card:
-//   background  fills the box behind the pet — prefers overlay_image_url
-//               (full-bleed scene art), falls back to the catalogue
-//               image_url (may have a baked vignette) for items without one
-//   species     the pet itself (object-contain when a background shows)
-//   frame       decorative border on top (never intercepts clicks) — only
-//               overlay_image_url (transparent art) is safe to composite
-//               here; catalogue image_url is opaque shop-preview art and
-//               is a same-known-bug fallback until an item gets one
-// Ambient, outside the clip: aura (soft glow behind the pet, scaled past
-// the box) then badge (corner chip — falls back to `cornerFallback`, e.g.
-// legend ✨).
+// Two DOM groups, not one flat stack — this is what keeps it reading as
+// one card instead of stacked images:
+//   - Card content (clipped to the card's own bounds + rounded corners via
+//     overflow-hidden): background, frame, species, legendary shimmer.
+//   - Ambient overlays (deliberately unclipped, positioned against the
+//     outer wrapper, painted AFTER the card so they sit in front of it):
+//     aura, then badge.
 //
 // Cosmetic layers are size-agnostic via `scale-*` (no per-size calc math).
 
@@ -136,37 +148,7 @@ export function PetPortrait({
         />
       )}
 
-      {/* Aura — an ambient glow, not a card layer. It's deliberately scaled
-          past the card (surrounds the pet like a halo) and blend-mode
-          softened, so it sits outside the clipped card box below rather
-          than being cropped by it. Positioned against this outer div, which
-          shrink-wraps to the exact size of that sized box either way. */}
-      {aura && (
-        <img
-          src={aura}
-          alt=""
-          aria-hidden
-          loading="lazy"
-          data-testid={isHero ? 'pet-portrait-aura' : undefined}
-          className={`pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.5] blur-[1px] ${
-            auraOverlay
-              // Overlay path (real transparent art) — already alpha-clean,
-              // so it doesn't need the screen-blend transparency trick.
-              // Applying it anyway washes out the glow, the same problem
-              // documented on the frame layer below. Lower opacity keeps
-              // it reading as a soft ambient glow rather than a fog.
-              ? 'opacity-30'
-              // Fallback path only (#51 items not yet cropped to
-              // transparent overlay art) — catalogue-card aura art has a
-              // dark/near-black background; mix-blend-screen makes those
-              // near-black pixels transparent, same trick the frame
-              // layer's fallback path uses.
-              : 'opacity-80 mix-blend-screen'
-          }`}
-        />
-      )}
-
-      {/* Card content — background/species/frame must all read as one card,
+      {/* Card content — background/frame/species must all read as one card,
           so they share this box's exact bounds and rounded corners via
           overflow-hidden. Without this, an oversized frame (any frame not
           yet cropped to overlay art — see #51) renders as an unclipped
@@ -183,7 +165,37 @@ export function PetPortrait({
           aria-hidden
           loading="lazy"
           data-testid={isHero ? 'pet-portrait-background' : undefined}
-          className={`absolute inset-0 h-full w-full object-cover ${s.rounded}`}
+          className={`absolute object-cover ${s.rounded} ${
+            // Shrunk on the hero size only — this is the "scene plate
+            // tucked behind the frame" read. At lg/sm the box is already
+            // tiny (48-80px); an inset there reads as a mushy floating
+            // square instead of a card, so those keep the full-bleed fill.
+            isHero ? 'inset-[6%]' : 'inset-0 h-full w-full'
+          }`}
+        />
+      )}
+
+      {/* Frame — behind the pet, not on top of it. Species art has no
+          alpha (it's an opaque square, confirmed by direct pixel check),
+          so the pet's own inward padding below is what reveals this
+          layer's ring rather than the frame being drawn over the pet. */}
+      {frame && (
+        <img
+          src={frame}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          data-testid={isHero ? 'pet-portrait-frame' : undefined}
+          className={`pointer-events-none absolute inset-0 h-full w-full object-contain ${
+            frameOverlay
+              ? 'scale-100'
+              // Fallback path only (#51 items not yet cropped to transparent
+              // overlay art) — catalogue-card frames like this are opaque
+              // with a dark/near-black background that would otherwise fully
+              // hide the pet. mix-blend-screen makes near-black pixels
+              // transparent, same trick the aura layer relies on below.
+              : 'scale-100 mix-blend-screen'
+          }`}
         />
       )}
 
@@ -193,7 +205,14 @@ export function PetPortrait({
         loading={isHero ? 'eager' : 'lazy'}
         {...(isHero ? { width: 288, height: 288 } : {})}
         className={`relative h-full w-full ${s.rounded} motion-safe:animate-idle-breath ${
-          bg ? 'object-contain p-1' : 'object-cover'
+          (bg || frame)
+            // Hero only: real inward padding so a behind-pet frame's ring
+            // (and an inset background) actually show in the gap. At
+            // lg/sm (48-80px icons) that padding would shrink the pet to
+            // an ~32px core — not worth it where this layering nuance
+            // barely reads; keep the old razor-thin margin there instead.
+            ? (isHero ? 'object-contain p-[16%]' : 'object-contain p-1')
+            : 'object-cover'
         }`}
       />
 
@@ -204,31 +223,29 @@ export function PetPortrait({
           style={{ backgroundSize: '200% 200%' }}
         />
       )}
+      </div>
 
-      {frame && (
+      {/* Aura — painted *after* the clipped card (not before it) so it's
+          actually visible in front of the pet instead of hidden behind the
+          opaque background/species layers underneath (both are positioned
+          siblings with z-index:auto; DOM order after the card wins paint
+          order). Deliberately unclipped + scaled past the box so it still
+          reads as energy bleeding past the pet's edge, not a flat card
+          layer. Source art is opaque with a near-black backing on both the
+          overlay and fallback path (checked directly — neither has real
+          alpha), so mix-blend-screen is unconditional here: black
+          contributes nothing under screen blend regardless of opacity, so
+          it never fogs the pet, and only the glow content adds light. */}
+      {aura && (
         <img
-          src={frame}
+          src={aura}
           alt=""
           aria-hidden
           loading="lazy"
-          data-testid={isHero ? 'pet-portrait-frame' : undefined}
-          className={`pointer-events-none absolute inset-0 h-full w-full object-contain ${
-            frameOverlay
-              ? 'scale-[1.4]'
-              // Fallback path only (#51 items not yet cropped to transparent
-              // overlay art) — catalogue-card frames like this are opaque
-              // with a dark/near-black background that otherwise fully
-              // hides the pet. mix-blend-screen makes near-black pixels
-              // transparent, same trick the aura layer already relies on.
-              // Verified empirically this doesn't touch already-migrated
-              // overlay frames (this branch never runs for them) and
-              // visibly washes out their glow if applied there too — so
-              // it's deliberately scoped to only the fallback path.
-              : 'scale-[1.12] mix-blend-screen'
-          }`}
+          data-testid={isHero ? 'pet-portrait-aura' : undefined}
+          className="pointer-events-none absolute inset-0 h-full w-full object-contain scale-[1.5] blur-[1px] opacity-70 mix-blend-screen"
         />
       )}
-      </div>
 
       {/* Badge — a corner pin, not a card layer. It's deliberately anchored
           past the card's own corner (a "medal pinned on" look), so it sits
