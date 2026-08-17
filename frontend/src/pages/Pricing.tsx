@@ -190,7 +190,7 @@ const TIERS: Tier[] = [
     priceMonthly: priceOf('hyper-legend').amountMonthly!,
     yearlySaving: priceOf('hyper-legend').amountMonthly! * 12 - priceOf('hyper-legend').amountOnce,
     broskiTokens: 2500,
-    modules: 'M1 – M20',
+    modules: 'M1 – M30',
     hero: false,
     // brand-guard: yellow→orange is the documented Legend exception.
     badge: '♾️ Legend Status',
@@ -202,7 +202,7 @@ const TIERS: Tier[] = [
     features: [
       'Everything in Architect',
       'M12: The Ride or Die Contribution',
-      'Bonus: M13 – M20 Builder OS + Vibe Coding Craft tracks',
+      'Bonus: M13 – M30 Builder OS, Agent Ops, and Token Economy tracks',
       '2,500 BROski$ on signup',
       'Hall of Legends on GitHub',
       'Direct welshDog Q&A',
