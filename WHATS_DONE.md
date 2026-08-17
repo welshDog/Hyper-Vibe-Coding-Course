@@ -2,6 +2,61 @@
 
 > Last synced: 2026-08-17 by Claude (Cowork) ⚡
 
+## 2026-08-17 — `/pets` cosmetic overlay art: full rollout complete, closes issue #51
+
+Bro asked to fix `/pets` before picking up the Stripe LIVE-mode cutover.
+Investigation found the page itself was in good shape (zero TODOs, no
+broken images) — the one real, concrete gap was issue #51: `shop_items`
+cosmetic art (aura/background/badge/frame) was originally opaque
+shop-preview/promo-card art, never designed to composite over a pet.
+A prior session (PRs #49/#52) proved the fix — a separate
+`overlay_image_url` column holding real transparent/full-bleed art — and
+shipped it for one proof-case item per category. This session finished
+the rollout for all 16 remaining items, closing the issue.
+
+- **Real bug found and fixed first, own PR (#89)**: the aura layer applied
+  `opacity-80 mix-blend-screen` unconditionally regardless of whether the
+  equipped aura had real overlay art or was still on the opaque fallback
+  path — exactly the mistake the frame layer's own code comment three
+  lines below it warns against. Flame Aura (the one aura shipped with
+  real overlay art) was live, right now, rendering through the wrong
+  path. Split it the same way frame already is: overlay path → normal
+  blend at ~0.3 opacity, fallback path → unchanged. Live-verified via
+  `getComputedStyle` on both paths before and after.
+- **Full rollout shipped in 4 category batches (PRs #90-#93)**, each
+  investigated on its own merits rather than assuming one crop-box
+  hypothesis fit every item in a category:
+  - **Badge** (PR #90): crop-based, same pattern as the proof-case item.
+    2 of 4 needed a custom crop after the shared hypothesis clipped their
+    medallions — caught via visual check before committing.
+  - **Background** (PR #91): discovered none of the 4 remaining items had
+    the vignette-border problem the proof-case item had — already
+    full-bleed. `overlay_image_url` set to the same clean `image_url`
+    rather than generating redundant duplicate assets.
+  - **Aura** (PR #92): mixed — 2 items had genuine dead margin (cropped),
+    2 were already full-bleed (same-path marker, no new asset).
+  - **Frame** (PR #93, final): all 4 had baked promo-card text/opaque
+    backgrounds that cropping can't remove (confirmed via direct
+    inspection — same class of problem the proof-case item had).
+    Procedurally generated via Pillow/numpy (rounded-rect border + glow
+    + gradient), restyled per frame's theme — RGB channel-split glitch,
+    rainbow holo, gold crack lines, Welsh gold/red. Verified via
+    checkerboard-composite test (real alpha transparency, no baked text)
+    before wiring in, same method proven on the original proof-case item.
+- **Verified live, not just deployed**: every batch DB-checked
+  (`overlay_image_url` correct per item), regression-tested
+  (`pets-portrait-overlay-resolution.spec.ts` + 2 other specs, 18/18 pass
+  by the final batch), and live-checked on production after each deploy.
+  The highest-value proof: Bolt's actively-equipped Glitch RGB Frame
+  (previously showing ghosted "SYS_CRITICAL"/etc. promo text over the
+  pet) confirmed rendering clean transparent border art after PR #93.
+- **Final state**: `SELECT` confirms all **20/20** pet-slot cosmetics
+  (5 each of aura/background/badge/frame) have `overlay_image_url` set.
+  Issue #51 is functionally closed; issue #55 (a condensed brief whose
+  code tasks turned out to already be shipped from an earlier session)
+  has nothing left either. Both left open pending Bro's confirmation to
+  close them out.
+
 ## 2026-08-17 — Course expanded M1-M20 → M1-M30 (Agent Ops & Guardrails + Token Economies & On-Chain Craft tracks) — full 30-module course now live
 
 Added the final 10 course modules (M21-M30), closing out the arc started
