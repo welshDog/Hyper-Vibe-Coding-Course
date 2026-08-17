@@ -116,11 +116,13 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  const levelThresholds = [0, 100, 250, 500, 1000, 2000];
-  const safeLevel = Math.max(1, Math.min(xpLevel ?? 1, 6));
+  // Must match public.complete_module()'s level `case` block exactly
+  // (supabase/migrations/20260817150000_extend_xp_level_ceiling.sql).
+  const levelThresholds = [0, 100, 250, 500, 1000, 2000, 2750, 4000];
+  const safeLevel = Math.max(1, Math.min(xpLevel ?? 1, 8));
   const safeTotal = Math.max(0, xpTotal ?? 0);
   const currentFloor = levelThresholds[safeLevel - 1] ?? 0;
-  const nextFloor = safeLevel < 6 ? levelThresholds[safeLevel] ?? 2000 : null;
+  const nextFloor = safeLevel < 8 ? levelThresholds[safeLevel] ?? 4000 : null;
   const hasHvModuleProgress = (moduleProgress?.completedModules ?? 0) > 0;
 
   if (!user) {
