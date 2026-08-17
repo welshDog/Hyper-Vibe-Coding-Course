@@ -27,9 +27,24 @@ interface HUDProviderProps {
   userId?: string;
 }
 
+// Must match public.complete_module()'s level `case` block exactly
+// (supabase/migrations/20260817150000_extend_xp_level_ceiling.sql) and
+// Dashboard.tsx's levelThresholds.
+const LEVEL_THRESHOLDS = [0, 100, 250, 500, 1000, 2000, 2750, 4000];
+
+/** XP needed to reach the next level, or the level-8 ceiling once maxed —
+ *  never a static number, or this silently breaks again as the ceiling
+ *  moves (this file's `maxXP` was previously a hardcoded 1000 that never
+ *  updated, so the HUD bar showed a nonsensical "1,925 / 1,000" once any
+ *  learner passed 1,000 XP). */
+function nextXpFloor(totalXp: number): number {
+  const next = LEVEL_THRESHOLDS.find((floor) => floor > totalXp);
+  return next ?? LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+}
+
 export function HUDProvider({ children, userId }: HUDProviderProps) {
   const [xp, setXP] = useState(0);
-  const [maxXP] = useState(1000);
+  const maxXP = nextXpFloor(xp);
   const [tokens, setTokens] = useState(0);
   const [tokensLoading, setTokensLoading] = useState(false);
   const [streak, setStreak] = useState(0);
