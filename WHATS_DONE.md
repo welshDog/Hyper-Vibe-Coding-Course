@@ -1,6 +1,63 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-08-15 by Claude (Cowork) ⚡
+> Last synced: 2026-08-17 by Claude (Cowork) ⚡
+
+## 2026-08-17 — Stripe payment path was never real; fixed, proven live with a real transaction
+
+Full detail in `rewrites/NEXT_SESSION_HANDOVER_2026-08-17.md`. Summary:
+
+- **The Stripe webhook has never successfully granted a purchase, in TEST
+  or LIVE, since the code was written.** `awardTokensAndUnlock()` /
+  `enrollUser()` / `revokeAccess()` / `logUnmatchedPayment()` all wrote to
+  columns that didn't exist on the live tables
+  (`users.subscription_tier`/`subscription_status`, `enrollments.status`,
+  `payments.user_email`, plus a field-name mismatch on
+  `amount`/`stripe_payment_intent_id`). Every write failed silently while
+  the function still returned `200` to Stripe. Fixed via 3 migrations
+  (applied live, committed) + webhook code, redeployed, and **proven with
+  a real Stripe TEST purchase → refund** on Lyndz's real account: £29
+  Starter buy correctly granted tokens/tier/6 course enrollments, then a
+  real refund correctly revoked all 6. PR #76.
+- **Two privilege-escalation bugs found and closed along the way**:
+  `public.users` and `public.enrollments` both had table-wide `UPDATE`
+  grants to `authenticated` (enrollments even to `anon`) with RLS that
+  only checks row ownership, not which columns changed — a signed-in user
+  could've self-set their own `subscription_tier`/`broski_tokens`/`role`,
+  or self-restored a refunded `enrollments.status` back to `active`. Both
+  trimmed to the only legitimate client writes (nothing for enrollments,
+  `full_name`/`avatar_url` only for users).
+- **TEST/LIVE dual-mode webhook secrets** added, with a guard against a
+  half-configured LIVE secret silently minting a broken Stripe client and
+  granting nothing (`503` instead, so Stripe retries). LIVE cutover is now
+  a config-only change.
+- **Dropped the Hyper Legend tier's fake "M13 Quantum" promise** (only
+  M1-12 are real) and reframed pricing copy honestly across all tiers:
+  content is free with any account, these tiers sell BROski$
+  tokens/Discord/certificates/status, not module access.
+- **Landing page funnel fixed** — primary CTA points at the working
+  `/pricing` checkout instead of a waitlist form, "Beta" framing dropped
+  from both `LandingPage.tsx`'s own footer and the separate shared
+  `components/Footer.tsx` (PR #77, caught by re-checking the live bundle
+  after PR #76 merged), dead footer links removed, real Discord invite
+  wired in, 3 unverified testimonials removed pending confirmation
+  they're real/consented.
+- **Separate production fix (Vercel config only, no PR)**: 3 of 5 tiers'
+  one-time Stripe Payment Link env vars were misnamed
+  (`VITE_STRIPE_BUILDER_URL` vs the stored `VITE_STRIPE_BUILDER_ONE_TIME_URL`)
+  — every "Get Builder/Architect/Hyper Legend" one-time button was
+  silently broken in production. Fixed, redeployed, all 8 tier checkout
+  links verified live.
+- **Stripe LIVE mode**: confirmed active on account `acct_1QUHFk2LoEeIEPVE`
+  ("WelshDog"), 5 LIVE products exist, but zero LIVE prices attached and
+  zero LIVE webhook endpoints — exact checklist (8 prices, 6 events, the
+  deployed webhook URL) is in the handover doc. Cutover is pure config
+  once Lyndz hands back the LIVE secrets/price IDs.
+- **Found, not fixed**: `rewrites/PAY_TEST_RUNBOOK.md` /
+  `PRODUCTION_LAUNCH_CHECKLIST.md` / `GO_LIVE_CHECKLIST_2026-05-17.md` are
+  all stale (May 2026) — reference a retired `/catalog` flow and the old
+  `lyndzwills@gmail.com` account (current real login is
+  `lyndzwills00001@hotmail.co.uk` on the rebuilt `tlavrxiaegbtyfmjfdcz`
+  project). Don't trust them as-is.
 
 ## 2026-08-15 — Wave 1 P1/P2 cleanup + shop→pets freshness bug fixed
 
