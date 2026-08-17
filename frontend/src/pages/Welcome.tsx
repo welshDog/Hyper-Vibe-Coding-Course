@@ -258,7 +258,7 @@ export default function Welcome() {
                 Vibe Code The Hyper Way
               </h3>
               <p className="text-sm text-hfz-text-secondary leading-relaxed mb-5">
-                The flagship. 12 modules, agents, dNFTs, and a graduation
+                The flagship. 20 modules, agents, dNFTs, and a graduation
                 certificate. £49 — pay once, learn forever.
               </p>
               <Link to="/pricing" className="no-underline">
