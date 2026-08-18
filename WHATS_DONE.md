@@ -1,6 +1,74 @@
 # ✅ WHATS_DONE — Hyper-Vibe-Coding-Course
 
-> Last synced: 2026-08-17 by Claude (Cowork) ⚡
+> Last synced: 2026-08-18 by Claude (Cowork) ⚡
+
+## 2026-08-18 — `/pets` portrait compositing polish: layer stack, band-budget fix, frame colour/bug fixes, icon match (PRs #95-#100)
+
+Follow-up to the 2026-08-17 overlay-art rollout (issue #51) — once every
+cosmetic had real transparent art, Bro iteratively reviewed the actual
+rendered `/pets` page across several rounds and flagged what still looked
+wrong. Each round was measured before touching anything (pixel sampling,
+`getBoundingClientRect`, HSL colour-path analysis), not fixed by guessing.
+
+- **Layer stack reordered to a "collectible card" model (PR #95)**: back
+  to front is now background → frame → pet → aura → badge (was aura
+  painted behind everything, nearly invisible). Frame now reads as the
+  card's boundary; pet stays the hero via padding revealed only when a
+  background/frame is equipped.
+- **Aura moved inside the clipped card (PR #96)**: was deliberately
+  unclipped and bleeding past the card's rounded edge — on the real
+  equipped loadout that read as chaos escaping the page, not energy on
+  the pet. Now clipped with the rest of the stack; opacity dropped
+  80→40 so it reads as an accent, not a wash.
+- **Card-box mat colour fix (PR #97)**: moving aura inside the clip
+  exposed a gray gap at the corners (background inset + frame's own
+  transparent outer band both stop short of the box edge). Confirmed via
+  direct pixel sampling that the gap was a missing `background-color`,
+  not a crop/position bug (ruled out BROski's suggested `object-position`
+  fix first — it structurally can't fix a box-size mismatch). Painted
+  `bg-pet-ink` underneath.
+- **Band-budget reconciliation + re-crop 4 of 5 backgrounds (PR #98)**:
+  Bro flagged Cosmic Vortex looking wrong; `getBoundingClientRect` proved
+  the CSS was symmetric, so the real bug was three independent PRs each
+  picking a background inset / frame ring geometry / pet padding without
+  checking them against each other (bg inset 8% left only ~2% of ring
+  visible; pet padding 16% silently covered part of the frame's own 19%
+  ring). Reconciled to 3%/20%. Separately, grid-search re-cropped Cosmic
+  Vortex, Deep Circuit, Nebula Drift, and Dark Lab — all 4 had genuinely
+  uneven source art near the visible ring (confirmed by sampling
+  brightness at 8 points around the ring, up to 24x swing before, 2-5x
+  after).
+- **Glitch RGB Frame compositing bug + orange-rule violations fixed
+  (PR #99)**: Glitch RGB's intended cyan→magenta chromatic-aberration
+  split never actually rendered — the generator layered R/G/B channel
+  copies with `alpha_composite`, which replaces pixels instead of adding
+  light, so the last (blue) layer painted over the other two almost
+  everywhere (confirmed: ring pixels bottomed out at R=G=0). Regenerated
+  with additive/screen blending. Separately, Quantum Crack's gradient
+  stop `(255,150,30)` sampled as hue 39 — `#FFA500` to within a degree,
+  a direct hit on the sacred "NO orange anywhere in UI" rule — replaced
+  with gold→electric-blue. Welsh Celtic's gold→red gradient necessarily
+  crossed orange on the colour wheel (worked out via HSL path analysis,
+  confirmed by sampling); replaced with green/white/red matching the
+  actual Welsh flag rather than the originally-invented gold/red
+  palette — Bro's call, offered both options with rendered previews
+  first. All 3 verified via checkerboard-composite (real alpha, no baked
+  background) and direct HSL pixel sampling **on production**, not just
+  local renders.
+- **Frame equip-icons pointed at the real overlay art (PR #100)**: the
+  equip-button icons for all 5 frames were still the original opaque
+  promo-card art (baked labels, unrelated theme — e.g. Holo Foil's icon
+  read "CELESTIAL DRACONIS / LEGENDARY COSMETIC" over a phoenix logo),
+  nothing like the clean ring art actually rendered on the pet.
+  `preview_image_url` now points at `overlay_image_url` for all 5 —
+  DB-only change, no frontend code needed (`PetCosmeticsPanel`'s `Thumb`
+  already preferred `preview_image_url`).
+- **Verified live, not just deployed**: every PR live-checked on
+  hypervibe.online after merge; #99/#100 specifically verified by pulling
+  actual pixel data from the production-served images via a real browser
+  session (`canvas.getImageData` → RGB→HSL), not screenshot-eyeballing.
+  Bolt's account restored to its original Glitch RGB Frame equip after
+  each round of live testing.
 
 ## 2026-08-17 — `/pets` cosmetic overlay art: full rollout complete, closes issue #51
 
